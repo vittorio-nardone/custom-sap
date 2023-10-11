@@ -5,7 +5,7 @@ from intelhex import IntelHex
 ## Configuration
 ##
 ##
-CONTROL_ROMS_COUNT = 1
+CONTROL_ROMS_COUNT = 2
 
 ##################################################################
 ## Control bits
@@ -20,6 +20,10 @@ CONTROL_BITS = {
     "notEACC":      { "eeprom": 0, "bit": 5, "lowActive": True },
     "notHLT":       { "eeprom": 0, "bit": 6, "lowActive": True },
     "notNOP":       { "eeprom": 0, "bit": 7, "lowActive": True },
+
+    "LMARL":        { "eeprom": 1, "bit": 0, "lowActive": False },
+    "LMARH":        { "eeprom": 1, "bit": 1, "lowActive": False },
+    "notEMAR":      { "eeprom": 1, "bit": 2, "lowActive": True },
 }
 
 ##################################################################
@@ -39,14 +43,23 @@ ISTRUCTIONS_SET = {
                 "d": "Freeze CPU",     
                 "m": [ ['notHLT'] ] },
 
-    "LDA": {    "c": 0x01,  
+    "LDAi": {   "c": 0xA9,  
                 "d": "Load Accumulator with Memory (immediate)", 
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LACC'], 
                         ['CPC']  
                     ] },
 
-    "NOP": {    "c": 0x02,  
+    "LDAa": {   "c": 0xAD,  
+                "d": "Load Accumulator with Memory (absolute)", 
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LMARH'], 
+                        ['CPC'],
+                        ['notEPCRAM', 'notERAM', 'LMARL'], 
+                        ['CPC', 'notEMAR', 'notERAM', 'LACC']  
+                    ] },
+
+    "NOP": {    "c": 0xFF,  
                 "d": "No Operation",     
                 "m": [ [] ] },                         
 }
@@ -122,8 +135,9 @@ if __name__ == "__main__":
 
     ## Kernel rom
     ih = IntelHex()
-    ih[0] = getCode('LDA')
-    ih[1] = 0x04
-    ih[2] = getCode('NOP')
+    ih[0] = getCode('LDAa')
+    ih[1] = 0x80
+    ih[2] = 0x00
     ih[3] = getCode('HLT')
+    ih[0x10] = 0xAA
     ih.write_hex_file("roms/kernel-rom.hex")
