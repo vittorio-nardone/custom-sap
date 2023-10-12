@@ -5,7 +5,7 @@ from intelhex import IntelHex
 ## Configuration
 ##
 ##
-CONTROL_ROMS_COUNT = 2
+CONTROL_ROMS_COUNT = 3
 
 ##################################################################
 ## Control bits
@@ -24,6 +24,19 @@ CONTROL_BITS = {
     "LMARL":        { "eeprom": 1, "bit": 0, "lowActive": False },
     "LMARH":        { "eeprom": 1, "bit": 1, "lowActive": False },
     "notEMAR":      { "eeprom": 1, "bit": 2, "lowActive": True },
+    "notWRAM":      { "eeprom": 1, "bit": 3, "lowActive": True },
+    "notLPCH":      { "eeprom": 1, "bit": 4, "lowActive": True },
+    "notLPCL":      { "eeprom": 1, "bit": 5, "lowActive": True },
+    "LTMP":         { "eeprom": 1, "bit": 6, "lowActive": False },
+    "LRALU":        { "eeprom": 1, "bit": 7, "lowActive": False }, 
+
+    "ALUS0":        { "eeprom": 2, "bit": 0, "lowActive": False },   
+    "ALUS1":        { "eeprom": 2, "bit": 1, "lowActive": False },   
+    "ALUS2":        { "eeprom": 2, "bit": 2, "lowActive": False },   
+    "ALUS3":        { "eeprom": 2, "bit": 3, "lowActive": False },   
+    "ALUCN":        { "eeprom": 2, "bit": 4, "lowActive": False },   
+    "ALUM":         { "eeprom": 2, "bit": 5, "lowActive": False },
+    "notERALU":     { "eeprom": 2, "bit": 6, "lowActive": True },
 }
 
 ##################################################################
@@ -34,12 +47,15 @@ CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','notERAM','notEPCRAM']
 CC_PC_INCREMENT                     = ['CPC']
 CC_LAST_T                           = ['notNOP']
 
+CC_TRANSPARENT_ALU                  = ['notERALU', 'ALUCN', 'LRALU']  # Allow TMP register to output to bus
+
+
 ##################################################################
 ## Istructions
 ##
 ##
 ISTRUCTIONS_SET = {
-    "HLT": {    "c": 0x00,  
+    "HLT": {    "c": 0xFF,  
                 "d": "Freeze CPU",     
                 "m": [ ['notHLT'] ] },
 
@@ -59,7 +75,34 @@ ISTRUCTIONS_SET = {
                         ['CPC', 'notEMAR', 'notERAM', 'LACC']  
                     ] },
 
-    "NOP": {    "c": 0xFF,  
+    "STAa": {   "c": 0x8D,  
+                "d": "Store Accumulator in Memory (absolute)", 
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LMARH'], 
+                        ['CPC'],
+                        ['notEPCRAM', 'notERAM', 'LMARL'], 
+                        ['CPC', 'notEMAR', 'notWRAM', 'notEACC']  
+                    ] },      
+
+    "ADCi": {   "c": 0x69,  
+                "d": "Add Memory to Accumulator with Carry (immediate)",   #TODO Carry not supported
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LTMP'], 
+                        ['CPC', 'notEACC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU'],
+                        ['notERALU', 'LACC'], 
+                    ] },      
+
+
+    "JMPa": {   "c": 0x4C,  
+                "d": "Jump to New Location (absolute)", 
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LTMP'],
+                        ['CPC'], 
+                        ['notEPCRAM', 'notERAM', 'notLPCL'], 
+                        ['notLPCH'] + CC_TRANSPARENT_ALU 
+                    ] },                    
+
+    "NOP": {    "c": 0x00,  
                 "d": "No Operation",     
                 "m": [ [] ] },                         
 }
@@ -132,12 +175,3 @@ if __name__ == "__main__":
 
     for e in range(CONTROL_ROMS_COUNT):
         ihs[e].write_hex_file("roms/cw{0}-rom.hex".format(e+1))
-
-    ## Kernel rom
-    ih = IntelHex()
-    ih[0] = getCode('LDAa')
-    ih[1] = 0x80
-    ih[2] = 0x00
-    ih[3] = getCode('HLT')
-    ih[0x10] = 0xAA
-    ih.write_hex_file("roms/kernel-rom.hex")
