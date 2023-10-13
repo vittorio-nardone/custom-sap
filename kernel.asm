@@ -1,7 +1,8 @@
 #include "ruledef.asm"
+#include "tests.asm"
 
-begin:
-    lda 0x00
-inc:
-    adc 0x05
-    jmp inc
+boot:
+    jmp tests
+    
+main:
+    hlt
