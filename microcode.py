@@ -46,6 +46,7 @@ CONTROL_BITS = {
     "LY":           { "eeprom": 3, "bit": 3, "lowActive": False },
     "LFR":          { "eeprom": 3, "bit": 4, "lowActive": False },
     "CHKZ":         { "eeprom": 3, "bit": 5, "lowActive": False },
+    "CHKC":         { "eeprom": 3, "bit": 6, "lowActive": False },
 }
 
 ##################################################################
@@ -69,15 +70,17 @@ INSTRUCTIONS_SET = {
 
     "LDAi": {   "c": 0xA9,  
                 "d": "Load Accumulator with Memory (immediate)", 
+                "flags": ['Z'],
                 "m": [  
-                        ['notEPCRAM', 'notERAM', 'LACC'], 
+                        ['notEPCRAM', 'notERAM', 'LACC', 'LFR'], 
                         ['CPC']  
                     ] },
 
     "LDAa": {   "c": 0xAD,  
                 "d": "Load Accumulator with Memory (absolute)", 
+                "flags": ['Z'],
                 "m": [  
-                        ['notEPCRAM', 'notERAM', 'LMARH'], 
+                        ['notEPCRAM', 'notERAM', 'LMARH', 'LFR'], 
                         ['CPC'],
                         ['notEPCRAM', 'notERAM', 'LMARL'], 
                         ['CPC', 'notEMAR', 'notERAM', 'LACC']  
@@ -93,15 +96,20 @@ INSTRUCTIONS_SET = {
                     ] },      
 
     "ADCi": {   "c": 0x69,  
-                "d": "Add Memory to Accumulator with Carry (immediate)",   #TODO Carry not supported
+                "d": "Add Memory to Accumulator with Carry (immediate)",   
                 "m": [  
-                        ['notEPCRAM', 'notERAM', 'LTMP'], 
+                        ['notEPCRAM', 'notERAM', 'LTMP', 'CHKC'], 
                         ['CPC', 'notEACC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU'],
                         ['notERALU', 'LACC'], 
-                    ] },      
+                    ], 
+                "true": [
+                        ['CPC', 'notEACC', 'ALUS0', 'ALUS3', 'LRALU'],
+                        ['notERALU', 'LACC'], 
+                    ] },     
 
     "CMPi": {   "c": 0xC9,  
                 "d": "Compare Memory with Accumulator (immediate)", 
+                "flags": ['Z', 'C'],
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP'], 
                         ['CPC', 'notEACC', 'ALUCN', 'ALUS1', 'ALUS2', 'LFR'],
@@ -141,6 +149,32 @@ INSTRUCTIONS_SET = {
                         ['CPC'], 
                         ['CPC'], 
                     ] },   
+
+    "BCSa": {   "c": 0xB0,  
+                "d": "Branch on Carry Set (absolute)", 
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LTMP', 'CHKC'],
+                        ['CPC'], 
+                        ['CPC']
+                    ],
+                "true": [
+                        ['CPC'], 
+                        ['notEPCRAM', 'notERAM', 'notLPCL'], 
+                        ['notLPCH'] + CC_TMP_TO_BUS 
+                    ] },    
+
+    "BCCa": {   "c": 0x90,  
+                "d": "Branch on Carry Clear (absolute)", 
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LTMP', 'CHKC'],
+                        ['CPC'], 
+                        ['notEPCRAM', 'notERAM', 'notLPCL'], 
+                        ['notLPCH'] + CC_TMP_TO_BUS 
+                    ],
+                "true": [
+                        ['CPC'], 
+                        ['CPC'], 
+                    ] },                                          
 
     "LDOi": {   "c": 0xFE,  
                 "d": "Load Output with Memory (immediate)", 
@@ -211,6 +245,7 @@ def verifyControlBits():
 ##
 def generateInstructions(ihs):
     for i in INSTRUCTIONS_SET:
+        print("-> 0x{:02X} - {} - {} - {}".format(INSTRUCTIONS_SET[i]['c'], i, INSTRUCTIONS_SET[i]['flags'] if 'flags' in INSTRUCTIONS_SET[i] else '[]', INSTRUCTIONS_SET[i]['d']))
         offset = INSTRUCTIONS_SET[i]['c'] << 5
         ist = [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ] + INSTRUCTIONS_SET[i]['m'] # add T1
         ist[-1] += CC_LAST_T # add NOP
@@ -220,17 +255,17 @@ def generateInstructions(ihs):
                 ihs[e][offset] = cw[e]
             offset += 1
 
-        # conditional else
+        # conditional true
         if ('true' in INSTRUCTIONS_SET[i]):
             offset = INSTRUCTIONS_SET[i]['c'] << 5
-            offset += 0x10  # else mc is stored from 0x10 address
+            offset += 0x10  # true mc is stored from 0x10 address
             ist = INSTRUCTIONS_SET[i]['true']  
             ist[-1] += CC_LAST_T # add NOP
             for x in ist:
                 cw = getControlWord(x)
                 for e in range(CONTROL_ROMS_COUNT):
                     ihs[e][offset] = cw[e]
-                offset += 1            
+                offset += 1          
 
 ##################################################################
 ## Clean & Preset
@@ -260,17 +295,16 @@ if __name__ == "__main__":
     verifyInstructionSet()
     verifyControlBits()
     
-
     ## Generate rom files (microcode)
-    print("Generating roms files")
     ihs = []
     for e in range(CONTROL_ROMS_COUNT):
         ih = IntelHex()
         ihs.append(ih)
-    
     cleanAndPreset(ihs)
+
+    print("Generating instructions")
     generateInstructions(ihs)
 
     for e in range(CONTROL_ROMS_COUNT):
         ihs[e].write_hex_file("roms/cw{0}-rom.hex".format(e+1))
-    print("All done\n")
+    print("All done, {} instructions generated\n".format(len(INSTRUCTIONS_SET)))

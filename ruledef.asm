@@ -20,5 +20,8 @@
     beq {value: u16} => 0xF0 @ value  ; Branch on Result Zero (absolute)
     bne {value: u16} => 0xD0 @ value  ; Branch on Result Not Zero (absolute)
 
+    bcs {value: u16} => 0xB0 @ value  ; Branch on Carry Set (absolute)
+    bcc {value: u16} => 0x90 @ value  ; Branch on Carry Clear (absolute)
+
     nop => 0x00                       ; No Operation
 }
