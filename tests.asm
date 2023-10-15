@@ -28,9 +28,22 @@ test4:
     lda 0x02            ; Reset
     lda 0x8000          ; Load from memory
     cmp 0x05            
-    beq testend
+    beq test5
     hlt
 
+test5:
+    ldo 0x05            ; Test #5: BNE
+    lda 0x05
+    cmp 0x03            
+    bne test6
+    hlt    
+
+test6:
+    ldo 0x06            ; Test #6: BNE
+    lda 0x22
+    cmp 0x22            
+    bne fail
+        
 testend:
     ldo 0x0E            ; Tests finished, jmp back to main program
     jmp main            

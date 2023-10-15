@@ -18,6 +18,7 @@
     jmp {value: u16} => 0x4C @ value  ; Jump to New Location (absolute)
 
     beq {value: u16} => 0xF0 @ value  ; Branch on Result Zero (absolute)
+    bne {value: u16} => 0xD0 @ value  ; Branch on Result Not Zero (absolute)
 
     nop => 0x00                       ; No Operation
 }

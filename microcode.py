@@ -45,8 +45,7 @@ CONTROL_BITS = {
     "notEY":        { "eeprom": 3, "bit": 2, "lowActive": True },
     "LY":           { "eeprom": 3, "bit": 3, "lowActive": False },
     "LFR":          { "eeprom": 3, "bit": 4, "lowActive": False },
-    "notZCPC":      { "eeprom": 3, "bit": 5, "lowActive": True },
-    "notZNOP":      { "eeprom": 3, "bit": 6, "lowActive": True },
+    "CHKZ":         { "eeprom": 3, "bit": 5, "lowActive": False },
 }
 
 ##################################################################
@@ -120,11 +119,28 @@ INSTRUCTIONS_SET = {
     "BEQa": {   "c": 0xF0,  
                 "d": "Branch on Result Zero (absolute)", 
                 "m": [  
-                        ['notEPCRAM', 'notERAM', 'LTMP', 'notZCPC'],
-                        ['CPC', 'notZNOP'], 
+                        ['notEPCRAM', 'notERAM', 'LTMP', 'CHKZ'],
+                        ['CPC'], 
+                        ['CPC']
+                    ],
+                "true": [
+                        ['CPC'], 
                         ['notEPCRAM', 'notERAM', 'notLPCL'], 
                         ['notLPCH'] + CC_TMP_TO_BUS 
-                    ] },                                   
+                    ] },   
+
+    "BNEa": {   "c": 0xD0,  
+                "d": "Branch on Result not Zero (absolute)", 
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LTMP', 'CHKZ'],
+                        ['CPC'], 
+                        ['notEPCRAM', 'notERAM', 'notLPCL'], 
+                        ['notLPCH'] + CC_TMP_TO_BUS 
+                    ],
+                "true": [
+                        ['CPC'], 
+                        ['CPC'], 
+                    ] },   
 
     "LDOi": {   "c": 0xFE,  
                 "d": "Load Output with Memory (immediate)", 
@@ -204,6 +220,18 @@ def generateInstructions(ihs):
                 ihs[e][offset] = cw[e]
             offset += 1
 
+        # conditional else
+        if ('true' in INSTRUCTIONS_SET[i]):
+            offset = INSTRUCTIONS_SET[i]['c'] << 5
+            offset += 0x10  # else mc is stored from 0x10 address
+            ist = INSTRUCTIONS_SET[i]['true']  
+            ist[-1] += CC_LAST_T # add NOP
+            for x in ist:
+                cw = getControlWord(x)
+                for e in range(CONTROL_ROMS_COUNT):
+                    ihs[e][offset] = cw[e]
+                offset += 1            
+
 ##################################################################
 ## Clean & Preset
 ##
@@ -211,12 +239,13 @@ def generateInstructions(ihs):
 def cleanAndPreset(ihs):
     a = getControlWord(CC_LOAD_PC_POINTED_RAM_INTO_IR)
     b = getControlWord(CC_PC_INCREMENT + CC_LAST_T)
+    c = getControlWord(CC_LAST_T) # safety
     for x in range(256):
         for e in range(CONTROL_ROMS_COUNT):
             ihs[e][x*32] = a[e]  
             ihs[e][x*32 + 1] = b[e]  
             for i in range(30):
-                ihs[e][x*32 + 2 + i] = 0x00
+                ihs[e][x*32 + 2 + i] = c[e]
 
 ##################################################################
 ## Main
