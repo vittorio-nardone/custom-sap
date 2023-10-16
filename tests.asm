@@ -96,15 +96,24 @@ test12:
     bcc fail
 
 test13:
-     ldo 0x13            ; Test #13: ADC with/out Carry
+     ldo 0x13            ; Test #13: ADC with/out Carry & CLC/SEC
      lda 0x10   
-     cmp 0x12            ; Clear Carry        
+     clc                 ; Clear Carry        
      adc 0x01            ; 0x10 + 0x01 = 0x11
      cmp 0x11            ; this set Carry   
      bne fail
      adc 0x01            ; 0x11 + 0x01 + Carry = 0x13
-     cmp 0x13
-     bne fail    
+     cmp 0x13            ; this set Carry
+     bne fail
+     clc                 ; Clear Carry   
+     adc 0x01            ; 0x13 + 0x01 = 0x14
+     cmp 0x14            ; this set Carry
+     bne fail
+     clc                 ; Clear Carry   
+     sec                 ; Set Carry
+     adc 0x01            ; 0x14 + 0x01 + Carry = 0x16
+     cmp 0x16            ; this set Carry
+     bne fail         
 
 testend:
     ldo 0x0E            ; Tests finished, jmp back to main program

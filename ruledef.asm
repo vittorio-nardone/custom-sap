@@ -23,5 +23,8 @@
     bcs {value: u16} => 0xB0 @ value  ; Branch on Carry Set (absolute)
     bcc {value: u16} => 0x90 @ value  ; Branch on Carry Clear (absolute)
 
+    clc => 0x18                       ; Clear Carry Flag
+    sec => 0x38                       ; Set Carry Flag
+    
     nop => 0x00                       ; No Operation
 }

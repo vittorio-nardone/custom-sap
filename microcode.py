@@ -5,7 +5,7 @@ from intelhex import IntelHex
 ## Configuration
 ##
 ##
-CONTROL_ROMS_COUNT = 4
+CONTROL_ROMS_COUNT = 5
 
 ##################################################################
 ## Control bits
@@ -44,9 +44,13 @@ CONTROL_BITS = {
     "LX":           { "eeprom": 3, "bit": 1, "lowActive": False },
     "notEY":        { "eeprom": 3, "bit": 2, "lowActive": True },
     "LY":           { "eeprom": 3, "bit": 3, "lowActive": False },
-    "LFR":          { "eeprom": 3, "bit": 4, "lowActive": False },
+    "LC":          { "eeprom": 3, "bit": 4, "lowActive": False },
     "CHKZ":         { "eeprom": 3, "bit": 5, "lowActive": False },
     "CHKC":         { "eeprom": 3, "bit": 6, "lowActive": False },
+    "notCLC":       { "eeprom": 3, "bit": 7, "lowActive": True },
+    ## EEPROM #5
+    "notSEC":       { "eeprom": 4, "bit": 0, "lowActive": True },
+    "LZ":           { "eeprom": 4, "bit": 1, "lowActive": False },
 }
 
 ##################################################################
@@ -72,7 +76,7 @@ INSTRUCTIONS_SET = {
                 "d": "Load Accumulator with Memory (immediate)", 
                 "flags": ['Z'],
                 "m": [  
-                        ['notEPCRAM', 'notERAM', 'LACC', 'LFR'], 
+                        ['notEPCRAM', 'notERAM', 'LACC', 'LZ'], 
                         ['CPC']  
                     ] },
 
@@ -80,7 +84,7 @@ INSTRUCTIONS_SET = {
                 "d": "Load Accumulator with Memory (absolute)", 
                 "flags": ['Z'],
                 "m": [  
-                        ['notEPCRAM', 'notERAM', 'LMARH', 'LFR'], 
+                        ['notEPCRAM', 'notERAM', 'LMARH', 'LZ'], 
                         ['CPC'],
                         ['notEPCRAM', 'notERAM', 'LMARL'], 
                         ['CPC', 'notEMAR', 'notERAM', 'LACC']  
@@ -112,7 +116,7 @@ INSTRUCTIONS_SET = {
                 "flags": ['Z', 'C'],
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP'], 
-                        ['CPC', 'notEACC', 'ALUCN', 'ALUS1', 'ALUS2', 'LFR'],
+                        ['CPC', 'notEACC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'],
                     ] },      
 
     "JMPa": {   "c": 0x4C,  
@@ -182,6 +186,20 @@ INSTRUCTIONS_SET = {
                         ['notEPCRAM', 'notERAM', 'LOUT'], 
                         ['CPC']  
                     ] },
+
+    "CLC": {    "c": 0x18,  
+                "d": "Clear Carry Flag", 
+                "flags": ['C'],
+                "m": [  
+                        ['notCLC'], 
+                    ] },                    
+
+    "SEC": {    "c": 0x38,  
+                "d": "Set Carry Flag", 
+                "flags": ['C'],
+                "m": [  
+                        ['notSEC'], 
+                    ] },                    
 
     "NOP": {    "c": 0x00,  
                 "d": "No Operation",     
