@@ -3,7 +3,6 @@
 tests:
     ldo 0x7E            ; Tests started indicator
 
-
 ; test0:
 ;      ldo 0x00            ; Test #0
 ;      lda 0x10   
@@ -96,24 +95,62 @@ test12:
     bcc fail
 
 test13:
-     ldo 0x13            ; Test #13: ADC with/out Carry & CLC/SEC
-     lda 0x10   
-     clc                 ; Clear Carry        
-     adc 0x01            ; 0x10 + 0x01 = 0x11
-     cmp 0x11            ; this set Carry   
-     bne fail
-     adc 0x01            ; 0x11 + 0x01 + Carry = 0x13
-     cmp 0x13            ; this set Carry
-     bne fail
-     clc                 ; Clear Carry   
-     adc 0x01            ; 0x13 + 0x01 = 0x14
-     cmp 0x14            ; this set Carry
-     bne fail
-     clc                 ; Clear Carry   
-     sec                 ; Set Carry
-     adc 0x01            ; 0x14 + 0x01 + Carry = 0x16
-     cmp 0x16            ; this set Carry
-     bne fail         
+    ldo 0x13            ; Test #13: ADC with/out Carry & CLC/SEC
+    lda 0x10   
+    clc                 ; Clear Carry        
+    adc 0x01            ; 0x10 + 0x01 = 0x11
+    cmp 0x11            ; this set Carry   
+    bne fail
+    adc 0x01            ; 0x11 + 0x01 + Carry = 0x13
+    cmp 0x13            ; this set Carry
+    bne fail
+    clc                 ; Clear Carry   
+    adc 0x01            ; 0x13 + 0x01 = 0x14
+    cmp 0x14            ; this set Carry
+    bne fail
+    clc                 ; Clear Carry   
+    sec                 ; Set Carry
+    adc 0x01            ; 0x14 + 0x01 + Carry = 0x16
+    cmp 0x16            ; this set Carry
+    bne fail   
+
+
+test14:
+    ldo 0x14            ; Test #14: JSR & RTS
+    lda 0x00
+    jsr test14sub1
+    cmp 0x04
+    beq test15
+    hlt
+test14sub1:
+    lda 0x01
+    jsr test14sub2
+    rts
+test14sub2:
+    lda 0x02
+    jsr test14sub3
+    rts
+test14sub3:
+    lda 0x03
+    jsr test14sub4
+    rts
+test14sub4:
+    lda 0x04
+    rts
+
+test15:
+    ldo 0x15            ; Test #15: PHA / PLA
+    lda 0x70
+test15inc:   
+    clc 
+    adc 0x01
+    pha
+    cmp 0x90
+    bne test15inc
+test15dec:
+    pla 
+    cmp 0x71
+    bne test15dec
 
 testend:
     ldo 0x0E            ; Tests finished, jmp back to main program
@@ -121,3 +158,4 @@ testend:
 
 fail:
     hlt
+

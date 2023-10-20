@@ -51,6 +51,11 @@ CONTROL_BITS = {
     ## EEPROM #5
     "notSEC":       { "eeprom": 4, "bit": 0, "lowActive": True },
     "LZ":           { "eeprom": 4, "bit": 1, "lowActive": False },
+    "notCSP":       { "eeprom": 4, "bit": 2, "lowActive": True },
+    "SPD":          { "eeprom": 4, "bit": 3, "lowActive": False },
+    "notESP":       { "eeprom": 4, "bit": 4, "lowActive": True },
+    "notEPCL":      { "eeprom": 4, "bit": 5, "lowActive": True },
+    "notEPCH":      { "eeprom": 4, "bit": 6, "lowActive": True },
 }
 
 ##################################################################
@@ -74,7 +79,8 @@ INSTRUCTIONS_SET = {
 
     "LDAi": {   "c": 0xA9,  
                 "d": "Load Accumulator with Memory (immediate)", 
-                "flags": ['Z'],
+                "f": ['Z'],
+                "v": "u8",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LACC', 'LZ'], 
                         ['CPC']  
@@ -82,7 +88,8 @@ INSTRUCTIONS_SET = {
 
     "LDAa": {   "c": 0xAD,  
                 "d": "Load Accumulator with Memory (absolute)", 
-                "flags": ['Z'],
+                "f": ['Z'],
+                "v": "u16",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LMARH', 'LZ'], 
                         ['CPC'],
@@ -92,6 +99,7 @@ INSTRUCTIONS_SET = {
 
     "STAa": {   "c": 0x8D,  
                 "d": "Store Accumulator in Memory (absolute)", 
+                "v": "u16",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LMARH'], 
                         ['CPC'],
@@ -99,8 +107,15 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'notEMAR', 'notWRAM', 'notEACC']  
                     ] },      
 
+    "TAO":  {   "c": 0xAB,  
+                "d": "Transfer Accumulator to Output", 
+                "m": [  
+                        ['notEACC', 'LOUT']  
+                    ] },      
+
     "ADCi": {   "c": 0x69,  
                 "d": "Add Memory to Accumulator with Carry (immediate)",   
+                "v": "u8",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP', 'CHKC'], 
                         ['CPC', 'notEACC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU'],
@@ -113,7 +128,8 @@ INSTRUCTIONS_SET = {
 
     "CMPi": {   "c": 0xC9,  
                 "d": "Compare Memory with Accumulator (immediate)", 
-                "flags": ['Z', 'C'],
+                "f": ['Z', 'C'],
+                "v": "u8",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP'], 
                         ['CPC', 'notEACC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'],
@@ -121,15 +137,57 @@ INSTRUCTIONS_SET = {
 
     "JMPa": {   "c": 0x4C,  
                 "d": "Jump to New Location (absolute)", 
+                "v": "u16",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP'],
                         ['CPC'], 
                         ['notEPCRAM', 'notERAM', 'notLPCL'], 
                         ['notLPCH'] + CC_TMP_TO_BUS 
+                    ] },       
+
+    "JSRa": {   "c": 0x20,  
+                "d": "Jump to New Location Saving Return Address (absolute)", 
+                "v": "u16",
+                "m": [  
+                        ['notESP', 'notEPCL', 'notWRAM'],
+                        ['SPD', 'notCSP'],
+                        ['notESP', 'notEPCH', 'notWRAM'],
+                        ['notEPCRAM', 'notERAM', 'LTMP', 'SPD', 'notCSP'],
+                        ['CPC'], 
+                        ['notEPCRAM', 'notERAM', 'notLPCL'], 
+                        ['notLPCH'] + CC_TMP_TO_BUS 
                     ] },         
+
+    "RTS":  {   "c": 0x60,  
+                "d": "Return from Subroutine", 
+                "m": [  
+                        ['notCSP'],
+                        ['notESP', 'notERAM', 'notLPCH'],
+                        ['notCSP'],
+                        ['notESP', 'notERAM', 'notLPCL'],     
+                        ['CPC'],   
+                        ['CPC']                
+                    ] },      
+
+    "PHA":  {   "c": 0x48,  
+                "d": "Push Accumulator on Stack", 
+                "m": [  
+                        ['notESP', 'notEACC', 'notWRAM'],
+                        ['SPD', 'notCSP'],
+                    ] },      
+
+    "PLA":  {   "c": 0x68,  
+                "d": "Pull Accumulator from Stack", 
+                "m": [  
+                        ['notCSP'],
+                        ['notESP', 'notERAM', 'LACC'],
+                    ] },      
+
+
 
     "BEQa": {   "c": 0xF0,  
                 "d": "Branch on Result Zero (absolute)", 
+                "v": "u16",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP', 'CHKZ'],
                         ['CPC'], 
@@ -143,6 +201,7 @@ INSTRUCTIONS_SET = {
 
     "BNEa": {   "c": 0xD0,  
                 "d": "Branch on Result not Zero (absolute)", 
+                "v": "u16",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP', 'CHKZ'],
                         ['CPC'], 
@@ -156,6 +215,7 @@ INSTRUCTIONS_SET = {
 
     "BCSa": {   "c": 0xB0,  
                 "d": "Branch on Carry Set (absolute)", 
+                "v": "u16",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP', 'CHKC'],
                         ['CPC'], 
@@ -169,6 +229,7 @@ INSTRUCTIONS_SET = {
 
     "BCCa": {   "c": 0x90,  
                 "d": "Branch on Carry Clear (absolute)", 
+                "v": "u16",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LTMP', 'CHKC'],
                         ['CPC'], 
@@ -182,6 +243,7 @@ INSTRUCTIONS_SET = {
 
     "LDOi": {   "c": 0xFE,  
                 "d": "Load Output with Memory (immediate)", 
+                "v": "u8",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LOUT'], 
                         ['CPC']  
@@ -189,14 +251,14 @@ INSTRUCTIONS_SET = {
 
     "CLC": {    "c": 0x18,  
                 "d": "Clear Carry Flag", 
-                "flags": ['C'],
+                "f": ['C'],
                 "m": [  
                         ['notCLC'], 
                     ] },                    
 
     "SEC": {    "c": 0x38,  
                 "d": "Set Carry Flag", 
-                "flags": ['C'],
+                "f": ['C'],
                 "m": [  
                         ['notSEC'], 
                     ] },                    
@@ -263,7 +325,7 @@ def verifyControlBits():
 ##
 def generateInstructions(ihs):
     for i in INSTRUCTIONS_SET:
-        print("-> 0x{:02X} - {} - {} - {}".format(INSTRUCTIONS_SET[i]['c'], i, INSTRUCTIONS_SET[i]['flags'] if 'flags' in INSTRUCTIONS_SET[i] else '[]', INSTRUCTIONS_SET[i]['d']))
+        print("-> 0x{:02X} - {} - {} - {}".format(INSTRUCTIONS_SET[i]['c'], i, INSTRUCTIONS_SET[i]['f'] if 'f' in INSTRUCTIONS_SET[i] else '[]', INSTRUCTIONS_SET[i]['d']))
         offset = INSTRUCTIONS_SET[i]['c'] << 5
         ist = [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ] + INSTRUCTIONS_SET[i]['m'] # add T1
         ist[-1] += CC_LAST_T # add NOP
@@ -284,6 +346,23 @@ def generateInstructions(ihs):
                 for e in range(CONTROL_ROMS_COUNT):
                     ihs[e][offset] = cw[e]
                 offset += 1          
+
+##################################################################
+## Generate ruldef.asm file
+##
+## 
+def generateRuldef():
+    with open('ruledef.asm', 'w') as f:
+        f.write('#once\n')
+        f.write('#ruledef\n')
+        f.write('{\n')
+        for i in INSTRUCTIONS_SET:
+            flags = ('[' + ' '.join(INSTRUCTIONS_SET[i]['f'])  + ']') if 'f' in INSTRUCTIONS_SET[i] else ''
+            if ('v' in INSTRUCTIONS_SET[i]):
+                f.writelines(['\t', i[:3], ' {value: ', INSTRUCTIONS_SET[i]['v'] ,'} => ', hex(INSTRUCTIONS_SET[i]['c']), ' @ value \t; ', INSTRUCTIONS_SET[i]['d'], ' ', flags , '\n'])
+            else:
+                f.writelines(['\t', i[:3], ' => ', hex(INSTRUCTIONS_SET[i]['c']), '  ; ', INSTRUCTIONS_SET[i]['d'], ' ', flags, '\n'])
+        f.write('}\n')
 
 ##################################################################
 ## Clean & Preset
@@ -325,4 +404,8 @@ if __name__ == "__main__":
 
     for e in range(CONTROL_ROMS_COUNT):
         ihs[e].write_hex_file("roms/cw{0}-rom.hex".format(e+1))
+
+    print("Generating customasm ruledef.asm file")
+    generateRuldef()
+
     print("All done, {} instructions generated\n".format(len(INSTRUCTIONS_SET)))
