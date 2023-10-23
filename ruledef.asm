@@ -20,5 +20,9 @@
 	LDO {value: u8} => 0xfe @ value 	; Load Output with Memory (immediate) 
 	CLC => 0x18  ; Clear Carry Flag [C]
 	SEC => 0x38  ; Set Carry Flag [C]
-	NOP => 0x0  ; No Operation 
+	NOP => 0xea  ; No Operation 
+	BRK => 0x0  ; Jump to interrupt handler routine [I]
+	RTI => 0x40  ; Return from Interrupt [I]
+	SEI => 0x78  ; Set interrupt disable [I]
+	CLI => 0x58  ; Clear interrupt disable [I]
 }

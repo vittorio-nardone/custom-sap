@@ -5,7 +5,7 @@ from intelhex import IntelHex
 ## Configuration
 ##
 ##
-CONTROL_ROMS_COUNT = 5
+CONTROL_ROMS_COUNT = 6
 
 ##################################################################
 ## Control bits
@@ -56,22 +56,55 @@ CONTROL_BITS = {
     "notESP":       { "eeprom": 4, "bit": 4, "lowActive": True },
     "notEPCL":      { "eeprom": 4, "bit": 5, "lowActive": True },
     "notEPCH":      { "eeprom": 4, "bit": 6, "lowActive": True },
+    "CHKI":         { "eeprom": 4, "bit": 7, "lowActive": False },
+    ## EEPROM #6
+    "notDISI":      { "eeprom": 5, "bit": 0, "lowActive": True },
+    "notENAI":      { "eeprom": 5, "bit": 1, "lowActive": True },
+    "B2":           { "eeprom": 5, "bit": 2, "lowActive": False },
+    "B3":           { "eeprom": 5, "bit": 3, "lowActive": False },
+    "B4":           { "eeprom": 5, "bit": 4, "lowActive": False },
+    "B5":           { "eeprom": 5, "bit": 5, "lowActive": False },
+    "B6":           { "eeprom": 5, "bit": 6, "lowActive": False },
+    "B7":           { "eeprom": 5, "bit": 7, "lowActive": False },
 }
 
 ##################################################################
 ## Common Control Words
 ##
 ##
-CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','notERAM','notEPCRAM']
+CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','notERAM','notEPCRAM', 'CHKI']
 CC_PC_INCREMENT                     = ['CPC']
 CC_LAST_T                           = ['notNOP']
 
 CC_TMP_TO_BUS                  = ['notERALU', 'ALUCN', 'LRALU']  # Allow TMP register to output to bus
 
+CC_INC_STACK_POINTER           = ['SPD', 'notCSP']
+CC_DEC_STACK_POINTER           = ['notCSP']
+
+DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ]
+
 ##################################################################
 ## Instructions
 ##
 ##
+    # "NAM":                                                    <- the name (truncated to 3 chars) [required]
+    #       {     "c": 0x00,                                    <- the op code of the instruction [required]
+    #             "d": "Jump to interrupt handler routine",     <- instruction description [required]      
+    #             "b": [0x12, 0x34],                            <- add bytes after op code (only if v is not defined, else ignored)
+    #             "f": ['Z'],                                   <- flags affected
+    #             "v": "u8",                                    <- operand value definition (u8/u16)
+    #             "t0": [                                       <- fetch cycles (if not defined, the default one is used)
+    #                     CC_LOAD_PC_POINTED_RAM_INTO_IR,
+    #                 ],
+    #             "m": [                                        <- control words (NOP is automatically added to the last one) [required]
+    #                     ['notESP', 'CHKZ'],
+    #                     CC_INC_STACK_POINTER + ['LX'],
+    #                 ] },    
+    #             "true": [                                     <- if checked condition is verified (i.e. CHKZ), these control words are executed
+    #                   ['CPC'], 
+    #                   ['CPC'], 
+    #                ] },  
+
 INSTRUCTIONS_SET = {
     "HLT": {    "c": 0xFF,  
                 "d": "Freeze CPU",     
@@ -150,9 +183,9 @@ INSTRUCTIONS_SET = {
                 "v": "u16",
                 "m": [  
                         ['notESP', 'notEPCL', 'notWRAM'],
-                        ['SPD', 'notCSP'],
+                        CC_INC_STACK_POINTER,
                         ['notESP', 'notEPCH', 'notWRAM'],
-                        ['notEPCRAM', 'notERAM', 'LTMP', 'SPD', 'notCSP'],
+                        ['notEPCRAM', 'notERAM', 'LTMP'] + CC_INC_STACK_POINTER,
                         ['CPC'], 
                         ['notEPCRAM', 'notERAM', 'notLPCL'], 
                         ['notLPCH'] + CC_TMP_TO_BUS 
@@ -161,9 +194,9 @@ INSTRUCTIONS_SET = {
     "RTS":  {   "c": 0x60,  
                 "d": "Return from Subroutine", 
                 "m": [  
-                        ['notCSP'],
+                        CC_DEC_STACK_POINTER,
                         ['notESP', 'notERAM', 'notLPCH'],
-                        ['notCSP'],
+                        CC_DEC_STACK_POINTER,
                         ['notESP', 'notERAM', 'notLPCL'],     
                         ['CPC'],   
                         ['CPC']                
@@ -173,13 +206,13 @@ INSTRUCTIONS_SET = {
                 "d": "Push Accumulator on Stack", 
                 "m": [  
                         ['notESP', 'notEACC', 'notWRAM'],
-                        ['SPD', 'notCSP'],
+                        CC_INC_STACK_POINTER,
                     ] },      
 
     "PLA":  {   "c": 0x68,  
                 "d": "Pull Accumulator from Stack", 
                 "m": [  
-                        ['notCSP'],
+                        CC_DEC_STACK_POINTER,
                         ['notESP', 'notERAM', 'LACC'],
                     ] },      
 
@@ -263,9 +296,48 @@ INSTRUCTIONS_SET = {
                         ['notSEC'], 
                     ] },                    
 
-    "NOP": {    "c": 0x00,  
+    "NOP": {    "c": 0xEA,  
                 "d": "No Operation",     
                 "m": [ [] ] },     
+
+    "BRK": {    "c": 0x00,  
+                "d": "Jump to interrupt handler routine", 
+                "f": ['I'],
+                "t0": [
+                        CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'],
+                        ['notESP', 'notEPCL', 'notWRAM'] + ['notDISI'],
+                        CC_INC_STACK_POINTER, 
+                        ['notESP', 'notEPCH', 'notWRAM'],
+                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU', 'notEACC'] + CC_INC_STACK_POINTER,
+                        ['notERALU', 'notLPCH'], 
+                        ['ALUM', 'ALUS2', 'ALUS3', 'LRALU', 'notEACC'],
+                        ['notERALU', 'notLPCL']
+                     ],
+                "m": [ ] },    
+
+    "RTI":  {   "c": 0x40,  
+                "d": "Return from Interrupt", 
+                "f": ['I'],
+                "m": [  
+                        CC_DEC_STACK_POINTER,
+                        ['notESP', 'notERAM', 'notLPCL'],
+                        CC_DEC_STACK_POINTER,
+                        ['notESP', 'notERAM', 'notLPCH'] + ['notENAI']     
+                    ] },           
+
+    "SEI":  {   "c": 0x78,  
+                "d": "Set interrupt disable", 
+                "f": ['I'],
+                "m": [  
+                        ['notDISI']     
+                    ] },         
+
+    "CLI":  {   "c": 0x58,  
+                "d": "Clear interrupt disable", 
+                "f": ['I'],
+                "m": [  
+                        ['notENAI']     
+                    ] },                                                                      
                                 
 }
 
@@ -327,8 +399,11 @@ def generateInstructions(ihs):
     for i in INSTRUCTIONS_SET:
         print("-> 0x{:02X} - {} - {} - {}".format(INSTRUCTIONS_SET[i]['c'], i, INSTRUCTIONS_SET[i]['f'] if 'f' in INSTRUCTIONS_SET[i] else '[]', INSTRUCTIONS_SET[i]['d']))
         offset = INSTRUCTIONS_SET[i]['c'] << 5
-        ist = [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ] + INSTRUCTIONS_SET[i]['m'] # add T1
-        ist[-1] += CC_LAST_T # add NOP
+        if (not 't0' in INSTRUCTIONS_SET[i]):
+            ist = DEFAULT_T0 + INSTRUCTIONS_SET[i]['m'] # add T0/T1..
+        else:
+            ist = INSTRUCTIONS_SET[i]['t0'] + INSTRUCTIONS_SET[i]['m']
+        ist[-1] = ist[-1] + CC_LAST_T # add NOP
         for x in ist:
             cw = getControlWord(x)
             for e in range(CONTROL_ROMS_COUNT):
@@ -361,7 +436,9 @@ def generateRuldef():
             if ('v' in INSTRUCTIONS_SET[i]):
                 f.writelines(['\t', i[:3], ' {value: ', INSTRUCTIONS_SET[i]['v'] ,'} => ', hex(INSTRUCTIONS_SET[i]['c']), ' @ value \t; ', INSTRUCTIONS_SET[i]['d'], ' ', flags , '\n'])
             else:
-                f.writelines(['\t', i[:3], ' => ', hex(INSTRUCTIONS_SET[i]['c']), '  ; ', INSTRUCTIONS_SET[i]['d'], ' ', flags, '\n'])
+                f.writelines(['\t', i[:3], ' => ', hex(INSTRUCTIONS_SET[i]['c']), 
+                              ''.join([' @ ' + hex(x) for x in INSTRUCTIONS_SET[i]['b']]) if 'b' in INSTRUCTIONS_SET[i] else ''  
+                              , '  ; ', INSTRUCTIONS_SET[i]['d'], ' ', flags, '\n'])
         f.write('}\n')
 
 ##################################################################
