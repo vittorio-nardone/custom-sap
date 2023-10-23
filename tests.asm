@@ -3,17 +3,6 @@
 tests:
     ldo 0x7E            ; Tests started indicator
 
-; test0:
-;      ldo 0x00            ; Test #0
-;      lda 0x10   
-;      cmp 0x12            ; Clear Carry        
-;      adc 0x01            ; 0x10 + 0x01 = 0x11
-;      cmp 0x11            ; this set Carry   
-;      bne fail
-;      adc 0x01            ; 0x11 + 0x01 + Carry = 0x13
-;      cmp 0x13
-;      bne fail
-
 test1:
     ldo 0x01            ; Test #1: JMP
     jmp test2
@@ -138,19 +127,59 @@ test14sub4:
     lda 0x04
     rts
 
-test15:
-    ldo 0x15            ; Test #15: PHA / PLA
+test15:                 ; Test #15: INC
+    ldo 0x15
+    lda 0xAF
+    sta 0x8181
+    lda 0x00
+    inc 0x8181          ; check inc
+    beq fail            ; zero flag must not be set
+    lda 0x8181   
+    cmp 0xB0
+    bne fail
+    lda 0xFF            
+    sta 0x8181
+    inc 0x8181          ; check if zero flag is set
+    bne fail            ; zero flag must be set
+
+test16:                 ; Test #16: DEC
+    ldo 0x16
+    lda 0xB0
+    sta 0x8182
+    lda 0x00
+    dec 0x8182          ; check dec
+    beq fail            ; zero flag must not be set
+    lda 0x8182   
+    cmp 0xAF
+    bne fail    
+    lda 0x01
+    sta 0x8182
+    dec 0x8182          ; check if zero flag is set
+    bne fail            ; zero flag must be set
+
+test17:                 ; Test #17: EOR
+    ldo 0x17
+    lda 0x22
+    eor 0x44            ; 0x22 XOR 0x44 = 0x66    
+    beq fail            ; zero flag must not be set
+    cmp 0x66
+    bne fail
+    eor 0x66            ; 0x66 XOR 0x66 = 0x00
+    bne fail            ; zero flag must be set
+
+test80:
+    ldo 0x80            ; Test #80 (long): PHA / PLA
     lda 0x70
-test15inc:   
+test80inc:   
     clc 
     adc 0x01
     pha
     cmp 0x90
-    bne test15inc
-test15dec:
+    bne test80inc
+test80dec:
     pla 
     cmp 0x71
-    bne test15dec
+    bne test80dec
 
 testend:
     ldo 0x0E            ; Tests finished, jmp back to main program

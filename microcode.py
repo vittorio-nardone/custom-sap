@@ -159,6 +159,40 @@ INSTRUCTIONS_SET = {
                         ['notERALU', 'LACC'], 
                     ] },     
 
+    "INCa": {   "c": 0xEE,  
+                "d": "Increment Memory by One (absolute)",  
+                "f": ['Z'],  
+                "v": "u16",
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LMARH'], 
+                        ['CPC'],
+                        ['notEPCRAM', 'notERAM', 'LMARL'], 
+                        ['CPC', 'notEMAR', 'notERAM', 'LTMP', 'LRALU'], 
+                        ['notERALU', 'notEMAR', 'notWRAM', 'LZ'], 
+                    ] },                         
+
+    "DECa": {   "c": 0xCE,  
+                "d": "Decrement Memory by One (absolute)",  
+                "f": ['Z'],  
+                "v": "u16",
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LMARH'], 
+                        ['CPC'],
+                        ['notEPCRAM', 'notERAM', 'LMARL'], 
+                        ['CPC', 'notEMAR', 'notERAM', 'LTMP', 'LRALU', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'], 
+                        ['notERALU', 'notEMAR', 'notWRAM', 'LZ'], 
+                    ] },   
+
+    "EORi": {   "c": 0x49,  
+                "d": "Exclusive-OR Memory with Accumulator (immediate)",  
+                "f": ['Z'],  
+                "v": "u8",
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LTMP'], 
+                        ['CPC', 'notEACC', 'LRALU', 'ALUM', 'ALUS1', 'ALUS2'], 
+                        ['notERALU', 'LACC', 'LZ'], 
+                    ] },   
+
     "CMPi": {   "c": 0xC9,  
                 "d": "Compare Memory with Accumulator (immediate)", 
                 "f": ['Z', 'C'],
@@ -342,13 +376,6 @@ INSTRUCTIONS_SET = {
 }
 
 ##################################################################
-## Get instruction code
-##
-##
-def getCode(S):
-    return INSTRUCTIONS_SET[S]['c']
-
-##################################################################
 ## Calculate Control Word
 ##
 ##
@@ -366,7 +393,6 @@ def getControlWord(pins):
 ##################################################################
 ## Verify INSTRUCTIONS_SET
 ##
-
 def verifyInstructionSet():
     rev_dict = {}
     for key, value in INSTRUCTIONS_SET.items():
@@ -380,7 +406,6 @@ def verifyInstructionSet():
 ##################################################################
 ## Verify CONTROL_BITS
 ##
-
 def verifyControlBits():
     rev_dict = {}
     for key, value in CONTROL_BITS.items():
@@ -415,7 +440,7 @@ def generateInstructions(ihs):
             offset = INSTRUCTIONS_SET[i]['c'] << 5
             offset += 0x10  # true mc is stored from 0x10 address
             ist = INSTRUCTIONS_SET[i]['true']  
-            ist[-1] += CC_LAST_T # add NOP
+            ist[-1] = ist[-1] + CC_LAST_T # add NOP
             for x in ist:
                 cw = getControlWord(x)
                 for e in range(CONTROL_ROMS_COUNT):

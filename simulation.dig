@@ -1754,7 +1754,7 @@
       <elementAttributes>
         <entry>
           <string>Label</string>
-          <string>C/Z</string>
+          <string>Z / C</string>
         </entry>
       </elementAttributes>
       <pos x="-3640" y="5040"/>
