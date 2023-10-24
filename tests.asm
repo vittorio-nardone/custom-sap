@@ -102,7 +102,18 @@ test13:
     adc 0x01            ; 0x14 + 0x01 + Carry = 0x16
     cmp 0x16            ; this set Carry
     bne fail   
-
+    lda 0x55            ; test ADC absolute
+    sta 0x8181
+    lda 0x88
+    clc
+    adc 0x8181          ; 0x88 + 0x55 = 0xDD
+    cmp 0xDD
+    bne fail 
+    lda 0x88
+    sec
+    adc 0x8181          ; 0x88 + 0x55 + Carry = 0xDE
+    cmp 0xDE
+    bne fail     
 
 test14:
     ldo 0x14            ; Test #14: JSR & RTS
@@ -166,6 +177,54 @@ test17:                 ; Test #17: EOR
     bne fail
     eor 0x66            ; 0x66 XOR 0x66 = 0x00
     bne fail            ; zero flag must be set
+
+test18:                 ; Test #18: X registers
+    ldo 0x18
+    ldx 0x66
+    txa
+    cmp 0x66
+    bne fail
+    lda 0x33
+    tax
+    lda 0x01
+    txa
+    cmp 0x33
+    bne fail
+
+test19:                 ; Test #19: X index 
+    ldo 0x19
+    lda 0x34            ; Test lda with index (no carry)
+    sta 0x8182          ; Store a value in 0x8182
+    lda 0x00            ; Clean acc
+    ldx 0x02            
+    lda 0x8180,X        ; Load from 0x8180 + 0x02 (X) = 0x8182
+    cmp 0x34            
+    bne fail
+    lda 0x36            ; Test lda with index (with carry)
+    sta 0x8101          ; Store a value in 0x8101
+    lda 0x00            ; Clean acc
+    ldx 0x03
+    lda 0x80FE,X        ; Load from 0x80FE + 0x03 (X) = 0x8101
+    cmp 0x36
+    bne fail
+    lda 0x45            ; Test sta with index (with carry)
+    ldx 0x03
+    sta 0x81FE,X        ; Save to 0x81FE + 0x03 (X) = 0x8201
+    lda 0x00            ; Clean acc
+    lda 0x8201          ; Load directly
+    cmp 0x44            
+    beq fail
+    cmp 0x45
+    bne fail
+    lda 0x23            ; Test sta with index (no carry)
+    ldx 0x04
+    sta 0x810E,X        ; Save to 0x810E + 0x04 (X) = 0x8112
+    lda 0x00            ; Clean acc
+    lda 0x8112          ; Load directly
+    cmp 0x44            
+    beq fail
+    cmp 0x23
+    bne fail    
 
 test80:
     ldo 0x80            ; Test #80 (long): PHA / PLA
