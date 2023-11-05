@@ -113,8 +113,8 @@ test13:
     sec
     adc 0x8181          ; 0x88 + 0x55 + Carry = 0xDE
     cmp 0xDE
-    bne fail     
-
+    bne fail    
+     
 test14:
     ldo 0x14            ; Test #14: JSR & RTS
     lda 0x00
@@ -224,7 +224,36 @@ test19:                 ; Test #19: X index
     cmp 0x44            
     beq fail
     cmp 0x23
-    bne fail    
+    bne fail   
+
+test20:
+    ldo 0x20            ; Test #20: SBC with/out Carry (Borrow)
+    lda 0x25   
+    sec                 ; Set Carry        
+    sbc 0x12            ; 0x25 - 0x12 - notC (0) = 0x13
+    cmp 0x13 
+    bne fail 
+    lda 0x25   
+    clc                 ; Clear Carry        
+    sbc 0x21            ; 0x25 - 0x21 - notC (1) = 0x03
+    cmp 0x03
+    bne fail 
+    lda 0x55            ; test SBC absolute
+    sta 0x8181    
+    lda 0x59
+    sec
+    sbc 0x8181          ; 0x59 - 0x55 - notC (0) = 0x04
+    cmp 0x04
+    bne fail
+    lda 0x59
+    clc
+    sbc 0x8181          ; 0x59 - 0x55 - notC (1) = 0x03
+    cmp 0x03
+    bne fail
+    lda 0x37            ; test if Z flag is set
+    sec
+    sbc 0x37
+    bne fail
 
 test80:
     ldo 0x80            ; Test #80 (long): PHA / PLA
@@ -245,7 +274,7 @@ test80dec:
 testend:
     sei
     ldo 0x0E            ; Tests finished, jmp back to main program
-    jmp main            
+    rts           
 
 fail:
     hlt

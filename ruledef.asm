@@ -11,8 +11,10 @@
 	TAO => 0xab  ; Transfer Accumulator to Output 
 	TXA => 0x8a  ; Transfer Index X to Accumulator 
 	TAX => 0xaa  ; Transfer Accumulator to Index X 
-	ADC {value: u8} => 0x69 @ value 	; Add Memory to Accumulator with Carry (immediate) 
-	ADC {value: u16} => 0x6d @ value 	; Add Memory to Accumulator with Carry (absolute) 
+	ADC {value: u8} => 0x69 @ value 	; Add Memory to Accumulator with Carry (immediate) [Z C]
+	ADC {value: u16} => 0x6d @ value 	; Add Memory to Accumulator with Carry (absolute) [Z C]
+	SBC {value: u8} => 0xe9 @ value 	; Subtract Memory from Accumulator with Borrow (immediate) [Z C]
+	SBC {value: u16} => 0xed @ value 	; Subtract Memory from Accumulator with Borrow (absolute) [Z C]
 	INC {value: u16} => 0xee @ value 	; Increment Memory by One (absolute) [Z]
 	DEC {value: u16} => 0xce @ value 	; Decrement Memory by One (absolute) [Z]
 	EOR {value: u8} => 0x49 @ value 	; Exclusive-OR Memory with Accumulator (immediate) [Z]

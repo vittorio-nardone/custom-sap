@@ -8,7 +8,7 @@ boot:
     lda 0x00
     sta interruptCounter
     cli
-    jmp tests
+    jsr tests
 main:
     lda interruptCounter
     tao

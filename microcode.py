@@ -217,32 +217,66 @@ INSTRUCTIONS_SET = {
 
     "ADCi": {   "c": 0x69,  
                 "d": "Add Memory to Accumulator with Carry (immediate)",   
+                "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LRALU-IN', 'CHKC'], 
-                        ['CPC', 'notEACC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT'],
-                        ['notERALU-OUT', 'LACC'], 
+                        ['CPC', 'notEACC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'],
+                        ['notERALU-OUT', 'LACC', 'LZ'], 
                     ], 
                 "true": [
-                        ['CPC', 'notEACC', 'ALUS0', 'ALUS3', 'LRALU-OUT'],
-                        ['notERALU-OUT', 'LACC'], 
+                        ['CPC', 'notEACC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'],
+                        ['notERALU-OUT', 'LACC', 'LZ'], 
                     ] },     
 
     "ADCa": {   "c": 0x6D,  
                 "d": "Add Memory to Accumulator with Carry (absolute)",   
+                "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
                         ['notEPCRAM', 'notERAM', 'LMARH'], 
                         ['CPC'],  
                         ['notEPCRAM', 'notERAM', 'LMARL'], 
                         ['notEMAR', 'notERAM', 'LRALU-IN', 'CHKC'],                                           
-                        ['CPC', 'notEACC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT'],
-                        ['notERALU-OUT', 'LACC'], 
+                        ['CPC', 'notEACC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'],
+                        ['notERALU-OUT', 'LACC', 'LZ'], 
                     ], 
                 "true": [
-                        ['CPC', 'notEACC', 'ALUS0', 'ALUS3', 'LRALU-OUT'],
-                        ['notERALU-OUT', 'LACC'], 
+                        ['CPC', 'notEACC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'],
+                        ['notERALU-OUT', 'LACC', 'LZ'], 
                     ] },     
+
+    "SBCi": {   "c": 0xE9,  
+                "d": "Subtract Memory from Accumulator with Borrow (immediate)",   
+                "f": ['Z', 'C'],
+                "v": "u8",
+                "m": [  
+                        ['notEACC', 'LRALU-IN', 'CHKC'], 
+                        ['notEPCRAM', 'notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
+                        ['CPC', 'notERALU-OUT', 'LACC', 'LZ'], 
+                    ], 
+                "true": [
+                        ['notEPCRAM', 'notERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
+                        ['CPC', 'notERALU-OUT', 'LACC', 'LZ'], 
+                    ] },     
+
+    "SBCa": {   "c": 0xED,  
+                "d": "Subtract Memory from Accumulator with Borrow (absolute)",  
+                "f": ['Z', 'C'], 
+                "v": "u16",
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LMARH'], 
+                        ['CPC'],  
+                        ['notEPCRAM', 'notERAM', 'LMARL'],                     
+                        ['CPC', 'notEACC', 'LRALU-IN', 'CHKC'], 
+                        ['notEMAR', 'notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
+                        ['notERALU-OUT', 'LACC', 'LZ'], 
+                    ], 
+                "true": [
+                        ['notEMAR', 'notERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
+                        ['notERALU-OUT', 'LACC', 'LZ'], 
+                    ] },  
+
 
     "INCa": {   "c": 0xEE,  
                 "d": "Increment Memory by One (absolute)",  
