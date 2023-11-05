@@ -5,7 +5,7 @@ from intelhex import IntelHex
 ## Configuration
 ##
 ##
-CONTROL_ROMS_COUNT = 6
+CONTROL_ROMS_COUNT = 7
 
 ##################################################################
 ## Control bits
@@ -64,8 +64,17 @@ CONTROL_BITS = {
     "LTMP":         { "eeprom": 5, "bit": 3, "lowActive": False },
     "LO":           { "eeprom": 5, "bit": 4, "lowActive": False },
     "CHKO":         { "eeprom": 5, "bit": 5, "lowActive": False },
-    "B6":           { "eeprom": 5, "bit": 6, "lowActive": False },
-    "B7":           { "eeprom": 5, "bit": 7, "lowActive": False },
+    "notEFR-OUT":   { "eeprom": 5, "bit": 6, "lowActive": True },
+    "EFR-IN":       { "eeprom": 5, "bit": 7, "lowActive": False },
+    ## EEPROM #7
+    "e7'":          { "eeprom": 6, "bit": 0, "lowActive": False },
+    "e71":          { "eeprom": 6, "bit": 1, "lowActive": False },
+    "e72":          { "eeprom": 6, "bit": 2, "lowActive": False },
+    "e73":          { "eeprom": 6, "bit": 3, "lowActive": False },
+    "e74":          { "eeprom": 6, "bit": 4, "lowActive": False },
+    "e75":          { "eeprom": 6, "bit": 5, "lowActive": False },
+    "e76":          { "eeprom": 6, "bit": 6, "lowActive": False },
+    "e77":          { "eeprom": 6, "bit": 7, "lowActive": False },
 }
 
 ##################################################################
@@ -321,12 +330,11 @@ INSTRUCTIONS_SET = {
 
     "PLA":  {   "c": 0x68,  
                 "d": "Pull Accumulator from Stack", 
+                "f": ['Z'],
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'LACC'],
+                        ['notESP', 'notERAM', 'LACC', 'LZ'],
                     ] },      
-
-
 
     "BEQa": {   "c": 0xF0,  
                 "d": "Branch on Result Zero (absolute)", 
@@ -392,6 +400,16 @@ INSTRUCTIONS_SET = {
                         ['CPC']  
                     ] },
 
+    "LDOa": {   "c": 0xFD,  
+                "d": "Load Output with Memory (absolute)", 
+                "v": "u16",
+                "m": [  
+                        ['notEPCRAM', 'notERAM', 'LMARH'], 
+                        ['CPC'],
+                        ['notEPCRAM', 'notERAM', 'LMARL'], 
+                        ['CPC', 'notEMAR', 'notERAM', 'LOUT']  
+                    ] },
+
     "CLC": {    "c": 0x18,  
                 "d": "Clear Carry Flag", 
                 "f": ['C'],
@@ -414,14 +432,16 @@ INSTRUCTIONS_SET = {
                 "d": "Jump to interrupt handler routine", 
                 "f": ['I'],
                 "t0": [
-                        CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'],
-                        ['notESP', 'notEPCL', 'notWRAM'] + ['notDISI'],
+                        CC_LOAD_PC_POINTED_RAM_INTO_IR,
+                        ['notESP', 'notEFR-OUT', 'notWRAM'],
+                        CC_INC_STACK_POINTER, 
+                        ['notESP', 'notEPCL', 'notWRAM'],
                         CC_INC_STACK_POINTER, 
                         ['notESP', 'notEPCH', 'notWRAM'],
                         ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT', 'notEACC'] + CC_INC_STACK_POINTER,
-                        ['notERALU-OUT', 'notLPCH'], 
+                        ['notERALU-OUT', 'notLPCH'],
                         ['ALUM', 'ALUS2', 'ALUS3', 'LRALU-OUT', 'notEACC'],
-                        ['notERALU-OUT', 'notLPCL']
+                        ['notERALU-OUT', 'notLPCL', 'notDISI']
                      ],
                 "m": [ ] },    
 
@@ -430,9 +450,11 @@ INSTRUCTIONS_SET = {
                 "f": ['I'],
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'notLPCL'],
+                        ['notESP', 'notERAM', 'notLPCH'],
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'notLPCH'] + ['notENAI']     
+                        ['notESP', 'notERAM', 'notLPCL', 'notENAI'],
+                        CC_DEC_STACK_POINTER,
+                        ['notESP', 'notERAM', 'EFR-IN', 'LC', 'LZ'],  
                     ] },           
 
     "SEI":  {   "c": 0x78,  

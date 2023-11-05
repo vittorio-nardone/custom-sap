@@ -228,19 +228,22 @@ test19:                 ; Test #19: X index
 
 test80:
     ldo 0x80            ; Test #80 (long): PHA / PLA
-    lda 0x70
+    lda 0x80
 test80inc:   
     clc 
     adc 0x01
+    tao
     pha
-    cmp 0x90
+    cmp 0x92
     bne test80inc
 test80dec:
     pla 
-    cmp 0x71
+    tao
+    cmp 0x81
     bne test80dec
 
 testend:
+    sei
     ldo 0x0E            ; Tests finished, jmp back to main program
     jmp main            
 

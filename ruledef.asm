@@ -21,12 +21,13 @@
 	JSR {value: u16} => 0x20 @ value 	; Jump to New Location Saving Return Address (absolute) 
 	RTS => 0x60  ; Return from Subroutine 
 	PHA => 0x48  ; Push Accumulator on Stack 
-	PLA => 0x68  ; Pull Accumulator from Stack 
+	PLA => 0x68  ; Pull Accumulator from Stack [Z]
 	BEQ {value: u16} => 0xf0 @ value 	; Branch on Result Zero (absolute) 
 	BNE {value: u16} => 0xd0 @ value 	; Branch on Result not Zero (absolute) 
 	BCS {value: u16} => 0xb0 @ value 	; Branch on Carry Set (absolute) 
 	BCC {value: u16} => 0x90 @ value 	; Branch on Carry Clear (absolute) 
 	LDO {value: u8} => 0xfe @ value 	; Load Output with Memory (immediate) 
+	LDO {value: u16} => 0xfd @ value 	; Load Output with Memory (absolute) 
 	CLC => 0x18  ; Clear Carry Flag [C]
 	SEC => 0x38  ; Set Carry Flag [C]
 	NOP => 0xea  ; No Operation 
