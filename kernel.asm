@@ -1,3 +1,13 @@
+;
+; Memory map
+;
+; 0x0000-0x3FFF (16k) - ROM
+;       0x00FF-(?)  - reserved for interrupt routine
+; 0x4000-0x5FFF (8k)  - free (6k for video?)
+; 0x6000-0x7FFF (8k)  - free
+; 0x8000-0xFFFF (32k) - RAM
+;       0xFF00-0xFFFF (256) - reserved for stack
+
 #include "ruledef.asm"
 #include "tests.asm"
 
