@@ -38,7 +38,7 @@ CONTROL_BITS = {
     "ALUCN":        { "eeprom": 2, "bit": 4, "lowActive": False },   
     "ALUM":         { "eeprom": 2, "bit": 5, "lowActive": False },
     "notERALU-OUT": { "eeprom": 2, "bit": 6, "lowActive": True },
-    "LOUT":         { "eeprom": 2, "bit": 7, "lowActive": False },
+    "e37":          { "eeprom": 2, "bit": 7, "lowActive": False },
     ## EEPROM #4
     "e40":          { "eeprom": 3, "bit": 0, "lowActive": False },
     "e41":          { "eeprom": 3, "bit": 1, "lowActive": False },
@@ -60,8 +60,8 @@ CONTROL_BITS = {
     ## EEPROM #6
     "notDISI":      { "eeprom": 5, "bit": 0, "lowActive": True },
     "notENAI":      { "eeprom": 5, "bit": 1, "lowActive": True },
-    "e52":          { "eeprom": 5, "bit": 2, "lowActive": False },
-    "e53":          { "eeprom": 5, "bit": 3, "lowActive": False },
+    "e62":          { "eeprom": 5, "bit": 2, "lowActive": False },
+    "e63":          { "eeprom": 5, "bit": 3, "lowActive": False },
     "LO":           { "eeprom": 5, "bit": 4, "lowActive": False },
     "CHKO":         { "eeprom": 5, "bit": 5, "lowActive": False },
     "notEFR-OUT":   { "eeprom": 5, "bit": 6, "lowActive": True },
@@ -91,15 +91,24 @@ CC_DEC_STACK_POINTER           = ['notCSP']
 DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ]
 
 
-## In registries board
+######## In registries board
+# Enable (OE) MUX
 CC_notEACC = ['rE0']
 CC_notEX   = ['rE1']
 CC_notEY   = ['rE1', 'rE0']
 CC_notETMP = ['rE2']
+CC_notED   = ['rE2', 'rE0']
+CC_notEE   = ['rE2', 'rE1']
+#CC_avail  = ['rE2', 'rE1', 'rE0]
+
+# Load (C) MUX
 CC_LACC    = ['rL0']
 CC_LX      = ['rL1']
 CC_LY      = ['rL1', 'rL0']
 CC_LTMP    = ['rL2']
+CC_LED     = ['rL2', 'rL0']
+CC_LEE     = ['rL2', 'rL1']
+CC_LOUT    = ['rL2', 'rL1', 'rL0']
 
 ##################################################################
 ## Instructions
@@ -211,7 +220,7 @@ INSTRUCTIONS_SET = {
     "TAO":  {   "c": 0xAB,  
                 "d": "Transfer Accumulator to Output", 
                 "m": [  
-                        ['LOUT'] + CC_notEACC  
+                        CC_LOUT + CC_notEACC  
                     ] },     
 
     "TXA":  {   "c": 0x8A,  
@@ -441,7 +450,7 @@ INSTRUCTIONS_SET = {
                 "d": "Load Output with Memory (immediate)", 
                 "v": "u8",
                 "m": [  
-                        ['notEPCRAM', 'notERAM', 'LOUT'], 
+                        ['notEPCRAM', 'notERAM'] + CC_LOUT, 
                         ['CPC']  
                     ] },
 
@@ -452,7 +461,7 @@ INSTRUCTIONS_SET = {
                         ['notEPCRAM', 'notERAM', 'LMARH'], 
                         ['CPC'],
                         ['notEPCRAM', 'notERAM', 'LMARL'], 
-                        ['CPC', 'notEMAR', 'notERAM', 'LOUT']  
+                        ['CPC', 'notEMAR', 'notERAM'] + CC_LOUT  
                     ] },
 
     "CLC": {    "c": 0x18,  

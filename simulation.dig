@@ -14,6 +14,13 @@
             </romFile>
           </entry>
           <entry>
+            <string>Registers Control Word</string>
+            <romFile>
+              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw7-rom.hex</romFile>
+              <bigEndian>false</bigEndian>
+            </romFile>
+          </entry>
+          <entry>
             <string>Control Word #2</string>
             <romFile>
               <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw2-rom.hex</romFile>
@@ -52,13 +59,6 @@
             <string>Control Word #4</string>
             <romFile>
               <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw4-rom.hex</romFile>
-              <bigEndian>false</bigEndian>
-            </romFile>
-          </entry>
-          <entry>
-            <string>Registries Control Word</string>
-            <romFile>
-              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw7-rom.hex</romFile>
               <bigEndian>false</bigEndian>
             </romFile>
           </entry>
@@ -1164,7 +1164,7 @@
         </entry>
         <entry>
           <string>Label</string>
-          <string>LOUT</string>
+          <string>a7</string>
         </entry>
       </elementAttributes>
       <pos x="-4100" y="3280"/>
@@ -1233,86 +1233,6 @@
       <elementName>Ground</elementName>
       <elementAttributes/>
       <pos x="-2060" y="6080"/>
-    </visualElement>
-    <visualElement>
-      <elementName>74373.dig</elementName>
-      <elementAttributes>
-        <entry>
-          <string>Label</string>
-          <string>OUT</string>
-        </entry>
-      </elementAttributes>
-      <pos x="40" y="4340"/>
-    </visualElement>
-    <visualElement>
-      <elementName>VDD</elementName>
-      <elementAttributes/>
-      <pos x="200" y="4280"/>
-    </visualElement>
-    <visualElement>
-      <elementName>Ground</elementName>
-      <elementAttributes/>
-      <pos x="0" y="4760"/>
-    </visualElement>
-    <visualElement>
-      <elementName>Seven-Seg-Hex</elementName>
-      <elementAttributes/>
-      <pos x="440" y="4320"/>
-    </visualElement>
-    <visualElement>
-      <elementName>Ground</elementName>
-      <elementAttributes/>
-      <pos x="500" y="4480"/>
-    </visualElement>
-    <visualElement>
-      <elementName>Seven-Seg-Hex</elementName>
-      <elementAttributes/>
-      <pos x="360" y="4320"/>
-    </visualElement>
-    <visualElement>
-      <elementName>Ground</elementName>
-      <elementAttributes/>
-      <pos x="420" y="4480"/>
-    </visualElement>
-    <visualElement>
-      <elementName>Splitter</elementName>
-      <elementAttributes>
-        <entry>
-          <string>mirror</string>
-          <boolean>true</boolean>
-        </entry>
-        <entry>
-          <string>Input Splitting</string>
-          <string>1,1,1,1</string>
-        </entry>
-        <entry>
-          <string>Output Splitting</string>
-          <string>4</string>
-        </entry>
-      </elementAttributes>
-      <pos x="320" y="4660"/>
-    </visualElement>
-    <visualElement>
-      <elementName>Splitter</elementName>
-      <elementAttributes>
-        <entry>
-          <string>mirror</string>
-          <boolean>true</boolean>
-        </entry>
-        <entry>
-          <string>rotation</string>
-          <rotation rotation="2"/>
-        </entry>
-        <entry>
-          <string>Input Splitting</string>
-          <string>1,1,1,1</string>
-        </entry>
-        <entry>
-          <string>Output Splitting</string>
-          <string>4</string>
-        </entry>
-      </elementAttributes>
-      <pos x="-220" y="4380"/>
     </visualElement>
     <visualElement>
       <elementName>28c64.dig</elementName>
@@ -2034,7 +1954,7 @@
         </entry>
         <entry>
           <string>Label</string>
-          <string>Registries Control Word</string>
+          <string>Registers Control Word</string>
         </entry>
       </elementAttributes>
       <pos x="8980" y="1360"/>
@@ -2327,7 +2247,17 @@
     </visualElement>
     <visualElement>
       <elementName>Seven-Seg-Hex</elementName>
-      <elementAttributes/>
+      <elementAttributes>
+        <entry>
+          <string>Color</string>
+          <awt-color>
+            <red>102</red>
+            <green>102</green>
+            <blue>255</blue>
+            <alpha>255</alpha>
+          </awt-color>
+        </entry>
+      </elementAttributes>
       <pos x="7120" y="-40"/>
     </visualElement>
     <visualElement>
@@ -2337,7 +2267,17 @@
     </visualElement>
     <visualElement>
       <elementName>Seven-Seg-Hex</elementName>
-      <elementAttributes/>
+      <elementAttributes>
+        <entry>
+          <string>Color</string>
+          <awt-color>
+            <red>102</red>
+            <green>102</green>
+            <blue>255</blue>
+            <alpha>255</alpha>
+          </awt-color>
+        </entry>
+      </elementAttributes>
       <pos x="7040" y="-40"/>
     </visualElement>
     <visualElement>
@@ -2396,7 +2336,7 @@
         </entry>
         <entry>
           <string>Description</string>
-          <string>Control Bus (IC + T)</string>
+          <string>Control Bus (IC + t)</string>
         </entry>
       </elementAttributes>
       <pos x="6800" y="-100"/>
@@ -2437,10 +2377,10 @@
         </entry>
         <entry>
           <string>Description</string>
-          <string>Registries board</string>
+          <string>Registers board</string>
         </entry>
       </elementAttributes>
-      <pos x="8840" y="820"/>
+      <pos x="8580" y="620"/>
     </visualElement>
     <visualElement>
       <elementName>Ground</elementName>
@@ -2482,47 +2422,47 @@
           <string>A</string>
         </entry>
       </elementAttributes>
-      <pos x="10260" y="1280"/>
+      <pos x="10360" y="1280"/>
     </visualElement>
     <visualElement>
       <elementName>VDD</elementName>
       <elementAttributes/>
-      <pos x="10420" y="1220"/>
+      <pos x="10520" y="1220"/>
     </visualElement>
     <visualElement>
       <elementName>Ground</elementName>
       <elementAttributes/>
-      <pos x="10220" y="1700"/>
+      <pos x="10320" y="1700"/>
     </visualElement>
     <visualElement>
       <elementName>74238.dig</elementName>
       <elementAttributes/>
-      <pos x="9680" y="1500"/>
+      <pos x="9740" y="1500"/>
     </visualElement>
     <visualElement>
       <elementName>74138.dig</elementName>
       <elementAttributes/>
-      <pos x="9680" y="960"/>
+      <pos x="9740" y="900"/>
     </visualElement>
     <visualElement>
       <elementName>VDD</elementName>
       <elementAttributes/>
-      <pos x="9840" y="1440"/>
+      <pos x="9900" y="1440"/>
     </visualElement>
     <visualElement>
       <elementName>Ground</elementName>
       <elementAttributes/>
-      <pos x="9640" y="1840"/>
+      <pos x="9700" y="1840"/>
     </visualElement>
     <visualElement>
       <elementName>VDD</elementName>
       <elementAttributes/>
-      <pos x="9840" y="900"/>
+      <pos x="9900" y="840"/>
     </visualElement>
     <visualElement>
       <elementName>Ground</elementName>
       <elementAttributes/>
-      <pos x="9640" y="1300"/>
+      <pos x="9700" y="1240"/>
     </visualElement>
     <visualElement>
       <elementName>74373.dig</elementName>
@@ -2532,17 +2472,17 @@
           <string>X</string>
         </entry>
       </elementAttributes>
-      <pos x="10760" y="1280"/>
+      <pos x="10860" y="1280"/>
     </visualElement>
     <visualElement>
       <elementName>VDD</elementName>
       <elementAttributes/>
-      <pos x="10920" y="1220"/>
+      <pos x="11020" y="1220"/>
     </visualElement>
     <visualElement>
       <elementName>Ground</elementName>
       <elementAttributes/>
-      <pos x="10720" y="1700"/>
+      <pos x="10820" y="1700"/>
     </visualElement>
     <visualElement>
       <elementName>74373.dig</elementName>
@@ -2552,17 +2492,17 @@
           <string>Y</string>
         </entry>
       </elementAttributes>
-      <pos x="11260" y="1280"/>
+      <pos x="11360" y="1280"/>
     </visualElement>
     <visualElement>
       <elementName>VDD</elementName>
       <elementAttributes/>
-      <pos x="11420" y="1220"/>
+      <pos x="11520" y="1220"/>
     </visualElement>
     <visualElement>
       <elementName>Ground</elementName>
       <elementAttributes/>
-      <pos x="11220" y="1700"/>
+      <pos x="11320" y="1700"/>
     </visualElement>
     <visualElement>
       <elementName>BusSplitter</elementName>
@@ -2572,7 +2512,7 @@
           <int>8</int>
         </entry>
       </elementAttributes>
-      <pos x="10020" y="2000"/>
+      <pos x="10120" y="2000"/>
     </visualElement>
     <visualElement>
       <elementName>And</elementName>
@@ -2590,7 +2530,7 @@
           <int>4</int>
         </entry>
       </elementAttributes>
-      <pos x="10020" y="1300"/>
+      <pos x="10120" y="1300"/>
     </visualElement>
     <visualElement>
       <elementName>BusSplitter</elementName>
@@ -2691,17 +2631,17 @@ write to bus</string>
           <string>TMP</string>
         </entry>
       </elementAttributes>
-      <pos x="11760" y="1280"/>
+      <pos x="11860" y="1280"/>
     </visualElement>
     <visualElement>
       <elementName>VDD</elementName>
       <elementAttributes/>
-      <pos x="11920" y="1220"/>
+      <pos x="12020" y="1220"/>
     </visualElement>
     <visualElement>
       <elementName>Ground</elementName>
       <elementAttributes/>
-      <pos x="11720" y="1700"/>
+      <pos x="11820" y="1700"/>
     </visualElement>
     <visualElement>
       <elementName>And</elementName>
@@ -2737,6 +2677,118 @@ add other board</string>
         </entry>
       </elementAttributes>
       <pos x="5380" y="2060"/>
+    </visualElement>
+    <visualElement>
+      <elementName>74373.dig</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>D</string>
+        </entry>
+      </elementAttributes>
+      <pos x="12360" y="1280"/>
+    </visualElement>
+    <visualElement>
+      <elementName>VDD</elementName>
+      <elementAttributes/>
+      <pos x="12520" y="1220"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="12320" y="1700"/>
+    </visualElement>
+    <visualElement>
+      <elementName>74373.dig</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>E</string>
+        </entry>
+      </elementAttributes>
+      <pos x="12860" y="1280"/>
+    </visualElement>
+    <visualElement>
+      <elementName>VDD</elementName>
+      <elementAttributes/>
+      <pos x="13020" y="1220"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="12820" y="1700"/>
+    </visualElement>
+    <visualElement>
+      <elementName>74373.dig</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>OUT</string>
+        </entry>
+      </elementAttributes>
+      <pos x="13360" y="1280"/>
+    </visualElement>
+    <visualElement>
+      <elementName>VDD</elementName>
+      <elementAttributes/>
+      <pos x="13520" y="1260"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="13320" y="1700"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Splitter</elementName>
+      <elementAttributes>
+        <entry>
+          <string>rotation</string>
+          <rotation rotation="1"/>
+        </entry>
+        <entry>
+          <string>Input Splitting</string>
+          <string>1,1,1,1,1,1,1,1</string>
+        </entry>
+        <entry>
+          <string>Output Splitting</string>
+          <string>4,4</string>
+        </entry>
+      </elementAttributes>
+      <pos x="13220" y="1160"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Seven-Seg-Hex</elementName>
+      <elementAttributes/>
+      <pos x="7600" y="1080"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="7660" y="1240"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Seven-Seg-Hex</elementName>
+      <elementAttributes/>
+      <pos x="7520" y="1080"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="7580" y="1240"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Text</elementName>
+      <elementAttributes>
+        <entry>
+          <string>textFontSize</string>
+          <int>48</int>
+        </entry>
+        <entry>
+          <string>Description</string>
+          <string>Out Reg</string>
+        </entry>
+      </elementAttributes>
+      <pos x="7500" y="1000"/>
     </visualElement>
   </visualElements>
   <wires>
@@ -2862,7 +2914,7 @@ add other board</string>
     </wire>
     <wire>
       <p1 x="9420" y="1540"/>
-      <p2 x="9680" y="1540"/>
+      <p2 x="9740" y="1540"/>
     </wire>
     <wire>
       <p1 x="-1940" y="6660"/>
@@ -2961,36 +3013,48 @@ add other board</string>
       <p2 x="-1280" y="2060"/>
     </wire>
     <wire>
-      <p1 x="10040" y="2060"/>
-      <p2 x="10140" y="2060"/>
-    </wire>
-    <wire>
       <p1 x="1240" y="2060"/>
       <p2 x="1860" y="2060"/>
     </wire>
     <wire>
-      <p1 x="10640" y="2060"/>
-      <p2 x="11140" y="2060"/>
+      <p1 x="10140" y="2060"/>
+      <p2 x="10240" y="2060"/>
+    </wire>
+    <wire>
+      <p1 x="10240" y="2060"/>
+      <p2 x="10740" y="2060"/>
     </wire>
     <wire>
       <p1 x="2060" y="2060"/>
       <p2 x="2500" y="2060"/>
     </wire>
     <wire>
-      <p1 x="10140" y="2060"/>
-      <p2 x="10640" y="2060"/>
+      <p1 x="12240" y="2060"/>
+      <p2 x="12740" y="2060"/>
+    </wire>
+    <wire>
+      <p1 x="11740" y="2060"/>
+      <p2 x="12240" y="2060"/>
+    </wire>
+    <wire>
+      <p1 x="11240" y="2060"/>
+      <p2 x="11740" y="2060"/>
     </wire>
     <wire>
       <p1 x="1860" y="2060"/>
       <p2 x="2060" y="2060"/>
     </wire>
     <wire>
-      <p1 x="11140" y="2060"/>
-      <p2 x="11640" y="2060"/>
+      <p1 x="10740" y="2060"/>
+      <p2 x="11240" y="2060"/>
     </wire>
     <wire>
       <p1 x="320" y="2060"/>
       <p2 x="1120" y="2060"/>
+    </wire>
+    <wire>
+      <p1 x="12740" y="2060"/>
+      <p2 x="13240" y="2060"/>
     </wire>
     <wire>
       <p1 x="-1000" y="4620"/>
@@ -2999,18 +3063,6 @@ add other board</string>
     <wire>
       <p1 x="-2720" y="4620"/>
       <p2 x="-2640" y="4620"/>
-    </wire>
-    <wire>
-      <p1 x="0" y="4620"/>
-      <p2 x="40" y="4620"/>
-    </wire>
-    <wire>
-      <p1 x="160" y="4620"/>
-      <p2 x="180" y="4620"/>
-    </wire>
-    <wire>
-      <p1 x="280" y="4620"/>
-      <p2 x="320" y="4620"/>
     </wire>
     <wire>
       <p1 x="-3860" y="7180"/>
@@ -3033,20 +3085,8 @@ add other board</string>
       <p2 x="9180" y="1040"/>
     </wire>
     <wire>
-      <p1 x="9420" y="1040"/>
-      <p2 x="9680" y="1040"/>
-    </wire>
-    <wire>
-      <p1 x="9800" y="1040"/>
-      <p2 x="9940" y="1040"/>
-    </wire>
-    <wire>
       <p1 x="-1680" y="1040"/>
       <p2 x="-1640" y="1040"/>
-    </wire>
-    <wire>
-      <p1 x="9940" y="1040"/>
-      <p2 x="10240" y="1040"/>
     </wire>
     <wire>
       <p1 x="-20" y="3600"/>
@@ -3121,40 +3161,64 @@ add other board</string>
       <p2 x="380" y="1560"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1560"/>
-      <p2 x="10400" y="1560"/>
+      <p1 x="10480" y="1560"/>
+      <p2 x="10500" y="1560"/>
     </wire>
     <wire>
-      <p1 x="10140" y="1560"/>
-      <p2 x="10240" y="1560"/>
+      <p1 x="10240" y="1560"/>
+      <p2 x="10340" y="1560"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1560"/>
-      <p2 x="10900" y="1560"/>
+      <p1 x="10980" y="1560"/>
+      <p2 x="11000" y="1560"/>
     </wire>
     <wire>
-      <p1 x="10640" y="1560"/>
-      <p2 x="10740" y="1560"/>
+      <p1 x="10740" y="1560"/>
+      <p2 x="10840" y="1560"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1560"/>
-      <p2 x="11400" y="1560"/>
+      <p1 x="11480" y="1560"/>
+      <p2 x="11500" y="1560"/>
     </wire>
     <wire>
-      <p1 x="11140" y="1560"/>
-      <p2 x="11240" y="1560"/>
+      <p1 x="11240" y="1560"/>
+      <p2 x="11340" y="1560"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1560"/>
-      <p2 x="11900" y="1560"/>
-    </wire>
-    <wire>
-      <p1 x="11640" y="1560"/>
-      <p2 x="11740" y="1560"/>
+      <p1 x="11980" y="1560"/>
+      <p2 x="12000" y="1560"/>
     </wire>
     <wire>
       <p1 x="11740" y="1560"/>
-      <p2 x="11760" y="1560"/>
+      <p2 x="11840" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="12480" y="1560"/>
+      <p2 x="12500" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="12240" y="1560"/>
+      <p2 x="12340" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1560"/>
+      <p2 x="13000" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="12740" y="1560"/>
+      <p2 x="12840" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1560"/>
+      <p2 x="13500" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="13240" y="1560"/>
+      <p2 x="13360" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="11340" y="1560"/>
+      <p2 x="11360" y="1560"/>
     </wire>
     <wire>
       <p1 x="380" y="1560"/>
@@ -3165,16 +3229,24 @@ add other board</string>
       <p2 x="640" y="1560"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1560"/>
-      <p2 x="11260" y="1560"/>
+      <p1 x="10840" y="1560"/>
+      <p2 x="10860" y="1560"/>
     </wire>
     <wire>
-      <p1 x="10740" y="1560"/>
-      <p2 x="10760" y="1560"/>
+      <p1 x="12840" y="1560"/>
+      <p2 x="12860" y="1560"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1560"/>
-      <p2 x="10260" y="1560"/>
+      <p1 x="10340" y="1560"/>
+      <p2 x="10360" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1560"/>
+      <p2 x="12360" y="1560"/>
+    </wire>
+    <wire>
+      <p1 x="11840" y="1560"/>
+      <p2 x="11860" y="1560"/>
     </wire>
     <wire>
       <p1 x="-6880" y="4120"/>
@@ -3217,10 +3289,6 @@ add other board</string>
       <p2 x="-2040" y="4640"/>
     </wire>
     <wire>
-      <p1 x="260" y="4640"/>
-      <p2 x="320" y="4640"/>
-    </wire>
-    <wire>
       <p1 x="-4140" y="4640"/>
       <p2 x="-4120" y="4640"/>
     </wire>
@@ -3257,20 +3325,32 @@ add other board</string>
       <p2 x="3280" y="2080"/>
     </wire>
     <wire>
-      <p1 x="10040" y="2080"/>
-      <p2 x="10400" y="2080"/>
+      <p1 x="10140" y="2080"/>
+      <p2 x="10500" y="2080"/>
     </wire>
     <wire>
-      <p1 x="10900" y="2080"/>
-      <p2 x="11400" y="2080"/>
+      <p1 x="12500" y="2080"/>
+      <p2 x="13000" y="2080"/>
     </wire>
     <wire>
-      <p1 x="10400" y="2080"/>
-      <p2 x="10900" y="2080"/>
+      <p1 x="12000" y="2080"/>
+      <p2 x="12500" y="2080"/>
     </wire>
     <wire>
-      <p1 x="11400" y="2080"/>
-      <p2 x="11900" y="2080"/>
+      <p1 x="11500" y="2080"/>
+      <p2 x="12000" y="2080"/>
+    </wire>
+    <wire>
+      <p1 x="11000" y="2080"/>
+      <p2 x="11500" y="2080"/>
+    </wire>
+    <wire>
+      <p1 x="13000" y="2080"/>
+      <p2 x="13500" y="2080"/>
+    </wire>
+    <wire>
+      <p1 x="10500" y="2080"/>
+      <p2 x="11000" y="2080"/>
     </wire>
     <wire>
       <p1 x="-3880" y="7200"/>
@@ -3289,6 +3369,14 @@ add other board</string>
       <p2 x="340" y="1060"/>
     </wire>
     <wire>
+      <p1 x="9700" y="1060"/>
+      <p2 x="9740" y="1060"/>
+    </wire>
+    <wire>
+      <p1 x="9860" y="1060"/>
+      <p2 x="10100" y="1060"/>
+    </wire>
+    <wire>
       <p1 x="1240" y="1060"/>
       <p2 x="1740" y="1060"/>
     </wire>
@@ -3299,6 +3387,10 @@ add other board</string>
     <wire>
       <p1 x="1740" y="1060"/>
       <p2 x="1980" y="1060"/>
+    </wire>
+    <wire>
+      <p1 x="10100" y="1060"/>
+      <p2 x="11320" y="1060"/>
     </wire>
     <wire>
       <p1 x="340" y="1060"/>
@@ -3434,11 +3526,11 @@ add other board</string>
     </wire>
     <wire>
       <p1 x="9460" y="1580"/>
-      <p2 x="9680" y="1580"/>
+      <p2 x="9740" y="1580"/>
     </wire>
     <wire>
-      <p1 x="9800" y="1580"/>
-      <p2 x="9920" y="1580"/>
+      <p1 x="9860" y="1580"/>
+      <p2 x="10020" y="1580"/>
     </wire>
     <wire>
       <p1 x="-1340" y="1580"/>
@@ -3597,24 +3689,28 @@ add other board</string>
       <p2 x="-1280" y="2100"/>
     </wire>
     <wire>
-      <p1 x="10040" y="2100"/>
-      <p2 x="10420" y="2100"/>
+      <p1 x="10140" y="2100"/>
+      <p2 x="10520" y="2100"/>
     </wire>
     <wire>
       <p1 x="1240" y="2100"/>
       <p2 x="1840" y="2100"/>
     </wire>
     <wire>
+      <p1 x="13020" y="2100"/>
+      <p2 x="13520" y="2100"/>
+    </wire>
+    <wire>
       <p1 x="340" y="2100"/>
       <p2 x="1120" y="2100"/>
     </wire>
     <wire>
-      <p1 x="10920" y="2100"/>
-      <p2 x="11420" y="2100"/>
+      <p1 x="10520" y="2100"/>
+      <p2 x="11020" y="2100"/>
     </wire>
     <wire>
-      <p1 x="10420" y="2100"/>
-      <p2 x="10920" y="2100"/>
+      <p1 x="12520" y="2100"/>
+      <p2 x="13020" y="2100"/>
     </wire>
     <wire>
       <p1 x="2500" y="2100"/>
@@ -3625,20 +3721,16 @@ add other board</string>
       <p2 x="2500" y="2100"/>
     </wire>
     <wire>
-      <p1 x="11420" y="2100"/>
-      <p2 x="11920" y="2100"/>
+      <p1 x="12020" y="2100"/>
+      <p2 x="12520" y="2100"/>
     </wire>
     <wire>
-      <p1 x="-200" y="4660"/>
-      <p2 x="40" y="4660"/>
+      <p1 x="11520" y="2100"/>
+      <p2 x="12020" y="2100"/>
     </wire>
     <wire>
-      <p1 x="160" y="4660"/>
-      <p2 x="320" y="4660"/>
-    </wire>
-    <wire>
-      <p1 x="340" y="4660"/>
-      <p2 x="400" y="4660"/>
+      <p1 x="11020" y="2100"/>
+      <p2 x="11520" y="2100"/>
     </wire>
     <wire>
       <p1 x="-3900" y="7220"/>
@@ -3667,18 +3759,6 @@ add other board</string>
     <wire>
       <p1 x="-1160" y="1080"/>
       <p2 x="-1100" y="1080"/>
-    </wire>
-    <wire>
-      <p1 x="9640" y="1080"/>
-      <p2 x="9680" y="1080"/>
-    </wire>
-    <wire>
-      <p1 x="9800" y="1080"/>
-      <p2 x="9960" y="1080"/>
-    </wire>
-    <wire>
-      <p1 x="9960" y="1080"/>
-      <p2 x="10720" y="1080"/>
     </wire>
     <wire>
       <p1 x="9300" y="1080"/>
@@ -3717,12 +3797,12 @@ add other board</string>
       <p2 x="-600" y="5180"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1600"/>
-      <p2 x="10260" y="1600"/>
+      <p1 x="10340" y="1600"/>
+      <p2 x="10360" y="1600"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1600"/>
-      <p2 x="10400" y="1600"/>
+      <p1 x="10480" y="1600"/>
+      <p2 x="10500" y="1600"/>
     </wire>
     <wire>
       <p1 x="9020" y="1600"/>
@@ -3749,28 +3829,52 @@ add other board</string>
       <p2 x="3600" y="1600"/>
     </wire>
     <wire>
-      <p1 x="10740" y="1600"/>
-      <p2 x="10760" y="1600"/>
+      <p1 x="10840" y="1600"/>
+      <p2 x="10860" y="1600"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1600"/>
-      <p2 x="10900" y="1600"/>
+      <p1 x="10980" y="1600"/>
+      <p2 x="11000" y="1600"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1600"/>
-      <p2 x="11260" y="1600"/>
+      <p1 x="11340" y="1600"/>
+      <p2 x="11360" y="1600"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1600"/>
-      <p2 x="11400" y="1600"/>
+      <p1 x="11480" y="1600"/>
+      <p2 x="11500" y="1600"/>
     </wire>
     <wire>
-      <p1 x="11740" y="1600"/>
-      <p2 x="11760" y="1600"/>
+      <p1 x="11840" y="1600"/>
+      <p2 x="11860" y="1600"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1600"/>
-      <p2 x="11900" y="1600"/>
+      <p1 x="11980" y="1600"/>
+      <p2 x="12000" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1600"/>
+      <p2 x="12360" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="12480" y="1600"/>
+      <p2 x="12500" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="12840" y="1600"/>
+      <p2 x="12860" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1600"/>
+      <p2 x="13000" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="13280" y="1600"/>
+      <p2 x="13360" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1600"/>
+      <p2 x="13580" y="1600"/>
     </wire>
     <wire>
       <p1 x="540" y="1600"/>
@@ -3861,20 +3965,32 @@ add other board</string>
       <p2 x="3280" y="2120"/>
     </wire>
     <wire>
-      <p1 x="10040" y="2120"/>
-      <p2 x="10440" y="2120"/>
+      <p1 x="10140" y="2120"/>
+      <p2 x="10540" y="2120"/>
     </wire>
     <wire>
-      <p1 x="11440" y="2120"/>
-      <p2 x="11940" y="2120"/>
+      <p1 x="11040" y="2120"/>
+      <p2 x="11540" y="2120"/>
     </wire>
     <wire>
-      <p1 x="10940" y="2120"/>
-      <p2 x="11440" y="2120"/>
+      <p1 x="13040" y="2120"/>
+      <p2 x="13540" y="2120"/>
     </wire>
     <wire>
-      <p1 x="10440" y="2120"/>
-      <p2 x="10940" y="2120"/>
+      <p1 x="10540" y="2120"/>
+      <p2 x="11040" y="2120"/>
+    </wire>
+    <wire>
+      <p1 x="12540" y="2120"/>
+      <p2 x="13040" y="2120"/>
+    </wire>
+    <wire>
+      <p1 x="12040" y="2120"/>
+      <p2 x="12540" y="2120"/>
+    </wire>
+    <wire>
+      <p1 x="11540" y="2120"/>
+      <p2 x="12040" y="2120"/>
     </wire>
     <wire>
       <p1 x="-3920" y="7240"/>
@@ -3897,6 +4013,14 @@ add other board</string>
       <p2 x="1120" y="1100"/>
     </wire>
     <wire>
+      <p1 x="9720" y="1100"/>
+      <p2 x="9740" y="1100"/>
+    </wire>
+    <wire>
+      <p1 x="9860" y="1100"/>
+      <p2 x="10120" y="1100"/>
+    </wire>
+    <wire>
       <p1 x="1240" y="1100"/>
       <p2 x="1760" y="1100"/>
     </wire>
@@ -3907,6 +4031,10 @@ add other board</string>
     <wire>
       <p1 x="1760" y="1100"/>
       <p2 x="1960" y="1100"/>
+    </wire>
+    <wire>
+      <p1 x="10120" y="1100"/>
+      <p2 x="11820" y="1100"/>
     </wire>
     <wire>
       <p1 x="-2440" y="3660"/>
@@ -4017,12 +4145,12 @@ add other board</string>
       <p2 x="3580" y="1620"/>
     </wire>
     <wire>
-      <p1 x="9640" y="1620"/>
-      <p2 x="9680" y="1620"/>
+      <p1 x="9700" y="1620"/>
+      <p2 x="9740" y="1620"/>
     </wire>
     <wire>
-      <p1 x="9800" y="1620"/>
-      <p2 x="9900" y="1620"/>
+      <p1 x="9860" y="1620"/>
+      <p2 x="10000" y="1620"/>
     </wire>
     <wire>
       <p1 x="-3960" y="1620"/>
@@ -4051,10 +4179,6 @@ add other board</string>
     <wire>
       <p1 x="1540" y="4180"/>
       <p2 x="1900" y="4180"/>
-    </wire>
-    <wire>
-      <p1 x="-480" y="4180"/>
-      <p2 x="-60" y="4180"/>
     </wire>
     <wire>
       <p1 x="-4140" y="4180"/>
@@ -4157,18 +4281,6 @@ add other board</string>
       <p2 x="-3460" y="5720"/>
     </wire>
     <wire>
-      <p1 x="0" y="4700"/>
-      <p2 x="20" y="4700"/>
-    </wire>
-    <wire>
-      <p1 x="160" y="4700"/>
-      <p2 x="260" y="4700"/>
-    </wire>
-    <wire>
-      <p1 x="20" y="4700"/>
-      <p2 x="40" y="4700"/>
-    </wire>
-    <wire>
       <p1 x="-620" y="2140"/>
       <p2 x="0" y="2140"/>
     </wire>
@@ -4193,20 +4305,24 @@ add other board</string>
       <p2 x="-3080" y="2140"/>
     </wire>
     <wire>
-      <p1 x="10040" y="2140"/>
-      <p2 x="10460" y="2140"/>
-    </wire>
-    <wire>
       <p1 x="1240" y="2140"/>
       <p2 x="1820" y="2140"/>
     </wire>
     <wire>
-      <p1 x="360" y="2140"/>
-      <p2 x="1120" y="2140"/>
+      <p1 x="10140" y="2140"/>
+      <p2 x="10560" y="2140"/>
     </wire>
     <wire>
-      <p1 x="11460" y="2140"/>
-      <p2 x="11960" y="2140"/>
+      <p1 x="11560" y="2140"/>
+      <p2 x="12060" y="2140"/>
+    </wire>
+    <wire>
+      <p1 x="11060" y="2140"/>
+      <p2 x="11560" y="2140"/>
+    </wire>
+    <wire>
+      <p1 x="360" y="2140"/>
+      <p2 x="1120" y="2140"/>
     </wire>
     <wire>
       <p1 x="2080" y="2140"/>
@@ -4217,12 +4333,20 @@ add other board</string>
       <p2 x="2080" y="2140"/>
     </wire>
     <wire>
-      <p1 x="10960" y="2140"/>
-      <p2 x="11460" y="2140"/>
+      <p1 x="13060" y="2140"/>
+      <p2 x="13560" y="2140"/>
     </wire>
     <wire>
-      <p1 x="10460" y="2140"/>
-      <p2 x="10960" y="2140"/>
+      <p1 x="10560" y="2140"/>
+      <p2 x="11060" y="2140"/>
+    </wire>
+    <wire>
+      <p1 x="12560" y="2140"/>
+      <p2 x="13060" y="2140"/>
+    </wire>
+    <wire>
+      <p1 x="12060" y="2140"/>
+      <p2 x="12560" y="2140"/>
     </wire>
     <wire>
       <p1 x="-60" y="3680"/>
@@ -4239,18 +4363,6 @@ add other board</string>
     <wire>
       <p1 x="-4560" y="3680"/>
       <p2 x="-3400" y="3680"/>
-    </wire>
-    <wire>
-      <p1 x="9640" y="1120"/>
-      <p2 x="9680" y="1120"/>
-    </wire>
-    <wire>
-      <p1 x="9800" y="1120"/>
-      <p2 x="10000" y="1120"/>
-    </wire>
-    <wire>
-      <p1 x="10000" y="1120"/>
-      <p2 x="11220" y="1120"/>
     </wire>
     <wire>
       <p1 x="-680" y="-100"/>
@@ -4273,12 +4385,12 @@ add other board</string>
       <p2 x="-5040" y="5220"/>
     </wire>
     <wire>
-      <p1 x="10220" y="1640"/>
-      <p2 x="10260" y="1640"/>
+      <p1 x="10320" y="1640"/>
+      <p2 x="10360" y="1640"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1640"/>
-      <p2 x="10480" y="1640"/>
+      <p1 x="10480" y="1640"/>
+      <p2 x="10580" y="1640"/>
     </wire>
     <wire>
       <p1 x="-140" y="1640"/>
@@ -4309,28 +4421,52 @@ add other board</string>
       <p2 x="3560" y="1640"/>
     </wire>
     <wire>
-      <p1 x="10720" y="1640"/>
-      <p2 x="10760" y="1640"/>
+      <p1 x="10820" y="1640"/>
+      <p2 x="10860" y="1640"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1640"/>
-      <p2 x="10980" y="1640"/>
+      <p1 x="10980" y="1640"/>
+      <p2 x="11080" y="1640"/>
     </wire>
     <wire>
-      <p1 x="11220" y="1640"/>
-      <p2 x="11260" y="1640"/>
+      <p1 x="11320" y="1640"/>
+      <p2 x="11360" y="1640"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1640"/>
-      <p2 x="11480" y="1640"/>
+      <p1 x="11480" y="1640"/>
+      <p2 x="11580" y="1640"/>
     </wire>
     <wire>
-      <p1 x="11720" y="1640"/>
-      <p2 x="11760" y="1640"/>
+      <p1 x="11820" y="1640"/>
+      <p2 x="11860" y="1640"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1640"/>
-      <p2 x="11980" y="1640"/>
+      <p1 x="11980" y="1640"/>
+      <p2 x="12080" y="1640"/>
+    </wire>
+    <wire>
+      <p1 x="12320" y="1640"/>
+      <p2 x="12360" y="1640"/>
+    </wire>
+    <wire>
+      <p1 x="12480" y="1640"/>
+      <p2 x="12580" y="1640"/>
+    </wire>
+    <wire>
+      <p1 x="12820" y="1640"/>
+      <p2 x="12860" y="1640"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1640"/>
+      <p2 x="13080" y="1640"/>
+    </wire>
+    <wire>
+      <p1 x="13320" y="1640"/>
+      <p2 x="13360" y="1640"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1640"/>
+      <p2 x="13580" y="1640"/>
     </wire>
     <wire>
       <p1 x="560" y="1640"/>
@@ -4339,10 +4475,6 @@ add other board</string>
     <wire>
       <p1 x="-3600" y="1640"/>
       <p2 x="-3080" y="1640"/>
-    </wire>
-    <wire>
-      <p1 x="-500" y="4200"/>
-      <p2 x="-40" y="4200"/>
     </wire>
     <wire>
       <p1 x="-1400" y="6760"/>
@@ -4445,16 +4577,16 @@ add other board</string>
       <p2 x="460" y="1140"/>
     </wire>
     <wire>
+      <p1 x="9860" y="1140"/>
+      <p2 x="12320" y="1140"/>
+    </wire>
+    <wire>
       <p1 x="2140" y="3700"/>
       <p2 x="2160" y="3700"/>
     </wire>
     <wire>
       <p1 x="1880" y="3700"/>
       <p2 x="1900" y="3700"/>
-    </wire>
-    <wire>
-      <p1 x="-2740" y="3700"/>
-      <p2 x="-260" y="3700"/>
     </wire>
     <wire>
       <p1 x="-4580" y="3700"/>
@@ -4557,10 +4689,6 @@ add other board</string>
       <p2 x="2360" y="4220"/>
     </wire>
     <wire>
-      <p1 x="-520" y="4220"/>
-      <p2 x="-20" y="4220"/>
-    </wire>
-    <wire>
       <p1 x="-3740" y="1660"/>
       <p2 x="-3200" y="1660"/>
     </wire>
@@ -4573,12 +4701,12 @@ add other board</string>
       <p2 x="-1300" y="1660"/>
     </wire>
     <wire>
-      <p1 x="9640" y="1660"/>
-      <p2 x="9680" y="1660"/>
+      <p1 x="9700" y="1660"/>
+      <p2 x="9740" y="1660"/>
     </wire>
     <wire>
-      <p1 x="9800" y="1660"/>
-      <p2 x="9880" y="1660"/>
+      <p1 x="9860" y="1660"/>
+      <p2 x="9980" y="1660"/>
     </wire>
     <wire>
       <p1 x="-1480" y="6780"/>
@@ -4721,18 +4849,6 @@ add other board</string>
       <p2 x="-3880" y="3720"/>
     </wire>
     <wire>
-      <p1 x="9660" y="1160"/>
-      <p2 x="9680" y="1160"/>
-    </wire>
-    <wire>
-      <p1 x="9800" y="1160"/>
-      <p2 x="10020" y="1160"/>
-    </wire>
-    <wire>
-      <p1 x="10020" y="1160"/>
-      <p2 x="11720" y="1160"/>
-    </wire>
-    <wire>
       <p1 x="-680" y="-140"/>
       <p2 x="-600" y="-140"/>
     </wire>
@@ -4785,10 +4901,6 @@ add other board</string>
       <p2 x="640" y="1680"/>
     </wire>
     <wire>
-      <p1 x="-540" y="4240"/>
-      <p2 x="0" y="4240"/>
-    </wire>
-    <wire>
       <p1 x="-1560" y="6800"/>
       <p2 x="-1140" y="6800"/>
     </wire>
@@ -4811,22 +4923,6 @@ add other board</string>
     <wire>
       <p1 x="-2380" y="5780"/>
       <p2 x="-2040" y="5780"/>
-    </wire>
-    <wire>
-      <p1 x="3820" y="2200"/>
-      <p2 x="3860" y="2200"/>
-    </wire>
-    <wire>
-      <p1 x="3980" y="2200"/>
-      <p2 x="4280" y="2200"/>
-    </wire>
-    <wire>
-      <p1 x="3240" y="2200"/>
-      <p2 x="3280" y="2200"/>
-    </wire>
-    <wire>
-      <p1 x="3400" y="2200"/>
-      <p2 x="3600" y="2200"/>
     </wire>
     <wire>
       <p1 x="-1140" y="4760"/>
@@ -4877,12 +4973,40 @@ add other board</string>
       <p2 x="-2040" y="4760"/>
     </wire>
     <wire>
+      <p1 x="3820" y="2200"/>
+      <p2 x="3860" y="2200"/>
+    </wire>
+    <wire>
+      <p1 x="3980" y="2200"/>
+      <p2 x="4280" y="2200"/>
+    </wire>
+    <wire>
+      <p1 x="3240" y="2200"/>
+      <p2 x="3280" y="2200"/>
+    </wire>
+    <wire>
+      <p1 x="3400" y="2200"/>
+      <p2 x="3600" y="2200"/>
+    </wire>
+    <wire>
       <p1 x="-1720" y="1180"/>
       <p2 x="-1460" y="1180"/>
     </wire>
     <wire>
       <p1 x="-2720" y="1180"/>
       <p2 x="-2660" y="1180"/>
+    </wire>
+    <wire>
+      <p1 x="9860" y="1180"/>
+      <p2 x="12820" y="1180"/>
+    </wire>
+    <wire>
+      <p1 x="9700" y="1180"/>
+      <p2 x="9740" y="1180"/>
+    </wire>
+    <wire>
+      <p1 x="13360" y="1180"/>
+      <p2 x="13640" y="1180"/>
     </wire>
     <wire>
       <p1 x="2140" y="3740"/>
@@ -4993,20 +5117,16 @@ add other board</string>
       <p2 x="-4100" y="5280"/>
     </wire>
     <wire>
-      <p1 x="-560" y="4260"/>
-      <p2 x="-80" y="4260"/>
-    </wire>
-    <wire>
       <p1 x="2460" y="1700"/>
       <p2 x="3500" y="1700"/>
     </wire>
     <wire>
-      <p1 x="9660" y="1700"/>
-      <p2 x="9680" y="1700"/>
+      <p1 x="9720" y="1700"/>
+      <p2 x="9740" y="1700"/>
     </wire>
     <wire>
-      <p1 x="9800" y="1700"/>
-      <p2 x="9860" y="1700"/>
+      <p1 x="9860" y="1700"/>
+      <p2 x="9960" y="1700"/>
     </wire>
     <wire>
       <p1 x="-300" y="-680"/>
@@ -5131,6 +5251,10 @@ add other board</string>
     <wire>
       <p1 x="-2720" y="1200"/>
       <p2 x="-2640" y="1200"/>
+    </wire>
+    <wire>
+      <p1 x="13340" y="1200"/>
+      <p2 x="13620" y="1200"/>
     </wire>
     <wire>
       <p1 x="20" y="3760"/>
@@ -5273,16 +5397,12 @@ add other board</string>
       <p2 x="9340" y="1720"/>
     </wire>
     <wire>
-      <p1 x="9920" y="1720"/>
-      <p2 x="10480" y="1720"/>
+      <p1 x="10020" y="1720"/>
+      <p2 x="10580" y="1720"/>
     </wire>
     <wire>
       <p1 x="600" y="1720"/>
       <p2 x="640" y="1720"/>
-    </wire>
-    <wire>
-      <p1 x="-580" y="4280"/>
-      <p2 x="-100" y="4280"/>
     </wire>
     <wire>
       <p1 x="-320" y="-700"/>
@@ -5303,6 +5423,26 @@ add other board</string>
     <wire>
       <p1 x="-2400" y="5820"/>
       <p2 x="-2040" y="5820"/>
+    </wire>
+    <wire>
+      <p1 x="-1800" y="4800"/>
+      <p2 x="-1640" y="4800"/>
+    </wire>
+    <wire>
+      <p1 x="-1420" y="4800"/>
+      <p2 x="-1260" y="4800"/>
+    </wire>
+    <wire>
+      <p1 x="-2560" y="4800"/>
+      <p2 x="-2380" y="4800"/>
+    </wire>
+    <wire>
+      <p1 x="-1140" y="4800"/>
+      <p2 x="-700" y="4800"/>
+    </wire>
+    <wire>
+      <p1 x="-2380" y="4800"/>
+      <p2 x="-2040" y="4800"/>
     </wire>
     <wire>
       <p1 x="-6780" y="2240"/>
@@ -5329,30 +5469,6 @@ add other board</string>
       <p2 x="-2480" y="2240"/>
     </wire>
     <wire>
-      <p1 x="-1800" y="4800"/>
-      <p2 x="-1640" y="4800"/>
-    </wire>
-    <wire>
-      <p1 x="-1420" y="4800"/>
-      <p2 x="-1260" y="4800"/>
-    </wire>
-    <wire>
-      <p1 x="-2560" y="4800"/>
-      <p2 x="-2380" y="4800"/>
-    </wire>
-    <wire>
-      <p1 x="-1140" y="4800"/>
-      <p2 x="-700" y="4800"/>
-    </wire>
-    <wire>
-      <p1 x="-80" y="4800"/>
-      <p2 x="180" y="4800"/>
-    </wire>
-    <wire>
-      <p1 x="-2380" y="4800"/>
-      <p2 x="-2040" y="4800"/>
-    </wire>
-    <wire>
       <p1 x="-1160" y="1220"/>
       <p2 x="-1100" y="1220"/>
     </wire>
@@ -5363,6 +5479,14 @@ add other board</string>
     <wire>
       <p1 x="-160" y="1220"/>
       <p2 x="160" y="1220"/>
+    </wire>
+    <wire>
+      <p1 x="9720" y="1220"/>
+      <p2 x="9900" y="1220"/>
+    </wire>
+    <wire>
+      <p1 x="13320" y="1220"/>
+      <p2 x="13600" y="1220"/>
     </wire>
     <wire>
       <p1 x="2140" y="3780"/>
@@ -5481,12 +5605,16 @@ add other board</string>
       <p2 x="3760" y="1740"/>
     </wire>
     <wire>
-      <p1 x="9900" y="1740"/>
-      <p2 x="10980" y="1740"/>
+      <p1 x="10000" y="1740"/>
+      <p2 x="11080" y="1740"/>
     </wire>
     <wire>
-      <p1 x="-600" y="4300"/>
-      <p2 x="-120" y="4300"/>
+      <p1 x="9860" y="1740"/>
+      <p2 x="9940" y="1740"/>
+    </wire>
+    <wire>
+      <p1 x="9660" y="1740"/>
+      <p2 x="9740" y="1740"/>
     </wire>
     <wire>
       <p1 x="-4100" y="3280"/>
@@ -5519,10 +5647,6 @@ add other board</string>
     <wire>
       <p1 x="-7380" y="3280"/>
       <p2 x="-7220" y="3280"/>
-    </wire>
-    <wire>
-      <p1 x="-3940" y="3280"/>
-      <p2 x="-3580" y="3280"/>
     </wire>
     <wire>
       <p1 x="-6080" y="3280"/>
@@ -5577,10 +5701,6 @@ add other board</string>
       <p2 x="-4580" y="2260"/>
     </wire>
     <wire>
-      <p1 x="-100" y="4820"/>
-      <p2 x="200" y="4820"/>
-    </wire>
-    <wire>
       <p1 x="-3960" y="4820"/>
       <p2 x="-3480" y="4820"/>
     </wire>
@@ -5589,8 +5709,8 @@ add other board</string>
       <p2 x="3020" y="1240"/>
     </wire>
     <wire>
-      <p1 x="9640" y="1240"/>
-      <p2 x="9680" y="1240"/>
+      <p1 x="13300" y="1240"/>
+      <p2 x="13580" y="1240"/>
     </wire>
     <wire>
       <p1 x="-5580" y="3800"/>
@@ -5673,12 +5793,8 @@ add other board</string>
       <p2 x="-3920" y="1760"/>
     </wire>
     <wire>
-      <p1 x="9880" y="1760"/>
-      <p2 x="11480" y="1760"/>
-    </wire>
-    <wire>
-      <p1 x="-620" y="4320"/>
-      <p2 x="-140" y="4320"/>
+      <p1 x="9980" y="1760"/>
+      <p2 x="11580" y="1760"/>
     </wire>
     <wire>
       <p1 x="-3040" y="6880"/>
@@ -5715,6 +5831,30 @@ add other board</string>
     <wire>
       <p1 x="-4240" y="5860"/>
       <p2 x="-2900" y="5860"/>
+    </wire>
+    <wire>
+      <p1 x="-1440" y="4840"/>
+      <p2 x="-1260" y="4840"/>
+    </wire>
+    <wire>
+      <p1 x="-1800" y="4840"/>
+      <p2 x="-1460" y="4840"/>
+    </wire>
+    <wire>
+      <p1 x="-2580" y="4840"/>
+      <p2 x="-2400" y="4840"/>
+    </wire>
+    <wire>
+      <p1 x="-1140" y="4840"/>
+      <p2 x="-720" y="4840"/>
+    </wire>
+    <wire>
+      <p1 x="-3920" y="4840"/>
+      <p2 x="-3360" y="4840"/>
+    </wire>
+    <wire>
+      <p1 x="-2400" y="4840"/>
+      <p2 x="-2040" y="4840"/>
     </wire>
     <wire>
       <p1 x="-180" y="2280"/>
@@ -5757,40 +5897,16 @@ add other board</string>
       <p2 x="-5120" y="2280"/>
     </wire>
     <wire>
-      <p1 x="-1440" y="4840"/>
-      <p2 x="-1260" y="4840"/>
-    </wire>
-    <wire>
-      <p1 x="-1800" y="4840"/>
-      <p2 x="-1460" y="4840"/>
-    </wire>
-    <wire>
-      <p1 x="-2580" y="4840"/>
-      <p2 x="-2400" y="4840"/>
-    </wire>
-    <wire>
-      <p1 x="-1140" y="4840"/>
-      <p2 x="-720" y="4840"/>
-    </wire>
-    <wire>
-      <p1 x="-120" y="4840"/>
-      <p2 x="220" y="4840"/>
-    </wire>
-    <wire>
-      <p1 x="-3920" y="4840"/>
-      <p2 x="-3360" y="4840"/>
-    </wire>
-    <wire>
-      <p1 x="-2400" y="4840"/>
-      <p2 x="-2040" y="4840"/>
-    </wire>
-    <wire>
       <p1 x="-1300" y="1260"/>
       <p2 x="-1280" y="1260"/>
     </wire>
     <wire>
       <p1 x="-1160" y="1260"/>
       <p2 x="1320" y="1260"/>
+    </wire>
+    <wire>
+      <p1 x="7640" y="1260"/>
+      <p2 x="8600" y="1260"/>
     </wire>
     <wire>
       <p1 x="2140" y="3820"/>
@@ -5901,14 +6017,6 @@ add other board</string>
       <p2 x="-3940" y="5360"/>
     </wire>
     <wire>
-      <p1 x="160" y="4340"/>
-      <p2 x="200" y="4340"/>
-    </wire>
-    <wire>
-      <p1 x="20" y="4340"/>
-      <p2 x="40" y="4340"/>
-    </wire>
-    <wire>
       <p1 x="1100" y="1780"/>
       <p2 x="1260" y="1780"/>
     </wire>
@@ -5925,12 +6033,16 @@ add other board</string>
       <p2 x="-2820" y="1780"/>
     </wire>
     <wire>
-      <p1 x="9640" y="1780"/>
-      <p2 x="9680" y="1780"/>
+      <p1 x="9700" y="1780"/>
+      <p2 x="9740" y="1780"/>
+    </wire>
+    <wire>
+      <p1 x="9960" y="1780"/>
+      <p2 x="12080" y="1780"/>
     </wire>
     <wire>
       <p1 x="9860" y="1780"/>
-      <p2 x="11980" y="1780"/>
+      <p2 x="9920" y="1780"/>
     </wire>
     <wire>
       <p1 x="-3120" y="6900"/>
@@ -5985,48 +6097,68 @@ add other board</string>
       <p2 x="-1620" y="2300"/>
     </wire>
     <wire>
-      <p1 x="-140" y="4860"/>
-      <p2 x="240" y="4860"/>
-    </wire>
-    <wire>
       <p1 x="-3980" y="4860"/>
       <p2 x="-3820" y="4860"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1280"/>
-      <p2 x="10420" y="1280"/>
+      <p1 x="10480" y="1280"/>
+      <p2 x="10520" y="1280"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1280"/>
-      <p2 x="10260" y="1280"/>
+      <p1 x="10340" y="1280"/>
+      <p2 x="10360" y="1280"/>
     </wire>
     <wire>
-      <p1 x="9660" y="1280"/>
-      <p2 x="9840" y="1280"/>
+      <p1 x="10980" y="1280"/>
+      <p2 x="11020" y="1280"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1280"/>
-      <p2 x="10920" y="1280"/>
+      <p1 x="10820" y="1280"/>
+      <p2 x="10860" y="1280"/>
     </wire>
     <wire>
-      <p1 x="10720" y="1280"/>
-      <p2 x="10760" y="1280"/>
+      <p1 x="11480" y="1280"/>
+      <p2 x="11520" y="1280"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1280"/>
-      <p2 x="11420" y="1280"/>
+      <p1 x="11320" y="1280"/>
+      <p2 x="11360" y="1280"/>
     </wire>
     <wire>
-      <p1 x="11220" y="1280"/>
-      <p2 x="11260" y="1280"/>
+      <p1 x="11980" y="1280"/>
+      <p2 x="12020" y="1280"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1280"/>
-      <p2 x="11920" y="1280"/>
+      <p1 x="11820" y="1280"/>
+      <p2 x="11860" y="1280"/>
     </wire>
     <wire>
-      <p1 x="11720" y="1280"/>
-      <p2 x="11760" y="1280"/>
+      <p1 x="12480" y="1280"/>
+      <p2 x="12520" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="12320" y="1280"/>
+      <p2 x="12360" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1280"/>
+      <p2 x="13020" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="12820" y="1280"/>
+      <p2 x="12860" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1280"/>
+      <p2 x="13520" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="13320" y="1280"/>
+      <p2 x="13360" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="7560" y="1280"/>
+      <p2 x="8620" y="1280"/>
     </wire>
     <wire>
       <p1 x="-80" y="3840"/>
@@ -6074,7 +6206,7 @@ add other board</string>
     </wire>
     <wire>
       <p1 x="-1340" y="1800"/>
-      <p2 x="-520" y="1800"/>
+      <p2 x="-500" y="1800"/>
     </wire>
     <wire>
       <p1 x="-3620" y="1800"/>
@@ -6093,8 +6225,8 @@ add other board</string>
       <p2 x="3420" y="1800"/>
     </wire>
     <wire>
-      <p1 x="-520" y="1800"/>
-      <p2 x="-500" y="1800"/>
+      <p1 x="9940" y="1800"/>
+      <p2 x="12580" y="1800"/>
     </wire>
     <wire>
       <p1 x="-3140" y="6920"/>
@@ -6111,6 +6243,10 @@ add other board</string>
     <wire>
       <p1 x="440" y="780"/>
       <p2 x="1120" y="780"/>
+    </wire>
+    <wire>
+      <p1 x="8600" y="780"/>
+      <p2 x="13220" y="780"/>
     </wire>
     <wire>
       <p1 x="-1740" y="780"/>
@@ -6183,10 +6319,6 @@ add other board</string>
     <wire>
       <p1 x="-1800" y="4880"/>
       <p2 x="-1620" y="4880"/>
-    </wire>
-    <wire>
-      <p1 x="-240" y="4880"/>
-      <p2 x="480" y="4880"/>
     </wire>
     <wire>
       <p1 x="-2600" y="4880"/>
@@ -6289,20 +6421,16 @@ add other board</string>
       <p2 x="-2820" y="1820"/>
     </wire>
     <wire>
-      <p1 x="9660" y="1820"/>
-      <p2 x="9840" y="1820"/>
+      <p1 x="9720" y="1820"/>
+      <p2 x="9900" y="1820"/>
+    </wire>
+    <wire>
+      <p1 x="9920" y="1820"/>
+      <p2 x="13080" y="1820"/>
     </wire>
     <wire>
       <p1 x="1260" y="1820"/>
       <p2 x="1280" y="1820"/>
-    </wire>
-    <wire>
-      <p1 x="-220" y="4380"/>
-      <p2 x="40" y="4380"/>
-    </wire>
-    <wire>
-      <p1 x="160" y="4380"/>
-      <p2 x="300" y="4380"/>
     </wire>
     <wire>
       <p1 x="-4980" y="4380"/>
@@ -6337,6 +6465,14 @@ add other board</string>
       <p2 x="4300" y="800"/>
     </wire>
     <wire>
+      <p1 x="8620" y="800"/>
+      <p2 x="13240" y="800"/>
+    </wire>
+    <wire>
+      <p1 x="-5000" y="4900"/>
+      <p2 x="-3940" y="4900"/>
+    </wire>
+    <wire>
       <p1 x="-960" y="2340"/>
       <p2 x="2660" y="2340"/>
     </wire>
@@ -6369,44 +6505,60 @@ add other board</string>
       <p2 x="-3660" y="2340"/>
     </wire>
     <wire>
-      <p1 x="-260" y="4900"/>
-      <p2 x="260" y="4900"/>
+      <p1 x="10340" y="1320"/>
+      <p2 x="10360" y="1320"/>
     </wire>
     <wire>
-      <p1 x="-5000" y="4900"/>
-      <p2 x="-3940" y="4900"/>
+      <p1 x="10480" y="1320"/>
+      <p2 x="10500" y="1320"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1320"/>
-      <p2 x="10260" y="1320"/>
+      <p1 x="10840" y="1320"/>
+      <p2 x="10860" y="1320"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1320"/>
-      <p2 x="10400" y="1320"/>
+      <p1 x="10980" y="1320"/>
+      <p2 x="11000" y="1320"/>
     </wire>
     <wire>
-      <p1 x="10740" y="1320"/>
-      <p2 x="10760" y="1320"/>
+      <p1 x="11340" y="1320"/>
+      <p2 x="11360" y="1320"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1320"/>
-      <p2 x="10900" y="1320"/>
+      <p1 x="11480" y="1320"/>
+      <p2 x="11500" y="1320"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1320"/>
-      <p2 x="11260" y="1320"/>
+      <p1 x="11840" y="1320"/>
+      <p2 x="11860" y="1320"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1320"/>
-      <p2 x="11400" y="1320"/>
+      <p1 x="11980" y="1320"/>
+      <p2 x="12000" y="1320"/>
     </wire>
     <wire>
-      <p1 x="11740" y="1320"/>
-      <p2 x="11760" y="1320"/>
+      <p1 x="12340" y="1320"/>
+      <p2 x="12360" y="1320"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1320"/>
-      <p2 x="11900" y="1320"/>
+      <p1 x="12480" y="1320"/>
+      <p2 x="12500" y="1320"/>
+    </wire>
+    <wire>
+      <p1 x="12840" y="1320"/>
+      <p2 x="12860" y="1320"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1320"/>
+      <p2 x="13000" y="1320"/>
+    </wire>
+    <wire>
+      <p1 x="13220" y="1320"/>
+      <p2 x="13360" y="1320"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1320"/>
+      <p2 x="13640" y="1320"/>
     </wire>
     <wire>
       <p1 x="-120" y="3880"/>
@@ -6477,10 +6629,6 @@ add other board</string>
       <p2 x="4020" y="1840"/>
     </wire>
     <wire>
-      <p1 x="-220" y="4400"/>
-      <p2 x="-160" y="4400"/>
-    </wire>
-    <wire>
       <p1 x="-4360" y="4400"/>
       <p2 x="-3820" y="4400"/>
     </wire>
@@ -6529,6 +6677,26 @@ add other board</string>
       <p2 x="-1760" y="5940"/>
     </wire>
     <wire>
+      <p1 x="-1300" y="4920"/>
+      <p2 x="-1260" y="4920"/>
+    </wire>
+    <wire>
+      <p1 x="-1140" y="4920"/>
+      <p2 x="-1060" y="4920"/>
+    </wire>
+    <wire>
+      <p1 x="-2620" y="4920"/>
+      <p2 x="-2420" y="4920"/>
+    </wire>
+    <wire>
+      <p1 x="-5040" y="4920"/>
+      <p2 x="-4820" y="4920"/>
+    </wire>
+    <wire>
+      <p1 x="-2420" y="4920"/>
+      <p2 x="-2040" y="4920"/>
+    </wire>
+    <wire>
       <p1 x="-940" y="2360"/>
       <p2 x="1420" y="2360"/>
     </wire>
@@ -6563,26 +6731,6 @@ add other board</string>
     <wire>
       <p1 x="-2680" y="2360"/>
       <p2 x="-1740" y="2360"/>
-    </wire>
-    <wire>
-      <p1 x="-1300" y="4920"/>
-      <p2 x="-1260" y="4920"/>
-    </wire>
-    <wire>
-      <p1 x="-1140" y="4920"/>
-      <p2 x="-1060" y="4920"/>
-    </wire>
-    <wire>
-      <p1 x="-2620" y="4920"/>
-      <p2 x="-2420" y="4920"/>
-    </wire>
-    <wire>
-      <p1 x="-5040" y="4920"/>
-      <p2 x="-4820" y="4920"/>
-    </wire>
-    <wire>
-      <p1 x="-2420" y="4920"/>
-      <p2 x="-2040" y="4920"/>
     </wire>
     <wire>
       <p1 x="-1340" y="1340"/>
@@ -6709,18 +6857,6 @@ add other board</string>
       <p2 x="800" y="320"/>
     </wire>
     <wire>
-      <p1 x="-60" y="4420"/>
-      <p2 x="40" y="4420"/>
-    </wire>
-    <wire>
-      <p1 x="160" y="4420"/>
-      <p2 x="240" y="4420"/>
-    </wire>
-    <wire>
-      <p1 x="-220" y="4420"/>
-      <p2 x="-180" y="4420"/>
-    </wire>
-    <wire>
       <p1 x="-5000" y="4420"/>
       <p2 x="-4760" y="4420"/>
     </wire>
@@ -6751,6 +6887,10 @@ add other board</string>
     <wire>
       <p1 x="-3020" y="1860"/>
       <p2 x="-2980" y="1860"/>
+    </wire>
+    <wire>
+      <p1 x="9660" y="1860"/>
+      <p2 x="13580" y="1860"/>
     </wire>
     <wire>
       <p1 x="-1520" y="840"/>
@@ -6801,6 +6941,14 @@ add other board</string>
       <p2 x="40" y="3400"/>
     </wire>
     <wire>
+      <p1 x="-4340" y="4940"/>
+      <p2 x="-3440" y="4940"/>
+    </wire>
+    <wire>
+      <p1 x="-5020" y="4940"/>
+      <p2 x="-4780" y="4940"/>
+    </wire>
+    <wire>
       <p1 x="2080" y="2380"/>
       <p2 x="2640" y="2380"/>
     </wire>
@@ -6829,20 +6977,12 @@ add other board</string>
       <p2 x="-4460" y="2380"/>
     </wire>
     <wire>
-      <p1 x="-4340" y="4940"/>
-      <p2 x="-3440" y="4940"/>
+      <p1 x="10180" y="1360"/>
+      <p2 x="10340" y="1360"/>
     </wire>
     <wire>
-      <p1 x="-5020" y="4940"/>
-      <p2 x="-4780" y="4940"/>
-    </wire>
-    <wire>
-      <p1 x="10080" y="1360"/>
-      <p2 x="10240" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="10380" y="1360"/>
-      <p2 x="10400" y="1360"/>
+      <p1 x="10480" y="1360"/>
+      <p2 x="10500" y="1360"/>
     </wire>
     <wire>
       <p1 x="620" y="1360"/>
@@ -6853,60 +6993,100 @@ add other board</string>
       <p2 x="-2620" y="1360"/>
     </wire>
     <wire>
-      <p1 x="10580" y="1360"/>
-      <p2 x="10740" y="1360"/>
+      <p1 x="10680" y="1360"/>
+      <p2 x="10840" y="1360"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1360"/>
-      <p2 x="10900" y="1360"/>
+      <p1 x="10980" y="1360"/>
+      <p2 x="11000" y="1360"/>
     </wire>
     <wire>
-      <p1 x="11080" y="1360"/>
-      <p2 x="11240" y="1360"/>
+      <p1 x="11180" y="1360"/>
+      <p2 x="11340" y="1360"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1360"/>
-      <p2 x="11400" y="1360"/>
+      <p1 x="11480" y="1360"/>
+      <p2 x="11500" y="1360"/>
     </wire>
     <wire>
-      <p1 x="11580" y="1360"/>
-      <p2 x="11740" y="1360"/>
+      <p1 x="11680" y="1360"/>
+      <p2 x="11840" y="1360"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1360"/>
-      <p2 x="11900" y="1360"/>
+      <p1 x="11980" y="1360"/>
+      <p2 x="12000" y="1360"/>
     </wire>
     <wire>
-      <p1 x="10400" y="1360"/>
-      <p2 x="10460" y="1360"/>
+      <p1 x="12180" y="1360"/>
+      <p2 x="12340" y="1360"/>
     </wire>
     <wire>
-      <p1 x="11740" y="1360"/>
-      <p2 x="11760" y="1360"/>
+      <p1 x="12480" y="1360"/>
+      <p2 x="12500" y="1360"/>
     </wire>
     <wire>
-      <p1 x="11900" y="1360"/>
-      <p2 x="11960" y="1360"/>
+      <p1 x="12680" y="1360"/>
+      <p2 x="12840" y="1360"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1360"/>
-      <p2 x="11260" y="1360"/>
+      <p1 x="12980" y="1360"/>
+      <p2 x="13000" y="1360"/>
     </wire>
     <wire>
-      <p1 x="11400" y="1360"/>
-      <p2 x="11460" y="1360"/>
+      <p1 x="13180" y="1360"/>
+      <p2 x="13360" y="1360"/>
     </wire>
     <wire>
-      <p1 x="10740" y="1360"/>
-      <p2 x="10760" y="1360"/>
+      <p1 x="13480" y="1360"/>
+      <p2 x="13560" y="1360"/>
     </wire>
     <wire>
-      <p1 x="10900" y="1360"/>
-      <p2 x="10960" y="1360"/>
+      <p1 x="12000" y="1360"/>
+      <p2 x="12060" y="1360"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1360"/>
-      <p2 x="10260" y="1360"/>
+      <p1 x="11340" y="1360"/>
+      <p2 x="11360" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="11500" y="1360"/>
+      <p2 x="11560" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="10840" y="1360"/>
+      <p2 x="10860" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="12840" y="1360"/>
+      <p2 x="12860" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="11000" y="1360"/>
+      <p2 x="11060" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="10340" y="1360"/>
+      <p2 x="10360" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="13000" y="1360"/>
+      <p2 x="13060" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1360"/>
+      <p2 x="12360" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="10500" y="1360"/>
+      <p2 x="10560" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="12500" y="1360"/>
+      <p2 x="12560" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="11840" y="1360"/>
+      <p2 x="11860" y="1360"/>
     </wire>
     <wire>
       <p1 x="-5700" y="3920"/>
@@ -6957,6 +7137,10 @@ add other board</string>
       <p2 x="-920" y="2900"/>
     </wire>
     <wire>
+      <p1 x="-2540" y="4440"/>
+      <p2 x="-1080" y="4440"/>
+    </wire>
+    <wire>
       <p1 x="-1080" y="1880"/>
       <p2 x="-600" y="1880"/>
     </wire>
@@ -6987,14 +7171,6 @@ add other board</string>
     <wire>
       <p1 x="3400" y="1880"/>
       <p2 x="3440" y="1880"/>
-    </wire>
-    <wire>
-      <p1 x="-2540" y="4440"/>
-      <p2 x="-1080" y="4440"/>
-    </wire>
-    <wire>
-      <p1 x="-220" y="4440"/>
-      <p2 x="-200" y="4440"/>
     </wire>
     <wire>
       <p1 x="120" y="860"/>
@@ -7037,6 +7213,26 @@ add other board</string>
       <p2 x="-2040" y="5980"/>
     </wire>
     <wire>
+      <p1 x="-1460" y="4960"/>
+      <p2 x="-1260" y="4960"/>
+    </wire>
+    <wire>
+      <p1 x="-2160" y="4960"/>
+      <p2 x="-2040" y="4960"/>
+    </wire>
+    <wire>
+      <p1 x="-1140" y="4960"/>
+      <p2 x="-740" y="4960"/>
+    </wire>
+    <wire>
+      <p1 x="-1800" y="4960"/>
+      <p2 x="-1740" y="4960"/>
+    </wire>
+    <wire>
+      <p1 x="-4320" y="4960"/>
+      <p2 x="-3460" y="4960"/>
+    </wire>
+    <wire>
       <p1 x="-4080" y="2400"/>
       <p2 x="-3780" y="2400"/>
     </wire>
@@ -7071,26 +7267,6 @@ add other board</string>
     <wire>
       <p1 x="-7360" y="2400"/>
       <p2 x="-7060" y="2400"/>
-    </wire>
-    <wire>
-      <p1 x="-1460" y="4960"/>
-      <p2 x="-1260" y="4960"/>
-    </wire>
-    <wire>
-      <p1 x="-2160" y="4960"/>
-      <p2 x="-2040" y="4960"/>
-    </wire>
-    <wire>
-      <p1 x="-1140" y="4960"/>
-      <p2 x="-740" y="4960"/>
-    </wire>
-    <wire>
-      <p1 x="-1800" y="4960"/>
-      <p2 x="-1740" y="4960"/>
-    </wire>
-    <wire>
-      <p1 x="-4320" y="4960"/>
-      <p2 x="-3460" y="4960"/>
     </wire>
     <wire>
       <p1 x="9300" y="1380"/>
@@ -7285,16 +7461,8 @@ add other board</string>
       <p2 x="2420" y="1900"/>
     </wire>
     <wire>
-      <p1 x="-40" y="4460"/>
-      <p2 x="40" y="4460"/>
-    </wire>
-    <wire>
       <p1 x="-2560" y="4460"/>
       <p2 x="-960" y="4460"/>
-    </wire>
-    <wire>
-      <p1 x="160" y="4460"/>
-      <p2 x="220" y="4460"/>
     </wire>
     <wire>
       <p1 x="-1680" y="880"/>
@@ -7365,12 +7533,12 @@ add other board</string>
       <p2 x="-7100" y="2420"/>
     </wire>
     <wire>
-      <p1 x="10100" y="1400"/>
-      <p2 x="10240" y="1400"/>
+      <p1 x="10200" y="1400"/>
+      <p2 x="10340" y="1400"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1400"/>
-      <p2 x="10400" y="1400"/>
+      <p1 x="10480" y="1400"/>
+      <p2 x="10500" y="1400"/>
     </wire>
     <wire>
       <p1 x="9260" y="1400"/>
@@ -7401,64 +7569,104 @@ add other board</string>
       <p2 x="-1820" y="1400"/>
     </wire>
     <wire>
-      <p1 x="10600" y="1400"/>
-      <p2 x="10740" y="1400"/>
+      <p1 x="10700" y="1400"/>
+      <p2 x="10840" y="1400"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1400"/>
-      <p2 x="10900" y="1400"/>
+      <p1 x="10980" y="1400"/>
+      <p2 x="11000" y="1400"/>
     </wire>
     <wire>
-      <p1 x="11100" y="1400"/>
-      <p2 x="11240" y="1400"/>
+      <p1 x="11200" y="1400"/>
+      <p2 x="11340" y="1400"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1400"/>
-      <p2 x="11400" y="1400"/>
+      <p1 x="11480" y="1400"/>
+      <p2 x="11500" y="1400"/>
     </wire>
     <wire>
-      <p1 x="11600" y="1400"/>
-      <p2 x="11740" y="1400"/>
+      <p1 x="11700" y="1400"/>
+      <p2 x="11840" y="1400"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1400"/>
-      <p2 x="11900" y="1400"/>
+      <p1 x="11980" y="1400"/>
+      <p2 x="12000" y="1400"/>
     </wire>
     <wire>
-      <p1 x="10400" y="1400"/>
-      <p2 x="10440" y="1400"/>
+      <p1 x="12200" y="1400"/>
+      <p2 x="12340" y="1400"/>
     </wire>
     <wire>
-      <p1 x="11740" y="1400"/>
-      <p2 x="11760" y="1400"/>
+      <p1 x="12480" y="1400"/>
+      <p2 x="12500" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="12700" y="1400"/>
+      <p2 x="12840" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1400"/>
+      <p2 x="13000" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="13200" y="1400"/>
+      <p2 x="13360" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1400"/>
+      <p2 x="13540" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="12000" y="1400"/>
+      <p2 x="12040" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="11340" y="1400"/>
+      <p2 x="11360" y="1400"/>
     </wire>
     <wire>
       <p1 x="780" y="1400"/>
       <p2 x="800" y="1400"/>
     </wire>
     <wire>
-      <p1 x="11900" y="1400"/>
-      <p2 x="11940" y="1400"/>
+      <p1 x="11500" y="1400"/>
+      <p2 x="11540" y="1400"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1400"/>
-      <p2 x="11260" y="1400"/>
+      <p1 x="10840" y="1400"/>
+      <p2 x="10860" y="1400"/>
     </wire>
     <wire>
-      <p1 x="11400" y="1400"/>
-      <p2 x="11440" y="1400"/>
+      <p1 x="12840" y="1400"/>
+      <p2 x="12860" y="1400"/>
     </wire>
     <wire>
-      <p1 x="10740" y="1400"/>
-      <p2 x="10760" y="1400"/>
+      <p1 x="11000" y="1400"/>
+      <p2 x="11040" y="1400"/>
     </wire>
     <wire>
-      <p1 x="10900" y="1400"/>
-      <p2 x="10940" y="1400"/>
+      <p1 x="10340" y="1400"/>
+      <p2 x="10360" y="1400"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1400"/>
-      <p2 x="10260" y="1400"/>
+      <p1 x="13000" y="1400"/>
+      <p2 x="13040" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1400"/>
+      <p2 x="12360" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="10500" y="1400"/>
+      <p2 x="10540" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="12500" y="1400"/>
+      <p2 x="12540" y="1400"/>
+    </wire>
+    <wire>
+      <p1 x="11840" y="1400"/>
+      <p2 x="11860" y="1400"/>
     </wire>
     <wire>
       <p1 x="0" y="3960"/>
@@ -7501,6 +7709,14 @@ add other board</string>
       <p2 x="-7060" y="2940"/>
     </wire>
     <wire>
+      <p1 x="-2080" y="4480"/>
+      <p2 x="-1360" y="4480"/>
+    </wire>
+    <wire>
+      <p1 x="-1360" y="4480"/>
+      <p2 x="-480" y="4480"/>
+    </wire>
+    <wire>
       <p1 x="-3960" y="1920"/>
       <p2 x="-3920" y="1920"/>
     </wire>
@@ -7529,14 +7745,6 @@ add other board</string>
       <p2 x="3280" y="1920"/>
     </wire>
     <wire>
-      <p1 x="-2080" y="4480"/>
-      <p2 x="-1360" y="4480"/>
-    </wire>
-    <wire>
-      <p1 x="-1360" y="4480"/>
-      <p2 x="-480" y="4480"/>
-    </wire>
-    <wire>
       <p1 x="-2100" y="6020"/>
       <p2 x="-2040" y="6020"/>
     </wire>
@@ -7561,6 +7769,14 @@ add other board</string>
       <p2 x="1660" y="900"/>
     </wire>
     <wire>
+      <p1 x="9860" y="900"/>
+      <p2 x="9900" y="900"/>
+    </wire>
+    <wire>
+      <p1 x="9500" y="900"/>
+      <p2 x="9740" y="900"/>
+    </wire>
+    <wire>
       <p1 x="1660" y="900"/>
       <p2 x="2060" y="900"/>
     </wire>
@@ -7573,8 +7789,28 @@ add other board</string>
       <p2 x="2580" y="3460"/>
     </wire>
     <wire>
-      <p1 x="-3580" y="3460"/>
-      <p2 x="-2740" y="3460"/>
+      <p1 x="-1280" y="5000"/>
+      <p2 x="-1260" y="5000"/>
+    </wire>
+    <wire>
+      <p1 x="-1140" y="5000"/>
+      <p2 x="-1080" y="5000"/>
+    </wire>
+    <wire>
+      <p1 x="-2140" y="5000"/>
+      <p2 x="-2040" y="5000"/>
+    </wire>
+    <wire>
+      <p1 x="-3660" y="5000"/>
+      <p2 x="-3500" y="5000"/>
+    </wire>
+    <wire>
+      <p1 x="-4980" y="5000"/>
+      <p2 x="-4820" y="5000"/>
+    </wire>
+    <wire>
+      <p1 x="-4120" y="5000"/>
+      <p2 x="-3960" y="5000"/>
     </wire>
     <wire>
       <p1 x="-4040" y="2440"/>
@@ -7603,30 +7839,6 @@ add other board</string>
     <wire>
       <p1 x="-1460" y="2440"/>
       <p2 x="-1020" y="2440"/>
-    </wire>
-    <wire>
-      <p1 x="-1280" y="5000"/>
-      <p2 x="-1260" y="5000"/>
-    </wire>
-    <wire>
-      <p1 x="-1140" y="5000"/>
-      <p2 x="-1080" y="5000"/>
-    </wire>
-    <wire>
-      <p1 x="-2140" y="5000"/>
-      <p2 x="-2040" y="5000"/>
-    </wire>
-    <wire>
-      <p1 x="-3660" y="5000"/>
-      <p2 x="-3500" y="5000"/>
-    </wire>
-    <wire>
-      <p1 x="-4980" y="5000"/>
-      <p2 x="-4820" y="5000"/>
-    </wire>
-    <wire>
-      <p1 x="-4120" y="5000"/>
-      <p2 x="-3960" y="5000"/>
     </wire>
     <wire>
       <p1 x="9220" y="1420"/>
@@ -7805,6 +8017,18 @@ add other board</string>
       <p2 x="640" y="400"/>
     </wire>
     <wire>
+      <p1 x="-1660" y="4500"/>
+      <p2 x="-1340" y="4500"/>
+    </wire>
+    <wire>
+      <p1 x="-2600" y="4500"/>
+      <p2 x="-2520" y="4500"/>
+    </wire>
+    <wire>
+      <p1 x="-1340" y="4500"/>
+      <p2 x="-500" y="4500"/>
+    </wire>
+    <wire>
       <p1 x="120" y="1940"/>
       <p2 x="160" y="1940"/>
     </wire>
@@ -7839,26 +8063,6 @@ add other board</string>
     <wire>
       <p1 x="1920" y="1940"/>
       <p2 x="2440" y="1940"/>
-    </wire>
-    <wire>
-      <p1 x="-1660" y="4500"/>
-      <p2 x="-1340" y="4500"/>
-    </wire>
-    <wire>
-      <p1 x="-2600" y="4500"/>
-      <p2 x="-2520" y="4500"/>
-    </wire>
-    <wire>
-      <p1 x="-160" y="4500"/>
-      <p2 x="40" y="4500"/>
-    </wire>
-    <wire>
-      <p1 x="160" y="4500"/>
-      <p2 x="280" y="4500"/>
-    </wire>
-    <wire>
-      <p1 x="-1340" y="4500"/>
-      <p2 x="-500" y="4500"/>
     </wire>
     <wire>
       <p1 x="-1700" y="920"/>
@@ -7917,12 +8121,12 @@ add other board</string>
       <p2 x="-7180" y="2460"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1440"/>
-      <p2 x="10260" y="1440"/>
+      <p1 x="10340" y="1440"/>
+      <p2 x="10360" y="1440"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1440"/>
-      <p2 x="10400" y="1440"/>
+      <p1 x="10480" y="1440"/>
+      <p2 x="10500" y="1440"/>
     </wire>
     <wire>
       <p1 x="9180" y="1440"/>
@@ -7945,28 +8149,52 @@ add other board</string>
       <p2 x="440" y="1440"/>
     </wire>
     <wire>
-      <p1 x="10740" y="1440"/>
-      <p2 x="10760" y="1440"/>
+      <p1 x="10840" y="1440"/>
+      <p2 x="10860" y="1440"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1440"/>
-      <p2 x="10900" y="1440"/>
+      <p1 x="10980" y="1440"/>
+      <p2 x="11000" y="1440"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1440"/>
-      <p2 x="11260" y="1440"/>
+      <p1 x="11340" y="1440"/>
+      <p2 x="11360" y="1440"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1440"/>
-      <p2 x="11400" y="1440"/>
+      <p1 x="11480" y="1440"/>
+      <p2 x="11500" y="1440"/>
     </wire>
     <wire>
-      <p1 x="11740" y="1440"/>
-      <p2 x="11760" y="1440"/>
+      <p1 x="11840" y="1440"/>
+      <p2 x="11860" y="1440"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1440"/>
-      <p2 x="11900" y="1440"/>
+      <p1 x="11980" y="1440"/>
+      <p2 x="12000" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1440"/>
+      <p2 x="12360" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="12480" y="1440"/>
+      <p2 x="12500" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="12840" y="1440"/>
+      <p2 x="12860" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1440"/>
+      <p2 x="13000" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="13240" y="1440"/>
+      <p2 x="13360" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1440"/>
+      <p2 x="13620" y="1440"/>
     </wire>
     <wire>
       <p1 x="440" y="1440"/>
@@ -8009,34 +8237,6 @@ add other board</string>
       <p2 x="-3080" y="5540"/>
     </wire>
     <wire>
-      <p1 x="-3960" y="1960"/>
-      <p2 x="-3920" y="1960"/>
-    </wire>
-    <wire>
-      <p1 x="-3620" y="1960"/>
-      <p2 x="-3580" y="1960"/>
-    </wire>
-    <wire>
-      <p1 x="-3460" y="1960"/>
-      <p2 x="-3220" y="1960"/>
-    </wire>
-    <wire>
-      <p1 x="3740" y="1960"/>
-      <p2 x="3860" y="1960"/>
-    </wire>
-    <wire>
-      <p1 x="3980" y="1960"/>
-      <p2 x="4160" y="1960"/>
-    </wire>
-    <wire>
-      <p1 x="3400" y="1960"/>
-      <p2 x="3480" y="1960"/>
-    </wire>
-    <wire>
-      <p1 x="3260" y="1960"/>
-      <p2 x="3280" y="1960"/>
-    </wire>
-    <wire>
       <p1 x="-2620" y="4520"/>
       <p2 x="-2540" y="4520"/>
     </wire>
@@ -8077,6 +8277,34 @@ add other board</string>
       <p2 x="-520" y="4520"/>
     </wire>
     <wire>
+      <p1 x="-3960" y="1960"/>
+      <p2 x="-3920" y="1960"/>
+    </wire>
+    <wire>
+      <p1 x="-3620" y="1960"/>
+      <p2 x="-3580" y="1960"/>
+    </wire>
+    <wire>
+      <p1 x="-3460" y="1960"/>
+      <p2 x="-3220" y="1960"/>
+    </wire>
+    <wire>
+      <p1 x="3740" y="1960"/>
+      <p2 x="3860" y="1960"/>
+    </wire>
+    <wire>
+      <p1 x="3980" y="1960"/>
+      <p2 x="4160" y="1960"/>
+    </wire>
+    <wire>
+      <p1 x="3400" y="1960"/>
+      <p2 x="3480" y="1960"/>
+    </wire>
+    <wire>
+      <p1 x="3260" y="1960"/>
+      <p2 x="3280" y="1960"/>
+    </wire>
+    <wire>
       <p1 x="-560" y="940"/>
       <p2 x="0" y="940"/>
     </wire>
@@ -8087,6 +8315,10 @@ add other board</string>
     <wire>
       <p1 x="-1840" y="940"/>
       <p2 x="-1780" y="940"/>
+    </wire>
+    <wire>
+      <p1 x="9460" y="940"/>
+      <p2 x="9740" y="940"/>
     </wire>
     <wire>
       <p1 x="1240" y="940"/>
@@ -8341,6 +8573,18 @@ add other board</string>
       <p2 x="-3100" y="5560"/>
     </wire>
     <wire>
+      <p1 x="-1620" y="4540"/>
+      <p2 x="-1300" y="4540"/>
+    </wire>
+    <wire>
+      <p1 x="-2640" y="4540"/>
+      <p2 x="-2560" y="4540"/>
+    </wire>
+    <wire>
+      <p1 x="-1300" y="4540"/>
+      <p2 x="-540" y="4540"/>
+    </wire>
+    <wire>
       <p1 x="-3020" y="1980"/>
       <p2 x="-2980" y="1980"/>
     </wire>
@@ -8373,36 +8617,8 @@ add other board</string>
       <p2 x="2460" y="1980"/>
     </wire>
     <wire>
-      <p1 x="-1620" y="4540"/>
-      <p2 x="-1300" y="4540"/>
-    </wire>
-    <wire>
-      <p1 x="-2640" y="4540"/>
-      <p2 x="-2560" y="4540"/>
-    </wire>
-    <wire>
-      <p1 x="-180" y="4540"/>
-      <p2 x="40" y="4540"/>
-    </wire>
-    <wire>
-      <p1 x="160" y="4540"/>
-      <p2 x="260" y="4540"/>
-    </wire>
-    <wire>
-      <p1 x="-1300" y="4540"/>
-      <p2 x="-540" y="4540"/>
-    </wire>
-    <wire>
       <p1 x="-3780" y="7100"/>
       <p2 x="-480" y="7100"/>
-    </wire>
-    <wire>
-      <p1 x="9500" y="960"/>
-      <p2 x="9680" y="960"/>
-    </wire>
-    <wire>
-      <p1 x="9800" y="960"/>
-      <p2 x="9840" y="960"/>
     </wire>
     <wire>
       <p1 x="-1660" y="960"/>
@@ -8445,12 +8661,12 @@ add other board</string>
       <p2 x="-540" y="5060"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1480"/>
-      <p2 x="10260" y="1480"/>
+      <p1 x="10340" y="1480"/>
+      <p2 x="10360" y="1480"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1480"/>
-      <p2 x="10400" y="1480"/>
+      <p1 x="10480" y="1480"/>
+      <p2 x="10500" y="1480"/>
     </wire>
     <wire>
       <p1 x="9100" y="1480"/>
@@ -8473,28 +8689,52 @@ add other board</string>
       <p2 x="420" y="1480"/>
     </wire>
     <wire>
-      <p1 x="10740" y="1480"/>
-      <p2 x="10760" y="1480"/>
+      <p1 x="10840" y="1480"/>
+      <p2 x="10860" y="1480"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1480"/>
-      <p2 x="10900" y="1480"/>
+      <p1 x="10980" y="1480"/>
+      <p2 x="11000" y="1480"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1480"/>
-      <p2 x="11260" y="1480"/>
+      <p1 x="11340" y="1480"/>
+      <p2 x="11360" y="1480"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1480"/>
-      <p2 x="11400" y="1480"/>
+      <p1 x="11480" y="1480"/>
+      <p2 x="11500" y="1480"/>
     </wire>
     <wire>
-      <p1 x="11740" y="1480"/>
-      <p2 x="11760" y="1480"/>
+      <p1 x="11840" y="1480"/>
+      <p2 x="11860" y="1480"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1480"/>
-      <p2 x="11900" y="1480"/>
+      <p1 x="11980" y="1480"/>
+      <p2 x="12000" y="1480"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1480"/>
+      <p2 x="12360" y="1480"/>
+    </wire>
+    <wire>
+      <p1 x="12480" y="1480"/>
+      <p2 x="12500" y="1480"/>
+    </wire>
+    <wire>
+      <p1 x="12840" y="1480"/>
+      <p2 x="12860" y="1480"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1480"/>
+      <p2 x="13000" y="1480"/>
+    </wire>
+    <wire>
+      <p1 x="13260" y="1480"/>
+      <p2 x="13360" y="1480"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1480"/>
+      <p2 x="13600" y="1480"/>
     </wire>
     <wire>
       <p1 x="420" y="1480"/>
@@ -8519,58 +8759,6 @@ add other board</string>
     <wire>
       <p1 x="-4440" y="5580"/>
       <p2 x="-3120" y="5580"/>
-    </wire>
-    <wire>
-      <p1 x="-3800" y="2000"/>
-      <p2 x="-3760" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="-3980" y="2000"/>
-      <p2 x="-3920" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="-3640" y="2000"/>
-      <p2 x="-3580" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="-3460" y="2000"/>
-      <p2 x="-3440" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="3720" y="2000"/>
-      <p2 x="3860" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="3980" y="2000"/>
-      <p2 x="4180" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="3400" y="2000"/>
-      <p2 x="3500" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="3260" y="2000"/>
-      <p2 x="3280" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="5840" y="2000"/>
-      <p2 x="10020" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="10040" y="2000"/>
-      <p2 x="10080" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="11080" y="2000"/>
-      <p2 x="11580" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="10580" y="2000"/>
-      <p2 x="11080" y="2000"/>
-    </wire>
-    <wire>
-      <p1 x="10080" y="2000"/>
-      <p2 x="10580" y="2000"/>
     </wire>
     <wire>
       <p1 x="-2100" y="4560"/>
@@ -8609,8 +8797,76 @@ add other board</string>
       <p2 x="-560" y="4560"/>
     </wire>
     <wire>
+      <p1 x="-3800" y="2000"/>
+      <p2 x="-3760" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="-3980" y="2000"/>
+      <p2 x="-3920" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="-3640" y="2000"/>
+      <p2 x="-3580" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="-3460" y="2000"/>
+      <p2 x="-3440" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="3720" y="2000"/>
+      <p2 x="3860" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="3980" y="2000"/>
+      <p2 x="4180" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="3400" y="2000"/>
+      <p2 x="3500" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="3260" y="2000"/>
+      <p2 x="3280" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="5840" y="2000"/>
+      <p2 x="10120" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="10140" y="2000"/>
+      <p2 x="10180" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="11180" y="2000"/>
+      <p2 x="11680" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="10680" y="2000"/>
+      <p2 x="11180" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="12680" y="2000"/>
+      <p2 x="13180" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="10180" y="2000"/>
+      <p2 x="10680" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="12180" y="2000"/>
+      <p2 x="12680" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="11680" y="2000"/>
+      <p2 x="12180" y="2000"/>
+    </wire>
+    <wire>
       <p1 x="-3800" y="7120"/>
       <p2 x="-500" y="7120"/>
+    </wire>
+    <wire>
+      <p1 x="9860" y="980"/>
+      <p2 x="10040" y="980"/>
     </wire>
     <wire>
       <p1 x="-580" y="980"/>
@@ -8625,8 +8881,16 @@ add other board</string>
       <p2 x="1700" y="980"/>
     </wire>
     <wire>
+      <p1 x="9420" y="980"/>
+      <p2 x="9740" y="980"/>
+    </wire>
+    <wire>
       <p1 x="1700" y="980"/>
       <p2 x="2020" y="980"/>
+    </wire>
+    <wire>
+      <p1 x="10040" y="980"/>
+      <p2 x="10340" y="980"/>
     </wire>
     <wire>
       <p1 x="300" y="980"/>
@@ -8714,11 +8978,11 @@ add other board</string>
     </wire>
     <wire>
       <p1 x="9380" y="1500"/>
-      <p2 x="9680" y="1500"/>
+      <p2 x="9740" y="1500"/>
     </wire>
     <wire>
-      <p1 x="9800" y="1500"/>
-      <p2 x="9840" y="1500"/>
+      <p1 x="9860" y="1500"/>
+      <p2 x="9900" y="1500"/>
     </wire>
     <wire>
       <p1 x="9060" y="1500"/>
@@ -8837,6 +9101,14 @@ add other board</string>
       <p2 x="-3140" y="5600"/>
     </wire>
     <wire>
+      <p1 x="-1040" y="4580"/>
+      <p2 x="-580" y="4580"/>
+    </wire>
+    <wire>
+      <p1 x="-2680" y="4580"/>
+      <p2 x="-2600" y="4580"/>
+    </wire>
+    <wire>
       <p1 x="-1340" y="2020"/>
       <p2 x="-1280" y="2020"/>
     </wire>
@@ -8862,23 +9134,31 @@ add other board</string>
     </wire>
     <wire>
       <p1 x="5800" y="2020"/>
-      <p2 x="9980" y="2020"/>
+      <p2 x="10080" y="2020"/>
     </wire>
     <wire>
-      <p1 x="10040" y="2020"/>
-      <p2 x="10100" y="2020"/>
+      <p1 x="10140" y="2020"/>
+      <p2 x="10200" y="2020"/>
     </wire>
     <wire>
-      <p1 x="9980" y="2020"/>
-      <p2 x="10020" y="2020"/>
+      <p1 x="11700" y="2020"/>
+      <p2 x="12200" y="2020"/>
     </wire>
     <wire>
-      <p1 x="11100" y="2020"/>
-      <p2 x="11600" y="2020"/>
+      <p1 x="11200" y="2020"/>
+      <p2 x="11700" y="2020"/>
     </wire>
     <wire>
-      <p1 x="10600" y="2020"/>
-      <p2 x="11100" y="2020"/>
+      <p1 x="10700" y="2020"/>
+      <p2 x="11200" y="2020"/>
+    </wire>
+    <wire>
+      <p1 x="12700" y="2020"/>
+      <p2 x="13200" y="2020"/>
+    </wire>
+    <wire>
+      <p1 x="10200" y="2020"/>
+      <p2 x="10700" y="2020"/>
     </wire>
     <wire>
       <p1 x="1880" y="2020"/>
@@ -8889,24 +9169,12 @@ add other board</string>
       <p2 x="1120" y="2020"/>
     </wire>
     <wire>
-      <p1 x="10100" y="2020"/>
-      <p2 x="10600" y="2020"/>
+      <p1 x="10080" y="2020"/>
+      <p2 x="10120" y="2020"/>
     </wire>
     <wire>
-      <p1 x="-20" y="4580"/>
-      <p2 x="40" y="4580"/>
-    </wire>
-    <wire>
-      <p1 x="-1040" y="4580"/>
-      <p2 x="-580" y="4580"/>
-    </wire>
-    <wire>
-      <p1 x="-2680" y="4580"/>
-      <p2 x="-2600" y="4580"/>
-    </wire>
-    <wire>
-      <p1 x="160" y="4580"/>
-      <p2 x="200" y="4580"/>
+      <p1 x="12200" y="2020"/>
+      <p2 x="12700" y="2020"/>
     </wire>
     <wire>
       <p1 x="-4260" y="7140"/>
@@ -8915,10 +9183,6 @@ add other board</string>
     <wire>
       <p1 x="-3820" y="7140"/>
       <p2 x="-520" y="7140"/>
-    </wire>
-    <wire>
-      <p1 x="9460" y="1000"/>
-      <p2 x="9680" y="1000"/>
     </wire>
     <wire>
       <p1 x="-1760" y="1000"/>
@@ -8953,12 +9217,12 @@ add other board</string>
       <p2 x="-500" y="5100"/>
     </wire>
     <wire>
-      <p1 x="10380" y="1520"/>
-      <p2 x="10400" y="1520"/>
+      <p1 x="10480" y="1520"/>
+      <p2 x="10500" y="1520"/>
     </wire>
     <wire>
-      <p1 x="10120" y="1520"/>
-      <p2 x="10240" y="1520"/>
+      <p1 x="10220" y="1520"/>
+      <p2 x="10340" y="1520"/>
     </wire>
     <wire>
       <p1 x="8920" y="1520"/>
@@ -8981,72 +9245,112 @@ add other board</string>
       <p2 x="240" y="1520"/>
     </wire>
     <wire>
-      <p1 x="10880" y="1520"/>
-      <p2 x="10900" y="1520"/>
+      <p1 x="10980" y="1520"/>
+      <p2 x="11000" y="1520"/>
     </wire>
     <wire>
-      <p1 x="10620" y="1520"/>
-      <p2 x="10740" y="1520"/>
+      <p1 x="10720" y="1520"/>
+      <p2 x="10840" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11380" y="1520"/>
-      <p2 x="11400" y="1520"/>
+      <p1 x="11480" y="1520"/>
+      <p2 x="11500" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11120" y="1520"/>
-      <p2 x="11240" y="1520"/>
+      <p1 x="11220" y="1520"/>
+      <p2 x="11340" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11880" y="1520"/>
-      <p2 x="11900" y="1520"/>
+      <p1 x="11980" y="1520"/>
+      <p2 x="12000" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11620" y="1520"/>
-      <p2 x="11740" y="1520"/>
+      <p1 x="11720" y="1520"/>
+      <p2 x="11840" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12480" y="1520"/>
+      <p2 x="12500" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12220" y="1520"/>
+      <p2 x="12340" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12980" y="1520"/>
+      <p2 x="13000" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12720" y="1520"/>
+      <p2 x="12840" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="13480" y="1520"/>
+      <p2 x="13520" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="13220" y="1520"/>
+      <p2 x="13360" y="1520"/>
     </wire>
     <wire>
       <p1 x="260" y="1520"/>
       <p2 x="400" y="1520"/>
     </wire>
     <wire>
-      <p1 x="10400" y="1520"/>
-      <p2 x="10420" y="1520"/>
-    </wire>
-    <wire>
       <p1 x="500" y="1520"/>
       <p2 x="640" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11740" y="1520"/>
-      <p2 x="11760" y="1520"/>
+      <p1 x="12000" y="1520"/>
+      <p2 x="12020" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="11340" y="1520"/>
+      <p2 x="11360" y="1520"/>
     </wire>
     <wire>
       <p1 x="400" y="1520"/>
       <p2 x="500" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11900" y="1520"/>
-      <p2 x="11920" y="1520"/>
+      <p1 x="11500" y="1520"/>
+      <p2 x="11520" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1520"/>
-      <p2 x="11260" y="1520"/>
+      <p1 x="10840" y="1520"/>
+      <p2 x="10860" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11400" y="1520"/>
-      <p2 x="11420" y="1520"/>
+      <p1 x="12840" y="1520"/>
+      <p2 x="12860" y="1520"/>
     </wire>
     <wire>
-      <p1 x="10740" y="1520"/>
-      <p2 x="10760" y="1520"/>
+      <p1 x="11000" y="1520"/>
+      <p2 x="11020" y="1520"/>
     </wire>
     <wire>
-      <p1 x="10900" y="1520"/>
-      <p2 x="10920" y="1520"/>
+      <p1 x="10340" y="1520"/>
+      <p2 x="10360" y="1520"/>
     </wire>
     <wire>
-      <p1 x="10240" y="1520"/>
-      <p2 x="10260" y="1520"/>
+      <p1 x="13000" y="1520"/>
+      <p2 x="13020" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1520"/>
+      <p2 x="12360" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="10500" y="1520"/>
+      <p2 x="10520" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12500" y="1520"/>
+      <p2 x="12520" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="11840" y="1520"/>
+      <p2 x="11860" y="1520"/>
     </wire>
     <wire>
       <p1 x="2080" y="-500"/>
@@ -9059,6 +9363,34 @@ add other board</string>
     <wire>
       <p1 x="-2060" y="5620"/>
       <p2 x="-2040" y="5620"/>
+    </wire>
+    <wire>
+      <p1 x="-2700" y="4600"/>
+      <p2 x="-2620" y="4600"/>
+    </wire>
+    <wire>
+      <p1 x="-3780" y="4600"/>
+      <p2 x="-3640" y="4600"/>
+    </wire>
+    <wire>
+      <p1 x="-4000" y="4600"/>
+      <p2 x="-3980" y="4600"/>
+    </wire>
+    <wire>
+      <p1 x="-3520" y="4600"/>
+      <p2 x="-3420" y="4600"/>
+    </wire>
+    <wire>
+      <p1 x="-4840" y="4600"/>
+      <p2 x="-4760" y="4600"/>
+    </wire>
+    <wire>
+      <p1 x="-5020" y="4600"/>
+      <p2 x="-4960" y="4600"/>
+    </wire>
+    <wire>
+      <p1 x="-1020" y="4600"/>
+      <p2 x="-600" y="4600"/>
     </wire>
     <wire>
       <p1 x="-3620" y="2040"/>
@@ -9093,52 +9425,32 @@ add other board</string>
       <p2 x="3280" y="2040"/>
     </wire>
     <wire>
-      <p1 x="10040" y="2040"/>
-      <p2 x="10120" y="2040"/>
+      <p1 x="10140" y="2040"/>
+      <p2 x="10220" y="2040"/>
     </wire>
     <wire>
-      <p1 x="10120" y="2040"/>
-      <p2 x="10620" y="2040"/>
+      <p1 x="11720" y="2040"/>
+      <p2 x="12220" y="2040"/>
     </wire>
     <wire>
-      <p1 x="11120" y="2040"/>
-      <p2 x="11620" y="2040"/>
+      <p1 x="11220" y="2040"/>
+      <p2 x="11720" y="2040"/>
     </wire>
     <wire>
-      <p1 x="10620" y="2040"/>
-      <p2 x="11120" y="2040"/>
+      <p1 x="10720" y="2040"/>
+      <p2 x="11220" y="2040"/>
     </wire>
     <wire>
-      <p1 x="-2700" y="4600"/>
-      <p2 x="-2620" y="4600"/>
+      <p1 x="12720" y="2040"/>
+      <p2 x="13220" y="2040"/>
     </wire>
     <wire>
-      <p1 x="300" y="4600"/>
-      <p2 x="320" y="4600"/>
+      <p1 x="10220" y="2040"/>
+      <p2 x="10720" y="2040"/>
     </wire>
     <wire>
-      <p1 x="-3780" y="4600"/>
-      <p2 x="-3640" y="4600"/>
-    </wire>
-    <wire>
-      <p1 x="-4000" y="4600"/>
-      <p2 x="-3980" y="4600"/>
-    </wire>
-    <wire>
-      <p1 x="-3520" y="4600"/>
-      <p2 x="-3420" y="4600"/>
-    </wire>
-    <wire>
-      <p1 x="-4840" y="4600"/>
-      <p2 x="-4760" y="4600"/>
-    </wire>
-    <wire>
-      <p1 x="-5020" y="4600"/>
-      <p2 x="-4960" y="4600"/>
-    </wire>
-    <wire>
-      <p1 x="-1020" y="4600"/>
-      <p2 x="-600" y="4600"/>
+      <p1 x="12220" y="2040"/>
+      <p2 x="12720" y="2040"/>
     </wire>
     <wire>
       <p1 x="-4280" y="7160"/>
@@ -9147,6 +9459,14 @@ add other board</string>
     <wire>
       <p1 x="-3840" y="7160"/>
       <p2 x="-540" y="7160"/>
+    </wire>
+    <wire>
+      <p1 x="9700" y="1020"/>
+      <p2 x="9740" y="1020"/>
+    </wire>
+    <wire>
+      <p1 x="9860" y="1020"/>
+      <p2 x="10060" y="1020"/>
     </wire>
     <wire>
       <p1 x="8980" y="1020"/>
@@ -9171,6 +9491,10 @@ add other board</string>
     <wire>
       <p1 x="2000" y="1020"/>
       <p2 x="4240" y="1020"/>
+    </wire>
+    <wire>
+      <p1 x="10060" y="1020"/>
+      <p2 x="10820" y="1020"/>
     </wire>
     <wire>
       <p1 x="320" y="1020"/>
@@ -9221,32 +9545,8 @@ add other board</string>
       <p2 x="0" y="3960"/>
     </wire>
     <wire>
-      <p1 x="0" y="4700"/>
-      <p2 x="0" y="4760"/>
-    </wire>
-    <wire>
-      <p1 x="0" y="4240"/>
-      <p2 x="0" y="4620"/>
-    </wire>
-    <wire>
-      <p1 x="10240" y="1320"/>
-      <p2 x="10240" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="10240" y="1400"/>
-      <p2 x="10240" y="1440"/>
-    </wire>
-    <wire>
-      <p1 x="10240" y="1480"/>
-      <p2 x="10240" y="1520"/>
-    </wire>
-    <wire>
       <p1 x="10240" y="1560"/>
-      <p2 x="10240" y="1600"/>
-    </wire>
-    <wire>
-      <p1 x="10240" y="1040"/>
-      <p2 x="10240" y="1280"/>
+      <p2 x="10240" y="2060"/>
     </wire>
     <wire>
       <p1 x="-4100" y="5720"/>
@@ -9291,6 +9591,18 @@ add other board</string>
     <wire>
       <p1 x="-3080" y="1900"/>
       <p2 x="-3080" y="2140"/>
+    </wire>
+    <wire>
+      <p1 x="13320" y="1280"/>
+      <p2 x="13320" y="1640"/>
+    </wire>
+    <wire>
+      <p1 x="13320" y="1160"/>
+      <p2 x="13320" y="1220"/>
+    </wire>
+    <wire>
+      <p1 x="13320" y="1640"/>
+      <p2 x="13320" y="1700"/>
     </wire>
     <wire>
       <p1 x="-2060" y="1940"/>
@@ -9365,10 +9677,6 @@ add other board</string>
       <p2 x="-20" y="3980"/>
     </wire>
     <wire>
-      <p1 x="-20" y="4220"/>
-      <p2 x="-20" y="4580"/>
-    </wire>
-    <wire>
       <p1 x="-5140" y="4020"/>
       <p2 x="-5140" y="5040"/>
     </wire>
@@ -9395,10 +9703,6 @@ add other board</string>
     <wire>
       <p1 x="20" y="3280"/>
       <p2 x="20" y="3440"/>
-    </wire>
-    <wire>
-      <p1 x="20" y="4340"/>
-      <p2 x="20" y="4700"/>
     </wire>
     <wire>
       <p1 x="-4120" y="5280"/>
@@ -9437,6 +9741,10 @@ add other board</string>
       <p2 x="-3100" y="1940"/>
     </wire>
     <wire>
+      <p1 x="13340" y="1160"/>
+      <p2 x="13340" y="1200"/>
+    </wire>
+    <wire>
       <p1 x="-2080" y="5080"/>
       <p2 x="-2080" y="5140"/>
     </wire>
@@ -9463,6 +9771,14 @@ add other board</string>
     <wire>
       <p1 x="2080" y="2380"/>
       <p2 x="2080" y="2480"/>
+    </wire>
+    <wire>
+      <p1 x="12320" y="1640"/>
+      <p2 x="12320" y="1700"/>
+    </wire>
+    <wire>
+      <p1 x="12320" y="1140"/>
+      <p2 x="12320" y="1280"/>
     </wire>
     <wire>
       <p1 x="-1060" y="780"/>
@@ -9507,10 +9823,6 @@ add other board</string>
     <wire>
       <p1 x="-40" y="3520"/>
       <p2 x="-40" y="3640"/>
-    </wire>
-    <wire>
-      <p1 x="-40" y="4200"/>
-      <p2 x="-40" y="4460"/>
     </wire>
     <wire>
       <p1 x="-40" y="-20"/>
@@ -9573,6 +9885,10 @@ add other board</string>
       <p2 x="-3120" y="6900"/>
     </wire>
     <wire>
+      <p1 x="13360" y="1160"/>
+      <p2 x="13360" y="1180"/>
+    </wire>
+    <wire>
       <p1 x="-2100" y="4560"/>
       <p2 x="-2100" y="4680"/>
     </wire>
@@ -9595,6 +9911,22 @@ add other board</string>
     <wire>
       <p1 x="2100" y="-480"/>
       <p2 x="2100" y="700"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1320"/>
+      <p2 x="12340" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1400"/>
+      <p2 x="12340" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1480"/>
+      <p2 x="12340" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12340" y="1560"/>
+      <p2 x="12340" y="1600"/>
     </wire>
     <wire>
       <p1 x="-1080" y="1880"/>
@@ -9621,16 +9953,20 @@ add other board</string>
       <p2 x="1080" y="2220"/>
     </wire>
     <wire>
+      <p1 x="11320" y="1640"/>
+      <p2 x="11320" y="1700"/>
+    </wire>
+    <wire>
+      <p1 x="11320" y="1060"/>
+      <p2 x="11320" y="1280"/>
+    </wire>
+    <wire>
       <p1 x="-60" y="2620"/>
       <p2 x="-60" y="2760"/>
     </wire>
     <wire>
       <p1 x="-60" y="3540"/>
       <p2 x="-60" y="3680"/>
-    </wire>
-    <wire>
-      <p1 x="-60" y="4180"/>
-      <p2 x="-60" y="4420"/>
     </wire>
     <wire>
       <p1 x="-60" y="0"/>
@@ -9761,16 +10097,28 @@ add other board</string>
       <p2 x="1100" y="1820"/>
     </wire>
     <wire>
+      <p1 x="11340" y="1320"/>
+      <p2 x="11340" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="11340" y="1400"/>
+      <p2 x="11340" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="11340" y="1480"/>
+      <p2 x="11340" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="11340" y="1560"/>
+      <p2 x="11340" y="1600"/>
+    </wire>
+    <wire>
       <p1 x="-80" y="2640"/>
       <p2 x="-80" y="2940"/>
     </wire>
     <wire>
       <p1 x="-80" y="3560"/>
       <p2 x="-80" y="3840"/>
-    </wire>
-    <wire>
-      <p1 x="-80" y="4260"/>
-      <p2 x="-80" y="4800"/>
     </wire>
     <wire>
       <p1 x="-80" y="320"/>
@@ -9787,6 +10135,10 @@ add other board</string>
     <wire>
       <p1 x="-5200" y="1960"/>
       <p2 x="-5200" y="2300"/>
+    </wire>
+    <wire>
+      <p1 x="10320" y="1640"/>
+      <p2 x="10320" y="1700"/>
     </wire>
     <wire>
       <p1 x="4180" y="900"/>
@@ -9833,10 +10185,6 @@ add other board</string>
       <p2 x="-100" y="3860"/>
     </wire>
     <wire>
-      <p1 x="-100" y="4280"/>
-      <p2 x="-100" y="4820"/>
-    </wire>
-    <wire>
       <p1 x="-100" y="360"/>
       <p2 x="-100" y="900"/>
     </wire>
@@ -9855,6 +10203,26 @@ add other board</string>
     <wire>
       <p1 x="-5220" y="1960"/>
       <p2 x="-5220" y="2260"/>
+    </wire>
+    <wire>
+      <p1 x="10340" y="1320"/>
+      <p2 x="10340" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="10340" y="1400"/>
+      <p2 x="10340" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="10340" y="1480"/>
+      <p2 x="10340" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="10340" y="1560"/>
+      <p2 x="10340" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="10340" y="980"/>
+      <p2 x="10340" y="1280"/>
     </wire>
     <wire>
       <p1 x="4200" y="940"/>
@@ -9905,10 +10273,6 @@ add other board</string>
       <p2 x="-120" y="3880"/>
     </wire>
     <wire>
-      <p1 x="-120" y="4300"/>
-      <p2 x="-120" y="4840"/>
-    </wire>
-    <wire>
       <p1 x="-5240" y="4140"/>
       <p2 x="-5240" y="5680"/>
     </wire>
@@ -9927,10 +10291,6 @@ add other board</string>
     <wire>
       <p1 x="9340" y="1660"/>
       <p2 x="9340" y="1720"/>
-    </wire>
-    <wire>
-      <p1 x="9340" y="980"/>
-      <p2 x="9340" y="1120"/>
     </wire>
     <wire>
       <p1 x="4220" y="980"/>
@@ -9957,44 +10317,12 @@ add other board</string>
       <p2 x="6280" y="160"/>
     </wire>
     <wire>
-      <p1 x="11400" y="1560"/>
-      <p2 x="11400" y="1600"/>
-    </wire>
-    <wire>
-      <p1 x="11400" y="1480"/>
-      <p2 x="11400" y="1520"/>
-    </wire>
-    <wire>
-      <p1 x="11400" y="1400"/>
-      <p2 x="11400" y="1440"/>
-    </wire>
-    <wire>
-      <p1 x="11400" y="1320"/>
-      <p2 x="11400" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="11400" y="1600"/>
-      <p2 x="11400" y="2080"/>
-    </wire>
-    <wire>
-      <p1 x="-5260" y="4160"/>
-      <p2 x="-5260" y="5700"/>
-    </wire>
-    <wire>
-      <p1 x="-5260" y="1960"/>
-      <p2 x="-5260" y="2220"/>
-    </wire>
-    <wire>
       <p1 x="-140" y="2700"/>
       <p2 x="-140" y="3000"/>
     </wire>
     <wire>
       <p1 x="-140" y="3620"/>
       <p2 x="-140" y="3900"/>
-    </wire>
-    <wire>
-      <p1 x="-140" y="4320"/>
-      <p2 x="-140" y="4860"/>
     </wire>
     <wire>
       <p1 x="-140" y="560"/>
@@ -10007,6 +10335,14 @@ add other board</string>
     <wire>
       <p1 x="-140" y="1100"/>
       <p2 x="-140" y="1640"/>
+    </wire>
+    <wire>
+      <p1 x="-5260" y="4160"/>
+      <p2 x="-5260" y="5700"/>
+    </wire>
+    <wire>
+      <p1 x="-5260" y="1960"/>
+      <p2 x="-5260" y="2220"/>
     </wire>
     <wire>
       <p1 x="140" y="1680"/>
@@ -10053,20 +10389,8 @@ add other board</string>
       <p2 x="6300" y="120"/>
     </wire>
     <wire>
-      <p1 x="11420" y="1220"/>
-      <p2 x="11420" y="1280"/>
-    </wire>
-    <wire>
-      <p1 x="11420" y="1520"/>
-      <p2 x="11420" y="2100"/>
-    </wire>
-    <wire>
       <p1 x="-160" y="680"/>
       <p2 x="-160" y="1220"/>
-    </wire>
-    <wire>
-      <p1 x="-160" y="4400"/>
-      <p2 x="-160" y="4500"/>
     </wire>
     <wire>
       <p1 x="-160" y="1220"/>
@@ -10075,26 +10399,6 @@ add other board</string>
     <wire>
       <p1 x="-5280" y="1960"/>
       <p2 x="-5280" y="2820"/>
-    </wire>
-    <wire>
-      <p1 x="10400" y="1560"/>
-      <p2 x="10400" y="1600"/>
-    </wire>
-    <wire>
-      <p1 x="10400" y="1480"/>
-      <p2 x="10400" y="1520"/>
-    </wire>
-    <wire>
-      <p1 x="10400" y="1400"/>
-      <p2 x="10400" y="1440"/>
-    </wire>
-    <wire>
-      <p1 x="10400" y="1320"/>
-      <p2 x="10400" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="10400" y="1600"/>
-      <p2 x="10400" y="2080"/>
     </wire>
     <wire>
       <p1 x="160" y="1360"/>
@@ -10145,10 +10449,6 @@ add other board</string>
       <p2 x="4260" y="2160"/>
     </wire>
     <wire>
-      <p1 x="9380" y="1000"/>
-      <p2 x="9380" y="1120"/>
-    </wire>
-    <wire>
       <p1 x="9380" y="1360"/>
       <p2 x="9380" y="1500"/>
     </wire>
@@ -10173,10 +10473,6 @@ add other board</string>
       <p2 x="-1200" y="6740"/>
     </wire>
     <wire>
-      <p1 x="11440" y="1400"/>
-      <p2 x="11440" y="2120"/>
-    </wire>
-    <wire>
       <p1 x="6320" y="560"/>
       <p2 x="6320" y="640"/>
     </wire>
@@ -10189,20 +10485,8 @@ add other board</string>
       <p2 x="-180" y="2400"/>
     </wire>
     <wire>
-      <p1 x="-180" y="4420"/>
-      <p2 x="-180" y="4540"/>
-    </wire>
-    <wire>
       <p1 x="-5300" y="1960"/>
       <p2 x="-5300" y="2780"/>
-    </wire>
-    <wire>
-      <p1 x="10420" y="1220"/>
-      <p2 x="10420" y="1280"/>
-    </wire>
-    <wire>
-      <p1 x="10420" y="1520"/>
-      <p2 x="10420" y="2100"/>
     </wire>
     <wire>
       <p1 x="180" y="2760"/>
@@ -10223,10 +10507,6 @@ add other board</string>
     <wire>
       <p1 x="180" y="1440"/>
       <p2 x="180" y="2180"/>
-    </wire>
-    <wire>
-      <p1 x="180" y="4620"/>
-      <p2 x="180" y="4800"/>
     </wire>
     <wire>
       <p1 x="-4280" y="2180"/>
@@ -10285,28 +10565,20 @@ add other board</string>
       <p2 x="3260" y="2160"/>
     </wire>
     <wire>
-      <p1 x="-7360" y="2400"/>
-      <p2 x="-7360" y="3000"/>
+      <p1 x="13500" y="1560"/>
+      <p2 x="13500" y="2080"/>
     </wire>
     <wire>
-      <p1 x="11460" y="1360"/>
-      <p2 x="11460" y="2140"/>
+      <p1 x="-7360" y="2400"/>
+      <p2 x="-7360" y="3000"/>
     </wire>
     <wire>
       <p1 x="-200" y="3660"/>
       <p2 x="-200" y="3940"/>
     </wire>
     <wire>
-      <p1 x="-200" y="4440"/>
-      <p2 x="-200" y="4660"/>
-    </wire>
-    <wire>
       <p1 x="-5320" y="1960"/>
       <p2 x="-5320" y="2760"/>
-    </wire>
-    <wire>
-      <p1 x="10440" y="1400"/>
-      <p2 x="10440" y="2120"/>
     </wire>
     <wire>
       <p1 x="200" y="2440"/>
@@ -10337,14 +10609,6 @@ add other board</string>
       <p2 x="200" y="1640"/>
     </wire>
     <wire>
-      <p1 x="200" y="4280"/>
-      <p2 x="200" y="4340"/>
-    </wire>
-    <wire>
-      <p1 x="200" y="4580"/>
-      <p2 x="200" y="4820"/>
-    </wire>
-    <wire>
       <p1 x="-4300" y="2160"/>
       <p2 x="-4300" y="4360"/>
     </wire>
@@ -10357,12 +10621,12 @@ add other board</string>
       <p2 x="4300" y="2600"/>
     </wire>
     <wire>
-      <p1 x="9420" y="1040"/>
-      <p2 x="9420" y="1120"/>
-    </wire>
-    <wire>
       <p1 x="9420" y="1360"/>
       <p2 x="9420" y="1540"/>
+    </wire>
+    <wire>
+      <p1 x="9420" y="980"/>
+      <p2 x="9420" y="1120"/>
     </wire>
     <wire>
       <p1 x="-3280" y="1480"/>
@@ -10373,16 +10637,40 @@ add other board</string>
       <p2 x="-3280" y="2280"/>
     </wire>
     <wire>
+      <p1 x="13520" y="1260"/>
+      <p2 x="13520" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="13520" y="1520"/>
+      <p2 x="13520" y="2100"/>
+    </wire>
+    <wire>
+      <p1 x="12500" y="1560"/>
+      <p2 x="12500" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="12500" y="1480"/>
+      <p2 x="12500" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12500" y="1400"/>
+      <p2 x="12500" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="12500" y="1320"/>
+      <p2 x="12500" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="12500" y="1600"/>
+      <p2 x="12500" y="2080"/>
+    </wire>
+    <wire>
       <p1 x="-1240" y="6540"/>
       <p2 x="-1240" y="6700"/>
     </wire>
     <wire>
       <p1 x="6360" y="100"/>
       <p2 x="6360" y="140"/>
-    </wire>
-    <wire>
-      <p1 x="11480" y="1640"/>
-      <p2 x="11480" y="1760"/>
     </wire>
     <wire>
       <p1 x="-220" y="3680"/>
@@ -10409,14 +10697,6 @@ add other board</string>
       <p2 x="220" y="1480"/>
     </wire>
     <wire>
-      <p1 x="220" y="4460"/>
-      <p2 x="220" y="4840"/>
-    </wire>
-    <wire>
-      <p1 x="10460" y="1360"/>
-      <p2 x="10460" y="2140"/>
-    </wire>
-    <wire>
       <p1 x="-4320" y="3740"/>
       <p2 x="-4320" y="4960"/>
     </wire>
@@ -10427,6 +10707,38 @@ add other board</string>
     <wire>
       <p1 x="-3300" y="4100"/>
       <p2 x="-3300" y="5240"/>
+    </wire>
+    <wire>
+      <p1 x="13540" y="1400"/>
+      <p2 x="13540" y="2120"/>
+    </wire>
+    <wire>
+      <p1 x="12520" y="1220"/>
+      <p2 x="12520" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="12520" y="1520"/>
+      <p2 x="12520" y="2100"/>
+    </wire>
+    <wire>
+      <p1 x="11500" y="1560"/>
+      <p2 x="11500" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="11500" y="1480"/>
+      <p2 x="11500" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="11500" y="1400"/>
+      <p2 x="11500" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="11500" y="1320"/>
+      <p2 x="11500" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="11500" y="1600"/>
+      <p2 x="11500" y="2080"/>
     </wire>
     <wire>
       <p1 x="1260" y="700"/>
@@ -10443,10 +10755,6 @@ add other board</string>
     <wire>
       <p1 x="6380" y="160"/>
       <p2 x="6380" y="200"/>
-    </wire>
-    <wire>
-      <p1 x="-240" y="4380"/>
-      <p2 x="-240" y="4880"/>
     </wire>
     <wire>
       <p1 x="-5360" y="1960"/>
@@ -10469,14 +10777,6 @@ add other board</string>
       <p2 x="240" y="1520"/>
     </wire>
     <wire>
-      <p1 x="240" y="4420"/>
-      <p2 x="240" y="4860"/>
-    </wire>
-    <wire>
-      <p1 x="10480" y="1640"/>
-      <p2 x="10480" y="1720"/>
-    </wire>
-    <wire>
       <p1 x="-4340" y="3800"/>
       <p2 x="-4340" y="4940"/>
     </wire>
@@ -10493,12 +10793,12 @@ add other board</string>
       <p2 x="-4340" y="6140"/>
     </wire>
     <wire>
-      <p1 x="9460" y="1000"/>
-      <p2 x="9460" y="1120"/>
-    </wire>
-    <wire>
       <p1 x="9460" y="1360"/>
       <p2 x="9460" y="1580"/>
+    </wire>
+    <wire>
+      <p1 x="9460" y="940"/>
+      <p2 x="9460" y="1120"/>
     </wire>
     <wire>
       <p1 x="-3320" y="1420"/>
@@ -10513,8 +10813,16 @@ add other board</string>
       <p2 x="-3320" y="5460"/>
     </wire>
     <wire>
+      <p1 x="13560" y="1360"/>
+      <p2 x="13560" y="2140"/>
+    </wire>
+    <wire>
       <p1 x="-2300" y="2680"/>
       <p2 x="-2300" y="2740"/>
+    </wire>
+    <wire>
+      <p1 x="12540" y="1400"/>
+      <p2 x="12540" y="2120"/>
     </wire>
     <wire>
       <p1 x="-1280" y="6680"/>
@@ -10545,6 +10853,14 @@ add other board</string>
       <p2 x="-1280" y="5020"/>
     </wire>
     <wire>
+      <p1 x="11520" y="1220"/>
+      <p2 x="11520" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="11520" y="1520"/>
+      <p2 x="11520" y="2100"/>
+    </wire>
+    <wire>
       <p1 x="1280" y="700"/>
       <p2 x="1280" y="740"/>
     </wire>
@@ -10555,10 +10871,6 @@ add other board</string>
     <wire>
       <p1 x="6400" y="140"/>
       <p2 x="6400" y="200"/>
-    </wire>
-    <wire>
-      <p1 x="-260" y="3700"/>
-      <p2 x="-260" y="4900"/>
     </wire>
     <wire>
       <p1 x="260" y="2840"/>
@@ -10585,12 +10897,24 @@ add other board</string>
       <p2 x="260" y="3440"/>
     </wire>
     <wire>
-      <p1 x="260" y="4540"/>
-      <p2 x="260" y="4640"/>
+      <p1 x="10500" y="1560"/>
+      <p2 x="10500" y="1600"/>
     </wire>
     <wire>
-      <p1 x="260" y="4700"/>
-      <p2 x="260" y="4900"/>
+      <p1 x="10500" y="1480"/>
+      <p2 x="10500" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="10500" y="1400"/>
+      <p2 x="10500" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="10500" y="1320"/>
+      <p2 x="10500" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="10500" y="1600"/>
+      <p2 x="10500" y="2080"/>
     </wire>
     <wire>
       <p1 x="-4360" y="2680"/>
@@ -10603,6 +10927,18 @@ add other board</string>
     <wire>
       <p1 x="-3340" y="4720"/>
       <p2 x="-3340" y="5480"/>
+    </wire>
+    <wire>
+      <p1 x="13580" y="1640"/>
+      <p2 x="13580" y="1860"/>
+    </wire>
+    <wire>
+      <p1 x="13580" y="1240"/>
+      <p2 x="13580" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="12560" y="1360"/>
+      <p2 x="12560" y="2140"/>
     </wire>
     <wire>
       <p1 x="-1300" y="1080"/>
@@ -10661,6 +10997,10 @@ add other board</string>
       <p2 x="-1300" y="440"/>
     </wire>
     <wire>
+      <p1 x="11540" y="1400"/>
+      <p2 x="11540" y="2120"/>
+    </wire>
+    <wire>
       <p1 x="6420" y="140"/>
       <p2 x="6420" y="200"/>
     </wire>
@@ -10689,8 +11029,12 @@ add other board</string>
       <p2 x="280" y="1600"/>
     </wire>
     <wire>
-      <p1 x="280" y="4500"/>
-      <p2 x="280" y="4620"/>
+      <p1 x="10520" y="1220"/>
+      <p2 x="10520" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="10520" y="1520"/>
+      <p2 x="10520" y="2100"/>
     </wire>
     <wire>
       <p1 x="-4380" y="3840"/>
@@ -10701,7 +11045,7 @@ add other board</string>
       <p2 x="9500" y="1400"/>
     </wire>
     <wire>
-      <p1 x="9500" y="960"/>
+      <p1 x="9500" y="900"/>
       <p2 x="9500" y="1120"/>
     </wire>
     <wire>
@@ -10713,8 +11057,16 @@ add other board</string>
       <p2 x="-3360" y="5500"/>
     </wire>
     <wire>
+      <p1 x="13600" y="1220"/>
+      <p2 x="13600" y="1480"/>
+    </wire>
+    <wire>
       <p1 x="-2340" y="4720"/>
       <p2 x="-2340" y="5700"/>
+    </wire>
+    <wire>
+      <p1 x="12580" y="1640"/>
+      <p2 x="12580" y="1800"/>
     </wire>
     <wire>
       <p1 x="-1320" y="920"/>
@@ -10743,6 +11095,10 @@ add other board</string>
     <wire>
       <p1 x="-1320" y="6680"/>
       <p2 x="-1320" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="11560" y="1360"/>
+      <p2 x="11560" y="2140"/>
     </wire>
     <wire>
       <p1 x="1320" y="1260"/>
@@ -10777,8 +11133,8 @@ add other board</string>
       <p2 x="300" y="2020"/>
     </wire>
     <wire>
-      <p1 x="300" y="4380"/>
-      <p2 x="300" y="4600"/>
+      <p1 x="10540" y="1400"/>
+      <p2 x="10540" y="2120"/>
     </wire>
     <wire>
       <p1 x="-4400" y="3860"/>
@@ -10791,6 +11147,10 @@ add other board</string>
     <wire>
       <p1 x="-3380" y="2040"/>
       <p2 x="-3380" y="2160"/>
+    </wire>
+    <wire>
+      <p1 x="13620" y="1200"/>
+      <p2 x="13620" y="1440"/>
     </wire>
     <wire>
       <p1 x="-2360" y="2720"/>
@@ -10829,16 +11189,20 @@ add other board</string>
       <p2 x="-1340" y="640"/>
     </wire>
     <wire>
+      <p1 x="11580" y="1640"/>
+      <p2 x="11580" y="1760"/>
+    </wire>
+    <wire>
       <p1 x="6460" y="100"/>
       <p2 x="6460" y="140"/>
     </wire>
     <wire>
-      <p1 x="11580" y="1360"/>
-      <p2 x="11580" y="2000"/>
-    </wire>
-    <wire>
       <p1 x="-320" y="-700"/>
       <p2 x="-320" y="-20"/>
+    </wire>
+    <wire>
+      <p1 x="10560" y="1360"/>
+      <p2 x="10560" y="2140"/>
     </wire>
     <wire>
       <p1 x="320" y="2720"/>
@@ -10875,6 +11239,10 @@ add other board</string>
     <wire>
       <p1 x="-3400" y="4640"/>
       <p2 x="-3400" y="5160"/>
+    </wire>
+    <wire>
+      <p1 x="13640" y="1180"/>
+      <p2 x="13640" y="1320"/>
     </wire>
     <wire>
       <p1 x="-2380" y="4800"/>
@@ -10917,12 +11285,12 @@ add other board</string>
       <p2 x="6480" y="120"/>
     </wire>
     <wire>
-      <p1 x="11600" y="1400"/>
-      <p2 x="11600" y="2020"/>
-    </wire>
-    <wire>
       <p1 x="-5460" y="2680"/>
       <p2 x="-5460" y="2740"/>
+    </wire>
+    <wire>
+      <p1 x="10580" y="1640"/>
+      <p2 x="10580" y="1720"/>
     </wire>
     <wire>
       <p1 x="340" y="2760"/>
@@ -10939,10 +11307,6 @@ add other board</string>
     <wire>
       <p1 x="340" y="3520"/>
       <p2 x="340" y="3560"/>
-    </wire>
-    <wire>
-      <p1 x="10580" y="1360"/>
-      <p2 x="10580" y="2000"/>
     </wire>
     <wire>
       <p1 x="-4440" y="3900"/>
@@ -11017,10 +11381,6 @@ add other board</string>
       <p2 x="-1380" y="1380"/>
     </wire>
     <wire>
-      <p1 x="11620" y="1520"/>
-      <p2 x="11620" y="2040"/>
-    </wire>
-    <wire>
       <p1 x="360" y="1720"/>
       <p2 x="360" y="2140"/>
     </wire>
@@ -11031,10 +11391,6 @@ add other board</string>
     <wire>
       <p1 x="360" y="20"/>
       <p2 x="360" y="1140"/>
-    </wire>
-    <wire>
-      <p1 x="10600" y="1400"/>
-      <p2 x="10600" y="2020"/>
     </wire>
     <wire>
       <p1 x="-4460" y="2720"/>
@@ -11121,10 +11477,6 @@ add other board</string>
       <p2 x="-1400" y="6760"/>
     </wire>
     <wire>
-      <p1 x="11640" y="1560"/>
-      <p2 x="11640" y="2060"/>
-    </wire>
-    <wire>
       <p1 x="380" y="480"/>
       <p2 x="380" y="900"/>
     </wire>
@@ -11139,10 +11491,6 @@ add other board</string>
     <wire>
       <p1 x="380" y="3480"/>
       <p2 x="380" y="3720"/>
-    </wire>
-    <wire>
-      <p1 x="10620" y="1520"/>
-      <p2 x="10620" y="2040"/>
     </wire>
     <wire>
       <p1 x="-4480" y="3940"/>
@@ -11193,6 +11541,14 @@ add other board</string>
       <p2 x="2440" y="2640"/>
     </wire>
     <wire>
+      <p1 x="12680" y="1360"/>
+      <p2 x="12680" y="2000"/>
+    </wire>
+    <wire>
+      <p1 x="7560" y="1220"/>
+      <p2 x="7560" y="1280"/>
+    </wire>
+    <wire>
       <p1 x="-1420" y="2720"/>
       <p2 x="-1420" y="2820"/>
     </wire>
@@ -11231,14 +11587,6 @@ add other board</string>
     <wire>
       <p1 x="400" y="3280"/>
       <p2 x="400" y="3400"/>
-    </wire>
-    <wire>
-      <p1 x="400" y="4460"/>
-      <p2 x="400" y="4660"/>
-    </wire>
-    <wire>
-      <p1 x="10640" y="1560"/>
-      <p2 x="10640" y="2060"/>
     </wire>
     <wire>
       <p1 x="-4500" y="6420"/>
@@ -11289,8 +11637,16 @@ add other board</string>
       <p2 x="3480" y="1960"/>
     </wire>
     <wire>
+      <p1 x="8600" y="780"/>
+      <p2 x="8600" y="1260"/>
+    </wire>
+    <wire>
       <p1 x="-2460" y="3080"/>
       <p2 x="-2460" y="3400"/>
+    </wire>
+    <wire>
+      <p1 x="7580" y="1220"/>
+      <p2 x="7580" y="1240"/>
     </wire>
     <wire>
       <p1 x="2460" y="1700"/>
@@ -11299,6 +11655,10 @@ add other board</string>
     <wire>
       <p1 x="2460" y="1980"/>
       <p2 x="2460" y="2760"/>
+    </wire>
+    <wire>
+      <p1 x="12700" y="1400"/>
+      <p2 x="12700" y="2020"/>
     </wire>
     <wire>
       <p1 x="-1440" y="360"/>
@@ -11321,6 +11681,10 @@ add other board</string>
       <p2 x="-1440" y="6560"/>
     </wire>
     <wire>
+      <p1 x="11680" y="1360"/>
+      <p2 x="11680" y="2000"/>
+    </wire>
+    <wire>
       <p1 x="6560" y="100"/>
       <p2 x="6560" y="120"/>
     </wire>
@@ -11337,40 +11701,12 @@ add other board</string>
       <p2 x="420" y="3960"/>
     </wire>
     <wire>
-      <p1 x="420" y="4460"/>
-      <p2 x="420" y="4480"/>
-    </wire>
-    <wire>
       <p1 x="5540" y="-680"/>
       <p2 x="5540" y="420"/>
     </wire>
     <wire>
       <p1 x="-4520" y="5700"/>
       <p2 x="-4520" y="6140"/>
-    </wire>
-    <wire>
-      <p1 x="9640" y="1620"/>
-      <p2 x="9640" y="1660"/>
-    </wire>
-    <wire>
-      <p1 x="9640" y="1080"/>
-      <p2 x="9640" y="1120"/>
-    </wire>
-    <wire>
-      <p1 x="9640" y="1120"/>
-      <p2 x="9640" y="1240"/>
-    </wire>
-    <wire>
-      <p1 x="9640" y="1240"/>
-      <p2 x="9640" y="1300"/>
-    </wire>
-    <wire>
-      <p1 x="9640" y="1660"/>
-      <p2 x="9640" y="1780"/>
-    </wire>
-    <wire>
-      <p1 x="9640" y="1780"/>
-      <p2 x="9640" y="1840"/>
     </wire>
     <wire>
       <p1 x="-3500" y="4980"/>
@@ -11397,6 +11733,10 @@ add other board</string>
       <p2 x="3500" y="2000"/>
     </wire>
     <wire>
+      <p1 x="8620" y="800"/>
+      <p2 x="8620" y="1280"/>
+    </wire>
+    <wire>
       <p1 x="-2480" y="2240"/>
       <p2 x="-2480" y="2480"/>
     </wire>
@@ -11415,6 +11755,10 @@ add other board</string>
     <wire>
       <p1 x="2480" y="2020"/>
       <p2 x="2480" y="2680"/>
+    </wire>
+    <wire>
+      <p1 x="12720" y="1520"/>
+      <p2 x="12720" y="2040"/>
     </wire>
     <wire>
       <p1 x="-1460" y="360"/>
@@ -11449,12 +11793,20 @@ add other board</string>
       <p2 x="-1460" y="5900"/>
     </wire>
     <wire>
+      <p1 x="11700" y="1400"/>
+      <p2 x="11700" y="2020"/>
+    </wire>
+    <wire>
       <p1 x="-5560" y="2720"/>
       <p2 x="-5560" y="2740"/>
     </wire>
     <wire>
       <p1 x="-5560" y="2380"/>
       <p2 x="-5560" y="2480"/>
+    </wire>
+    <wire>
+      <p1 x="10680" y="1360"/>
+      <p2 x="10680" y="2000"/>
     </wire>
     <wire>
       <p1 x="440" y="360"/>
@@ -11477,12 +11829,8 @@ add other board</string>
       <p2 x="-4540" y="2480"/>
     </wire>
     <wire>
-      <p1 x="9660" y="1700"/>
-      <p2 x="9660" y="1820"/>
-    </wire>
-    <wire>
-      <p1 x="9660" y="1160"/>
-      <p2 x="9660" y="1280"/>
+      <p1 x="9660" y="1740"/>
+      <p2 x="9660" y="1860"/>
     </wire>
     <wire>
       <p1 x="-3520" y="3160"/>
@@ -11503,6 +11851,10 @@ add other board</string>
     <wire>
       <p1 x="2500" y="1660"/>
       <p2 x="2500" y="2060"/>
+    </wire>
+    <wire>
+      <p1 x="12740" y="1560"/>
+      <p2 x="12740" y="2060"/>
     </wire>
     <wire>
       <p1 x="-1480" y="520"/>
@@ -11529,16 +11881,16 @@ add other board</string>
       <p2 x="-6600" y="2740"/>
     </wire>
     <wire>
-      <p1 x="11720" y="1640"/>
-      <p2 x="11720" y="1700"/>
-    </wire>
-    <wire>
-      <p1 x="11720" y="1160"/>
-      <p2 x="11720" y="1280"/>
+      <p1 x="11720" y="1520"/>
+      <p2 x="11720" y="2040"/>
     </wire>
     <wire>
       <p1 x="-5580" y="3000"/>
       <p2 x="-5580" y="3800"/>
+    </wire>
+    <wire>
+      <p1 x="10700" y="1400"/>
+      <p2 x="10700" y="2020"/>
     </wire>
     <wire>
       <p1 x="460" y="340"/>
@@ -11605,6 +11957,10 @@ add other board</string>
       <p2 x="2520" y="3820"/>
     </wire>
     <wire>
+      <p1 x="7640" y="1220"/>
+      <p2 x="7640" y="1260"/>
+    </wire>
+    <wire>
       <p1 x="-1500" y="400"/>
       <p2 x="-1500" y="560"/>
     </wire>
@@ -11625,20 +11981,8 @@ add other board</string>
       <p2 x="-1500" y="2480"/>
     </wire>
     <wire>
-      <p1 x="11740" y="1320"/>
-      <p2 x="11740" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="11740" y="1400"/>
-      <p2 x="11740" y="1440"/>
-    </wire>
-    <wire>
-      <p1 x="11740" y="1480"/>
-      <p2 x="11740" y="1520"/>
-    </wire>
-    <wire>
       <p1 x="11740" y="1560"/>
-      <p2 x="11740" y="1600"/>
+      <p2 x="11740" y="2060"/>
     </wire>
     <wire>
       <p1 x="-480" y="-20"/>
@@ -11677,12 +12021,8 @@ add other board</string>
       <p2 x="-480" y="400"/>
     </wire>
     <wire>
-      <p1 x="-480" y="4180"/>
-      <p2 x="-480" y="4480"/>
-    </wire>
-    <wire>
       <p1 x="-480" y="3480"/>
-      <p2 x="-480" y="4180"/>
+      <p2 x="-480" y="4480"/>
     </wire>
     <wire>
       <p1 x="-480" y="3100"/>
@@ -11709,16 +12049,8 @@ add other board</string>
       <p2 x="480" y="1480"/>
     </wire>
     <wire>
-      <p1 x="480" y="4460"/>
-      <p2 x="480" y="4880"/>
-    </wire>
-    <wire>
-      <p1 x="10720" y="1640"/>
-      <p2 x="10720" y="1700"/>
-    </wire>
-    <wire>
-      <p1 x="10720" y="1080"/>
-      <p2 x="10720" y="1280"/>
+      <p1 x="10720" y="1520"/>
+      <p2 x="10720" y="2040"/>
     </wire>
     <wire>
       <p1 x="-4580" y="2720"/>
@@ -11731,6 +12063,30 @@ add other board</string>
     <wire>
       <p1 x="-4580" y="3200"/>
       <p2 x="-4580" y="3700"/>
+    </wire>
+    <wire>
+      <p1 x="9700" y="1620"/>
+      <p2 x="9700" y="1660"/>
+    </wire>
+    <wire>
+      <p1 x="9700" y="1020"/>
+      <p2 x="9700" y="1060"/>
+    </wire>
+    <wire>
+      <p1 x="9700" y="1060"/>
+      <p2 x="9700" y="1180"/>
+    </wire>
+    <wire>
+      <p1 x="9700" y="1180"/>
+      <p2 x="9700" y="1240"/>
+    </wire>
+    <wire>
+      <p1 x="9700" y="1660"/>
+      <p2 x="9700" y="1780"/>
+    </wire>
+    <wire>
+      <p1 x="9700" y="1780"/>
+      <p2 x="9700" y="1840"/>
     </wire>
     <wire>
       <p1 x="-3560" y="3240"/>
@@ -11759,6 +12115,10 @@ add other board</string>
     <wire>
       <p1 x="2540" y="3420"/>
       <p2 x="2540" y="3860"/>
+    </wire>
+    <wire>
+      <p1 x="7660" y="1220"/>
+      <p2 x="7660" y="1240"/>
     </wire>
     <wire>
       <p1 x="-1520" y="3020"/>
@@ -11817,12 +12177,8 @@ add other board</string>
       <p2 x="-500" y="440"/>
     </wire>
     <wire>
-      <p1 x="-500" y="4200"/>
-      <p2 x="-500" y="4500"/>
-    </wire>
-    <wire>
       <p1 x="-500" y="3500"/>
-      <p2 x="-500" y="4200"/>
+      <p2 x="-500" y="4500"/>
     </wire>
     <wire>
       <p1 x="-5620" y="3080"/>
@@ -11841,24 +12197,8 @@ add other board</string>
       <p2 x="500" y="1520"/>
     </wire>
     <wire>
-      <p1 x="500" y="4460"/>
-      <p2 x="500" y="4480"/>
-    </wire>
-    <wire>
-      <p1 x="10740" y="1320"/>
-      <p2 x="10740" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="10740" y="1400"/>
-      <p2 x="10740" y="1440"/>
-    </wire>
-    <wire>
-      <p1 x="10740" y="1480"/>
-      <p2 x="10740" y="1520"/>
-    </wire>
-    <wire>
       <p1 x="10740" y="1560"/>
-      <p2 x="10740" y="1600"/>
+      <p2 x="10740" y="2060"/>
     </wire>
     <wire>
       <p1 x="-4600" y="3240"/>
@@ -11869,16 +12209,20 @@ add other board</string>
       <p2 x="-4600" y="4120"/>
     </wire>
     <wire>
+      <p1 x="9720" y="1700"/>
+      <p2 x="9720" y="1820"/>
+    </wire>
+    <wire>
+      <p1 x="9720" y="1100"/>
+      <p2 x="9720" y="1220"/>
+    </wire>
+    <wire>
       <p1 x="-3580" y="2300"/>
       <p2 x="-3580" y="2480"/>
     </wire>
     <wire>
       <p1 x="-3580" y="2720"/>
       <p2 x="-3580" y="2800"/>
-    </wire>
-    <wire>
-      <p1 x="-3580" y="3280"/>
-      <p2 x="-3580" y="3460"/>
     </wire>
     <wire>
       <p1 x="3580" y="1620"/>
@@ -11946,7 +12290,7 @@ add other board</string>
     </wire>
     <wire>
       <p1 x="-520" y="3520"/>
-      <p2 x="-520" y="4220"/>
+      <p2 x="-520" y="4520"/>
     </wire>
     <wire>
       <p1 x="-520" y="3140"/>
@@ -11965,8 +12309,12 @@ add other board</string>
       <p2 x="-520" y="7140"/>
     </wire>
     <wire>
-      <p1 x="-520" y="1780"/>
+      <p1 x="-520" y="1800"/>
       <p2 x="-520" y="2600"/>
+    </wire>
+    <wire>
+      <p1 x="-520" y="1780"/>
+      <p2 x="-520" y="1800"/>
     </wire>
     <wire>
       <p1 x="-520" y="1560"/>
@@ -11987,10 +12335,6 @@ add other board</string>
     <wire>
       <p1 x="-520" y="180"/>
       <p2 x="-520" y="480"/>
-    </wire>
-    <wire>
-      <p1 x="-520" y="4220"/>
-      <p2 x="-520" y="4520"/>
     </wire>
     <wire>
       <p1 x="-5640" y="2720"/>
@@ -12053,6 +12397,14 @@ add other board</string>
       <p2 x="2580" y="3900"/>
     </wire>
     <wire>
+      <p1 x="12820" y="1640"/>
+      <p2 x="12820" y="1700"/>
+    </wire>
+    <wire>
+      <p1 x="12820" y="1180"/>
+      <p2 x="12820" y="1280"/>
+    </wire>
+    <wire>
       <p1 x="-1560" y="6440"/>
       <p2 x="-1560" y="6560"/>
     </wire>
@@ -12073,12 +12425,8 @@ add other board</string>
       <p2 x="-540" y="520"/>
     </wire>
     <wire>
-      <p1 x="-540" y="4240"/>
-      <p2 x="-540" y="4540"/>
-    </wire>
-    <wire>
       <p1 x="-540" y="3540"/>
-      <p2 x="-540" y="4240"/>
+      <p2 x="-540" y="4540"/>
     </wire>
     <wire>
       <p1 x="-540" y="3160"/>
@@ -12189,6 +12537,22 @@ add other board</string>
       <p2 x="2600" y="3600"/>
     </wire>
     <wire>
+      <p1 x="12840" y="1320"/>
+      <p2 x="12840" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="12840" y="1400"/>
+      <p2 x="12840" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="12840" y="1480"/>
+      <p2 x="12840" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12840" y="1560"/>
+      <p2 x="12840" y="1600"/>
+    </wire>
+    <wire>
       <p1 x="-1580" y="2720"/>
       <p2 x="-1580" y="2780"/>
     </wire>
@@ -12207,6 +12571,14 @@ add other board</string>
     <wire>
       <p1 x="-6700" y="2380"/>
       <p2 x="-6700" y="2480"/>
+    </wire>
+    <wire>
+      <p1 x="11820" y="1640"/>
+      <p2 x="11820" y="1700"/>
+    </wire>
+    <wire>
+      <p1 x="11820" y="1100"/>
+      <p2 x="11820" y="1280"/>
     </wire>
     <wire>
       <p1 x="1580" y="3100"/>
@@ -12229,16 +12601,12 @@ add other board</string>
       <p2 x="-560" y="5140"/>
     </wire>
     <wire>
-      <p1 x="-560" y="4260"/>
-      <p2 x="-560" y="4560"/>
-    </wire>
-    <wire>
       <p1 x="-560" y="140"/>
       <p2 x="-560" y="940"/>
     </wire>
     <wire>
       <p1 x="-560" y="3560"/>
-      <p2 x="-560" y="4260"/>
+      <p2 x="-560" y="4560"/>
     </wire>
     <wire>
       <p1 x="-560" y="3180"/>
@@ -12349,6 +12717,22 @@ add other board</string>
       <p2 x="-1600" y="6700"/>
     </wire>
     <wire>
+      <p1 x="11840" y="1320"/>
+      <p2 x="11840" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="11840" y="1400"/>
+      <p2 x="11840" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="11840" y="1480"/>
+      <p2 x="11840" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="11840" y="1560"/>
+      <p2 x="11840" y="1600"/>
+    </wire>
+    <wire>
       <p1 x="-580" y="-120"/>
       <p2 x="-580" y="120"/>
     </wire>
@@ -12365,16 +12749,12 @@ add other board</string>
       <p2 x="-580" y="5160"/>
     </wire>
     <wire>
-      <p1 x="-580" y="4280"/>
-      <p2 x="-580" y="4580"/>
-    </wire>
-    <wire>
       <p1 x="-580" y="120"/>
       <p2 x="-580" y="980"/>
     </wire>
     <wire>
       <p1 x="-580" y="3580"/>
-      <p2 x="-580" y="4280"/>
+      <p2 x="-580" y="4580"/>
     </wire>
     <wire>
       <p1 x="-580" y="3200"/>
@@ -12407,6 +12787,14 @@ add other board</string>
     <wire>
       <p1 x="-5700" y="3240"/>
       <p2 x="-5700" y="3920"/>
+    </wire>
+    <wire>
+      <p1 x="10820" y="1640"/>
+      <p2 x="10820" y="1700"/>
+    </wire>
+    <wire>
+      <p1 x="10820" y="1020"/>
+      <p2 x="10820" y="1280"/>
     </wire>
     <wire>
       <p1 x="580" y="340"/>
@@ -12537,16 +12925,12 @@ add other board</string>
       <p2 x="-600" y="5180"/>
     </wire>
     <wire>
-      <p1 x="-600" y="4300"/>
-      <p2 x="-600" y="4600"/>
-    </wire>
-    <wire>
       <p1 x="-600" y="100"/>
       <p2 x="-600" y="1020"/>
     </wire>
     <wire>
       <p1 x="-600" y="3600"/>
-      <p2 x="-600" y="4300"/>
+      <p2 x="-600" y="4600"/>
     </wire>
     <wire>
       <p1 x="-600" y="3220"/>
@@ -12575,6 +12959,22 @@ add other board</string>
     <wire>
       <p1 x="-5720" y="3280"/>
       <p2 x="-5720" y="3940"/>
+    </wire>
+    <wire>
+      <p1 x="10840" y="1320"/>
+      <p2 x="10840" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="10840" y="1400"/>
+      <p2 x="10840" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="10840" y="1480"/>
+      <p2 x="10840" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="10840" y="1560"/>
+      <p2 x="10840" y="1600"/>
     </wire>
     <wire>
       <p1 x="5720" y="100"/>
@@ -12693,16 +13093,12 @@ add other board</string>
       <p2 x="-620" y="5200"/>
     </wire>
     <wire>
-      <p1 x="-620" y="4320"/>
-      <p2 x="-620" y="4620"/>
-    </wire>
-    <wire>
       <p1 x="-620" y="80"/>
       <p2 x="-620" y="1060"/>
     </wire>
     <wire>
       <p1 x="-620" y="3620"/>
-      <p2 x="-620" y="4320"/>
+      <p2 x="-620" y="4620"/>
     </wire>
     <wire>
       <p1 x="-620" y="3240"/>
@@ -12723,22 +13119,6 @@ add other board</string>
     <wire>
       <p1 x="620" y="1360"/>
       <p2 x="620" y="1400"/>
-    </wire>
-    <wire>
-      <p1 x="9840" y="1440"/>
-      <p2 x="9840" y="1500"/>
-    </wire>
-    <wire>
-      <p1 x="9840" y="900"/>
-      <p2 x="9840" y="960"/>
-    </wire>
-    <wire>
-      <p1 x="9840" y="960"/>
-      <p2 x="9840" y="1280"/>
-    </wire>
-    <wire>
-      <p1 x="9840" y="1500"/>
-      <p2 x="9840" y="1820"/>
     </wire>
     <wire>
       <p1 x="-3700" y="2720"/>
@@ -12825,26 +13205,6 @@ add other board</string>
       <p2 x="1660" y="3980"/>
     </wire>
     <wire>
-      <p1 x="11900" y="1560"/>
-      <p2 x="11900" y="1600"/>
-    </wire>
-    <wire>
-      <p1 x="11900" y="1480"/>
-      <p2 x="11900" y="1520"/>
-    </wire>
-    <wire>
-      <p1 x="11900" y="1400"/>
-      <p2 x="11900" y="1440"/>
-    </wire>
-    <wire>
-      <p1 x="11900" y="1320"/>
-      <p2 x="11900" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="11900" y="1600"/>
-      <p2 x="11900" y="2080"/>
-    </wire>
-    <wire>
       <p1 x="-5760" y="2720"/>
       <p2 x="-5760" y="2740"/>
     </wire>
@@ -12863,10 +13223,6 @@ add other board</string>
     <wire>
       <p1 x="-4740" y="2360"/>
       <p2 x="-4740" y="2480"/>
-    </wire>
-    <wire>
-      <p1 x="9860" y="1700"/>
-      <p2 x="9860" y="1780"/>
     </wire>
     <wire>
       <p1 x="-3720" y="1420"/>
@@ -12921,34 +13277,6 @@ add other board</string>
       <p2 x="1680" y="3940"/>
     </wire>
     <wire>
-      <p1 x="11920" y="1220"/>
-      <p2 x="11920" y="1280"/>
-    </wire>
-    <wire>
-      <p1 x="11920" y="1520"/>
-      <p2 x="11920" y="2100"/>
-    </wire>
-    <wire>
-      <p1 x="10900" y="1560"/>
-      <p2 x="10900" y="1600"/>
-    </wire>
-    <wire>
-      <p1 x="10900" y="1480"/>
-      <p2 x="10900" y="1520"/>
-    </wire>
-    <wire>
-      <p1 x="10900" y="1400"/>
-      <p2 x="10900" y="1440"/>
-    </wire>
-    <wire>
-      <p1 x="10900" y="1320"/>
-      <p2 x="10900" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="10900" y="1600"/>
-      <p2 x="10900" y="2080"/>
-    </wire>
-    <wire>
       <p1 x="5780" y="520"/>
       <p2 x="5780" y="1900"/>
     </wire>
@@ -12959,10 +13287,6 @@ add other board</string>
     <wire>
       <p1 x="-4760" y="4420"/>
       <p2 x="-4760" y="4600"/>
-    </wire>
-    <wire>
-      <p1 x="9880" y="1660"/>
-      <p2 x="9880" y="1760"/>
     </wire>
     <wire>
       <p1 x="-3740" y="1420"/>
@@ -13049,10 +13373,6 @@ add other board</string>
       <p2 x="1700" y="3900"/>
     </wire>
     <wire>
-      <p1 x="11940" y="1400"/>
-      <p2 x="11940" y="2120"/>
-    </wire>
-    <wire>
       <p1 x="-680" y="4680"/>
       <p2 x="-680" y="5820"/>
     </wire>
@@ -13073,14 +13393,6 @@ add other board</string>
       <p2 x="5800" y="2020"/>
     </wire>
     <wire>
-      <p1 x="10920" y="1220"/>
-      <p2 x="10920" y="1280"/>
-    </wire>
-    <wire>
-      <p1 x="10920" y="1520"/>
-      <p2 x="10920" y="2100"/>
-    </wire>
-    <wire>
       <p1 x="-4780" y="2280"/>
       <p2 x="-4780" y="2480"/>
     </wire>
@@ -13093,8 +13405,20 @@ add other board</string>
       <p2 x="-4780" y="5080"/>
     </wire>
     <wire>
-      <p1 x="9900" y="1620"/>
-      <p2 x="9900" y="1740"/>
+      <p1 x="9900" y="1440"/>
+      <p2 x="9900" y="1500"/>
+    </wire>
+    <wire>
+      <p1 x="9900" y="840"/>
+      <p2 x="9900" y="900"/>
+    </wire>
+    <wire>
+      <p1 x="9900" y="900"/>
+      <p2 x="9900" y="1220"/>
+    </wire>
+    <wire>
+      <p1 x="9900" y="1500"/>
+      <p2 x="9900" y="1820"/>
     </wire>
     <wire>
       <p1 x="-3760" y="2000"/>
@@ -13125,10 +13449,6 @@ add other board</string>
       <p2 x="3760" y="2560"/>
     </wire>
     <wire>
-      <p1 x="-2740" y="3460"/>
-      <p2 x="-2740" y="3700"/>
-    </wire>
-    <wire>
       <p1 x="-1720" y="520"/>
       <p2 x="-1720" y="740"/>
     </wire>
@@ -13145,10 +13465,6 @@ add other board</string>
       <p2 x="1720" y="3860"/>
     </wire>
     <wire>
-      <p1 x="11960" y="1360"/>
-      <p2 x="11960" y="2140"/>
-    </wire>
-    <wire>
       <p1 x="-700" y="4800"/>
       <p2 x="-700" y="5740"/>
     </wire>
@@ -13161,10 +13477,6 @@ add other board</string>
       <p2 x="5820" y="200"/>
     </wire>
     <wire>
-      <p1 x="10940" y="1400"/>
-      <p2 x="10940" y="2120"/>
-    </wire>
-    <wire>
       <p1 x="-4800" y="4460"/>
       <p2 x="-4800" y="4520"/>
     </wire>
@@ -13173,8 +13485,8 @@ add other board</string>
       <p2 x="-4800" y="5440"/>
     </wire>
     <wire>
-      <p1 x="9920" y="1580"/>
-      <p2 x="9920" y="1720"/>
+      <p1 x="9920" y="1780"/>
+      <p2 x="9920" y="1820"/>
     </wire>
     <wire>
       <p1 x="-3780" y="2400"/>
@@ -13233,6 +13545,26 @@ add other board</string>
       <p2 x="-2760" y="2940"/>
     </wire>
     <wire>
+      <p1 x="13000" y="1560"/>
+      <p2 x="13000" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="13000" y="1480"/>
+      <p2 x="13000" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="13000" y="1400"/>
+      <p2 x="13000" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="13000" y="1320"/>
+      <p2 x="13000" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="13000" y="1600"/>
+      <p2 x="13000" y="2080"/>
+    </wire>
+    <wire>
       <p1 x="-1740" y="400"/>
       <p2 x="-1740" y="780"/>
     </wire>
@@ -13269,10 +13601,6 @@ add other board</string>
       <p2 x="1740" y="3820"/>
     </wire>
     <wire>
-      <p1 x="11980" y="1640"/>
-      <p2 x="11980" y="1780"/>
-    </wire>
-    <wire>
       <p1 x="-720" y="4840"/>
       <p2 x="-720" y="5660"/>
     </wire>
@@ -13299,10 +13627,6 @@ add other board</string>
     <wire>
       <p1 x="5840" y="2000"/>
       <p2 x="5840" y="7900"/>
-    </wire>
-    <wire>
-      <p1 x="10960" y="1360"/>
-      <p2 x="10960" y="2140"/>
     </wire>
     <wire>
       <p1 x="-4820" y="2400"/>
@@ -13337,8 +13661,8 @@ add other board</string>
       <p2 x="-4820" y="5040"/>
     </wire>
     <wire>
-      <p1 x="9940" y="1040"/>
-      <p2 x="9940" y="1300"/>
+      <p1 x="9940" y="1740"/>
+      <p2 x="9940" y="1800"/>
     </wire>
     <wire>
       <p1 x="-3800" y="1420"/>
@@ -13367,6 +13691,14 @@ add other board</string>
     <wire>
       <p1 x="-2780" y="1620"/>
       <p2 x="-2780" y="1900"/>
+    </wire>
+    <wire>
+      <p1 x="13020" y="1220"/>
+      <p2 x="13020" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="13020" y="1520"/>
+      <p2 x="13020" y="2100"/>
     </wire>
     <wire>
       <p1 x="-1760" y="320"/>
@@ -13405,6 +13737,26 @@ add other board</string>
       <p2 x="-6880" y="4120"/>
     </wire>
     <wire>
+      <p1 x="12000" y="1560"/>
+      <p2 x="12000" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="12000" y="1480"/>
+      <p2 x="12000" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="12000" y="1400"/>
+      <p2 x="12000" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="12000" y="1320"/>
+      <p2 x="12000" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="12000" y="1600"/>
+      <p2 x="12000" y="2080"/>
+    </wire>
+    <wire>
       <p1 x="1760" y="1100"/>
       <p2 x="1760" y="2560"/>
     </wire>
@@ -13421,12 +13773,8 @@ add other board</string>
       <p2 x="-740" y="2960"/>
     </wire>
     <wire>
-      <p1 x="10980" y="1640"/>
-      <p2 x="10980" y="1740"/>
-    </wire>
-    <wire>
-      <p1 x="9960" y="1080"/>
-      <p2 x="9960" y="1300"/>
+      <p1 x="9960" y="1700"/>
+      <p2 x="9960" y="1780"/>
     </wire>
     <wire>
       <p1 x="-3820" y="1420"/>
@@ -13493,6 +13841,10 @@ add other board</string>
       <p2 x="-2800" y="1240"/>
     </wire>
     <wire>
+      <p1 x="13040" y="1400"/>
+      <p2 x="13040" y="2120"/>
+    </wire>
+    <wire>
       <p1 x="-1780" y="620"/>
       <p2 x="-1780" y="660"/>
     </wire>
@@ -13549,6 +13901,14 @@ add other board</string>
       <p2 x="-6900" y="4140"/>
     </wire>
     <wire>
+      <p1 x="12020" y="1220"/>
+      <p2 x="12020" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="12020" y="1520"/>
+      <p2 x="12020" y="2100"/>
+    </wire>
+    <wire>
       <p1 x="6900" y="100"/>
       <p2 x="6900" y="240"/>
     </wire>
@@ -13565,6 +13925,26 @@ add other board</string>
       <p2 x="-5880" y="2960"/>
     </wire>
     <wire>
+      <p1 x="11000" y="1560"/>
+      <p2 x="11000" y="1600"/>
+    </wire>
+    <wire>
+      <p1 x="11000" y="1480"/>
+      <p2 x="11000" y="1520"/>
+    </wire>
+    <wire>
+      <p1 x="11000" y="1400"/>
+      <p2 x="11000" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="11000" y="1320"/>
+      <p2 x="11000" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="11000" y="1600"/>
+      <p2 x="11000" y="2080"/>
+    </wire>
+    <wire>
       <p1 x="-4860" y="2420"/>
       <p2 x="-4860" y="2480"/>
     </wire>
@@ -13573,8 +13953,8 @@ add other board</string>
       <p2 x="-4860" y="2920"/>
     </wire>
     <wire>
-      <p1 x="9980" y="1380"/>
-      <p2 x="9980" y="2020"/>
+      <p1 x="9980" y="1660"/>
+      <p2 x="9980" y="1760"/>
     </wire>
     <wire>
       <p1 x="-3840" y="4020"/>
@@ -13601,12 +13981,20 @@ add other board</string>
       <p2 x="-2820" y="1780"/>
     </wire>
     <wire>
+      <p1 x="13060" y="1360"/>
+      <p2 x="13060" y="2140"/>
+    </wire>
+    <wire>
       <p1 x="-1800" y="820"/>
       <p2 x="-1800" y="840"/>
     </wire>
     <wire>
       <p1 x="-6920" y="3280"/>
       <p2 x="-6920" y="4160"/>
+    </wire>
+    <wire>
+      <p1 x="12040" y="1400"/>
+      <p2 x="12040" y="2120"/>
     </wire>
     <wire>
       <p1 x="6920" y="100"/>
@@ -13621,6 +14009,14 @@ add other board</string>
       <p2 x="-780" y="6120"/>
     </wire>
     <wire>
+      <p1 x="11020" y="1220"/>
+      <p2 x="11020" y="1280"/>
+    </wire>
+    <wire>
+      <p1 x="11020" y="1520"/>
+      <p2 x="11020" y="2100"/>
+    </wire>
+    <wire>
       <p1 x="780" y="280"/>
       <p2 x="780" y="320"/>
     </wire>
@@ -13629,8 +14025,8 @@ add other board</string>
       <p2 x="780" y="1400"/>
     </wire>
     <wire>
-      <p1 x="10000" y="1120"/>
-      <p2 x="10000" y="1300"/>
+      <p1 x="10000" y="1620"/>
+      <p2 x="10000" y="1740"/>
     </wire>
     <wire>
       <p1 x="-3860" y="2440"/>
@@ -13673,6 +14069,10 @@ add other board</string>
       <p2 x="-2840" y="2900"/>
     </wire>
     <wire>
+      <p1 x="13080" y="1640"/>
+      <p2 x="13080" y="1820"/>
+    </wire>
+    <wire>
       <p1 x="-1820" y="900"/>
       <p2 x="-1820" y="960"/>
     </wire>
@@ -13709,6 +14109,10 @@ add other board</string>
       <p2 x="-6940" y="2760"/>
     </wire>
     <wire>
+      <p1 x="12060" y="1360"/>
+      <p2 x="12060" y="2140"/>
+    </wire>
+    <wire>
       <p1 x="1820" y="720"/>
       <p2 x="1820" y="2140"/>
     </wire>
@@ -13723,6 +14127,10 @@ add other board</string>
     <wire>
       <p1 x="-5920" y="2720"/>
       <p2 x="-5920" y="2940"/>
+    </wire>
+    <wire>
+      <p1 x="11040" y="1400"/>
+      <p2 x="11040" y="2120"/>
     </wire>
     <wire>
       <p1 x="800" y="280"/>
@@ -13741,8 +14149,8 @@ add other board</string>
       <p2 x="-4900" y="2900"/>
     </wire>
     <wire>
-      <p1 x="10020" y="1160"/>
-      <p2 x="10020" y="1300"/>
+      <p1 x="10020" y="1580"/>
+      <p2 x="10020" y="1720"/>
     </wire>
     <wire>
       <p1 x="-3880" y="3720"/>
@@ -13757,6 +14165,10 @@ add other board</string>
       <p2 x="-1840" y="1380"/>
     </wire>
     <wire>
+      <p1 x="12080" y="1640"/>
+      <p2 x="12080" y="1780"/>
+    </wire>
+    <wire>
       <p1 x="1840" y="720"/>
       <p2 x="1840" y="2100"/>
     </wire>
@@ -13765,12 +14177,20 @@ add other board</string>
       <p2 x="-820" y="6160"/>
     </wire>
     <wire>
+      <p1 x="11060" y="1360"/>
+      <p2 x="11060" y="2140"/>
+    </wire>
+    <wire>
       <p1 x="820" y="240"/>
       <p2 x="820" y="360"/>
     </wire>
     <wire>
       <p1 x="820" y="1240"/>
       <p2 x="820" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="10040" y="980"/>
+      <p2 x="10040" y="1300"/>
     </wire>
     <wire>
       <p1 x="-3900" y="2460"/>
@@ -13853,6 +14273,10 @@ add other board</string>
       <p2 x="-5960" y="2920"/>
     </wire>
     <wire>
+      <p1 x="11080" y="1640"/>
+      <p2 x="11080" y="1740"/>
+    </wire>
+    <wire>
       <p1 x="840" y="220"/>
       <p2 x="840" y="400"/>
     </wire>
@@ -13861,16 +14285,16 @@ add other board</string>
       <p2 x="840" y="1480"/>
     </wire>
     <wire>
-      <p1 x="11080" y="1360"/>
-      <p2 x="11080" y="2000"/>
-    </wire>
-    <wire>
       <p1 x="-4940" y="2460"/>
       <p2 x="-4940" y="2480"/>
     </wire>
     <wire>
       <p1 x="-4940" y="2720"/>
       <p2 x="-4940" y="2880"/>
+    </wire>
+    <wire>
+      <p1 x="10060" y="1020"/>
+      <p2 x="10060" y="1300"/>
     </wire>
     <wire>
       <p1 x="-3920" y="4680"/>
@@ -13909,12 +14333,8 @@ add other board</string>
       <p2 x="860" y="1520"/>
     </wire>
     <wire>
-      <p1 x="11100" y="1400"/>
-      <p2 x="11100" y="2020"/>
-    </wire>
-    <wire>
-      <p1 x="10080" y="1360"/>
-      <p2 x="10080" y="2000"/>
+      <p1 x="10080" y="1380"/>
+      <p2 x="10080" y="2020"/>
     </wire>
     <wire>
       <p1 x="-3940" y="2960"/>
@@ -14001,10 +14421,6 @@ add other board</string>
       <p2 x="880" y="1560"/>
     </wire>
     <wire>
-      <p1 x="11120" y="1520"/>
-      <p2 x="11120" y="2040"/>
-    </wire>
-    <wire>
       <p1 x="-4980" y="2960"/>
       <p2 x="-4980" y="3280"/>
     </wire>
@@ -14029,8 +14445,8 @@ add other board</string>
       <p2 x="-4980" y="5340"/>
     </wire>
     <wire>
-      <p1 x="10100" y="1400"/>
-      <p2 x="10100" y="2020"/>
+      <p1 x="10100" y="1060"/>
+      <p2 x="10100" y="1300"/>
     </wire>
     <wire>
       <p1 x="-3960" y="2460"/>
@@ -14105,6 +14521,10 @@ add other board</string>
       <p2 x="2940" y="6340"/>
     </wire>
     <wire>
+      <p1 x="13180" y="1360"/>
+      <p2 x="13180" y="2000"/>
+    </wire>
+    <wire>
       <p1 x="7040" y="160"/>
       <p2 x="7040" y="180"/>
     </wire>
@@ -14133,10 +14553,6 @@ add other board</string>
       <p2 x="900" y="1600"/>
     </wire>
     <wire>
-      <p1 x="11140" y="1560"/>
-      <p2 x="11140" y="2060"/>
-    </wire>
-    <wire>
       <p1 x="-5000" y="2460"/>
       <p2 x="-5000" y="2560"/>
     </wire>
@@ -14157,8 +14573,8 @@ add other board</string>
       <p2 x="-5000" y="2740"/>
     </wire>
     <wire>
-      <p1 x="10120" y="1520"/>
-      <p2 x="10120" y="2040"/>
+      <p1 x="10120" y="1100"/>
+      <p2 x="10120" y="1300"/>
     </wire>
     <wire>
       <p1 x="-3980" y="2920"/>
@@ -14207,6 +14623,10 @@ add other board</string>
     <wire>
       <p1 x="2960" y="2680"/>
       <p2 x="2960" y="6360"/>
+    </wire>
+    <wire>
+      <p1 x="13200" y="1400"/>
+      <p2 x="13200" y="2020"/>
     </wire>
     <wire>
       <p1 x="-1940" y="2720"/>
@@ -14261,6 +14681,10 @@ add other board</string>
       <p2 x="1940" y="1900"/>
     </wire>
     <wire>
+      <p1 x="12180" y="1360"/>
+      <p2 x="12180" y="2000"/>
+    </wire>
+    <wire>
       <p1 x="-920" y="2180"/>
       <p2 x="-920" y="2900"/>
     </wire>
@@ -14293,10 +14717,6 @@ add other board</string>
       <p2 x="-5020" y="5160"/>
     </wire>
     <wire>
-      <p1 x="10140" y="1560"/>
-      <p2 x="10140" y="2060"/>
-    </wire>
-    <wire>
       <p1 x="-4000" y="2560"/>
       <p2 x="-4000" y="2580"/>
     </wire>
@@ -14325,6 +14745,18 @@ add other board</string>
       <p2 x="2980" y="6380"/>
     </wire>
     <wire>
+      <p1 x="13220" y="1520"/>
+      <p2 x="13220" y="2040"/>
+    </wire>
+    <wire>
+      <p1 x="13220" y="1160"/>
+      <p2 x="13220" y="1320"/>
+    </wire>
+    <wire>
+      <p1 x="13220" y="780"/>
+      <p2 x="13220" y="1140"/>
+    </wire>
+    <wire>
       <p1 x="-1960" y="2940"/>
       <p2 x="-1960" y="3200"/>
     </wire>
@@ -14345,8 +14777,16 @@ add other board</string>
       <p2 x="7080" y="220"/>
     </wire>
     <wire>
+      <p1 x="12200" y="1400"/>
+      <p2 x="12200" y="2020"/>
+    </wire>
+    <wire>
       <p1 x="-940" y="2360"/>
       <p2 x="-940" y="2880"/>
+    </wire>
+    <wire>
+      <p1 x="11180" y="1360"/>
+      <p2 x="11180" y="2000"/>
     </wire>
     <wire>
       <p1 x="940" y="120"/>
@@ -14445,6 +14885,18 @@ add other board</string>
       <p2 x="3000" y="6900"/>
     </wire>
     <wire>
+      <p1 x="13240" y="1560"/>
+      <p2 x="13240" y="2060"/>
+    </wire>
+    <wire>
+      <p1 x="13240" y="1160"/>
+      <p2 x="13240" y="1440"/>
+    </wire>
+    <wire>
+      <p1 x="13240" y="800"/>
+      <p2 x="13240" y="1140"/>
+    </wire>
+    <wire>
       <p1 x="-1980" y="2920"/>
       <p2 x="-1980" y="3160"/>
     </wire>
@@ -14473,6 +14925,10 @@ add other board</string>
       <p2 x="1980" y="1060"/>
     </wire>
     <wire>
+      <p1 x="12220" y="1520"/>
+      <p2 x="12220" y="2040"/>
+    </wire>
+    <wire>
       <p1 x="-960" y="360"/>
       <p2 x="-960" y="1620"/>
     </wire>
@@ -14489,6 +14945,10 @@ add other board</string>
       <p2 x="-6080" y="3280"/>
     </wire>
     <wire>
+      <p1 x="11200" y="1400"/>
+      <p2 x="11200" y="2020"/>
+    </wire>
+    <wire>
       <p1 x="960" y="100"/>
       <p2 x="960" y="640"/>
     </wire>
@@ -14503,6 +14963,10 @@ add other board</string>
     <wire>
       <p1 x="-5060" y="2880"/>
       <p2 x="-5060" y="3120"/>
+    </wire>
+    <wire>
+      <p1 x="10180" y="1360"/>
+      <p2 x="10180" y="2000"/>
     </wire>
     <wire>
       <p1 x="-4040" y="2440"/>
@@ -14533,6 +14997,10 @@ add other board</string>
       <p2 x="3020" y="6920"/>
     </wire>
     <wire>
+      <p1 x="13260" y="1160"/>
+      <p2 x="13260" y="1480"/>
+    </wire>
+    <wire>
       <p1 x="-2000" y="2460"/>
       <p2 x="-2000" y="2680"/>
     </wire>
@@ -14553,6 +15021,10 @@ add other board</string>
       <p2 x="2000" y="1020"/>
     </wire>
     <wire>
+      <p1 x="12240" y="1560"/>
+      <p2 x="12240" y="2060"/>
+    </wire>
+    <wire>
       <p1 x="-980" y="780"/>
       <p2 x="-980" y="1640"/>
     </wire>
@@ -14569,6 +15041,10 @@ add other board</string>
       <p2 x="-6100" y="2740"/>
     </wire>
     <wire>
+      <p1 x="11220" y="1520"/>
+      <p2 x="11220" y="2040"/>
+    </wire>
+    <wire>
       <p1 x="980" y="80"/>
       <p2 x="980" y="680"/>
     </wire>
@@ -14581,16 +15057,12 @@ add other board</string>
       <p2 x="6100" y="400"/>
     </wire>
     <wire>
-      <p1 x="11220" y="1640"/>
-      <p2 x="11220" y="1700"/>
-    </wire>
-    <wire>
-      <p1 x="11220" y="1120"/>
-      <p2 x="11220" y="1280"/>
-    </wire>
-    <wire>
       <p1 x="-5080" y="2440"/>
       <p2 x="-5080" y="3080"/>
+    </wire>
+    <wire>
+      <p1 x="10200" y="1400"/>
+      <p2 x="10200" y="2020"/>
     </wire>
     <wire>
       <p1 x="-4060" y="2420"/>
@@ -14619,6 +15091,10 @@ add other board</string>
     <wire>
       <p1 x="-3040" y="5500"/>
       <p2 x="-3040" y="6880"/>
+    </wire>
+    <wire>
+      <p1 x="13280" y="1160"/>
+      <p2 x="13280" y="1600"/>
     </wire>
     <wire>
       <p1 x="-2020" y="2420"/>
@@ -14661,28 +15137,16 @@ add other board</string>
       <p2 x="-6120" y="3200"/>
     </wire>
     <wire>
-      <p1 x="11240" y="1320"/>
-      <p2 x="11240" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="11240" y="1400"/>
-      <p2 x="11240" y="1440"/>
-    </wire>
-    <wire>
-      <p1 x="11240" y="1480"/>
-      <p2 x="11240" y="1520"/>
-    </wire>
-    <wire>
       <p1 x="11240" y="1560"/>
-      <p2 x="11240" y="1600"/>
+      <p2 x="11240" y="2060"/>
     </wire>
     <wire>
       <p1 x="-5100" y="2420"/>
       <p2 x="-5100" y="3040"/>
     </wire>
     <wire>
-      <p1 x="10220" y="1640"/>
-      <p2 x="10220" y="1700"/>
+      <p1 x="10220" y="1520"/>
+      <p2 x="10220" y="2040"/>
     </wire>
     <wire>
       <p1 x="-4080" y="2400"/>
@@ -14743,6 +15207,10 @@ add other board</string>
     <wire>
       <p1 x="-3060" y="5520"/>
       <p2 x="-3060" y="6340"/>
+    </wire>
+    <wire>
+      <p1 x="13300" y="1160"/>
+      <p2 x="13300" y="1240"/>
     </wire>
     <wire>
       <p1 x="-2040" y="2400"/>
