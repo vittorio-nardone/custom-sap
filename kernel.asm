@@ -15,9 +15,10 @@
 
 #addr 0x0000
 boot:
+    sei             ; disable int
     lda 0x00
     sta interruptCounter
-    cli
+    cli             ; enable int
     jsr tests
 main:
     lda interruptCounter
