@@ -5,7 +5,7 @@ from intelhex import IntelHex
 ## Configuration
 ##
 ##
-CONTROL_ROMS_COUNT = 7
+CONTROL_ROMS_COUNT = 8
 
 ##################################################################
 ## Control bits
@@ -13,14 +13,14 @@ CONTROL_ROMS_COUNT = 7
 ##
 CONTROL_BITS = {
     ## EEPROM #1
-    "LIR":          { "eeprom": 0, "bit": 0, "lowActive": False },
+    "e10":          { "eeprom": 0, "bit": 0, "lowActive": False },
     "notERAM":      { "eeprom": 0, "bit": 1, "lowActive": True },
     "notEPCRAM":    { "eeprom": 0, "bit": 2, "lowActive": True },
     "CPC":          { "eeprom": 0, "bit": 3, "lowActive": False },
     "e14":          { "eeprom": 0, "bit": 4, "lowActive": False },
     "e15":          { "eeprom": 0, "bit": 5, "lowActive": False },
-    "notHLT":       { "eeprom": 0, "bit": 6, "lowActive": True },
-    "notNOP":       { "eeprom": 0, "bit": 7, "lowActive": True },
+    "e16":          { "eeprom": 0, "bit": 6, "lowActive": False },
+    "e17":          { "eeprom": 0, "bit": 7, "lowActive": False },
     ## EEPROM #2
     "LMARL":        { "eeprom": 1, "bit": 0, "lowActive": False },
     "LMARH":        { "eeprom": 1, "bit": 1, "lowActive": False },
@@ -56,17 +56,17 @@ CONTROL_BITS = {
     "notESP":       { "eeprom": 4, "bit": 4, "lowActive": True },
     "notEPCL":      { "eeprom": 4, "bit": 5, "lowActive": True },
     "notEPCH":      { "eeprom": 4, "bit": 6, "lowActive": True },
-    "CHKI":         { "eeprom": 4, "bit": 7, "lowActive": False },
+    "e57":          { "eeprom": 4, "bit": 7, "lowActive": False },
     ## EEPROM #6
-    "notDISI":      { "eeprom": 5, "bit": 0, "lowActive": True },
-    "notENAI":      { "eeprom": 5, "bit": 1, "lowActive": True },
+    "e60":          { "eeprom": 5, "bit": 0, "lowActive": False },
+    "e61":          { "eeprom": 5, "bit": 1, "lowActive": False },
     "e62":          { "eeprom": 5, "bit": 2, "lowActive": False },
     "e63":          { "eeprom": 5, "bit": 3, "lowActive": False },
     "LO":           { "eeprom": 5, "bit": 4, "lowActive": False },
     "CHKO":         { "eeprom": 5, "bit": 5, "lowActive": False },
     "notEFR-OUT":   { "eeprom": 5, "bit": 6, "lowActive": True },
     "EFR-IN":       { "eeprom": 5, "bit": 7, "lowActive": False },
-    ## EEPROM #7
+    ## EEPROM #7 - Registers board
     "rL0":          { "eeprom": 6, "bit": 0, "lowActive": False },
     "rL1":          { "eeprom": 6, "bit": 1, "lowActive": False },
     "rL2":          { "eeprom": 6, "bit": 2, "lowActive": False },
@@ -75,6 +75,15 @@ CONTROL_BITS = {
     "rE2":          { "eeprom": 6, "bit": 5, "lowActive": False },
     "e76":          { "eeprom": 6, "bit": 6, "lowActive": False },
     "e77":          { "eeprom": 6, "bit": 7, "lowActive": False },
+     ## EEPROM #8 - Instructions board
+    "LIR":          { "eeprom": 7, "bit": 0, "lowActive": False },
+    "CHKI":         { "eeprom": 7, "bit": 1, "lowActive": False },
+    "notHLT":       { "eeprom": 7, "bit": 2, "lowActive": True },
+    "notENAI":      { "eeprom": 7, "bit": 3, "lowActive": True },
+    "e84":          { "eeprom": 7, "bit": 4, "lowActive": False },
+    "notEINT-OUT":  { "eeprom": 7, "bit": 5, "lowActive": True },
+    "notDISI":      { "eeprom": 7, "bit": 6, "lowActive": True },
+    "notNOP":       { "eeprom": 7, "bit": 7, "lowActive": True },
 }
 
 ##################################################################
@@ -222,6 +231,12 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         CC_LOUT + CC_notEACC  
                     ] },     
+
+    "TIA":  {   "c": 0xAC,  
+                "d": "Transfer Interrupt register to Accumulator", 
+                "m": [  
+                        ['notEINT-OUT'] + CC_LACC 
+                    ] }, 
 
     "TXA":  {   "c": 0x8A,  
                 "d": "Transfer Index X to Accumulator", 

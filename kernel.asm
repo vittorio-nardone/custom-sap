@@ -15,6 +15,7 @@
 
 #addr 0x0000
 boot:
+    tia
     sei             ; disable int
     lda 0x00
     sta interruptCounter
@@ -27,6 +28,10 @@ main:
 
 #addr 0x00FF        ; default interrupt handler routine
 interrupt:
+    ;tia
+    cmp 0xfd
+    bne interruptEnd
     inc interruptCounter
+interruptEnd:
     RTI             ; 
 
