@@ -85,7 +85,7 @@ test12:
 
 test13:
     ldo 0x13            ; Test #13: ADC with/out Carry & CLC/SEC
-    lda 0x10   
+    lda 0x10
     clc                 ; Clear Carry        
     adc 0x01            ; 0x10 + 0x01 = 0x11
     cmp 0x11            ; this set Carry   

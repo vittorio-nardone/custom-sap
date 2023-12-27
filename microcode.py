@@ -81,7 +81,7 @@ CONTROL_BITS = {
     "notHLT":       { "eeprom": 7, "bit": 2, "lowActive": True },
     "notENAI":      { "eeprom": 7, "bit": 3, "lowActive": True },
     "e84":          { "eeprom": 7, "bit": 4, "lowActive": False },
-    "notEINT-OUT":  { "eeprom": 7, "bit": 5, "lowActive": True },
+    "notEINT-OUT":  { "eeprom": 7, "bit": 5, "lowActive": False }, # negate to avoid problems on startup
     "notDISI":      { "eeprom": 7, "bit": 6, "lowActive": True },
     "notNOP":       { "eeprom": 7, "bit": 7, "lowActive": True },
 }
