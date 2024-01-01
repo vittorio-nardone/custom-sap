@@ -27,12 +27,6 @@ main:
 
 #addr 0x00FF        ; default interrupt handler routine
 interrupt:
-    ;pha
-    ;tia
-    ;cmp 0xfd
-    ;bne interruptEnd
     inc interruptCounter
-interruptEnd:
-    ;pla
-    RTI             ; 
+    rti             
 

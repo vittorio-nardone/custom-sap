@@ -135,7 +135,7 @@ test14sub3:
     jsr test14sub4
     rts
 test14sub4:
-    lda 0x04
+    lda 0x04   
     rts
 
 test15:                 ; Test #15: INC
@@ -274,7 +274,7 @@ test80dec:
 testend:
     sei
     ldo 0x0E            ; Tests finished, jmp back to main program
-    rts           
+    rts          
 
 fail:
     hlt
