@@ -15,7 +15,7 @@ CONTROL_BITS = {
     ## EEPROM #1
     "e10":          { "eeprom": 0, "bit": 0, "lowActive": False },
     "notERAM":      { "eeprom": 0, "bit": 1, "lowActive": True },
-    "EPC-ADDR":    { "eeprom": 0, "bit": 2, "lowActive": True },
+    "e12":          { "eeprom": 0, "bit": 2, "lowActive": False },
     "e13":          { "eeprom": 0, "bit": 3, "lowActive": False },
     "e14":          { "eeprom": 0, "bit": 4, "lowActive": False },
     "e15":          { "eeprom": 0, "bit": 5, "lowActive": False },
@@ -51,9 +51,9 @@ CONTROL_BITS = {
     ## EEPROM #5
     "notSEC":       { "eeprom": 4, "bit": 0, "lowActive": True },
     "LZ":           { "eeprom": 4, "bit": 1, "lowActive": False },
-    "notCSP":       { "eeprom": 4, "bit": 2, "lowActive": True },
-    "SPD":          { "eeprom": 4, "bit": 3, "lowActive": False },
-    "notESP":       { "eeprom": 4, "bit": 4, "lowActive": True },
+    "e52":          { "eeprom": 4, "bit": 2, "lowActive": False },
+    "e53":          { "eeprom": 4, "bit": 3, "lowActive": False },
+    "e54":          { "eeprom": 4, "bit": 4, "lowActive": False },
     "e55":          { "eeprom": 4, "bit": 5, "lowActive": False },
     "e56":          { "eeprom": 4, "bit": 6, "lowActive": False },
     "e57":          { "eeprom": 4, "bit": 7, "lowActive": False },
@@ -88,26 +88,16 @@ CONTROL_BITS = {
     "LPCL":         { "eeprom": 8, "bit": 0, "lowActive": False },
     "LPCH":         { "eeprom": 8, "bit": 1, "lowActive": False },
     "CPC":          { "eeprom": 8, "bit": 2, "lowActive": False },
-    "EPCL":         { "eeprom": 8, "bit": 3, "lowActive": False },
-    "EPCH":         { "eeprom": 8, "bit": 4, "lowActive": False },
-    "EPC-ADDR":     { "eeprom": 8, "bit": 5, "lowActive": False }, 
-    "e96":          { "eeprom": 8, "bit": 6, "lowActive": False },
-    "e97":          { "eeprom": 8, "bit": 7, "lowActive": False },
+    "notCSP":       { "eeprom": 8, "bit": 3, "lowActive": True },
+    "SPD":          { "eeprom": 8, "bit": 4, "lowActive": False },
+    "ESP":          { "eeprom": 8, "bit": 5, "lowActive": False }, 
+    "pcE1":         { "eeprom": 8, "bit": 6, "lowActive": False },
+    "pcE0":         { "eeprom": 8, "bit": 7, "lowActive": False },
 }
 
 ##################################################################
 ## Common Control Words
 ##
-##
-CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','notERAM','EPC-ADDR']
-CC_PC_INCREMENT                     = ['CPC']
-CC_LAST_T                           = ['notNOP']
-
-CC_INC_STACK_POINTER           = ['SPD', 'notCSP']
-CC_DEC_STACK_POINTER           = ['notCSP']
-
-DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], CC_PC_INCREMENT ]
-
 
 ######## In registries board
 # Enable (OE) MUX
@@ -128,6 +118,22 @@ CC_LED     = ['rL2', 'rL0']
 CC_LEE     = ['rL2', 'rL1']
 CC_LOUT    = ['rL2', 'rL1', 'rL0']
 
+######## In PC/SP board
+# Enable (OE) MUX
+CC_notEPCL      = ['pcE0']
+CC_notEPCH      = ['pcE1']
+CC_notEPCADDR   = ['pcE1', 'pcE0']
+
+######## 
+CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','notERAM'] + CC_notEPCADDR
+CC_PC_INCREMENT                     = ['CPC']
+CC_LAST_T                           = ['notNOP']
+
+CC_INC_STACK_POINTER           = ['SPD', 'notCSP']
+CC_DEC_STACK_POINTER           = ['notCSP']
+
+DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], CC_PC_INCREMENT ]
+
 ##################################################################
 ## Instructions
 ##
@@ -143,7 +149,7 @@ CC_LOUT    = ['rL2', 'rL1', 'rL0']
     #                     CC_LOAD_PC_POINTED_RAM_INTO_IR,
     #                 ],
     #             "m": [                                        <- control words (NOP is automatically added to the last one) [required]
-    #                     ['notESP', 'CHKZ'],
+    #                     ['ESP', 'CHKZ'],
     #                     CC_INC_STACK_POINTER + ['LX'],
     #                 ] },    
     #             "true": [                                     <- if checked condition is verified (i.e. CHKZ), these control words are executed
@@ -161,7 +167,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LZ'] + CC_LACC, 
+                        ['notERAM', 'LZ'] + CC_LACC + CC_notEPCADDR, 
                         ['CPC']  
                     ] },
 
@@ -170,9 +176,9 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LMARH'], 
+                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['EPC-ADDR', 'notERAM', 'LMARL'], 
+                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notERAM', 'LZ'] + CC_LACC  
                     ] },
 
@@ -182,9 +188,9 @@ INSTRUCTIONS_SET = {
                 "v": "u16",
                 "i": "x",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM'] + CC_LACC, 
+                        ['notERAM'] + CC_LACC + CC_notEPCADDR,  
                         ['CPC'],
-                        ['EPC-ADDR', 'notERAM', 'LRALU-IN'], 
+                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['notERALU-OUT', 'LMARL', 'CHKO'],       
                         ['LMARH'] + CC_notEACC,
@@ -201,7 +207,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LZ'] + CC_LX, 
+                        ['notERAM', 'LZ'] + CC_LX + CC_notEPCADDR, 
                         ['CPC']  
                     ] },               
 
@@ -209,9 +215,9 @@ INSTRUCTIONS_SET = {
                 "d": "Store Accumulator in Memory (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LMARH'], 
+                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['EPC-ADDR', 'notERAM', 'LMARL'], 
+                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notWRAM'] + CC_notEACC  
                     ] },      
 
@@ -221,9 +227,9 @@ INSTRUCTIONS_SET = {
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['EPC-ADDR', 'notERAM'] + CC_LTMP, 
+                        ['notERAM'] + CC_LTMP + CC_notEPCADDR, 
                         ['CPC'],
-                        ['EPC-ADDR', 'notERAM', 'LRALU-IN'], 
+                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['notERALU-OUT', 'LMARL', 'CHKO'],  
                         ['LMARH'] + CC_notETMP,
@@ -264,7 +270,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LRALU-IN', 'CHKC'], 
+                        ['notERAM', 'LRALU-IN', 'CHKC'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
                         ['notERALU-OUT', 'LZ'] + CC_LACC, 
                     ], 
@@ -278,9 +284,9 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LMARH'], 
+                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],  
-                        ['EPC-ADDR', 'notERAM', 'LMARL'], 
+                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['notEMAR', 'notERAM', 'LRALU-IN', 'CHKC'],                                           
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
                         ['notERALU-OUT', 'LZ'] + CC_LACC, 
@@ -296,11 +302,11 @@ INSTRUCTIONS_SET = {
                 "v": "u8",
                 "m": [  
                         ['LRALU-IN', 'CHKC'] + CC_notEACC, 
-                        ['EPC-ADDR', 'notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
+                        ['notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEPCADDR,
                         ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC, 
                     ], 
                 "true": [
-                        ['EPC-ADDR', 'notERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
+                        ['notERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEPCADDR,
                         ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC, 
                     ] },     
 
@@ -309,9 +315,9 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'], 
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LMARH'], 
+                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],  
-                        ['EPC-ADDR', 'notERAM', 'LMARL'],                     
+                        ['notERAM', 'LMARL'] + CC_notEPCADDR,                     
                         ['CPC', 'LRALU-IN', 'CHKC'] + CC_notEACC, 
                         ['notEMAR', 'notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
                         ['notERALU-OUT', 'LZ'] + CC_LACC, 
@@ -327,9 +333,9 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LMARH'], 
+                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['EPC-ADDR', 'notERAM', 'LMARL'], 
+                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notERAM', 'LRALU-IN', 'LRALU-OUT'], 
                         ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'], 
                     ] },                         
@@ -339,9 +345,9 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LMARH'], 
+                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['EPC-ADDR', 'notERAM', 'LMARL'], 
+                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'], 
                         ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'], 
                     ] },   
@@ -351,7 +357,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "v": "u8",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LRALU-IN'], 
+                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
                         ['notERALU-OUT', 'LZ'] + CC_LACC, 
                     ] },   
@@ -361,7 +367,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LRALU-IN'], 
+                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'] + CC_notEACC,
                     ] },      
 
@@ -369,9 +375,9 @@ INSTRUCTIONS_SET = {
                 "d": "Jump to New Location (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM'] + CC_LTMP,
+                        ['notERAM'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
-                        ['EPC-ADDR', 'notERAM', 'LPCL'], 
+                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ] },       
 
@@ -380,13 +386,13 @@ INSTRUCTIONS_SET = {
                 "v": "u16",
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
                 "m": [  
-                        ['notESP', 'EPCL', 'notWRAM'],
+                        ['ESP', 'notWRAM'] + CC_notEPCL,
                         CC_INC_STACK_POINTER,
-                        ['notESP', 'EPCH', 'notWRAM'],
+                        ['ESP', 'notWRAM'] + CC_notEPCH,
                         CC_INC_STACK_POINTER,
-                        ['EPC-ADDR', 'notERAM'] + CC_LTMP,
+                        ['notERAM'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
-                        ['EPC-ADDR', 'notERAM', 'LPCL'], 
+                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP   
                     ] },         
 
@@ -395,9 +401,9 @@ INSTRUCTIONS_SET = {
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'LPCH'],
+                        ['ESP', 'notERAM', 'LPCH'],
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'LPCL'],     
+                        ['ESP', 'notERAM', 'LPCL'],     
                         ['CPC'],   
                         ['CPC']                
                     ] },      
@@ -405,7 +411,7 @@ INSTRUCTIONS_SET = {
     "PHA":  {   "c": 0x48,  
                 "d": "Push Accumulator on Stack", 
                 "m": [  
-                        ['notESP', 'notWRAM'] + CC_notEACC,
+                        ['ESP', 'notWRAM'] + CC_notEACC,
                         CC_INC_STACK_POINTER,
                     ] },      
 
@@ -414,20 +420,20 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'LZ'] + CC_LACC,
+                        ['ESP', 'notERAM', 'LZ'] + CC_LACC,
                     ] },      
 
     "BEQa": {   "c": 0xF0,  
                 "d": "Branch on Result Zero (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'CHKZ'] + CC_LTMP,
+                        ['notERAM', 'CHKZ'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
                         ['CPC']
                     ],
                 "true": [
                         ['CPC'], 
-                        ['EPC-ADDR', 'notERAM', 'LPCL'], 
+                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ] },   
 
@@ -435,9 +441,9 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Result not Zero (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'CHKZ'] + CC_LTMP,
+                        ['notERAM', 'CHKZ'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
-                        ['EPC-ADDR', 'notERAM', 'LPCL'], 
+                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ],
                 "true": [
@@ -449,13 +455,13 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Carry Set (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'CHKC'] + CC_LTMP,
+                        ['notERAM', 'CHKC'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
                         ['CPC']
                     ],
                 "true": [
                         ['CPC'], 
-                        ['EPC-ADDR', 'notERAM', 'LPCL'], 
+                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ] },    
 
@@ -463,9 +469,9 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Carry Clear (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'CHKC'] + CC_LTMP,
+                        ['notERAM', 'CHKC'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
-                        ['EPC-ADDR', 'notERAM', 'LPCL'], 
+                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ],
                 "true": [
@@ -477,7 +483,7 @@ INSTRUCTIONS_SET = {
                 "d": "Load Output with Memory (immediate)", 
                 "v": "u8",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM'] + CC_LOUT, 
+                        ['notERAM'] + CC_LOUT + CC_notEPCADDR, 
                         ['CPC']  
                     ] },
 
@@ -485,9 +491,9 @@ INSTRUCTIONS_SET = {
                 "d": "Load Output with Memory (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['EPC-ADDR', 'notERAM', 'LMARH'], 
+                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['EPC-ADDR', 'notERAM', 'LMARL'], 
+                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notERAM'] + CC_LOUT  
                     ] },
 
@@ -514,11 +520,11 @@ INSTRUCTIONS_SET = {
                 "f": ['I'],
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR ], # don't check I to resume next op
                 "m": [
-                        ['notESP', 'notEFR-OUT', 'notWRAM'],
+                        ['ESP', 'notEFR-OUT', 'notWRAM'],
                         CC_INC_STACK_POINTER, 
-                        ['notESP', 'EPCL', 'notWRAM'],
+                        ['ESP', 'notWRAM'] + CC_notEPCL,
                         CC_INC_STACK_POINTER, 
-                        ['notESP', 'EPCH', 'notWRAM'],
+                        ['ESP', 'notWRAM'] + CC_notEPCH,
                         CC_INC_STACK_POINTER, 
                         ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notEACC,
                         ['notERALU-OUT', 'LPCH'],
@@ -532,11 +538,11 @@ INSTRUCTIONS_SET = {
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR ], # don't check I to resume next op
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'LPCH'],
+                        ['ESP', 'notERAM', 'LPCH'],
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'LPCL'],
+                        ['ESP', 'notERAM', 'LPCL'],
                         CC_DEC_STACK_POINTER,
-                        ['notESP', 'notERAM', 'EFR-IN', 'LC', 'LZ', 'notENAI'],  
+                        ['ESP', 'notERAM', 'EFR-IN', 'LC', 'LZ', 'notENAI'],  
                     ] },           
 
     "SEI":  {   "c": 0x78,  
