@@ -1,10 +1,11 @@
 ;
 ; Memory map
 ;
-; 0x0000-0x3FFF (16k) - ROM
+; 0x0000-0x5FFF (24k) - ROM
 ;       0x00FF-(?)  - reserved for interrupt routine
-; 0x4000-0x5FFF (8k)  - free (6k for video?)
-; 0x6000-0x7FFF (8k)  - free
+; 0x6000-0x67FF (2K) - device I/O
+;       0x6000-0x6001 - key pressed buffer
+; 0x6800-0x7FFF (6K) - 6k for video 
 ; 0x8000-0xFFFF (32k) - RAM
 ;       0xFF00-0xFFFF (256) - reserved for stack
 
@@ -19,6 +20,8 @@ boot:
     lda 0x00
     sta interruptCounter
     cli             ; enable int
+loop:
+    jmp loop
     jsr tests
 main:
     lda interruptCounter
@@ -27,6 +30,15 @@ main:
 
 #addr 0x00FF        ; default interrupt handler routine
 interrupt:
-    inc interruptCounter
+    pha
+    ldo 0xAA
+    tia
+    ; cmp 0xFC
+    ; beq interrupt_ret
+    ; inc interruptCounter
+    ; ldo interruptCounter
+    tao
+interrupt_ret:
+    pla
     rti             
 
