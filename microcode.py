@@ -144,6 +144,7 @@ DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], CC_PC_INCREMENT ]
     #             "b": [0x12, 0x34],                            <- add bytes after op code (only if v is not defined, else ignored)
     #             "f": ['Z'],                                   <- flags affected
     #             "v": "u8",                                    <- operand value definition (u8/u16)
+    #             "op": "a",                                    <- operand label (no real value) (only if v is not defined, else ignored)
     #             "i": "x",                                     <- index registry (only when v defined)  
     #             "t0": [                                       <- fetch cycles (if not defined, the default one is used)
     #                     CC_LOAD_PC_POINTED_RAM_INTO_IR,
@@ -359,6 +360,15 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                    ] },   
+
+    "ASLacc": { "c": 0x0A,  
+                "d": "Shift Left One Bit (accumulator)",
+                "op": "a",  
+                "f": ['Z', 'C'], 
+                "m": [  
+                        ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS3', 'ALUS2', 'LC'] + CC_notEACC, 
                         ['notERALU-OUT', 'LZ'] + CC_LACC, 
                     ] },   
 
@@ -652,9 +662,9 @@ def generateRuldef():
         for i in INSTRUCTIONS_SET:
             flags = ('[' + ' '.join(INSTRUCTIONS_SET[i]['f'])  + ']') if 'f' in INSTRUCTIONS_SET[i] else ''
             if ('v' in INSTRUCTIONS_SET[i]):
-                f.writelines(['\t', i[:3], ' {value: ', INSTRUCTIONS_SET[i]['v'] ,'}', (',' + INSTRUCTIONS_SET[i]['i'] + ' ') if 'i' in INSTRUCTIONS_SET[i] else '', ' => ', hex(INSTRUCTIONS_SET[i]['c']), ' @ value \t; ', INSTRUCTIONS_SET[i]['d'], ' ', flags , '\n'])
+                f.writelines(['\t', i[:3], ' {value: ', INSTRUCTIONS_SET[i]['v'] ,'}', (',' + INSTRUCTIONS_SET[i]['i'] + ' ') if 'i' in INSTRUCTIONS_SET[i] else '', ' => 0x', '{:02X}'.format(INSTRUCTIONS_SET[i]['c']), ' @ value \t; ', INSTRUCTIONS_SET[i]['d'], ' ', flags , '\n'])
             else:
-                f.writelines(['\t', i[:3], ' => ', hex(INSTRUCTIONS_SET[i]['c']), 
+                f.writelines(['\t', i[:3], (' ' + INSTRUCTIONS_SET[i]['op']) if 'op' in INSTRUCTIONS_SET[i] else '', ' => 0x', '{:02X}'.format(INSTRUCTIONS_SET[i]['c']), 
                               ''.join([' @ ' + hex(x) for x in INSTRUCTIONS_SET[i]['b']]) if 'b' in INSTRUCTIONS_SET[i] else ''  
                               , '  ; ', INSTRUCTIONS_SET[i]['d'], ' ', flags, '\n'])
         f.write('}\n')
