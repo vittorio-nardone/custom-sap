@@ -363,6 +363,19 @@ INSTRUCTIONS_SET = {
                         ['notERALU-OUT', 'LZ'] + CC_LACC, 
                     ] },   
 
+    "ANDi": {   "c": 0x29,  
+                "d": "AND Memory with Accumulator (immediate)",  
+                "f": ['Z'],  
+                "v": "u8",
+                "m": [  
+                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
+                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                    ] },  
+
+    # Note: On Shift Left, the ALU:
+    ## set carry if removed bit is 0
+    ## clear carry if removed bit is 1
     "ASLacc": { "c": 0x0A,  
                 "d": "Shift Left One Bit (accumulator)",
                 "op": "a",  
@@ -709,6 +722,7 @@ if __name__ == "__main__":
 
     for e in range(CONTROL_ROMS_COUNT):
         ihs[e].write_hex_file("roms/cw{0}-rom.hex".format(e+1))
+        ihs[e].tobinfile("roms/cw{0}-rom.bin".format(e+1))
 
     print("Generating customasm ruledef.asm file")
     generateRuldef()

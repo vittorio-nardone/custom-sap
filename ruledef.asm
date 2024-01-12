@@ -19,6 +19,7 @@
 	INC {value: u16} => 0xEE @ value 	; Increment Memory by One (absolute) [Z]
 	DEC {value: u16} => 0xCE @ value 	; Decrement Memory by One (absolute) [Z]
 	EOR {value: u8} => 0x49 @ value 	; Exclusive-OR Memory with Accumulator (immediate) [Z]
+	AND {value: u8} => 0x29 @ value 	; AND Memory with Accumulator (immediate) [Z]
 	ASL a => 0x0A  ; Shift Left One Bit (accumulator) [Z C]
 	CMP {value: u8} => 0xC9 @ value 	; Compare Memory with Accumulator (immediate) [Z C]
 	JMP {value: u16} => 0x4C @ value 	; Jump to New Location (absolute) 

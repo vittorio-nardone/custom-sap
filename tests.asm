@@ -255,6 +255,33 @@ test20:
     sbc 0x37
     bne fail
 
+test21:                 ; Test #21: AND (immediate)
+    ldo 0x21
+    lda 0x22
+    and 0x02            ; 0x22 AND 0x02 = 0x02    
+    beq fail            ; zero flag must not be set
+    cmp 0x02
+    bne fail
+    and 0x01            ; 0x02 AND 0x01 = 0x00
+    bne fail            ; zero flag must be set
+
+test22:                 ; Test #22: ASL (shift left acc)
+    ldo 0x22
+    lda 0x44
+    clc 
+    asl a               ; 0x44 << 1 bit = 0x88    
+    beq fail            ; zero flag must not be set
+    cmp 0x88
+    bne fail
+    sec
+    asl a               ; 0x88 << 1 bit = 0x110 + carry clear 
+    bcs fail            ; carry flag must be clear
+    clc
+    asl a               ; 0x10 << 1 bit = 0x20 + carry set
+    bcc fail            ; carry flag must be set
+    cmp 0x20
+    bne fail
+
 test80:
     ldo 0x80            ; Test #80 (long): PHA / PLA
     lda 0x80

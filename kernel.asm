@@ -21,48 +21,60 @@
 #const interruptCounter = 0x8F8F
 
 #addr 0x0000
-
-sei
-start:
-    ldx 0x01
-    txa
-loop:   
-    eor 0xff
-    sta 0x6008
-    lda 0x6009
-    cmp 0xff
-    bne keypressed
-next:    
-    txa
-    cmp 0x80
-    beq start 
-    asl A
-    tax
-    jmp loop
-
-keypressed:
-    tao
-    jmp next
-
 boot:
     sei             ; disable int
     lda 0x00
     sta interruptCounter
     cli             ; enable int
+loop:
+    ;jmp loop
     jsr tests
 main:
     lda interruptCounter
     tao
     hlt
 
-#addr 0x00FF        ; default interrupt handler routine
+;
+; default interrupt handler routine
+;
+#addr 0x00FF    
 interrupt:
     pha
+interrupt_keyboard_check:
     tia
-    cmp 0xf4
-    beq interrupt_ret
+    and 0x08
+    bne keyboard_scan
+interrupt_timer_check:
+    tia
+    and 0x04
+    beq interrupt_return
     inc interruptCounter
-interrupt_ret:
+interrupt_return:
     pla
     rti             
 
+keyboard_scan:
+    txa
+    pha 
+    ldx 0x01
+    txa
+keyboard_scan_loop:   
+    eor 0xff
+    sta 0x6008
+    lda 0x6009
+    eor 0xff
+    bne keyboard_scan_keypressed
+keyboard_scan_next:    
+    txa
+    cmp 0x80
+    beq keyboard_scan_end 
+    asl A
+    tax
+    jmp keyboard_scan_loop
+keyboard_scan_keypressed:
+    tao
+    jmp keyboard_scan_next
+keyboard_scan_end:
+    pla
+    tax
+    jmp interrupt_timer_check
