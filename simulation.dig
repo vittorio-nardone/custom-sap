@@ -2655,17 +2655,17 @@ Use this signal to react and avoid eeprom glitch</string>
     <visualElement>
       <elementName>7408.dig</elementName>
       <elementAttributes/>
-      <pos x="10160" y="4760"/>
+      <pos x="10140" y="4760"/>
     </visualElement>
     <visualElement>
       <elementName>Ground</elementName>
       <elementAttributes/>
-      <pos x="10140" y="5040"/>
+      <pos x="10120" y="5040"/>
     </visualElement>
     <visualElement>
       <elementName>VDD</elementName>
       <elementAttributes/>
-      <pos x="10300" y="4720"/>
+      <pos x="10280" y="4720"/>
     </visualElement>
     <visualElement>
       <elementName>VDD</elementName>
@@ -2772,6 +2772,10 @@ Use this signal to react and avoid eeprom glitch</string>
         <entry>
           <string>rotation</string>
           <rotation rotation="1"/>
+        </entry>
+        <entry>
+          <string>Label</string>
+          <string>LINT-MASK</string>
         </entry>
       </elementAttributes>
       <pos x="9620" y="4980"/>
@@ -5104,7 +5108,7 @@ a dip switch to configure it</string>
       <elementAttributes>
         <entry>
           <string>Label</string>
-          <string>not Memory WRITE</string>
+          <string>not Memory WRITE / READ</string>
         </entry>
       </elementAttributes>
       <pos x="7740" y="-440"/>
@@ -5802,6 +5806,64 @@ a dip switch to configure it</string>
         </entry>
       </elementAttributes>
       <pos x="9680" y="-340"/>
+    </visualElement>
+    <visualElement>
+      <elementName>74373.dig</elementName>
+      <elementAttributes>
+        <entry>
+          <string>rotation</string>
+          <rotation rotation="3"/>
+        </entry>
+        <entry>
+          <string>Label</string>
+          <string>INT-MASK</string>
+        </entry>
+      </elementAttributes>
+      <pos x="10280" y="6320"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="9840" y="6360"/>
+    </visualElement>
+    <visualElement>
+      <elementName>VDD</elementName>
+      <elementAttributes/>
+      <pos x="10340" y="6420"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Splitter</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Input Splitting</string>
+          <string>8</string>
+        </entry>
+        <entry>
+          <string>Output Splitting</string>
+          <string>1,1,1,1,1,1,1,1</string>
+        </entry>
+      </elementAttributes>
+      <pos x="9640" y="6200"/>
+    </visualElement>
+    <visualElement>
+      <elementName>7400.dig</elementName>
+      <elementAttributes>
+        <entry>
+          <string>rotation</string>
+          <rotation rotation="3"/>
+        </entry>
+      </elementAttributes>
+      <pos x="10120" y="6600"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="9820" y="6640"/>
+    </visualElement>
+    <visualElement>
+      <elementName>VDD</elementName>
+      <elementAttributes/>
+      <pos x="10180" y="6700"/>
     </visualElement>
   </visualElements>
   <wires>
@@ -6566,6 +6628,14 @@ a dip switch to configure it</string>
       <p2 x="11100" y="6200"/>
     </wire>
     <wire>
+      <p1 x="9660" y="6200"/>
+      <p2 x="10200" y="6200"/>
+    </wire>
+    <wire>
+      <p1 x="5700" y="6200"/>
+      <p2 x="9640" y="6200"/>
+    </wire>
+    <wire>
       <p1 x="6160" y="1080"/>
       <p2 x="6280" y="1080"/>
     </wire>
@@ -6748,6 +6818,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10480" y="6220"/>
       <p2 x="11060" y="6220"/>
+    </wire>
+    <wire>
+      <p1 x="9660" y="6220"/>
+      <p2 x="10160" y="6220"/>
     </wire>
     <wire>
       <p1 x="7520" y="-80"/>
@@ -6982,6 +7056,10 @@ a dip switch to configure it</string>
       <p2 x="10860" y="6240"/>
     </wire>
     <wire>
+      <p1 x="9660" y="6240"/>
+      <p2 x="10040" y="6240"/>
+    </wire>
+    <wire>
       <p1 x="10900" y="6240"/>
       <p2 x="10940" y="6240"/>
     </wire>
@@ -7102,8 +7180,8 @@ a dip switch to configure it</string>
       <p2 x="16020" y="-1140"/>
     </wire>
     <wire>
-      <p1 x="7540" y="1140"/>
-      <p2 x="9040" y="1140"/>
+      <p1 x="9960" y="6260"/>
+      <p2 x="10380" y="6260"/>
     </wire>
     <wire>
       <p1 x="-4360" y="6260"/>
@@ -7116,6 +7194,14 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="-3940" y="6260"/>
       <p2 x="-3800" y="6260"/>
+    </wire>
+    <wire>
+      <p1 x="9660" y="6260"/>
+      <p2 x="9940" y="6260"/>
+    </wire>
+    <wire>
+      <p1 x="7540" y="1140"/>
+      <p2 x="9040" y="1140"/>
     </wire>
     <wire>
       <p1 x="10140" y="5240"/>
@@ -7338,6 +7424,18 @@ a dip switch to configure it</string>
       <p2 x="16040" y="-1160"/>
     </wire>
     <wire>
+      <p1 x="10080" y="6280"/>
+      <p2 x="10400" y="6280"/>
+    </wire>
+    <wire>
+      <p1 x="9940" y="6280"/>
+      <p2 x="10000" y="6280"/>
+    </wire>
+    <wire>
+      <p1 x="9660" y="6280"/>
+      <p2 x="9800" y="6280"/>
+    </wire>
+    <wire>
       <p1 x="7540" y="-140"/>
       <p2 x="7740" y="-140"/>
     </wire>
@@ -7498,6 +7596,10 @@ a dip switch to configure it</string>
       <p2 x="16060" y="-1180"/>
     </wire>
     <wire>
+      <p1 x="9840" y="6300"/>
+      <p2 x="9920" y="6300"/>
+    </wire>
+    <wire>
       <p1 x="-4360" y="6300"/>
       <p2 x="-4300" y="6300"/>
     </wire>
@@ -7512,6 +7614,14 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="-3940" y="6300"/>
       <p2 x="-3820" y="6300"/>
+    </wire>
+    <wire>
+      <p1 x="9660" y="6300"/>
+      <p2 x="9780" y="6300"/>
+    </wire>
+    <wire>
+      <p1 x="9920" y="6300"/>
+      <p2 x="10280" y="6300"/>
     </wire>
     <wire>
       <p1 x="10680" y="5280"/>
@@ -7898,6 +8008,10 @@ a dip switch to configure it</string>
       <p2 x="9060" y="1200"/>
     </wire>
     <wire>
+      <p1 x="9660" y="6320"/>
+      <p2 x="9760" y="6320"/>
+    </wire>
+    <wire>
       <p1 x="10000" y="180"/>
       <p2 x="12940" y="180"/>
     </wire>
@@ -8062,6 +8176,10 @@ a dip switch to configure it</string>
       <p2 x="-4060" y="6340"/>
     </wire>
     <wire>
+      <p1 x="9660" y="6340"/>
+      <p2 x="9740" y="6340"/>
+    </wire>
+    <wire>
       <p1 x="7500" y="-200"/>
       <p2 x="7740" y="-200"/>
     </wire>
@@ -8102,12 +8220,12 @@ a dip switch to configure it</string>
       <p2 x="11120" y="5320"/>
     </wire>
     <wire>
-      <p1 x="10940" y="5320"/>
-      <p2 x="10960" y="5320"/>
-    </wire>
-    <wire>
       <p1 x="10540" y="5320"/>
       <p2 x="10560" y="5320"/>
+    </wire>
+    <wire>
+      <p1 x="10820" y="5320"/>
+      <p2 x="10960" y="5320"/>
     </wire>
     <wire>
       <p1 x="5520" y="10440"/>
@@ -8354,6 +8472,10 @@ a dip switch to configure it</string>
       <p2 x="10580" y="12500"/>
     </wire>
     <wire>
+      <p1 x="5660" y="7380"/>
+      <p2 x="11140" y="7380"/>
+    </wire>
+    <wire>
       <p1 x="8660" y="1240"/>
       <p2 x="8700" y="1240"/>
     </wire>
@@ -8550,16 +8672,16 @@ a dip switch to configure it</string>
       <p2 x="-3940" y="5360"/>
     </wire>
     <wire>
-      <p1 x="11080" y="5360"/>
-      <p2 x="11100" y="5360"/>
-    </wire>
-    <wire>
       <p1 x="10860" y="5360"/>
       <p2 x="10960" y="5360"/>
     </wire>
     <wire>
       <p1 x="10680" y="5360"/>
       <p2 x="10720" y="5360"/>
+    </wire>
+    <wire>
+      <p1 x="11080" y="5360"/>
+      <p2 x="11160" y="5360"/>
     </wire>
     <wire>
       <p1 x="7040" y="240"/>
@@ -8762,6 +8884,18 @@ a dip switch to configure it</string>
       <p2 x="-1620" y="2300"/>
     </wire>
     <wire>
+      <p1 x="11220" y="6400"/>
+      <p2 x="11260" y="6400"/>
+    </wire>
+    <wire>
+      <p1 x="11100" y="6400"/>
+      <p2 x="11120" y="6400"/>
+    </wire>
+    <wire>
+      <p1 x="11260" y="6400"/>
+      <p2 x="11280" y="6400"/>
+    </wire>
+    <wire>
       <p1 x="8640" y="1280"/>
       <p2 x="8680" y="1280"/>
     </wire>
@@ -8788,18 +8922,6 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9340" y="1280"/>
       <p2 x="9360" y="1280"/>
-    </wire>
-    <wire>
-      <p1 x="11220" y="6400"/>
-      <p2 x="11260" y="6400"/>
-    </wire>
-    <wire>
-      <p1 x="11100" y="6400"/>
-      <p2 x="11120" y="6400"/>
-    </wire>
-    <wire>
-      <p1 x="11260" y="6400"/>
-      <p2 x="11280" y="6400"/>
     </wire>
     <wire>
       <p1 x="12040" y="5380"/>
@@ -8934,14 +9056,6 @@ a dip switch to configure it</string>
       <p2 x="-1660" y="2320"/>
     </wire>
     <wire>
-      <p1 x="7800" y="1300"/>
-      <p2 x="8560" y="1300"/>
-    </wire>
-    <wire>
-      <p1 x="8560" y="1300"/>
-      <p2 x="8580" y="1300"/>
-    </wire>
-    <wire>
       <p1 x="-4360" y="6420"/>
       <p2 x="-4240" y="6420"/>
     </wire>
@@ -8960,6 +9074,14 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="11060" y="6420"/>
       <p2 x="11100" y="6420"/>
+    </wire>
+    <wire>
+      <p1 x="7800" y="1300"/>
+      <p2 x="8560" y="1300"/>
+    </wire>
+    <wire>
+      <p1 x="8560" y="1300"/>
+      <p2 x="8580" y="1300"/>
     </wire>
     <wire>
       <p1 x="7480" y="-280"/>
@@ -9418,6 +9540,10 @@ a dip switch to configure it</string>
       <p2 x="11200" y="12600"/>
     </wire>
     <wire>
+      <p1 x="10280" y="6460"/>
+      <p2 x="10340" y="6460"/>
+    </wire>
+    <wire>
       <p1 x="-3940" y="6460"/>
       <p2 x="-3900" y="6460"/>
     </wire>
@@ -9432,6 +9558,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="-4080" y="6460"/>
       <p2 x="-4060" y="6460"/>
+    </wire>
+    <wire>
+      <p1 x="9800" y="6460"/>
+      <p2 x="10000" y="6460"/>
     </wire>
     <wire>
       <p1 x="7460" y="-320"/>
@@ -9662,18 +9792,6 @@ a dip switch to configure it</string>
       <p2 x="12480" y="12620"/>
     </wire>
     <wire>
-      <p1 x="8580" y="1360"/>
-      <p2 x="8700" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="8820" y="1360"/>
-      <p2 x="9020" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="9180" y="1360"/>
-      <p2 x="9240" y="1360"/>
-    </wire>
-    <wire>
       <p1 x="-4500" y="6480"/>
       <p2 x="-4340" y="6480"/>
     </wire>
@@ -9684,6 +9802,22 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10940" y="6480"/>
       <p2 x="11040" y="6480"/>
+    </wire>
+    <wire>
+      <p1 x="9780" y="6480"/>
+      <p2 x="10040" y="6480"/>
+    </wire>
+    <wire>
+      <p1 x="8580" y="1360"/>
+      <p2 x="8700" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="8820" y="1360"/>
+      <p2 x="9020" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="9180" y="1360"/>
+      <p2 x="9240" y="1360"/>
     </wire>
     <wire>
       <p1 x="8960" y="-340"/>
@@ -9882,6 +10016,10 @@ a dip switch to configure it</string>
       <p2 x="-4060" y="6500"/>
     </wire>
     <wire>
+      <p1 x="9760" y="6500"/>
+      <p2 x="10160" y="6500"/>
+    </wire>
+    <wire>
       <p1 x="10440" y="5480"/>
       <p2 x="10560" y="5480"/>
     </wire>
@@ -10062,6 +10200,18 @@ a dip switch to configure it</string>
       <p2 x="11160" y="12660"/>
     </wire>
     <wire>
+      <p1 x="-1200" y="6520"/>
+      <p2 x="-540" y="6520"/>
+    </wire>
+    <wire>
+      <p1 x="10860" y="6520"/>
+      <p2 x="11000" y="6520"/>
+    </wire>
+    <wire>
+      <p1 x="9740" y="6520"/>
+      <p2 x="10200" y="6520"/>
+    </wire>
+    <wire>
       <p1 x="8620" y="1400"/>
       <p2 x="8660" y="1400"/>
     </wire>
@@ -10084,14 +10234,6 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="8660" y="1400"/>
       <p2 x="8700" y="1400"/>
-    </wire>
-    <wire>
-      <p1 x="-1200" y="6520"/>
-      <p2 x="-540" y="6520"/>
-    </wire>
-    <wire>
-      <p1 x="10860" y="6520"/>
-      <p2 x="11000" y="6520"/>
     </wire>
     <wire>
       <p1 x="10000" y="-380"/>
@@ -10238,6 +10380,10 @@ a dip switch to configure it</string>
       <p2 x="-1780" y="6540"/>
     </wire>
     <wire>
+      <p1 x="9780" y="6540"/>
+      <p2 x="9960" y="6540"/>
+    </wire>
+    <wire>
       <p1 x="-1520" y="6540"/>
       <p2 x="-1440" y="6540"/>
     </wire>
@@ -10248,6 +10394,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="-1360" y="6540"/>
       <p2 x="-1280" y="6540"/>
+    </wire>
+    <wire>
+      <p1 x="9960" y="6540"/>
+      <p2 x="10000" y="6540"/>
     </wire>
     <wire>
       <p1 x="-1440" y="6540"/>
@@ -10667,11 +10817,23 @@ a dip switch to configure it</string>
     </wire>
     <wire>
       <p1 x="5640" y="6580"/>
-      <p2 x="11140" y="6580"/>
+      <p2 x="5660" y="6580"/>
     </wire>
     <wire>
       <p1 x="5560" y="6580"/>
       <p2 x="5620" y="6580"/>
+    </wire>
+    <wire>
+      <p1 x="9820" y="6580"/>
+      <p2 x="9880" y="6580"/>
+    </wire>
+    <wire>
+      <p1 x="10080" y="6580"/>
+      <p2 x="10120" y="6580"/>
+    </wire>
+    <wire>
+      <p1 x="10120" y="6580"/>
+      <p2 x="10160" y="6580"/>
     </wire>
     <wire>
       <p1 x="7400" y="-440"/>
@@ -10802,16 +10964,16 @@ a dip switch to configure it</string>
       <p2 x="12480" y="12740"/>
     </wire>
     <wire>
+      <p1 x="5540" y="6600"/>
+      <p2 x="5620" y="6600"/>
+    </wire>
+    <wire>
       <p1 x="1080" y="1480"/>
       <p2 x="1120" y="1480"/>
     </wire>
     <wire>
       <p1 x="1240" y="1480"/>
       <p2 x="2400" y="1480"/>
-    </wire>
-    <wire>
-      <p1 x="5540" y="6600"/>
-      <p2 x="5620" y="6600"/>
     </wire>
     <wire>
       <p1 x="10040" y="-460"/>
@@ -10970,16 +11132,16 @@ a dip switch to configure it</string>
       <p2 x="12360" y="12760"/>
     </wire>
     <wire>
-      <p1 x="9040" y="1500"/>
-      <p2 x="9240" y="1500"/>
-    </wire>
-    <wire>
       <p1 x="-1800" y="6620"/>
       <p2 x="-1780" y="6620"/>
     </wire>
     <wire>
       <p1 x="5520" y="6620"/>
       <p2 x="5620" y="6620"/>
+    </wire>
+    <wire>
+      <p1 x="9040" y="1500"/>
+      <p2 x="9240" y="1500"/>
     </wire>
     <wire>
       <p1 x="10060" y="-480"/>
@@ -11130,16 +11292,16 @@ a dip switch to configure it</string>
       <p2 x="12480" y="12780"/>
     </wire>
     <wire>
+      <p1 x="5500" y="6640"/>
+      <p2 x="5620" y="6640"/>
+    </wire>
+    <wire>
       <p1 x="1240" y="1520"/>
       <p2 x="1280" y="1520"/>
     </wire>
     <wire>
       <p1 x="9360" y="1520"/>
       <p2 x="9540" y="1520"/>
-    </wire>
-    <wire>
-      <p1 x="5500" y="6640"/>
-      <p2 x="5620" y="6640"/>
     </wire>
     <wire>
       <p1 x="10080" y="-500"/>
@@ -11338,16 +11500,16 @@ a dip switch to configure it</string>
       <p2 x="10400" y="12800"/>
     </wire>
     <wire>
-      <p1 x="8620" y="1540"/>
-      <p2 x="8880" y="1540"/>
-    </wire>
-    <wire>
       <p1 x="-1940" y="6660"/>
       <p2 x="-1920" y="6660"/>
     </wire>
     <wire>
       <p1 x="5480" y="6660"/>
       <p2 x="5620" y="6660"/>
+    </wire>
+    <wire>
+      <p1 x="8620" y="1540"/>
+      <p2 x="8880" y="1540"/>
     </wire>
     <wire>
       <p1 x="10100" y="-520"/>
@@ -11498,6 +11660,10 @@ a dip switch to configure it</string>
       <p2 x="8600" y="5660"/>
     </wire>
     <wire>
+      <p1 x="9540" y="5660"/>
+      <p2 x="9600" y="5660"/>
+    </wire>
+    <wire>
       <p1 x="1920" y="540"/>
       <p2 x="6360" y="540"/>
     </wire>
@@ -11594,6 +11760,10 @@ a dip switch to configure it</string>
       <p2 x="-4960" y="4640"/>
     </wire>
     <wire>
+      <p1 x="10400" y="4640"/>
+      <p2 x="10740" y="4640"/>
+    </wire>
+    <wire>
       <p1 x="10820" y="13860"/>
       <p2 x="10860" y="13860"/>
     </wire>
@@ -11658,18 +11828,6 @@ a dip switch to configure it</string>
       <p2 x="2100" y="2600"/>
     </wire>
     <wire>
-      <p1 x="-2020" y="1580"/>
-      <p2 x="-940" y="1580"/>
-    </wire>
-    <wire>
-      <p1 x="8660" y="1580"/>
-      <p2 x="8960" y="1580"/>
-    </wire>
-    <wire>
-      <p1 x="-940" y="1580"/>
-      <p2 x="-900" y="1580"/>
-    </wire>
-    <wire>
       <p1 x="-1800" y="6700"/>
       <p2 x="-1680" y="6700"/>
     </wire>
@@ -11700,6 +11858,18 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="-1520" y="6700"/>
       <p2 x="-1440" y="6700"/>
+    </wire>
+    <wire>
+      <p1 x="-2020" y="1580"/>
+      <p2 x="-940" y="1580"/>
+    </wire>
+    <wire>
+      <p1 x="8660" y="1580"/>
+      <p2 x="8960" y="1580"/>
+    </wire>
+    <wire>
+      <p1 x="-940" y="1580"/>
+      <p2 x="-900" y="1580"/>
     </wire>
     <wire>
       <p1 x="-500" y="-560"/>
@@ -11830,6 +12000,10 @@ a dip switch to configure it</string>
       <p2 x="9460" y="2620"/>
     </wire>
     <wire>
+      <p1 x="5420" y="6720"/>
+      <p2 x="5620" y="6720"/>
+    </wire>
+    <wire>
       <p1 x="1240" y="1600"/>
       <p2 x="1280" y="1600"/>
     </wire>
@@ -11840,10 +12014,6 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9520" y="1600"/>
       <p2 x="9540" y="1600"/>
-    </wire>
-    <wire>
-      <p1 x="5420" y="6720"/>
-      <p2 x="5620" y="6720"/>
     </wire>
     <wire>
       <p1 x="-520" y="-580"/>
@@ -11966,11 +12136,11 @@ a dip switch to configure it</string>
       <p2 x="-680" y="4680"/>
     </wire>
     <wire>
-      <p1 x="10120" y="4680"/>
-      <p2 x="10340" y="4680"/>
+      <p1 x="10100" y="4680"/>
+      <p2 x="10320" y="4680"/>
     </wire>
     <wire>
-      <p1 x="10380" y="4680"/>
+      <p1 x="10340" y="4680"/>
       <p2 x="11260" y="4680"/>
     </wire>
     <wire>
@@ -12058,14 +12228,6 @@ a dip switch to configure it</string>
       <p2 x="2100" y="2640"/>
     </wire>
     <wire>
-      <p1 x="-1220" y="1620"/>
-      <p2 x="-960" y="1620"/>
-    </wire>
-    <wire>
-      <p1 x="-960" y="1620"/>
-      <p2 x="-900" y="1620"/>
-    </wire>
-    <wire>
       <p1 x="-1320" y="6740"/>
       <p2 x="-1200" y="6740"/>
     </wire>
@@ -12076,6 +12238,34 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="-1800" y="6740"/>
       <p2 x="-1780" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="9780" y="6740"/>
+      <p2 x="9880" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="10040" y="6740"/>
+      <p2 x="10080" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="10120" y="6740"/>
+      <p2 x="10160" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="10160" y="6740"/>
+      <p2 x="10180" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="10080" y="6740"/>
+      <p2 x="10120" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="-1220" y="1620"/>
+      <p2 x="-960" y="1620"/>
+    </wire>
+    <wire>
+      <p1 x="-960" y="1620"/>
+      <p2 x="-900" y="1620"/>
     </wire>
     <wire>
       <p1 x="-540" y="-600"/>
@@ -12186,6 +12376,14 @@ a dip switch to configure it</string>
       <p2 x="9460" y="2660"/>
     </wire>
     <wire>
+      <p1 x="-1400" y="6760"/>
+      <p2 x="-1180" y="6760"/>
+    </wire>
+    <wire>
+      <p1 x="9540" y="6760"/>
+      <p2 x="9920" y="6760"/>
+    </wire>
+    <wire>
       <p1 x="1080" y="1640"/>
       <p2 x="1120" y="1640"/>
     </wire>
@@ -12196,10 +12394,6 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9360" y="1640"/>
       <p2 x="9400" y="1640"/>
-    </wire>
-    <wire>
-      <p1 x="-1400" y="6760"/>
-      <p2 x="-1180" y="6760"/>
     </wire>
     <wire>
       <p1 x="-560" y="-620"/>
@@ -12378,6 +12572,10 @@ a dip switch to configure it</string>
       <p2 x="-1160" y="6780"/>
     </wire>
     <wire>
+      <p1 x="9520" y="6780"/>
+      <p2 x="9960" y="6780"/>
+    </wire>
+    <wire>
       <p1 x="-580" y="-640"/>
       <p2 x="5460" y="-640"/>
     </wire>
@@ -12538,6 +12736,10 @@ a dip switch to configure it</string>
       <p2 x="10060" y="2700"/>
     </wire>
     <wire>
+      <p1 x="-1560" y="6800"/>
+      <p2 x="-1140" y="6800"/>
+    </wire>
+    <wire>
       <p1 x="8820" y="1680"/>
       <p2 x="8860" y="1680"/>
     </wire>
@@ -12552,10 +12754,6 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9520" y="1680"/>
       <p2 x="9540" y="1680"/>
-    </wire>
-    <wire>
-      <p1 x="-1560" y="6800"/>
-      <p2 x="-1140" y="6800"/>
     </wire>
     <wire>
       <p1 x="-600" y="-660"/>
@@ -12662,12 +12860,12 @@ a dip switch to configure it</string>
       <p2 x="-4960" y="4760"/>
     </wire>
     <wire>
-      <p1 x="10280" y="4760"/>
-      <p2 x="10300" y="4760"/>
+      <p1 x="10260" y="4760"/>
+      <p2 x="10280" y="4760"/>
     </wire>
     <wire>
       <p1 x="7500" y="4760"/>
-      <p2 x="10120" y="4760"/>
+      <p2 x="10100" y="4760"/>
     </wire>
     <wire>
       <p1 x="12100" y="4760"/>
@@ -12682,8 +12880,8 @@ a dip switch to configure it</string>
       <p2 x="-2040" y="4760"/>
     </wire>
     <wire>
-      <p1 x="10120" y="4760"/>
-      <p2 x="10160" y="4760"/>
+      <p1 x="10100" y="4760"/>
+      <p2 x="10140" y="4760"/>
     </wire>
     <wire>
       <p1 x="10640" y="13980"/>
@@ -13058,12 +13256,12 @@ a dip switch to configure it</string>
       <p2 x="-700" y="4800"/>
     </wire>
     <wire>
-      <p1 x="10280" y="4800"/>
-      <p2 x="10340" y="4800"/>
+      <p1 x="10260" y="4800"/>
+      <p2 x="10320" y="4800"/>
     </wire>
     <wire>
       <p1 x="9800" y="4800"/>
-      <p2 x="10160" y="4800"/>
+      <p2 x="10140" y="4800"/>
     </wire>
     <wire>
       <p1 x="12060" y="4800"/>
@@ -13402,16 +13600,16 @@ a dip switch to configure it</string>
       <p2 x="-3540" y="2780"/>
     </wire>
     <wire>
+      <p1 x="-3040" y="6880"/>
+      <p2 x="-1780" y="6880"/>
+    </wire>
+    <wire>
       <p1 x="8680" y="1760"/>
       <p2 x="8700" y="1760"/>
     </wire>
     <wire>
       <p1 x="8820" y="1760"/>
       <p2 x="8840" y="1760"/>
-    </wire>
-    <wire>
-      <p1 x="-3040" y="6880"/>
-      <p2 x="-1780" y="6880"/>
     </wire>
     <wire>
       <p1 x="8960" y="-740"/>
@@ -13486,12 +13684,12 @@ a dip switch to configure it</string>
       <p2 x="-3360" y="4840"/>
     </wire>
     <wire>
-      <p1 x="10280" y="4840"/>
-      <p2 x="10340" y="4840"/>
+      <p1 x="10260" y="4840"/>
+      <p2 x="10320" y="4840"/>
     </wire>
     <wire>
       <p1 x="10060" y="4840"/>
-      <p2 x="10160" y="4840"/>
+      <p2 x="10140" y="4840"/>
     </wire>
     <wire>
       <p1 x="12080" y="4840"/>
@@ -13718,7 +13916,7 @@ a dip switch to configure it</string>
       <p2 x="10720" y="4860"/>
     </wire>
     <wire>
-      <p1 x="10540" y="4860"/>
+      <p1 x="10380" y="4860"/>
       <p2 x="10560" y="4860"/>
     </wire>
     <wire>
@@ -13894,12 +14092,12 @@ a dip switch to configure it</string>
       <p2 x="-2040" y="4880"/>
     </wire>
     <wire>
-      <p1 x="10280" y="4880"/>
-      <p2 x="10380" y="4880"/>
+      <p1 x="10260" y="4880"/>
+      <p2 x="10340" y="4880"/>
     </wire>
     <wire>
       <p1 x="9940" y="4880"/>
-      <p2 x="10160" y="4880"/>
+      <p2 x="10140" y="4880"/>
     </wire>
     <wire>
       <p1 x="12120" y="4880"/>
@@ -14134,12 +14332,12 @@ a dip switch to configure it</string>
       <p2 x="12920" y="4900"/>
     </wire>
     <wire>
-      <p1 x="10680" y="4900"/>
-      <p2 x="10700" y="4900"/>
-    </wire>
-    <wire>
       <p1 x="10500" y="4900"/>
       <p2 x="10560" y="4900"/>
+    </wire>
+    <wire>
+      <p1 x="10680" y="4900"/>
+      <p2 x="10740" y="4900"/>
     </wire>
     <wire>
       <p1 x="12060" y="15140"/>
@@ -14259,11 +14457,15 @@ a dip switch to configure it</string>
     </wire>
     <wire>
       <p1 x="5640" y="5940"/>
-      <p2 x="11960" y="5940"/>
+      <p2 x="5700" y="5940"/>
     </wire>
     <wire>
       <p1 x="5560" y="5940"/>
       <p2 x="5620" y="5940"/>
+    </wire>
+    <wire>
+      <p1 x="5700" y="5940"/>
+      <p2 x="11960" y="5940"/>
     </wire>
     <wire>
       <p1 x="8540" y="10040"/>
@@ -14291,11 +14493,11 @@ a dip switch to configure it</string>
     </wire>
     <wire>
       <p1 x="9960" y="4920"/>
-      <p2 x="10160" y="4920"/>
+      <p2 x="10140" y="4920"/>
     </wire>
     <wire>
-      <p1 x="10280" y="4920"/>
-      <p2 x="10360" y="4920"/>
+      <p1 x="10260" y="4920"/>
+      <p2 x="10340" y="4920"/>
     </wire>
     <wire>
       <p1 x="-2420" y="4920"/>
@@ -14642,12 +14844,12 @@ a dip switch to configure it</string>
       <p2 x="-3460" y="4960"/>
     </wire>
     <wire>
-      <p1 x="10100" y="4960"/>
-      <p2 x="10160" y="4960"/>
+      <p1 x="10080" y="4960"/>
+      <p2 x="10140" y="4960"/>
     </wire>
     <wire>
-      <p1 x="10280" y="4960"/>
-      <p2 x="10380" y="4960"/>
+      <p1 x="10260" y="4960"/>
+      <p2 x="10360" y="4960"/>
     </wire>
     <wire>
       <p1 x="10980" y="9060"/>
@@ -15034,8 +15236,8 @@ a dip switch to configure it</string>
       <p2 x="-3960" y="5000"/>
     </wire>
     <wire>
-      <p1 x="10140" y="5000"/>
-      <p2 x="10160" y="5000"/>
+      <p1 x="10120" y="5000"/>
+      <p2 x="10140" y="5000"/>
     </wire>
     <wire>
       <p1 x="9360" y="5000"/>
@@ -15050,8 +15252,8 @@ a dip switch to configure it</string>
       <p2 x="9620" y="5000"/>
     </wire>
     <wire>
-      <p1 x="10280" y="5000"/>
-      <p2 x="10320" y="5000"/>
+      <p1 x="10260" y="5000"/>
+      <p2 x="10300" y="5000"/>
     </wire>
     <wire>
       <p1 x="10980" y="9100"/>
@@ -15191,10 +15393,14 @@ a dip switch to configure it</string>
     </wire>
     <wire>
       <p1 x="7460" y="6040"/>
-      <p2 x="10380" y="6040"/>
+      <p2 x="9520" y="6040"/>
     </wire>
     <wire>
-      <p1 x="10380" y="6040"/>
+      <p1 x="9520" y="6040"/>
+      <p2 x="10360" y="6040"/>
+    </wire>
+    <wire>
+      <p1 x="10360" y="6040"/>
       <p2 x="11240" y="6040"/>
     </wire>
     <wire>
@@ -15566,6 +15772,10 @@ a dip switch to configure it</string>
       <p2 x="-3560" y="6080"/>
     </wire>
     <wire>
+      <p1 x="10240" y="6080"/>
+      <p2 x="10820" y="6080"/>
+    </wire>
+    <wire>
       <p1 x="6160" y="960"/>
       <p2 x="6400" y="960"/>
     </wire>
@@ -15622,8 +15832,8 @@ a dip switch to configure it</string>
       <p2 x="12140" y="5060"/>
     </wire>
     <wire>
-      <p1 x="10100" y="5060"/>
-      <p2 x="10360" y="5060"/>
+      <p1 x="10080" y="5060"/>
+      <p2 x="10340" y="5060"/>
     </wire>
     <wire>
       <p1 x="11080" y="5060"/>
@@ -15698,6 +15908,10 @@ a dip switch to configure it</string>
       <p2 x="-3900" y="6100"/>
     </wire>
     <wire>
+      <p1 x="10120" y="6100"/>
+      <p2 x="11160" y="6100"/>
+    </wire>
+    <wire>
       <p1 x="8540" y="10200"/>
       <p2 x="8580" y="10200"/>
     </wire>
@@ -15743,7 +15957,7 @@ a dip switch to configure it</string>
     </wire>
     <wire>
       <p1 x="9980" y="5080"/>
-      <p2 x="10320" y="5080"/>
+      <p2 x="10300" y="5080"/>
     </wire>
     <wire>
       <p1 x="10400" y="15320"/>
@@ -15906,20 +16120,20 @@ a dip switch to configure it</string>
       <p2 x="-3460" y="3040"/>
     </wire>
     <wire>
-      <p1 x="7520" y="2020"/>
-      <p2 x="8900" y="2020"/>
-    </wire>
-    <wire>
-      <p1 x="1880" y="2020"/>
-      <p2 x="2480" y="2020"/>
-    </wire>
-    <wire>
       <p1 x="-4260" y="7140"/>
       <p2 x="-3820" y="7140"/>
     </wire>
     <wire>
       <p1 x="-3820" y="7140"/>
       <p2 x="-520" y="7140"/>
+    </wire>
+    <wire>
+      <p1 x="7520" y="2020"/>
+      <p2 x="8900" y="2020"/>
+    </wire>
+    <wire>
+      <p1 x="1880" y="2020"/>
+      <p2 x="2480" y="2020"/>
     </wire>
     <wire>
       <p1 x="-2100" y="6120"/>
@@ -15987,7 +16201,7 @@ a dip switch to configure it</string>
     </wire>
     <wire>
       <p1 x="9740" y="5100"/>
-      <p2 x="10340" y="5100"/>
+      <p2 x="10320" y="5100"/>
     </wire>
     <wire>
       <p1 x="12660" y="5100"/>
@@ -16132,6 +16346,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10240" y="13320"/>
       <p2 x="10240" y="13400"/>
+    </wire>
+    <wire>
+      <p1 x="10240" y="6080"/>
+      <p2 x="10240" y="6320"/>
     </wire>
     <wire>
       <p1 x="-4100" y="5720"/>
@@ -16470,6 +16688,18 @@ a dip switch to configure it</string>
       <p2 x="10280" y="13480"/>
     </wire>
     <wire>
+      <p1 x="10280" y="6440"/>
+      <p2 x="10280" y="6460"/>
+    </wire>
+    <wire>
+      <p1 x="10280" y="6300"/>
+      <p2 x="10280" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="10280" y="4720"/>
+      <p2 x="10280" y="4760"/>
+    </wire>
+    <wire>
       <p1 x="-4140" y="5120"/>
       <p2 x="-4140" y="5280"/>
     </wire>
@@ -16674,8 +16904,8 @@ a dip switch to configure it</string>
       <p2 x="10300" y="5240"/>
     </wire>
     <wire>
-      <p1 x="10300" y="4720"/>
-      <p2 x="10300" y="4760"/>
+      <p1 x="10300" y="5000"/>
+      <p2 x="10300" y="5080"/>
     </wire>
     <wire>
       <p1 x="10300" y="5240"/>
@@ -16806,12 +17036,16 @@ a dip switch to configure it</string>
       <p2 x="10320" y="5600"/>
     </wire>
     <wire>
-      <p1 x="10320" y="5000"/>
-      <p2 x="10320" y="5080"/>
-    </wire>
-    <wire>
       <p1 x="10320" y="13560"/>
       <p2 x="10320" y="13660"/>
+    </wire>
+    <wire>
+      <p1 x="10320" y="4680"/>
+      <p2 x="10320" y="4800"/>
+    </wire>
+    <wire>
+      <p1 x="10320" y="4840"/>
+      <p2 x="10320" y="5100"/>
     </wire>
     <wire>
       <p1 x="9300" y="8100"/>
@@ -16930,12 +17164,16 @@ a dip switch to configure it</string>
       <p2 x="10340" y="5320"/>
     </wire>
     <wire>
-      <p1 x="10340" y="4680"/>
-      <p2 x="10340" y="4800"/>
+      <p1 x="10340" y="6420"/>
+      <p2 x="10340" y="6460"/>
     </wire>
     <wire>
-      <p1 x="10340" y="4840"/>
-      <p2 x="10340" y="5100"/>
+      <p1 x="10340" y="4680"/>
+      <p2 x="10340" y="4880"/>
+    </wire>
+    <wire>
+      <p1 x="10340" y="4920"/>
+      <p2 x="10340" y="5060"/>
     </wire>
     <wire>
       <p1 x="9320" y="1280"/>
@@ -17102,10 +17340,6 @@ a dip switch to configure it</string>
       <p2 x="-5240" y="2240"/>
     </wire>
     <wire>
-      <p1 x="10360" y="4920"/>
-      <p2 x="10360" y="5060"/>
-    </wire>
-    <wire>
       <p1 x="10360" y="8440"/>
       <p2 x="10360" y="9080"/>
     </wire>
@@ -17116,6 +17350,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10360" y="13000"/>
       <p2 x="10360" y="13080"/>
+    </wire>
+    <wire>
+      <p1 x="10360" y="4960"/>
+      <p2 x="10360" y="6040"/>
     </wire>
     <wire>
       <p1 x="10360" y="9080"/>
@@ -17170,10 +17408,6 @@ a dip switch to configure it</string>
       <p2 x="-7300" y="3120"/>
     </wire>
     <wire>
-      <p1 x="2180" y="3640"/>
-      <p2 x="2180" y="3700"/>
-    </wire>
-    <wire>
       <p1 x="12420" y="3120"/>
       <p2 x="12420" y="3740"/>
     </wire>
@@ -17192,6 +17426,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="12420" y="12900"/>
       <p2 x="12420" y="13100"/>
+    </wire>
+    <wire>
+      <p1 x="2180" y="3640"/>
+      <p2 x="2180" y="3700"/>
     </wire>
     <wire>
       <p1 x="7300" y="520"/>
@@ -17258,14 +17496,6 @@ a dip switch to configure it</string>
       <p2 x="-5260" y="2220"/>
     </wire>
     <wire>
-      <p1 x="10380" y="4680"/>
-      <p2 x="10380" y="4880"/>
-    </wire>
-    <wire>
-      <p1 x="10380" y="4960"/>
-      <p2 x="10380" y="6040"/>
-    </wire>
-    <wire>
       <p1 x="10380" y="8480"/>
       <p2 x="10380" y="9100"/>
     </wire>
@@ -17284,6 +17514,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10380" y="12880"/>
       <p2 x="10380" y="12920"/>
+    </wire>
+    <wire>
+      <p1 x="10380" y="4860"/>
+      <p2 x="10380" y="6260"/>
     </wire>
     <wire>
       <p1 x="10380" y="9100"/>
@@ -17488,6 +17722,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10400" y="13940"/>
       <p2 x="10400" y="15320"/>
+    </wire>
+    <wire>
+      <p1 x="10400" y="4640"/>
+      <p2 x="10400" y="6280"/>
     </wire>
     <wire>
       <p1 x="10400" y="9120"/>
@@ -18054,16 +18292,16 @@ a dip switch to configure it</string>
       <p2 x="8420" y="9900"/>
     </wire>
     <wire>
+      <p1 x="12520" y="4840"/>
+      <p2 x="12520" y="5060"/>
+    </wire>
+    <wire>
       <p1 x="7400" y="-440"/>
       <p2 x="7400" y="3240"/>
     </wire>
     <wire>
       <p1 x="7400" y="3240"/>
       <p2 x="7400" y="12500"/>
-    </wire>
-    <wire>
-      <p1 x="12520" y="4840"/>
-      <p2 x="12520" y="5060"/>
     </wire>
     <wire>
       <p1 x="11500" y="2700"/>
@@ -18214,14 +18452,6 @@ a dip switch to configure it</string>
       <p2 x="-2300" y="2740"/>
     </wire>
     <wire>
-      <p1 x="7420" y="-400"/>
-      <p2 x="7420" y="3260"/>
-    </wire>
-    <wire>
-      <p1 x="7420" y="3260"/>
-      <p2 x="7420" y="12460"/>
-    </wire>
-    <wire>
       <p1 x="12540" y="3360"/>
       <p2 x="12540" y="3420"/>
     </wire>
@@ -18232,6 +18462,14 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="12540" y="4880"/>
       <p2 x="12540" y="5220"/>
+    </wire>
+    <wire>
+      <p1 x="7420" y="-400"/>
+      <p2 x="7420" y="3260"/>
+    </wire>
+    <wire>
+      <p1 x="7420" y="3260"/>
+      <p2 x="7420" y="12460"/>
     </wire>
     <wire>
       <p1 x="-1280" y="6680"/>
@@ -18558,10 +18796,6 @@ a dip switch to configure it</string>
       <p2 x="10540" y="3000"/>
     </wire>
     <wire>
-      <p1 x="10540" y="4780"/>
-      <p2 x="10540" y="4860"/>
-    </wire>
-    <wire>
       <p1 x="10540" y="5060"/>
       <p2 x="10540" y="5120"/>
     </wire>
@@ -18578,7 +18812,7 @@ a dip switch to configure it</string>
       <p2 x="10540" y="12800"/>
     </wire>
     <wire>
-      <p1 x="10540" y="4860"/>
+      <p1 x="10540" y="4780"/>
       <p2 x="10540" y="4940"/>
     </wire>
     <wire>
@@ -18660,6 +18894,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9520" y="-340"/>
       <p2 x="9520" y="-320"/>
+    </wire>
+    <wire>
+      <p1 x="9520" y="6040"/>
+      <p2 x="9520" y="6780"/>
     </wire>
     <wire>
       <p1 x="9520" y="8360"/>
@@ -18860,6 +19098,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9540" y="8140"/>
       <p2 x="9540" y="8680"/>
+    </wire>
+    <wire>
+      <p1 x="9540" y="5660"/>
+      <p2 x="9540" y="6760"/>
     </wire>
     <wire>
       <p1 x="9540" y="8680"/>
@@ -19660,6 +19902,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9600" y="13240"/>
       <p2 x="9600" y="13300"/>
+    </wire>
+    <wire>
+      <p1 x="9600" y="5580"/>
+      <p2 x="9600" y="5660"/>
     </wire>
     <wire>
       <p1 x="-3460" y="2220"/>
@@ -20514,18 +20760,6 @@ a dip switch to configure it</string>
       <p2 x="8640" y="8920"/>
     </wire>
     <wire>
-      <p1 x="7620" y="160"/>
-      <p2 x="7620" y="5960"/>
-    </wire>
-    <wire>
-      <p1 x="7620" y="5960"/>
-      <p2 x="7620" y="12340"/>
-    </wire>
-    <wire>
-      <p1 x="2500" y="2100"/>
-      <p2 x="2500" y="2560"/>
-    </wire>
-    <wire>
       <p1 x="12740" y="2940"/>
       <p2 x="12740" y="3000"/>
     </wire>
@@ -20536,6 +20770,18 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="12740" y="12420"/>
       <p2 x="12740" y="12780"/>
+    </wire>
+    <wire>
+      <p1 x="7620" y="160"/>
+      <p2 x="7620" y="5960"/>
+    </wire>
+    <wire>
+      <p1 x="7620" y="5960"/>
+      <p2 x="7620" y="12340"/>
+    </wire>
+    <wire>
+      <p1 x="2500" y="2100"/>
+      <p2 x="2500" y="2560"/>
     </wire>
     <wire>
       <p1 x="-1480" y="5780"/>
@@ -20607,10 +20853,6 @@ a dip switch to configure it</string>
     </wire>
     <wire>
       <p1 x="10700" y="4820"/>
-      <p2 x="10700" y="4900"/>
-    </wire>
-    <wire>
-      <p1 x="10700" y="4900"/>
       <p2 x="10700" y="4980"/>
     </wire>
     <wire>
@@ -21058,6 +21300,10 @@ a dip switch to configure it</string>
       <p2 x="10740" y="5480"/>
     </wire>
     <wire>
+      <p1 x="10740" y="4640"/>
+      <p2 x="10740" y="4900"/>
+    </wire>
+    <wire>
       <p1 x="500" y="3440"/>
       <p2 x="500" y="3980"/>
     </wire>
@@ -21346,6 +21592,10 @@ a dip switch to configure it</string>
       <p2 x="9740" y="5100"/>
     </wire>
     <wire>
+      <p1 x="9740" y="6340"/>
+      <p2 x="9740" y="6520"/>
+    </wire>
+    <wire>
       <p1 x="9740" y="5100"/>
       <p2 x="9740" y="5300"/>
     </wire>
@@ -21480,6 +21730,14 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10780" y="9440"/>
       <p2 x="10780" y="9980"/>
+    </wire>
+    <wire>
+      <p1 x="5660" y="6580"/>
+      <p2 x="5660" y="7380"/>
+    </wire>
+    <wire>
+      <p1 x="9760" y="6320"/>
+      <p2 x="9760" y="6500"/>
     </wire>
     <wire>
       <p1 x="-3620" y="2720"/>
@@ -21674,6 +21932,14 @@ a dip switch to configure it</string>
       <p2 x="-4660" y="2480"/>
     </wire>
     <wire>
+      <p1 x="9780" y="6300"/>
+      <p2 x="9780" y="6480"/>
+    </wire>
+    <wire>
+      <p1 x="9780" y="6540"/>
+      <p2 x="9780" y="6740"/>
+    </wire>
+    <wire>
       <p1 x="8760" y="3180"/>
       <p2 x="8760" y="3360"/>
     </wire>
@@ -21786,12 +22052,24 @@ a dip switch to configure it</string>
       <p2 x="10820" y="13020"/>
     </wire>
     <wire>
+      <p1 x="10820" y="5320"/>
+      <p2 x="10820" y="6080"/>
+    </wire>
+    <wire>
+      <p1 x="5700" y="5940"/>
+      <p2 x="5700" y="6200"/>
+    </wire>
+    <wire>
       <p1 x="9800" y="4800"/>
       <p2 x="9800" y="5420"/>
     </wire>
     <wire>
       <p1 x="9800" y="8840"/>
       <p2 x="9800" y="9640"/>
+    </wire>
+    <wire>
+      <p1 x="9800" y="6280"/>
+      <p2 x="9800" y="6460"/>
     </wire>
     <wire>
       <p1 x="-3660" y="5280"/>
@@ -21990,6 +22268,10 @@ a dip switch to configure it</string>
       <p2 x="9820" y="9520"/>
     </wire>
     <wire>
+      <p1 x="9820" y="6580"/>
+      <p2 x="9820" y="6640"/>
+    </wire>
+    <wire>
       <p1 x="-3680" y="4760"/>
       <p2 x="-3680" y="4800"/>
     </wire>
@@ -22144,6 +22426,10 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9840" y="9040"/>
       <p2 x="9840" y="9560"/>
+    </wire>
+    <wire>
+      <p1 x="9840" y="6300"/>
+      <p2 x="9840" y="6360"/>
     </wire>
     <wire>
       <p1 x="9840" y="9560"/>
@@ -22446,6 +22732,14 @@ a dip switch to configure it</string>
       <p2 x="9880" y="9720"/>
     </wire>
     <wire>
+      <p1 x="9880" y="6580"/>
+      <p2 x="9880" y="6600"/>
+    </wire>
+    <wire>
+      <p1 x="9880" y="6720"/>
+      <p2 x="9880" y="6740"/>
+    </wire>
+    <wire>
       <p1 x="-3740" y="2280"/>
       <p2 x="-3740" y="2480"/>
     </wire>
@@ -22730,10 +23024,6 @@ a dip switch to configure it</string>
       <p2 x="10940" y="6480"/>
     </wire>
     <wire>
-      <p1 x="10940" y="5240"/>
-      <p2 x="10940" y="5320"/>
-    </wire>
-    <wire>
       <p1 x="10940" y="3240"/>
       <p2 x="10940" y="3760"/>
     </wire>
@@ -22774,7 +23064,7 @@ a dip switch to configure it</string>
       <p2 x="10940" y="12780"/>
     </wire>
     <wire>
-      <p1 x="10940" y="5320"/>
+      <p1 x="10940" y="5240"/>
       <p2 x="10940" y="5400"/>
     </wire>
     <wire>
@@ -22816,6 +23106,18 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9920" y="100"/>
       <p2 x="9920" y="200"/>
+    </wire>
+    <wire>
+      <p1 x="9920" y="6300"/>
+      <p2 x="9920" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="9920" y="6720"/>
+      <p2 x="9920" y="6760"/>
+    </wire>
+    <wire>
+      <p1 x="9920" y="6440"/>
+      <p2 x="9920" y="6600"/>
     </wire>
     <wire>
       <p1 x="-3780" y="2400"/>
@@ -22994,6 +23296,10 @@ a dip switch to configure it</string>
       <p2 x="9940" y="120"/>
     </wire>
     <wire>
+      <p1 x="9940" y="6260"/>
+      <p2 x="9940" y="6280"/>
+    </wire>
+    <wire>
       <p1 x="-3800" y="4420"/>
       <p2 x="-3800" y="4640"/>
     </wire>
@@ -23104,6 +23410,18 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="9960" y="8480"/>
       <p2 x="9960" y="9360"/>
+    </wire>
+    <wire>
+      <p1 x="9960" y="6260"/>
+      <p2 x="9960" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="9960" y="6720"/>
+      <p2 x="9960" y="6780"/>
+    </wire>
+    <wire>
+      <p1 x="9960" y="6540"/>
+      <p2 x="9960" y="6600"/>
     </wire>
     <wire>
       <p1 x="-3820" y="2420"/>
@@ -23482,6 +23800,18 @@ a dip switch to configure it</string>
       <p2 x="10000" y="-320"/>
     </wire>
     <wire>
+      <p1 x="10000" y="6280"/>
+      <p2 x="10000" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="10000" y="6440"/>
+      <p2 x="10000" y="6460"/>
+    </wire>
+    <wire>
+      <p1 x="10000" y="6540"/>
+      <p2 x="10000" y="6600"/>
+    </wire>
+    <wire>
       <p1 x="-3860" y="2440"/>
       <p2 x="-3860" y="2480"/>
     </wire>
@@ -23800,6 +24130,18 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10040" y="-640"/>
       <p2 x="10040" y="-460"/>
+    </wire>
+    <wire>
+      <p1 x="10040" y="6240"/>
+      <p2 x="10040" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="10040" y="6440"/>
+      <p2 x="10040" y="6480"/>
+    </wire>
+    <wire>
+      <p1 x="10040" y="6720"/>
+      <p2 x="10040" y="6740"/>
     </wire>
     <wire>
       <p1 x="-3900" y="2460"/>
@@ -24155,10 +24497,6 @@ a dip switch to configure it</string>
     </wire>
     <wire>
       <p1 x="11100" y="5280"/>
-      <p2 x="11100" y="5360"/>
-    </wire>
-    <wire>
-      <p1 x="11100" y="5360"/>
       <p2 x="11100" y="5440"/>
     </wire>
     <wire>
@@ -24168,6 +24506,22 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10080" y="-800"/>
       <p2 x="10080" y="-500"/>
+    </wire>
+    <wire>
+      <p1 x="10080" y="4960"/>
+      <p2 x="10080" y="5060"/>
+    </wire>
+    <wire>
+      <p1 x="10080" y="6280"/>
+      <p2 x="10080" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="10080" y="6720"/>
+      <p2 x="10080" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="10080" y="6580"/>
+      <p2 x="10080" y="6600"/>
     </wire>
     <wire>
       <p1 x="-3940" y="2960"/>
@@ -24342,16 +24696,16 @@ a dip switch to configure it</string>
       <p2 x="10100" y="5400"/>
     </wire>
     <wire>
-      <p1 x="10100" y="4960"/>
-      <p2 x="10100" y="5060"/>
-    </wire>
-    <wire>
       <p1 x="10100" y="9020"/>
       <p2 x="10100" y="9560"/>
     </wire>
     <wire>
       <p1 x="10100" y="-880"/>
       <p2 x="10100" y="-520"/>
+    </wire>
+    <wire>
+      <p1 x="10100" y="4680"/>
+      <p2 x="10100" y="4760"/>
     </wire>
     <wire>
       <p1 x="10100" y="5400"/>
@@ -24462,12 +24816,12 @@ a dip switch to configure it</string>
       <p2 x="11140" y="6540"/>
     </wire>
     <wire>
-      <p1 x="11140" y="6560"/>
-      <p2 x="11140" y="6580"/>
-    </wire>
-    <wire>
       <p1 x="11140" y="5480"/>
       <p2 x="11140" y="6260"/>
+    </wire>
+    <wire>
+      <p1 x="11140" y="6560"/>
+      <p2 x="11140" y="7380"/>
     </wire>
     <wire>
       <p1 x="-5000" y="2460"/>
@@ -24490,12 +24844,24 @@ a dip switch to configure it</string>
       <p2 x="-5000" y="2740"/>
     </wire>
     <wire>
-      <p1 x="10120" y="4680"/>
-      <p2 x="10120" y="4760"/>
-    </wire>
-    <wire>
       <p1 x="10120" y="9000"/>
       <p2 x="10120" y="9600"/>
+    </wire>
+    <wire>
+      <p1 x="10120" y="5000"/>
+      <p2 x="10120" y="5040"/>
+    </wire>
+    <wire>
+      <p1 x="10120" y="6100"/>
+      <p2 x="10120" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="10120" y="6720"/>
+      <p2 x="10120" y="6740"/>
+    </wire>
+    <wire>
+      <p1 x="10120" y="6580"/>
+      <p2 x="10120" y="6600"/>
     </wire>
     <wire>
       <p1 x="-3980" y="2920"/>
@@ -24658,6 +25024,10 @@ a dip switch to configure it</string>
       <p2 x="11160" y="4940"/>
     </wire>
     <wire>
+      <p1 x="11160" y="5360"/>
+      <p2 x="11160" y="6100"/>
+    </wire>
+    <wire>
       <p1 x="11160" y="12660"/>
       <p2 x="11160" y="12700"/>
     </wire>
@@ -24672,10 +25042,6 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="-5020" y="4360"/>
       <p2 x="-5020" y="4600"/>
-    </wire>
-    <wire>
-      <p1 x="10140" y="5000"/>
-      <p2 x="10140" y="5040"/>
     </wire>
     <wire>
       <p1 x="10140" y="5240"/>
@@ -24820,6 +25186,18 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10160" y="9400"/>
       <p2 x="10160" y="9640"/>
+    </wire>
+    <wire>
+      <p1 x="10160" y="6220"/>
+      <p2 x="10160" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="10160" y="6440"/>
+      <p2 x="10160" y="6500"/>
+    </wire>
+    <wire>
+      <p1 x="10160" y="6580"/>
+      <p2 x="10160" y="6740"/>
     </wire>
     <wire>
       <p1 x="-4020" y="2880"/>
@@ -24982,6 +25360,10 @@ a dip switch to configure it</string>
       <p2 x="-5060" y="3120"/>
     </wire>
     <wire>
+      <p1 x="10180" y="6700"/>
+      <p2 x="10180" y="6740"/>
+    </wire>
+    <wire>
       <p1 x="-4040" y="2440"/>
       <p2 x="-4040" y="3080"/>
     </wire>
@@ -25136,6 +25518,14 @@ a dip switch to configure it</string>
     <wire>
       <p1 x="10200" y="13260"/>
       <p2 x="10200" y="13280"/>
+    </wire>
+    <wire>
+      <p1 x="10200" y="6200"/>
+      <p2 x="10200" y="6320"/>
+    </wire>
+    <wire>
+      <p1 x="10200" y="6440"/>
+      <p2 x="10200" y="6520"/>
     </wire>
     <wire>
       <p1 x="10200" y="13280"/>

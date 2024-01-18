@@ -12,25 +12,30 @@
 ;       0xFF00-0xFFFF (256) - reserved for stack
 ;
 ;
-;  Int register bits
+;  Interrupt register / mask register bits
 ;  (1) (1) (1) (1) key timer ext2 ext1
 
 #include "ruledef.asm"
 #include "tests.asm"
 
-#const interruptCounter = 0x8F8F
+#const keyInterruptCounter = 0x8F8E
+#const timerInterruptCounter = 0x8F8F
+
 
 #addr 0x0000
 boot:
     sei             ; disable int
     lda 0x00
-    sta interruptCounter
+    sta keyInterruptCounter
+    sta timerInterruptCounter
+    lda 0x0f
+    tai
     cli             ; enable int
 loop:
     ;jmp loop
     jsr tests
 main:
-    lda interruptCounter
+    lda timerInterruptCounter
     tao
     hlt
 
@@ -48,12 +53,13 @@ interrupt_timer_check:
     tia
     and 0x04
     beq interrupt_return
-    inc interruptCounter
+    inc timerInterruptCounter
 interrupt_return:
     pla
     rti             
 
 keyboard_scan:
+    inc keyInterruptCounter
     txa
     pha 
     ldx 0x01

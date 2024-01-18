@@ -10,6 +10,7 @@
 	STA {value: u16},x  => 0x9D @ value 	; Store Accumulator in Memory (absolute,X) [O]
 	TAO => 0xAB  ; Transfer Accumulator to Output 
 	TIA => 0xAC  ; Transfer Interrupt register to Accumulator 
+	TAI => 0xAE  ; Transfer Accumulator to Interrupt mask register 
 	TXA => 0x8A  ; Transfer Index X to Accumulator 
 	TAX => 0xAA  ; Transfer Accumulator to Index X 
 	ADC {value: u8} => 0x69 @ value 	; Add Memory to Accumulator with Carry (immediate) [Z C]

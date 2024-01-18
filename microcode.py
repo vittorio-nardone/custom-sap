@@ -80,8 +80,8 @@ CONTROL_BITS = {
     "CHKI":         { "eeprom": 7, "bit": 1, "lowActive": False },
     "notHLT":       { "eeprom": 7, "bit": 2, "lowActive": True },
     "notENAI":      { "eeprom": 7, "bit": 3, "lowActive": True },
-    "e84":          { "eeprom": 7, "bit": 4, "lowActive": False },
-    "notEINT-OUT":  { "eeprom": 7, "bit": 5, "lowActive": False }, # negate to avoid problems on startup
+    "LINT-MASK":    { "eeprom": 7, "bit": 4, "lowActive": False },
+    "EINT-OUT":     { "eeprom": 7, "bit": 5, "lowActive": False }, 
     "notDISI":      { "eeprom": 7, "bit": 6, "lowActive": True },
     "notNOP":       { "eeprom": 7, "bit": 7, "lowActive": True },
     ## EEPROM #9 - PC/SP board
@@ -251,7 +251,13 @@ INSTRUCTIONS_SET = {
     "TIA":  {   "c": 0xAC,  
                 "d": "Transfer Interrupt register to Accumulator", 
                 "m": [  
-                        ['notEINT-OUT'] + CC_LACC 
+                        ['EINT-OUT'] + CC_LACC 
+                    ] }, 
+
+    "TAI":  {   "c": 0xAE,  
+                "d": "Transfer Accumulator to Interrupt mask register", 
+                "m": [  
+                        ['LINT-MASK'] + CC_notEACC, 
                     ] }, 
 
     "TXA":  {   "c": 0x8A,  
