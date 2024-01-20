@@ -28,14 +28,16 @@ boot:
     lda 0x00
     sta keyInterruptCounter
     sta timerInterruptCounter
-    lda 0x0f
+    lda 0x08
     tai
     cli             ; enable int
 loop:
-    ;jmp loop
+    lda keyInterruptCounter
+    tao
+    jmp loop
     jsr tests
 main:
-    lda timerInterruptCounter
+    lda keyInterruptCounter
     tao
     hlt
 
