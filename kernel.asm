@@ -4,9 +4,7 @@
 ; 0x0000-0x5FFF (24k) - ROM
 ;       0x00FF-(?)  - reserved for interrupt routine
 ; 0x6000-0x67FF (2K) - device I/O
-;       0x600? - keyboard
-;         0x6008 - keyboard COL out
-;         0x6009 - keyboard ROW in  
+;       0x600? - keyboard (8 locations, in) 
 ; 0x6800-0x7FFF (6K) - 6k for video 
 ; 0x8000-0xFFFF (32k) - RAM
 ;       0xFF00-0xFFFF (256) - reserved for stack
@@ -21,8 +19,11 @@
 #const keyInterruptCounter = 0x8F8E
 #const timerInterruptCounter = 0x8F8F
 
-
 #addr 0x0000
+; lda 0x00          ; TODO z flag must be loaded (LZ) from BUS only
+; cmp 0x01          ; TODO z flag must be loaded (LZ) from ALU only
+; beq fail
+
 boot:
     sei             ; disable int
     lda 0x00
@@ -34,7 +35,7 @@ boot:
 loop:
     lda keyInterruptCounter
     tao
-    jmp loop
+    ;jmp loop
     jsr tests
 main:
     lda keyInterruptCounter
@@ -61,28 +62,20 @@ interrupt_return:
     rti             
 
 keyboard_scan:
-    inc keyInterruptCounter
     txa
-    pha 
-    ldx 0x01
-    txa
-keyboard_scan_loop:   
-    eor 0xff
-    sta 0x6008
-    lda 0x6009
-    eor 0xff
+    pha
+    ldx 0x07
+keyboard_scan_loop:
+    lda 0x6000,x
     bne keyboard_scan_keypressed
-keyboard_scan_next:    
-    txa
-    cmp 0x80
-    beq keyboard_scan_end 
-    asl A
-    tax
+    cpx 0x00
+    beq interrupt_timer_end
+    dex
     jmp keyboard_scan_loop
 keyboard_scan_keypressed:
+    inc keyInterruptCounter
     tao
-    jmp keyboard_scan_next
-keyboard_scan_end:
+interrupt_timer_end:
     pla
     tax
     jmp interrupt_timer_check

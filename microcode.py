@@ -345,7 +345,15 @@ INSTRUCTIONS_SET = {
                         ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notERAM', 'LRALU-IN', 'LRALU-OUT'], 
                         ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'], 
-                    ] },                         
+                    ] },     
+
+    "INX": {   "c": 0xE8,  
+                "d": "Increment Index X by One",  
+                "f": ['Z'],  
+                "m": [  
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notEX, 
+                        ['notERALU-OUT', 'LZ'] + CC_LX, 
+                    ] },                     
 
     "DECa": {   "c": 0xCE,  
                 "d": "Decrement Memory by One (absolute)",  
@@ -357,6 +365,14 @@ INSTRUCTIONS_SET = {
                         ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'], 
                         ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'], 
+                    ] },   
+
+    "DEX": {   "c": 0xCA,  
+                "d": "Decrement Index X by One",  
+                "f": ['Z'],  
+                "m": [  
+                        ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEX, 
+                        ['notERALU-OUT', 'LZ'] + CC_LX,
                     ] },   
 
     "EORi": {   "c": 0x49,  
@@ -398,6 +414,15 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'] + CC_notEACC,
+                    ] },      
+
+    "CPXi": {   "c": 0xE0,  
+                "d": "Compare Memory and Index X (immediate)", 
+                "f": ['Z', 'C'],
+                "v": "u8",
+                "m": [  
+                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
+                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'] + CC_notEX,
                     ] },      
 
     "JMPa": {   "c": 0x4C,  

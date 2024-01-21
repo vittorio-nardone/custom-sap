@@ -282,6 +282,17 @@ test22:                 ; Test #22: ASL (shift left acc)
     cmp 0x20
     bne fail
 
+test23:
+    ldo 0x23            ; Test #23: INX / DEX / CPX
+    ldx 0x23
+    inx
+    inx
+    cpx 0x25
+    bne fail
+    dex
+    cpx 0x24
+    bne fail
+
 test80:
     ldo 0x80            ; Test #80 (long): PHA / PLA
     lda 0x80

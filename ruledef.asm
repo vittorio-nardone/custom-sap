@@ -18,11 +18,14 @@
 	SBC {value: u8} => 0xE9 @ value 	; Subtract Memory from Accumulator with Borrow (immediate) [Z C]
 	SBC {value: u16} => 0xED @ value 	; Subtract Memory from Accumulator with Borrow (absolute) [Z C]
 	INC {value: u16} => 0xEE @ value 	; Increment Memory by One (absolute) [Z]
+	INX => 0xE8  ; Increment Index X by One [Z]
 	DEC {value: u16} => 0xCE @ value 	; Decrement Memory by One (absolute) [Z]
+	DEX => 0xCA  ; Decrement Index X by One [Z]
 	EOR {value: u8} => 0x49 @ value 	; Exclusive-OR Memory with Accumulator (immediate) [Z]
 	AND {value: u8} => 0x29 @ value 	; AND Memory with Accumulator (immediate) [Z]
 	ASL a => 0x0A  ; Shift Left One Bit (accumulator) [Z C]
 	CMP {value: u8} => 0xC9 @ value 	; Compare Memory with Accumulator (immediate) [Z C]
+	CPX {value: u8} => 0xE0 @ value 	; Compare Memory and Index X (immediate) [Z C]
 	JMP {value: u16} => 0x4C @ value 	; Jump to New Location (absolute) 
 	JSR {value: u16} => 0x20 @ value 	; Jump to New Location Saving Return Address (absolute) 
 	RTS => 0x60  ; Return from Subroutine 
