@@ -64,7 +64,7 @@ CONTROL_BITS = {
     "e63":          { "eeprom": 5, "bit": 3, "lowActive": False },
     "LO":           { "eeprom": 5, "bit": 4, "lowActive": False },
     "CHKO":         { "eeprom": 5, "bit": 5, "lowActive": False },
-    "notEFR-OUT":   { "eeprom": 5, "bit": 6, "lowActive": True },
+    "EFR-OUT":      { "eeprom": 5, "bit": 6, "lowActive": False },
     "EFR-IN":       { "eeprom": 5, "bit": 7, "lowActive": False },
     ## EEPROM #7 - Registers board
     "rL0":          { "eeprom": 6, "bit": 0, "lowActive": False },
@@ -576,7 +576,7 @@ INSTRUCTIONS_SET = {
                 "f": ['I'],
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR ], # don't check I to resume next op
                 "m": [
-                        ['ESP', 'notEFR-OUT', 'notWRAM'],
+                        ['ESP', 'EFR-OUT', 'notWRAM'],
                         CC_INC_STACK_POINTER, 
                         ['ESP', 'notWRAM'] + CC_notEPCL,
                         CC_INC_STACK_POINTER, 
