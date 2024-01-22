@@ -132,6 +132,8 @@ CC_LAST_T                           = ['notNOP']
 CC_INC_STACK_POINTER           = ['SPD', 'notCSP']
 CC_DEC_STACK_POINTER           = ['notCSP']
 
+CC_ALU_DETECT_ZERO             = ['LRALU-IN', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3']
+
 DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], CC_PC_INCREMENT ]
 
 ##################################################################
@@ -168,7 +170,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LZ'] + CC_LACC + CC_notEPCADDR, 
+                        ['notERAM', 'LZ'] + CC_LACC + CC_notEPCADDR + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },
 
@@ -180,7 +182,7 @@ INSTRUCTIONS_SET = {
                         ['notERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
                         ['notERAM', 'LMARL'] + CC_notEPCADDR, 
-                        ['CPC', 'notEMAR', 'notERAM', 'LZ'] + CC_LACC  
+                        ['CPC', 'notEMAR', 'notERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },
 
     "LDAax": {  "c": 0xBD,  
@@ -195,12 +197,12 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['notERALU-OUT', 'LMARL', 'CHKO'],       
                         ['LMARH'] + CC_notEACC,
-                        ['notEMAR', 'notERAM', 'LZ'] + CC_LACC  
+                        ['notEMAR', 'notERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
                         ['notERALU-OUT', 'LMARH'],
-                        ['notEMAR', 'notERAM', 'LZ'] + CC_LACC  
+                        ['notEMAR', 'notERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },                    
 
     "LDXi": {   "c": 0xA2,  
@@ -208,7 +210,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LZ'] + CC_LX + CC_notEPCADDR, 
+                        ['notERAM', 'LZ'] + CC_LX + CC_notEPCADDR + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },               
 
@@ -279,11 +281,11 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['notERAM', 'LRALU-IN', 'CHKC'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },     
 
     "ADCa": {   "c": 0x6D,  
@@ -296,11 +298,11 @@ INSTRUCTIONS_SET = {
                         ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['notEMAR', 'notERAM', 'LRALU-IN', 'CHKC'],                                           
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
     "SBCi": {   "c": 0xE9,  
@@ -310,11 +312,11 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['LRALU-IN', 'CHKC'] + CC_notEACC, 
                         ['notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEPCADDR,
-                        ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ], 
                 "true": [
                         ['notERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEPCADDR,
-                        ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
     "SBCa": {   "c": 0xED,  
@@ -327,11 +329,11 @@ INSTRUCTIONS_SET = {
                         ['notERAM', 'LMARL'] + CC_notEPCADDR,                     
                         ['CPC', 'LRALU-IN', 'CHKC'] + CC_notEACC, 
                         ['notEMAR', 'notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['notEMAR', 'notERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
 
@@ -344,7 +346,7 @@ INSTRUCTIONS_SET = {
                         ['CPC'],
                         ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notERAM', 'LRALU-IN', 'LRALU-OUT'], 
-                        ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'], 
+                        ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'] + CC_ALU_DETECT_ZERO  
                     ] },     
 
     "INX": {   "c": 0xE8,  
@@ -352,7 +354,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEX, 
-                        ['notERALU-OUT', 'LZ'] + CC_LX, 
+                        ['notERALU-OUT', 'LZ'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },                     
 
     "DECa": {   "c": 0xCE,  
@@ -364,7 +366,7 @@ INSTRUCTIONS_SET = {
                         ['CPC'],
                         ['notERAM', 'LMARL'] + CC_notEPCADDR, 
                         ['CPC', 'notEMAR', 'notERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'], 
-                        ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'], 
+                        ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'] + CC_ALU_DETECT_ZERO
                     ] },   
 
     "DEX": {   "c": 0xCA,  
@@ -372,7 +374,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEX, 
-                        ['notERALU-OUT', 'LZ'] + CC_LX,
+                        ['notERALU-OUT', 'LZ'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "EORi": {   "c": 0x49,  
@@ -382,7 +384,7 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "ANDi": {   "c": 0x29,  
@@ -392,7 +394,7 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
     # Note: On Shift Left, the ALU:
@@ -404,7 +406,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'], 
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS3', 'ALUS2', 'LC'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZ'] + CC_LACC, 
+                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },   
 
     "CMPi": {   "c": 0xC9,  
@@ -474,7 +476,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'notERAM', 'LZ'] + CC_LACC,
+                        ['ESP', 'notERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },      
 
     "BEQa": {   "c": 0xF0,  

@@ -20,10 +20,6 @@
 #const timerInterruptCounter = 0x8F8F
 
 #addr 0x0000
-; lda 0x00          ; TODO z flag must be loaded (LZ) from BUS only
-; cmp 0x01          ; TODO z flag must be loaded (LZ) from ALU only
-; beq fail
-
 boot:
     sei             ; disable int
     lda 0x00

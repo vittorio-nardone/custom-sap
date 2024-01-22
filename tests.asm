@@ -293,6 +293,13 @@ test23:
     cpx 0x24
     bne fail
 
+test24:
+    ldo 0x24            ; Test #24: Check LZ
+    lda 0x00            ; Z flag must be clear/set on LDA
+    bne fail
+    cmp 0x01            ; Z flag must be clear/set on CMP
+    beq fail
+
 test80:
     ldo 0x80            ; Test #80 (long): PHA / PLA
     lda 0x80
