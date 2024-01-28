@@ -13,19 +13,19 @@ CONTROL_ROMS_COUNT = 9
 ##
 CONTROL_BITS = {
     ## EEPROM #1
-    "e10":          { "eeprom": 0, "bit": 0, "lowActive": False },
-    "notERAM":      { "eeprom": 0, "bit": 1, "lowActive": True },
+    "LMARL":        { "eeprom": 0, "bit": 0, "lowActive": False },
+    "LMARH":        { "eeprom": 0, "bit": 1, "lowActive": False },
     "e12":          { "eeprom": 0, "bit": 2, "lowActive": False },
     "e13":          { "eeprom": 0, "bit": 3, "lowActive": False },
     "e14":          { "eeprom": 0, "bit": 4, "lowActive": False },
-    "e15":          { "eeprom": 0, "bit": 5, "lowActive": False },
-    "e16":          { "eeprom": 0, "bit": 6, "lowActive": False },
-    "e17":          { "eeprom": 0, "bit": 7, "lowActive": False },
+    "EMAR":         { "eeprom": 0, "bit": 5, "lowActive": False },
+    "WRAM":         { "eeprom": 0, "bit": 6, "lowActive": False },
+    "ERAM":         { "eeprom": 0, "bit": 7, "lowActive": False },
     ## EEPROM #2
-    "LMARL":        { "eeprom": 1, "bit": 0, "lowActive": False },
-    "LMARH":        { "eeprom": 1, "bit": 1, "lowActive": False },
-    "notEMAR":      { "eeprom": 1, "bit": 2, "lowActive": True },
-    "notWRAM":      { "eeprom": 1, "bit": 3, "lowActive": True },
+    "e20":          { "eeprom": 1, "bit": 0, "lowActive": False },
+    "e21":          { "eeprom": 1, "bit": 1, "lowActive": False },
+    "e22":          { "eeprom": 1, "bit": 2, "lowActive": False },
+    "e23":          { "eeprom": 1, "bit": 3, "lowActive": False },
     "e24":          { "eeprom": 1, "bit": 4, "lowActive": False },
     "e25":          { "eeprom": 1, "bit": 5, "lowActive": False },
     "LRALU-IN":     { "eeprom": 1, "bit": 6, "lowActive": False },
@@ -125,7 +125,7 @@ CC_notEPCH      = ['pcE1']
 CC_notEPCADDR   = ['pcE1', 'pcE0']
 
 ######## 
-CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','notERAM'] + CC_notEPCADDR
+CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','ERAM'] + CC_notEPCADDR
 CC_PC_INCREMENT                     = ['CPC']
 CC_LAST_T                           = ['notNOP']
 
@@ -170,7 +170,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LZ'] + CC_LACC + CC_notEPCADDR + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZ'] + CC_LACC + CC_notEPCADDR + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },
 
@@ -179,10 +179,10 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
+                        ['ERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
-                        ['CPC', 'notEMAR', 'notERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['ERAM', 'LMARL'] + CC_notEPCADDR, 
+                        ['CPC', 'EMAR', 'ERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },
 
     "LDAax": {  "c": 0xBD,  
@@ -191,18 +191,18 @@ INSTRUCTIONS_SET = {
                 "v": "u16",
                 "i": "x",
                 "m": [  
-                        ['notERAM'] + CC_LACC + CC_notEPCADDR,  
+                        ['ERAM'] + CC_LACC + CC_notEPCADDR,  
                         ['CPC'],
-                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
+                        ['ERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['notERALU-OUT', 'LMARL', 'CHKO'],       
                         ['LMARH'] + CC_notEACC,
-                        ['notEMAR', 'notERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['EMAR', 'ERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
                         ['notERALU-OUT', 'LMARH'],
-                        ['notEMAR', 'notERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['EMAR', 'ERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },                    
 
     "LDXi": {   "c": 0xA2,  
@@ -210,7 +210,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LZ'] + CC_LX + CC_notEPCADDR + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZ'] + CC_LX + CC_notEPCADDR + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },               
 
@@ -218,10 +218,10 @@ INSTRUCTIONS_SET = {
                 "d": "Store Accumulator in Memory (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
+                        ['ERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
-                        ['CPC', 'notEMAR', 'notWRAM'] + CC_notEACC  
+                        ['ERAM', 'LMARL'] + CC_notEPCADDR, 
+                        ['CPC', 'EMAR', 'WRAM'] + CC_notEACC  
                     ] },      
 
     "STAax": {  "c": 0x9D,  
@@ -230,18 +230,18 @@ INSTRUCTIONS_SET = {
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['notERAM'] + CC_LTMP + CC_notEPCADDR, 
+                        ['ERAM'] + CC_LTMP + CC_notEPCADDR, 
                         ['CPC'],
-                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
+                        ['ERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['notERALU-OUT', 'LMARL', 'CHKO'],  
                         ['LMARH'] + CC_notETMP,
-                        ['notEMAR', 'notWRAM'] + CC_notEACC  
+                        ['EMAR', 'WRAM'] + CC_notEACC  
                     ],               
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
                         ['notERALU-OUT', 'LMARH'],
-                        ['notEMAR', 'notWRAM'] + CC_notEACC,
+                        ['EMAR', 'WRAM'] + CC_notEACC,
                     ] },   
 
     "TAO":  {   "c": 0xAB,  
@@ -279,7 +279,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LRALU-IN', 'CHKC'] + CC_notEPCADDR, 
+                        ['ERAM', 'LRALU-IN', 'CHKC'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
                         ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
@@ -293,10 +293,10 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
+                        ['ERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],  
-                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
-                        ['notEMAR', 'notERAM', 'LRALU-IN', 'CHKC'],                                           
+                        ['ERAM', 'LMARL'] + CC_notEPCADDR, 
+                        ['EMAR', 'ERAM', 'LRALU-IN', 'CHKC'],                                           
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
                         ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
@@ -311,11 +311,11 @@ INSTRUCTIONS_SET = {
                 "v": "u8",
                 "m": [  
                         ['LRALU-IN', 'CHKC'] + CC_notEACC, 
-                        ['notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEPCADDR,
+                        ['ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEPCADDR,
                         ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ], 
                 "true": [
-                        ['notERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEPCADDR,
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEPCADDR,
                         ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
@@ -324,15 +324,15 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'], 
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
+                        ['ERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],  
-                        ['notERAM', 'LMARL'] + CC_notEPCADDR,                     
+                        ['ERAM', 'LMARL'] + CC_notEPCADDR,                     
                         ['CPC', 'LRALU-IN', 'CHKC'] + CC_notEACC, 
-                        ['notEMAR', 'notERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
+                        ['EMAR', 'ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
                         ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
-                        ['notEMAR', 'notERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'],
                         ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
@@ -342,11 +342,11 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
+                        ['ERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
-                        ['CPC', 'notEMAR', 'notERAM', 'LRALU-IN', 'LRALU-OUT'], 
-                        ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'] + CC_ALU_DETECT_ZERO  
+                        ['ERAM', 'LMARL'] + CC_notEPCADDR, 
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT'], 
+                        ['notERALU-OUT', 'EMAR', 'WRAM', 'LZ'] + CC_ALU_DETECT_ZERO  
                     ] },     
 
     "INX": {   "c": 0xE8,  
@@ -362,11 +362,11 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
+                        ['ERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
-                        ['CPC', 'notEMAR', 'notERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'], 
-                        ['notERALU-OUT', 'notEMAR', 'notWRAM', 'LZ'] + CC_ALU_DETECT_ZERO
+                        ['ERAM', 'LMARL'] + CC_notEPCADDR, 
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'], 
+                        ['notERALU-OUT', 'EMAR', 'WRAM', 'LZ'] + CC_ALU_DETECT_ZERO
                     ] },   
 
     "DEX": {   "c": 0xCA,  
@@ -382,7 +382,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
+                        ['ERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
                         ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },   
@@ -392,7 +392,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
+                        ['ERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
@@ -414,7 +414,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
+                        ['ERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'] + CC_notEACC,
                     ] },      
 
@@ -423,7 +423,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['notERAM', 'LRALU-IN'] + CC_notEPCADDR, 
+                        ['ERAM', 'LRALU-IN'] + CC_notEPCADDR, 
                         ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'] + CC_notEX,
                     ] },      
 
@@ -431,9 +431,9 @@ INSTRUCTIONS_SET = {
                 "d": "Jump to New Location (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['notERAM'] + CC_LTMP + CC_notEPCADDR,
+                        ['ERAM'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
-                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
+                        ['ERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ] },       
 
@@ -442,13 +442,13 @@ INSTRUCTIONS_SET = {
                 "v": "u16",
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
                 "m": [  
-                        ['ESP', 'notWRAM'] + CC_notEPCL,
+                        ['ESP', 'WRAM'] + CC_notEPCL,
                         CC_INC_STACK_POINTER,
-                        ['ESP', 'notWRAM'] + CC_notEPCH,
+                        ['ESP', 'WRAM'] + CC_notEPCH,
                         CC_INC_STACK_POINTER,
-                        ['notERAM'] + CC_LTMP + CC_notEPCADDR,
+                        ['ERAM'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
-                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
+                        ['ERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP   
                     ] },         
 
@@ -457,9 +457,9 @@ INSTRUCTIONS_SET = {
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'notERAM', 'LPCH'],
+                        ['ESP', 'ERAM', 'LPCH'],
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'notERAM', 'LPCL'],     
+                        ['ESP', 'ERAM', 'LPCL'],     
                         ['CPC'],   
                         ['CPC']                
                     ] },      
@@ -467,7 +467,7 @@ INSTRUCTIONS_SET = {
     "PHA":  {   "c": 0x48,  
                 "d": "Push Accumulator on Stack", 
                 "m": [  
-                        ['ESP', 'notWRAM'] + CC_notEACC,
+                        ['ESP', 'WRAM'] + CC_notEACC,
                         CC_INC_STACK_POINTER,
                     ] },      
 
@@ -476,20 +476,20 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'notERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO
+                        ['ESP', 'ERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },      
 
     "BEQa": {   "c": 0xF0,  
                 "d": "Branch on Result Zero (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'CHKZ'] + CC_LTMP + CC_notEPCADDR,
+                        ['ERAM', 'CHKZ'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
                         ['CPC']
                     ],
                 "true": [
                         ['CPC'], 
-                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
+                        ['ERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ] },   
 
@@ -497,9 +497,9 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Result not Zero (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'CHKZ'] + CC_LTMP + CC_notEPCADDR,
+                        ['ERAM', 'CHKZ'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
-                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
+                        ['ERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ],
                 "true": [
@@ -511,13 +511,13 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Carry Set (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'CHKC'] + CC_LTMP + CC_notEPCADDR,
+                        ['ERAM', 'CHKC'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
                         ['CPC']
                     ],
                 "true": [
                         ['CPC'], 
-                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
+                        ['ERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ] },    
 
@@ -525,9 +525,9 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Carry Clear (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'CHKC'] + CC_LTMP + CC_notEPCADDR,
+                        ['ERAM', 'CHKC'] + CC_LTMP + CC_notEPCADDR,
                         ['CPC'], 
-                        ['notERAM', 'LPCL'] + CC_notEPCADDR, 
+                        ['ERAM', 'LPCL'] + CC_notEPCADDR, 
                         ['LPCH'] + CC_notETMP 
                     ],
                 "true": [
@@ -539,7 +539,7 @@ INSTRUCTIONS_SET = {
                 "d": "Load Output with Memory (immediate)", 
                 "v": "u8",
                 "m": [  
-                        ['notERAM'] + CC_LOUT + CC_notEPCADDR, 
+                        ['ERAM'] + CC_LOUT + CC_notEPCADDR, 
                         ['CPC']  
                     ] },
 
@@ -547,10 +547,10 @@ INSTRUCTIONS_SET = {
                 "d": "Load Output with Memory (absolute)", 
                 "v": "u16",
                 "m": [  
-                        ['notERAM', 'LMARH'] + CC_notEPCADDR, 
+                        ['ERAM', 'LMARH'] + CC_notEPCADDR, 
                         ['CPC'],
-                        ['notERAM', 'LMARL'] + CC_notEPCADDR, 
-                        ['CPC', 'notEMAR', 'notERAM'] + CC_LOUT  
+                        ['ERAM', 'LMARL'] + CC_notEPCADDR, 
+                        ['CPC', 'EMAR', 'ERAM'] + CC_LOUT  
                     ] },
 
     "CLC": {    "c": 0x18,  
@@ -576,11 +576,11 @@ INSTRUCTIONS_SET = {
                 "f": ['I'],
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR ], # don't check I to resume next op
                 "m": [
-                        ['ESP', 'EFR-OUT', 'notWRAM'],
+                        ['ESP', 'EFR-OUT', 'WRAM'],
                         CC_INC_STACK_POINTER, 
-                        ['ESP', 'notWRAM'] + CC_notEPCL,
+                        ['ESP', 'WRAM'] + CC_notEPCL,
                         CC_INC_STACK_POINTER, 
-                        ['ESP', 'notWRAM'] + CC_notEPCH,
+                        ['ESP', 'WRAM'] + CC_notEPCH,
                         CC_INC_STACK_POINTER, 
                         ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notEACC,
                         ['notERALU-OUT', 'LPCH'],
@@ -594,11 +594,11 @@ INSTRUCTIONS_SET = {
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR ], # don't check I to resume next op
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'notERAM', 'LPCH'],
+                        ['ESP', 'ERAM', 'LPCH'],
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'notERAM', 'LPCL'],
+                        ['ESP', 'ERAM', 'LPCL'],
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'notERAM', 'EFR-IN', 'LC', 'LZ', 'notENAI'],  
+                        ['ESP', 'ERAM', 'EFR-IN', 'LC', 'LZ', 'notENAI'],  
                     ] },           
 
     "SEI":  {   "c": 0x78,  
