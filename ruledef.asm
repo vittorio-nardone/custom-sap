@@ -29,6 +29,12 @@
 		assert(value <= 0xffff)
 		0xBD @ value
  	} 
+	; Load Accumulator with Memory (absolute,X) [Z O]
+	LDA {value: u24},x  => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0xBE @ value
+ 	} 
 	; Load Index X with Memory (immediate) [Z]
 	LDX {value: u8} => { 
 		assert(value >= 0)

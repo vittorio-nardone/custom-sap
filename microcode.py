@@ -220,7 +220,29 @@ INSTRUCTIONS_SET = {
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
                         ['notERALU-OUT', 'LMARH'],
                         ['EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ] },                    
+                    ] },      
+
+    "LDAax": {  "c": 0xBE,  # Cross page not supported
+                "d": "Load Accumulator with Memory (absolute,X)", 
+                "f": ['Z','O'],
+                "v": "u24",
+                "i": "x",
+                "m": [  
+                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['CPC'],
+                        ['ERAM', 'EPCADDR'] + CC_LACC,  
+                        ['CPC'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['notERALU-OUT', 'LMARL', 'CHKO'],       
+                        ['LMARH'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
+                        ['notERALU-OUT', 'LMARH'],
+                        ['EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ] },               
 
     "LDXi": {   "c": 0xA2,  
                 "d": "Load Index X with Memory (immediate)", 

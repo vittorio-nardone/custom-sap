@@ -314,6 +314,14 @@ test25:
     lda 0x010000
     cmp 0x22
     bne fail
+    lda 0x45
+    sta 0x010022
+    ldx 0x21
+    inx
+    lda 0x00
+    lda 0x010000,x
+    cmp 0x45
+    bne fail
     ; write code in ram and JSR to ram (to test 24bit PC)
     lda 0xfe            ; write in memory: LDO 0xFF 
     sta 0x010101
