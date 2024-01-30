@@ -300,24 +300,74 @@ test24:
     cmp 0x01            ; Z flag must be clear/set on CMP
     beq fail
 
-test80:
-    ldo 0x80            ; Test #80 (long): PHA / PLA
+test25:
+    ldo 0x25            ; Test #25: Ram expansion & Absolute addr.
+    lda 0x23
+    sta 0x01FFFF
+    lda 0x22
+    sta 0x010000
+    lda 0x00
+    ldx 0x35
+    ldx 0x01FFFF
+    cpx 0x23
+    bne fail
+    lda 0x010000
+    cmp 0x22
+    bne fail
+    ; write code in ram and JSR to ram (to test 24bit PC)
+    lda 0xfe            ; write in memory: LDO 0xFF 
+    sta 0x010101
+    lda 0xff
+    sta 0x010102        ; write in memory: RTS
+    lda 0x60
+    sta 0x010103
+    jsr 0x010101        ; JSR to code written in memory
+    ldo 0x25            ; it should return here
+
+test26:                 ; Test #26 (long): PHA / PLA
+    ldo 0x26            
     lda 0x80
-test80inc:   
+test26inc:   
     clc 
     adc 0x01
-    tao
     pha
     cmp 0x92
-    bne test80inc
-test80dec:
+    bne test26inc
+test26dec:
+    ldx 0x00
     pla 
-    tao
+    inx
     cmp 0x81
-    bne test80dec
+    bne test26dec
+    cpx 0x12
+
+test27:                 ; Test #27: Test Stack (> 256 values)
+    ldo 0x27
+    lda 0x07
+    ldx 0xFF
+    pha
+    lda 0x08
+test27push:    
+    pha
+    dex
+    bne test27push
+    lda 0x09
+    pha
+    lda 0x00
+    pla
+    cmp 0x09
+    bne fail
+    ldx 0xFF
+test27pull:    
+    pla
+    dex
+    bne test27pull    
+    pla
+    cmp 0x07
+    bne fail
+
 
 testend:
-    sei
     ldo 0x0E            ; Tests finished, jmp back to main program
     rts          
 

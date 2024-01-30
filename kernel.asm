@@ -7,9 +7,11 @@
 ;       0x600? - keyboard (8 locations, in) 
 ; 0x6800-0x7FFF (6K) - 6k for video 
 ; 0x8000-0xFFFF (32k) - RAM
-;       0xFF00-0xFFFF (256) - reserved for stack
+;       0xF000-0xFFFF (4k) - reserved for stack
 ;
-;
+; Memory expansion board (64k) - RAM
+; 0x010000 - 0x01FFFF
+; 
 ;  Interrupt register / mask register bits
 ;  (1) (1) (1) (1) key timer ext2 ext1
 
@@ -28,11 +30,12 @@ boot:
     lda 0x08
     tai
     cli             ; enable int
+    jsr tests
 loop:
     lda keyInterruptCounter
     tao
-    ;jmp loop
-    jsr tests
+    jmp loop
+
 main:
     lda keyInterruptCounter
     tao
