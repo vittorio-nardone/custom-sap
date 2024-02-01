@@ -50,9 +50,9 @@ CONTROL_BITS = {
     "notCLC":       { "eeprom": 3, "bit": 7, "lowActive": True },
     ## EEPROM #5
     "notSEC":       { "eeprom": 4, "bit": 0, "lowActive": True },
-    "LZ":           { "eeprom": 4, "bit": 1, "lowActive": False },
+    "LZN":          { "eeprom": 4, "bit": 1, "lowActive": False },
     "e52":          { "eeprom": 4, "bit": 2, "lowActive": False },
-    "e53":          { "eeprom": 4, "bit": 3, "lowActive": False },
+    "CHKN":         { "eeprom": 4, "bit": 3, "lowActive": False },
     "e54":          { "eeprom": 4, "bit": 4, "lowActive": False },
     "e55":          { "eeprom": 4, "bit": 5, "lowActive": False },
     "e56":          { "eeprom": 4, "bit": 6, "lowActive": False },
@@ -174,7 +174,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LZ', 'EPCADDR'] + CC_LACC + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LACC + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },
 
@@ -186,7 +186,7 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },
 
     "LDAa": {   "c": 0xA7,  
@@ -199,7 +199,7 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },
 
     "LDApx": {  "c": 0xBD,  # Cross page not supported
@@ -214,12 +214,12 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['notERALU-OUT', 'LMARL', 'CHKO'],       
                         ['LMARH'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
                         ['notERALU-OUT', 'LMARH'],
-                        ['EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },      
 
     "LDAax": {  "c": 0xBE,  # Cross page not supported
@@ -236,12 +236,12 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['notERALU-OUT', 'LMARL', 'CHKO'],       
                         ['LMARH'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
                         ['notERALU-OUT', 'LMARH'],
-                        ['EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },               
 
     "LDXi": {   "c": 0xA2,  
@@ -249,7 +249,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LZ', 'EPCADDR'] + CC_LX + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LX + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },               
 
@@ -261,7 +261,7 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },
 
     "LDXa": {   "c": 0xA4,  
@@ -274,7 +274,7 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'LZ', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },
 
     "STAp": {   "c": 0x8D,  
@@ -356,11 +356,11 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'CHKC', 'EPCADDR'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },     
 
     "ADCp": {   "c": 0x6D,  
@@ -373,11 +373,11 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LMARL', 'EPCADDR'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'CHKC', 'MEMADDRVALID'],                                           
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
     "SBCi": {   "c": 0xE9,  
@@ -387,11 +387,11 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['LRALU-IN', 'CHKC'] + CC_notEACC, 
                         ['ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
-                        ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
+                        ['CPC', 'notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ], 
                 "true": [
                         ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
-                        ['CPC', 'notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['CPC', 'notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
     "SBCp": {   "c": 0xED,  
@@ -404,11 +404,11 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LMARL', 'EPCADDR'],                     
                         ['CPC', 'LRALU-IN', 'CHKC'] + CC_notEACC, 
                         ['EMAR', 'ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
 
@@ -421,7 +421,7 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID'], 
-                        ['notERALU-OUT', 'EMAR', 'WRAM', 'LZ', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
+                        ['notERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
                     ] },     
 
     "INX": {   "c": 0xE8,  
@@ -429,7 +429,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEX, 
-                        ['notERALU-OUT', 'LZ'] + CC_LX + CC_ALU_DETECT_ZERO 
+                        ['notERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },                     
 
     "DECp": {   "c": 0xCE,  
@@ -441,7 +441,7 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'], 
-                        ['notERALU-OUT', 'EMAR', 'WRAM', 'LZ', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
+                        ['notERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
                     ] },   
 
     "DEX": {   "c": 0xCA,  
@@ -449,7 +449,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEX, 
-                        ['notERALU-OUT', 'LZ'] + CC_LX + CC_ALU_DETECT_ZERO 
+                        ['notERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "EORi": {   "c": 0x49,  
@@ -459,7 +459,7 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "ANDi": {   "c": 0x29,  
@@ -469,7 +469,7 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
     # Note: On Shift Left, the ALU:
@@ -481,7 +481,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'], 
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS3', 'ALUS2', 'LC'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO  
+                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },   
 
     "CMPi": {   "c": 0xC9,  
@@ -490,7 +490,7 @@ INSTRUCTIONS_SET = {
                 "v": "u8",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
-                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'] + CC_notEACC,
+                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEACC,
                     ] },      
 
     "CPXi": {   "c": 0xE0,  
@@ -499,7 +499,7 @@ INSTRUCTIONS_SET = {
                 "v": "u8",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
-                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZ'] + CC_notEX,
+                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
                     ] },      
 
     "JMPp": {   "c": 0x4C,  
@@ -592,7 +592,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],
                 "m": [  
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'ERAM', 'LZ'] + CC_LACC + CC_ALU_DETECT_ZERO
+                        ['ESP', 'ERAM', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },      
 
     "BEQp": {   "c": 0xF0,  
@@ -650,6 +650,35 @@ INSTRUCTIONS_SET = {
                         ['CPC'], 
                         ['CPC'], 
                     ] },                                          
+
+    "BMI": {   "c": 0x30,  
+                "d": "Branch on Result Minus (page)", 
+                "v": "u16",
+                "m": [  
+                        ['ERAM', 'CHKN', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['CPC']
+                    ],
+                "true": [
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP  + CC_notLPCHP0 
+                    ] }, 
+
+    "BPLp": {   "c": 0x10,  
+                "d": "Branch on Result Plus (page)", 
+                "v": "u16",
+                "m": [  
+                        ['ERAM', 'CHKN', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP  + CC_notLPCHP0
+                    ],
+                "true": [
+                        ['CPC'], 
+                        ['CPC'], 
+                    ] },                                          
+   
 
     "LDOi": {   "c": 0xFE,  
                 "d": "Load Output with Memory (immediate)", 
@@ -718,7 +747,7 @@ INSTRUCTIONS_SET = {
                         CC_DEC_STACK_POINTER,
                         ['ESP', 'ERAM'] + CC_notLPCL,
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'ERAM', 'EFR-IN', 'LC', 'LZ', 'notENAI'],  
+                        ['ESP', 'ERAM', 'EFR-IN', 'LC', 'LZN', 'notENAI'],  
                     ] },           
 
     "SEI":  {   "c": 0x78,  

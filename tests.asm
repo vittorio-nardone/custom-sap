@@ -332,33 +332,57 @@ test25:
     jsr 0x010101        ; JSR to code written in memory
     ldo 0x25            ; it should return here
 
-test26:                 ; Test #26 (long): PHA / PLA
+test26:                 ; Test #26: PHA / PLA
     ldo 0x26            
     lda 0x80
+    ldx 0x00
 test26inc:   
     clc 
     adc 0x01
     pha
+    tao
     cmp 0x92
     bne test26inc
 test26dec:
-    ldx 0x00
     pla 
+    tao
     inx
     cmp 0x81
     bne test26dec
     cpx 0x12
+    bne fail
 
-test27:                 ; Test #27: Test Stack (> 256 values)
+test27:                 ; Test #27 BMI/BPL
     ldo 0x27
+    lda 0x12
+    bmi fail
+    lda 0xff
+    bpl fail
+    ldx 0x02
+    dex
+    dex
+    dex
+    bmi test27_1_ok
+    jmp fail
+test27_1_ok:
+    lda 0xff
+    clc
+    adc 0x02
+    bpl test27_2_ok
+    jmp fail
+test27_2_ok:
+    nop
+
+test99:                 ; Test #99: Test Stack (> 256 values)
+    ldo 0x99
     lda 0x07
     ldx 0xFF
     pha
     lda 0x08
-test27push:    
+test99push:    
     pha
     dex
-    bne test27push
+    bne test99push
     lda 0x09
     pha
     lda 0x00
@@ -366,10 +390,10 @@ test27push:
     cmp 0x09
     bne fail
     ldx 0xFF
-test27pull:    
+test99pull:    
     pla
     dex
-    bne test27pull    
+    bne test99pull    
     pla
     cmp 0x07
     bne fail

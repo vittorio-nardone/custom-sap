@@ -223,6 +223,18 @@
 		assert(value <= 0xffff)
 		0x90 @ value
  	} 
+	; Branch on Result Minus (page) 
+	BMI {value: u16} => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x30 @ value
+ 	} 
+	; Branch on Result Plus (page) 
+	BPL {value: u16} => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x10 @ value
+ 	} 
 	; Load Output with Memory (immediate) 
 	LDO {value: u8} => { 
 		assert(value >= 0)
