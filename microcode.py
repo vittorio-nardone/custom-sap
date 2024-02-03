@@ -5,14 +5,14 @@ from intelhex import IntelHex
 ## Configuration
 ##
 ##
-CONTROL_ROMS_COUNT = 9
+CONTROL_ROMS_COUNT = 6
 
 ##################################################################
 ## Control bits
 ##
 ##
 CONTROL_BITS = {
-    ## EEPROM #1
+    ## EEPROM #1 - Memory board
     "LMARL":        { "eeprom": 0, "bit": 0, "lowActive": False },
     "LMARH":        { "eeprom": 0, "bit": 1, "lowActive": False },
     "LMARPAGE":     { "eeprom": 0, "bit": 2, "lowActive": False },
@@ -21,78 +21,51 @@ CONTROL_BITS = {
     "EMAR":         { "eeprom": 0, "bit": 5, "lowActive": False },
     "WRAM":         { "eeprom": 0, "bit": 6, "lowActive": False },
     "ERAM":         { "eeprom": 0, "bit": 7, "lowActive": False },
-    ## EEPROM #2
-    "e20":          { "eeprom": 1, "bit": 0, "lowActive": False },
-    "e21":          { "eeprom": 1, "bit": 1, "lowActive": False },
-    "e22":          { "eeprom": 1, "bit": 2, "lowActive": False },
-    "e23":          { "eeprom": 1, "bit": 3, "lowActive": False },
-    "e24":          { "eeprom": 1, "bit": 4, "lowActive": False },
-    "e25":          { "eeprom": 1, "bit": 5, "lowActive": False },
-    "LRALU-IN":     { "eeprom": 1, "bit": 6, "lowActive": False },
-    "LRALU-OUT":    { "eeprom": 1, "bit": 7, "lowActive": False }, 
-    ## EEPROM #3
-    "ALUS0":        { "eeprom": 2, "bit": 0, "lowActive": False },   
-    "ALUS1":        { "eeprom": 2, "bit": 1, "lowActive": False },   
-    "ALUS2":        { "eeprom": 2, "bit": 2, "lowActive": False },   
-    "ALUS3":        { "eeprom": 2, "bit": 3, "lowActive": False },   
-    "ALUCN":        { "eeprom": 2, "bit": 4, "lowActive": False },   
-    "ALUM":         { "eeprom": 2, "bit": 5, "lowActive": False },
-    "notERALU-OUT": { "eeprom": 2, "bit": 6, "lowActive": True },
-    "e37":          { "eeprom": 2, "bit": 7, "lowActive": False },
-    ## EEPROM #4
-    "e40":          { "eeprom": 3, "bit": 0, "lowActive": False },
-    "e41":          { "eeprom": 3, "bit": 1, "lowActive": False },
-    "e42":          { "eeprom": 3, "bit": 2, "lowActive": False },
-    "e43":          { "eeprom": 3, "bit": 3, "lowActive": False },
-    "LC":           { "eeprom": 3, "bit": 4, "lowActive": False },
-    "CHKZ":         { "eeprom": 3, "bit": 5, "lowActive": False },
-    "CHKC":         { "eeprom": 3, "bit": 6, "lowActive": False },
-    "notCLC":       { "eeprom": 3, "bit": 7, "lowActive": True },
-    ## EEPROM #5
-    "notSEC":       { "eeprom": 4, "bit": 0, "lowActive": True },
-    "LZN":          { "eeprom": 4, "bit": 1, "lowActive": False },
-    "e52":          { "eeprom": 4, "bit": 2, "lowActive": False },
-    "CHKN":         { "eeprom": 4, "bit": 3, "lowActive": False },
-    "e54":          { "eeprom": 4, "bit": 4, "lowActive": False },
-    "e55":          { "eeprom": 4, "bit": 5, "lowActive": False },
-    "e56":          { "eeprom": 4, "bit": 6, "lowActive": False },
-    "e57":          { "eeprom": 4, "bit": 7, "lowActive": False },
-    ## EEPROM #6
-    "e60":          { "eeprom": 5, "bit": 0, "lowActive": False },
-    "e61":          { "eeprom": 5, "bit": 1, "lowActive": False },
-    "e62":          { "eeprom": 5, "bit": 2, "lowActive": False },
-    "e63":          { "eeprom": 5, "bit": 3, "lowActive": False },
-    "LO":           { "eeprom": 5, "bit": 4, "lowActive": False },
-    "CHKO":         { "eeprom": 5, "bit": 5, "lowActive": False },
-    "EFR-OUT":      { "eeprom": 5, "bit": 6, "lowActive": False },
-    "EFR-IN":       { "eeprom": 5, "bit": 7, "lowActive": False },
-    ## EEPROM #7 - Registers board
-    "rL0":          { "eeprom": 6, "bit": 0, "lowActive": False },
-    "rL1":          { "eeprom": 6, "bit": 1, "lowActive": False },
-    "rL2":          { "eeprom": 6, "bit": 2, "lowActive": False },
-    "rE0":          { "eeprom": 6, "bit": 3, "lowActive": False },
-    "rE1":          { "eeprom": 6, "bit": 4, "lowActive": False },
-    "rE2":          { "eeprom": 6, "bit": 5, "lowActive": False },
-    "e76":          { "eeprom": 6, "bit": 6, "lowActive": False },
-    "e77":          { "eeprom": 6, "bit": 7, "lowActive": False },
-    ## EEPROM #8 - Instructions board
-    "LIR":          { "eeprom": 7, "bit": 0, "lowActive": False },
-    "CHKI":         { "eeprom": 7, "bit": 1, "lowActive": False },
-    "notHLT":       { "eeprom": 7, "bit": 2, "lowActive": True },
-    "notENAI":      { "eeprom": 7, "bit": 3, "lowActive": True },
-    "LINT-MASK":    { "eeprom": 7, "bit": 4, "lowActive": False },
-    "EINT-OUT":     { "eeprom": 7, "bit": 5, "lowActive": False }, 
-    "notDISI":      { "eeprom": 7, "bit": 6, "lowActive": True },
-    "notNOP":       { "eeprom": 7, "bit": 7, "lowActive": True },
-    ## EEPROM #9 - PC/SP board
-    "ESP":          { "eeprom": 8, "bit": 0, "lowActive": False },
-    "EPCADDR":      { "eeprom": 8, "bit": 1, "lowActive": False },
-    "CPC":          { "eeprom": 8, "bit": 2, "lowActive": False },
-    "notCSP":       { "eeprom": 8, "bit": 3, "lowActive": True },
-    "SPD":          { "eeprom": 8, "bit": 4, "lowActive": False },
-    "pcE2":         { "eeprom": 8, "bit": 5, "lowActive": False }, 
-    "pcE1":         { "eeprom": 8, "bit": 6, "lowActive": False },
-    "pcE0":         { "eeprom": 8, "bit": 7, "lowActive": False },
+    ## EEPROM #2 - Alu/Flags board
+    "LRALU-IN":     { "eeprom": 1, "bit": 0, "lowActive": False },
+    "LRALU-OUT":    { "eeprom": 1, "bit": 1, "lowActive": False },
+    "ALUS0":        { "eeprom": 1, "bit": 2, "lowActive": False },
+    "ALUS1":        { "eeprom": 1, "bit": 3, "lowActive": False },
+    "ALUS2":        { "eeprom": 1, "bit": 4, "lowActive": False },
+    "ALUS3":        { "eeprom": 1, "bit": 5, "lowActive": False },
+    "ALUCN":        { "eeprom": 1, "bit": 6, "lowActive": False },
+    "ALUM":         { "eeprom": 1, "bit": 7, "lowActive": False }, 
+    ## EEPROM #3 - Alu/Flags board
+    "notCLC":       { "eeprom": 2, "bit": 0, "lowActive": True },   
+    "LO":           { "eeprom": 2, "bit": 1, "lowActive": False },   
+    "LZN":          { "eeprom": 2, "bit": 2, "lowActive": False },   
+    "LC":           { "eeprom": 2, "bit": 3, "lowActive": False },   
+    "ERALU-OUT":    { "eeprom": 2, "bit": 4, "lowActive": False },   
+    "alufE0":       { "eeprom": 2, "bit": 5, "lowActive": False },
+    "alufE1":       { "eeprom": 2, "bit": 6, "lowActive": False },
+    "alufE2":       { "eeprom": 2, "bit": 7, "lowActive": False },
+    ## EEPROM #4 - Registers board
+    "rL0":          { "eeprom": 3, "bit": 0, "lowActive": False },
+    "rL1":          { "eeprom": 3, "bit": 1, "lowActive": False },
+    "rL2":          { "eeprom": 3, "bit": 2, "lowActive": False },
+    "rE0":          { "eeprom": 3, "bit": 3, "lowActive": False },
+    "rE1":          { "eeprom": 3, "bit": 4, "lowActive": False },
+    "rE2":          { "eeprom": 3, "bit": 5, "lowActive": False },
+    "e76":          { "eeprom": 3, "bit": 6, "lowActive": False },
+    "e77":          { "eeprom": 3, "bit": 7, "lowActive": False },
+    ## EEPROM #5 - Instructions board
+    "LIR":          { "eeprom": 4, "bit": 0, "lowActive": False },
+    "CHKI":         { "eeprom": 4, "bit": 1, "lowActive": False },
+    "notHLT":       { "eeprom": 4, "bit": 2, "lowActive": True },
+    "notENAI":      { "eeprom": 4, "bit": 3, "lowActive": True },
+    "LINT-MASK":    { "eeprom": 4, "bit": 4, "lowActive": False },
+    "EINT-OUT":     { "eeprom": 4, "bit": 5, "lowActive": False }, 
+    "notDISI":      { "eeprom": 4, "bit": 6, "lowActive": True },
+    "notNOP":       { "eeprom": 4, "bit": 7, "lowActive": True },
+    ## EEPROM #6 - PC/SP board
+    "ESP":          { "eeprom": 5, "bit": 0, "lowActive": False },
+    "EPCADDR":      { "eeprom": 5, "bit": 1, "lowActive": False },
+    "CPC":          { "eeprom": 5, "bit": 2, "lowActive": False },
+    "notCSP":       { "eeprom": 5, "bit": 3, "lowActive": True },
+    "SPD":          { "eeprom": 5, "bit": 4, "lowActive": False },
+    "pcE2":         { "eeprom": 5, "bit": 5, "lowActive": False }, 
+    "pcE1":         { "eeprom": 5, "bit": 6, "lowActive": False },
+    "pcE0":         { "eeprom": 5, "bit": 7, "lowActive": False },
 }
 
 ##################################################################
@@ -127,6 +100,15 @@ CC_notLPCL      = ['pcE2']
 CC_notLPCH      = ['pcE2', 'pcE0']
 CC_notLPCPAGE   = ['pcE2', 'pcE1']
 CC_notLPCHP0    = ['pcE2', 'pcE1', 'pcE0'] # this load PC H and reset PC PAGE to zero
+
+######## In ALU/Flags board
+CC_CHKC     = ['alufE0']
+CC_CHKZ     = ['alufE1']
+CC_CHKN     = ['alufE1', 'alufE0']
+CC_CHKO     = ['alufE2']
+CC_EFRIN    = ['alufE2', 'alufE0']
+CC_EFROUT   = ['alufE2', 'alufE1']
+CC_SEC      = ['alufE2', 'alufE1', 'alufE0'] 
 
 ######## 
 CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','ERAM','EPCADDR', 'MEMADDRVALID']
@@ -212,13 +194,13 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
-                        ['notERALU-OUT', 'LMARL', 'CHKO'],       
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
-                        ['notERALU-OUT', 'LMARH'],
+                        ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },      
 
@@ -234,13 +216,13 @@ INSTRUCTIONS_SET = {
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
-                        ['notERALU-OUT', 'LMARL', 'CHKO'],       
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
-                        ['notERALU-OUT', 'LMARH'],
+                        ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },               
 
@@ -309,13 +291,13 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
-                        ['notERALU-OUT', 'LMARL', 'CHKO'],  
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
                     ],               
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
-                        ['notERALU-OUT', 'LMARH'],
+                        ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
                     ] },   
 
@@ -354,13 +336,13 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'CHKC', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'] + CC_CHKC, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },     
 
     "ADCp": {   "c": 0x6D,  
@@ -371,13 +353,13 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LMARH', 'EPCADDR'], 
                         ['CPC', 'LMARPAGEZERO'],  
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'CHKC', 'MEMADDRVALID'],                                           
+                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'] + CC_CHKC,                                           
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
     "SBCi": {   "c": 0xE9,  
@@ -385,13 +367,13 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['LRALU-IN', 'CHKC'] + CC_notEACC, 
+                        ['LRALU-IN'] + CC_notEACC + CC_CHKC, 
                         ['ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
-                        ['CPC', 'notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
+                        ['CPC', 'ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ], 
                 "true": [
                         ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
-                        ['CPC', 'notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['CPC', 'ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
     "SBCp": {   "c": 0xED,  
@@ -402,13 +384,13 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LMARH', 'EPCADDR'], 
                         ['CPC', 'LMARPAGEZERO'],  
                         ['ERAM', 'LMARL', 'EPCADDR'],                     
-                        ['CPC', 'LRALU-IN', 'CHKC'] + CC_notEACC, 
+                        ['CPC', 'LRALU-IN'] + CC_notEACC + CC_CHKC, 
                         ['EMAR', 'ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
 
@@ -421,7 +403,7 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID'], 
-                        ['notERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
                     ] },     
 
     "INX": {   "c": 0xE8,  
@@ -429,7 +411,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEX, 
-                        ['notERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
+                        ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },                     
 
     "DECp": {   "c": 0xCE,  
@@ -441,7 +423,7 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'], 
-                        ['notERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
                     ] },   
 
     "DEX": {   "c": 0xCA,  
@@ -449,7 +431,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z'],  
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEX, 
-                        ['notERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
+                        ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "EORi": {   "c": 0x49,  
@@ -459,7 +441,7 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "ANDi": {   "c": 0x29,  
@@ -469,7 +451,7 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
     # Note: On Shift Left, the ALU:
@@ -481,7 +463,7 @@ INSTRUCTIONS_SET = {
                 "f": ['Z', 'C'], 
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS3', 'ALUS2', 'LC'] + CC_notEACC, 
-                        ['notERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },   
 
     "CMPi": {   "c": 0xC9,  
@@ -599,7 +581,7 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Result Zero (page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'CHKZ', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
                         ['CPC']
                     ],
@@ -613,7 +595,7 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Result not Zero (page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'CHKZ', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
                         ['ERAM', 'EPCADDR'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCHP0 
@@ -627,7 +609,7 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Carry Set (page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'CHKC', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
                         ['CPC']
                     ],
@@ -641,7 +623,7 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Carry Clear (page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'CHKC', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
                         ['ERAM', 'EPCADDR'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0
@@ -655,7 +637,7 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Result Minus (page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'CHKN', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
                         ['CPC']
                     ],
@@ -669,7 +651,7 @@ INSTRUCTIONS_SET = {
                 "d": "Branch on Result Plus (page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'CHKN', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
                         ['ERAM', 'EPCADDR'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0
@@ -709,8 +691,8 @@ INSTRUCTIONS_SET = {
                 "d": "Set Carry Flag", 
                 "f": ['C'],
                 "m": [  
-                        ['notSEC'], 
-                    ] },                    
+                        CC_SEC, 
+                     ] },                    
 
     "NOP": {    "c": 0xEA,  
                 "d": "No Operation",     
@@ -721,7 +703,7 @@ INSTRUCTIONS_SET = {
                 "f": ['I'],
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR ], # don't check I to resume next op
                 "m": [
-                        ['ESP', 'EFR-OUT', 'WRAM'],
+                        ['ESP', 'WRAM'] + CC_EFROUT,
                         CC_INC_STACK_POINTER, 
                         ['ESP', 'WRAM'] + CC_notEPCL,
                         CC_INC_STACK_POINTER, 
@@ -730,9 +712,9 @@ INSTRUCTIONS_SET = {
                         ['ESP', 'WRAM'] + CC_notEPCPAGE,
                         CC_INC_STACK_POINTER, 
                         ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notEACC,
-                        ['notERALU-OUT'] + CC_notLPCHP0,
+                        ['ERALU-OUT'] + CC_notLPCHP0,
                         ['ALUM', 'ALUS2', 'ALUS3', 'LRALU-OUT']  + CC_notEACC,
-                        ['notERALU-OUT', 'notDISI'] + CC_notLPCL
+                        ['ERALU-OUT', 'notDISI'] + CC_notLPCL
                      ] },    
 
     "RTI":  {   "c": 0x40,  
@@ -747,7 +729,7 @@ INSTRUCTIONS_SET = {
                         CC_DEC_STACK_POINTER,
                         ['ESP', 'ERAM'] + CC_notLPCL,
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'ERAM', 'EFR-IN', 'LC', 'LZN', 'notENAI'],  
+                        ['ESP', 'ERAM', 'LC', 'LZN', 'notENAI'] + CC_EFRIN,  
                     ] },           
 
     "SEI":  {   "c": 0x78,  

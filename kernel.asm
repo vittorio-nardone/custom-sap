@@ -14,6 +14,9 @@
 ; 
 ;  Interrupt register / mask register bits
 ;  (1) (1) (1) (1) key timer ext2 ext1
+;
+;  Flag register
+;  N x x x Z C x x
 
 #include "ruledef.asm"
 #include "tests.asm"
@@ -27,7 +30,7 @@ boot:
     lda 0x00
     sta keyInterruptCounter
     sta timerInterruptCounter
-    lda 0x08
+    lda 0x0C        ; enable key + timer only
     tai
     cli             ; enable int
     jsr tests
