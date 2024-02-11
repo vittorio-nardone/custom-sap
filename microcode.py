@@ -46,8 +46,8 @@ CONTROL_BITS = {
     "rE0":          { "eeprom": 3, "bit": 3, "lowActive": False },
     "rE1":          { "eeprom": 3, "bit": 4, "lowActive": False },
     "rE2":          { "eeprom": 3, "bit": 5, "lowActive": False },
-    "e76":          { "eeprom": 3, "bit": 6, "lowActive": False },
-    "e77":          { "eeprom": 3, "bit": 7, "lowActive": False },
+    "tmpS1":        { "eeprom": 3, "bit": 6, "lowActive": False },
+    "tmpS0":        { "eeprom": 3, "bit": 7, "lowActive": False },
     ## EEPROM #5 - Instructions board
     "LIR":          { "eeprom": 4, "bit": 0, "lowActive": False },
     "CHKI":         { "eeprom": 4, "bit": 1, "lowActive": False },
@@ -86,10 +86,12 @@ CC_notEE   = ['rE2', 'rE1']
 CC_LACC    = ['rL0']
 CC_LX      = ['rL1']
 CC_LY      = ['rL1', 'rL0']
-CC_LTMP    = ['rL2']
+#CC_avail  = ['rL2']
 CC_LED     = ['rL2', 'rL0']
 CC_LEE     = ['rL2', 'rL1']
 CC_LOUT    = ['rL2', 'rL1', 'rL0']
+
+CC_LTMP    = ['tmpS0', 'tmpS1']
 
 ######## In PC/SP board
 # PC MUX
@@ -454,17 +456,50 @@ INSTRUCTIONS_SET = {
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
-    # Note: On Shift Left, the ALU:
-    ## set carry if removed bit is 0
-    ## clear carry if removed bit is 1
-    "ASLacc": { "c": 0x0A,  
-                "d": "Shift Left One Bit (accumulator)",
+    "ROLacc": { "c": 0x2A,  #carry is NOT set with removed bit value (!= 6502)
+                "d": "Rotate One Bit Left (accumulator)",
                 "op": "a",  
-                "f": ['Z', 'C'], 
+                "f": ['Z', 'N'], 
                 "m": [  
-                        ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS3', 'ALUS2', 'LC'] + CC_notEACC, 
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
-                    ] },   
+                        CC_LTMP + CC_notEACC, 
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO 
+                        
+                    ] },  
+
+    "ROLp": {   "c": 0x26,  #carry is NOT set with removed bit value (!= 6502)
+                "d": "Rotate One Bit Left (page)", 
+                "f": ['Z', 'N'], 
+                "v": "u16",
+                "m": [  
+                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
+                        ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO
+                    ] },
+
+
+    "RORacc": { "c": 0x6A, #carry is NOT set with removed bit value (!= 6502) 
+                "d": "Rotate One Bit Right (accumulator)",
+                "op": "a",  
+                "f": ['Z', 'N'], 
+                "m": [  
+                        CC_LTMP + CC_notEACC, 
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ] },  
+     
+
+    "RORp": {   "c": 0x66, #carry is NOT set with removed bit value (!= 6502) 
+                "d": "Rotate One Bit Right (page)", 
+                "f": ['Z', 'N'], 
+                "v": "u16",
+                "m": [  
+                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
+                        ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO
+                    ] },
 
     "CMPi": {   "c": 0xC9,  
                 "d": "Compare Memory with Accumulator (immediate)", 

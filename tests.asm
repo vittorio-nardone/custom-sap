@@ -265,22 +265,56 @@ test21:                 ; Test #21: AND (immediate)
     and 0x01            ; 0x02 AND 0x01 = 0x00
     bne fail            ; zero flag must be set
 
-test22:                 ; Test #22: ASL (shift left acc)
+test22:                 ; Test #22: ROR/ROL
     ldo 0x22
     lda 0x44
     clc 
-    asl a               ; 0x44 << 1 bit = 0x88    
+    rol a               ; 0x44 << 1 bit = 0x88    
     beq fail            ; zero flag must not be set
     cmp 0x88
     bne fail
     sec
-    asl a               ; 0x88 << 1 bit = 0x110 + carry clear 
-    bcs fail            ; carry flag must be clear
+    rol a               ; 0x88 << 1 bit + carry = 0x111 
+    cmp 0x11
+    bne fail            
+    lda 0x23
     clc
-    asl a               ; 0x10 << 1 bit = 0x20 + carry set
-    bcc fail            ; carry flag must be set
-    cmp 0x20
+    ror A               ; 0x23 >> 1 bit = 0x11
+    cmp 0x11
     bne fail
+    sec
+    ror a               ; 0x11 >> 1 bit + carry = 0x88
+    cmp 0x88
+    bne fail
+    clc
+    lda 0x02            ; 0x02 >> 0x01 >> 0x00 (set zero flag)
+    ror A
+    ror A
+    bne fail
+    sec
+    rol A               ; 0x00 << 1 bit + carry = 0x01 (clear zero flag)
+    beq fail  
+    lda 0x80
+    clc
+    rol a               ; 0x80 << 1 bit = 0x00 (set zero flag)
+    bne fail        
+    sec
+    lda 0x20            ; page memory
+    sta 0x8111
+    lda 0x00
+    ror 0x8111          ; 0x20 >> 1 bit + carry = 0x90 
+    lda 0x8111
+    cmp 0x90
+    bne fail
+    clc
+    lda 0x20            ; page memory
+    sta 0x8111
+    lda 0x00
+    rol 0x8111          ; 0x20 << 1 bit = 0x40 
+    lda 0x8111
+    cmp 0x40
+    bne fail
+
 
 test23:
     ldo 0x23            ; Test #23: INX / DEX / CPX

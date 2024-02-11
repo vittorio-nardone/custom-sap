@@ -147,9 +147,25 @@
 		assert(value <= 0xff)
 		0x29 @ value
  	} 
-	; Shift Left One Bit (accumulator) [Z C]
-	ASL a => { 
-		0x0A
+	; Rotate One Bit Left (accumulator) [Z N]
+	ROL a => { 
+		0x2A
+ 	} 
+	; Rotate One Bit Left (page) [Z N]
+	ROL {value: u16} => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x26 @ value
+ 	} 
+	; Rotate One Bit Right (accumulator) [Z N]
+	ROR a => { 
+		0x6A
+ 	} 
+	; Rotate One Bit Right (page) [Z N]
+	ROR {value: u16} => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x66 @ value
  	} 
 	; Compare Memory with Accumulator (immediate) [Z C]
 	CMP {value: u8} => { 
