@@ -53,6 +53,24 @@
 		assert(value <= 0xffffff)
 		0xA4 @ value
  	} 
+	; Load Index Y with Memory (immediate) [Z]
+	LDY {value: u8} => { 
+		assert(value >= 0)
+		assert(value <= 0xff)
+		0xA0 @ value
+ 	} 
+	; Load Index D with Memory (immediate) [Z]
+	LDD {value: u8} => { 
+		assert(value >= 0)
+		assert(value <= 0xff)
+		0xA5 @ value
+ 	} 
+	; Load Index E with Memory (immediate) [Z]
+	LDE {value: u8} => { 
+		assert(value >= 0)
+		assert(value <= 0xff)
+		0xA6 @ value
+ 	} 
 	; Store Accumulator in Memory (page) 
 	STA {value: u16} => { 
 		assert(value >= 0)
@@ -91,6 +109,30 @@
 	TAX => { 
 		0xAA
  	} 
+	; Transfer Index Y to Accumulator 
+	TYA => { 
+		0xBA
+ 	} 
+	; Transfer Accumulator to Index Y 
+	TAY => { 
+		0xBB
+ 	} 
+	; Transfer Index Y to Index E 
+	TYE => { 
+		0x8B
+ 	} 
+	; Transfer Index E to Index Y 
+	TEY => { 
+		0x8C
+ 	} 
+	; Transfer Index X to Index D 
+	TXD => { 
+		0x9B
+ 	} 
+	; Transfer Index D to Index X 
+	TDX => { 
+		0x9C
+ 	} 
 	; Add Memory to Accumulator with Carry (immediate) [Z C]
 	ADC {value: u8} => { 
 		assert(value >= 0)
@@ -102,6 +144,10 @@
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x6D @ value
+ 	} 
+	; Add Index D to Accumulator with Carry (Index D) [Z C]
+	ADC d => { 
+		0x6F
  	} 
 	; Subtract Memory from Accumulator with Borrow (immediate) [Z C]
 	SBC {value: u8} => { 
@@ -115,6 +161,10 @@
 		assert(value <= 0xffff)
 		0xED @ value
  	} 
+	; Subtract Index E from Index X with Borrow (Index X) [Z C]
+	SBX e => { 
+		0xEF
+ 	} 
 	; Increment Memory by One (page) [Z]
 	INC {value: u16} => { 
 		assert(value >= 0)
@@ -125,6 +175,10 @@
 	INX => { 
 		0xE8
  	} 
+	; Increment Index Y by One [Z]
+	INY => { 
+		0xC8
+ 	} 
 	; Decrement Memory by One (page) [Z]
 	DEC {value: u16} => { 
 		assert(value >= 0)
@@ -134,6 +188,10 @@
 	; Decrement Index X by One [Z]
 	DEX => { 
 		0xCA
+ 	} 
+	; Decrement Index Y by One [Z]
+	DEY => { 
+		0xCB
  	} 
 	; Exclusive-OR Memory with Accumulator (immediate) [Z]
 	EOR {value: u8} => { 
@@ -151,6 +209,14 @@
 	ROL a => { 
 		0x2A
  	} 
+	; Rotate One Bit Left (Index E) [Z N]
+	ROL e => { 
+		0x2B
+ 	} 
+	; Rotate One Bit Left (Index D) [Z N]
+	ROL d => { 
+		0x2C
+ 	} 
 	; Rotate One Bit Left (page) [Z N]
 	ROL {value: u16} => { 
 		assert(value >= 0)
@@ -160,6 +226,14 @@
 	; Rotate One Bit Right (accumulator) [Z N]
 	ROR a => { 
 		0x6A
+ 	} 
+	; Rotate One Bit Right (Index E) [Z N]
+	ROR e => { 
+		0x6B
+ 	} 
+	; Rotate One Bit Right (Index D) [Z N]
+	ROR d => { 
+		0x6C
  	} 
 	; Rotate One Bit Right (page) [Z N]
 	ROR {value: u16} => { 
@@ -173,11 +247,47 @@
 		assert(value <= 0xff)
 		0xC9 @ value
  	} 
+	; Compare Memory with Accumulator (page) [Z C]
+	CMP {value: u16} => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x5C @ value
+ 	} 
 	; Compare Memory and Index X (immediate) [Z C]
 	CPX {value: u8} => { 
 		assert(value >= 0)
 		assert(value <= 0xff)
 		0xE0 @ value
+ 	} 
+	; Compare Index Y and Index X (Index Y) [Z C]
+	CPX y => { 
+		0xE1
+ 	} 
+	; Compare Index E and Index X (Index E) [Z C]
+	CPX e => { 
+		0xE2
+ 	} 
+	; Compare Index E and Index X (Index D) [Z C]
+	CPX d => { 
+		0xEB
+ 	} 
+	; Compare Memory and Index Y (immediate) [Z C]
+	CPY {value: u8} => { 
+		assert(value >= 0)
+		assert(value <= 0xff)
+		0xE3 @ value
+ 	} 
+	; Compare Memory with Index E (immediate) [Z C]
+	CPE {value: u8} => { 
+		assert(value >= 0)
+		assert(value <= 0xff)
+		0xE4 @ value
+ 	} 
+	; Compare Memory with Index D (immediate) [Z C]
+	CPD {value: u8} => { 
+		assert(value >= 0)
+		assert(value <= 0xff)
+		0xE5 @ value
  	} 
 	; Jump to New Location (page) 
 	JMP {value: u16} => { 

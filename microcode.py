@@ -87,8 +87,8 @@ CC_LACC    = ['rL0']
 CC_LX      = ['rL1']
 CC_LY      = ['rL1', 'rL0']
 #CC_avail  = ['rL2']
-CC_LED     = ['rL2', 'rL0']
-CC_LEE     = ['rL2', 'rL1']
+CC_LD      = ['rL2', 'rL0']
+CC_LE      = ['rL2', 'rL1']
 CC_LOUT    = ['rL2', 'rL1', 'rL0']
 
 CC_LTMP    = ['tmpS0', 'tmpS1']
@@ -261,6 +261,33 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },
 
+    "LDYi": {   "c": 0xA0,  
+                "d": "Load Index Y with Memory (immediate)", 
+                "f": ['Z'],
+                "v": "u8",
+                "m": [  
+                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LY + CC_ALU_DETECT_ZERO, 
+                        ['CPC']  
+                    ] },   
+
+    "LDDi": {   "c": 0xA5,  
+                "d": "Load Index D with Memory (immediate)", 
+                "f": ['Z'],
+                "v": "u8",
+                "m": [  
+                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LD + CC_ALU_DETECT_ZERO, 
+                        ['CPC']  
+                    ] },   
+
+    "LDEi": {   "c": 0xA6,  
+                "d": "Load Index E with Memory (immediate)", 
+                "f": ['Z'],
+                "v": "u8",
+                "m": [  
+                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LE + CC_ALU_DETECT_ZERO, 
+                        ['CPC']  
+                    ] },   
+
     "STAp": {   "c": 0x8D,  
                 "d": "Store Accumulator in Memory (page)", 
                 "v": "u16",
@@ -306,13 +333,13 @@ INSTRUCTIONS_SET = {
     "TAO":  {   "c": 0xAB,  
                 "d": "Transfer Accumulator to Output", 
                 "m": [  
-                        CC_LOUT + CC_notEACC  
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LOUT + CC_notEACC  
                     ] },     
 
     "TIA":  {   "c": 0xAC,  
                 "d": "Transfer Interrupt register to Accumulator", 
                 "m": [  
-                        ['EINT-OUT'] + CC_LACC 
+                        ['LZN'] + CC_ALU_DETECT_ZERO + ['EINT-OUT'] + CC_LACC 
                     ] }, 
 
     "TAI":  {   "c": 0xAE,  
@@ -324,14 +351,50 @@ INSTRUCTIONS_SET = {
     "TXA":  {   "c": 0x8A,  
                 "d": "Transfer Index X to Accumulator", 
                 "m": [  
-                        CC_LACC + CC_notEX 
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LACC + CC_notEX 
                     ] },     
 
     "TAX":  {   "c": 0xAA,  
                 "d": "Transfer Accumulator to Index X", 
                 "m": [  
-                        CC_LX + CC_notEACC 
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LX + CC_notEACC 
+                    ] },   
+
+    "TYA":  {   "c": 0xBA,  
+                "d": "Transfer Index Y to Accumulator", 
+                "m": [  
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LACC + CC_notEY  
+                    ] },  
+
+    "TAY":  {   "c": 0xBB,  
+                "d": "Transfer Accumulator to Index Y", 
+                "m": [  
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LY + CC_notEACC  
+                    ] },  
+
+    "TYE":  {   "c": 0x8B,  
+                "d": "Transfer Index Y to Index E", 
+                "m": [  
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LE + CC_notEY 
                     ] },                                     
+
+    "TEY":  {   "c": 0x8C,  
+                "d": "Transfer Index E to Index Y", 
+                "m": [  
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LY + CC_notEE 
+                    ] },   
+
+    "TXD":  {   "c": 0x9B,  
+                "d": "Transfer Index X to Index D", 
+                "m": [  
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LD + CC_notEX 
+                    ] },                                     
+
+    "TDX":  {   "c": 0x9C,  
+                "d": "Transfer Index D to Index X", 
+                "m": [  
+                        ['LZN'] + CC_ALU_DETECT_ZERO + CC_LX + CC_notED 
+                    ] },   
 
     "ADCi": {   "c": 0x69,  
                 "d": "Add Memory to Accumulator with Carry (immediate)",   
@@ -364,6 +427,20 @@ INSTRUCTIONS_SET = {
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
+    "ADCdr": {  "c": 0x6F,  
+                "d": "Add Index D to Accumulator with Carry (Index D)",   
+                "f": ['Z', 'C'],
+                "op": "d",
+                "m": [  
+                        ['LRALU-IN'] + CC_CHKC + CC_notED,
+                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ], 
+                "true": [
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
+                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
+                    ] },  
+
     "SBCi": {   "c": 0xE9,  
                 "d": "Subtract Memory from Accumulator with Borrow (immediate)",   
                 "f": ['Z', 'C'],
@@ -395,6 +472,19 @@ INSTRUCTIONS_SET = {
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
+    "SBXer": {  "c": 0xEF,  
+                "d": "Subtract Index E from Index X with Borrow (Index X)",   
+                "f": ['Z', 'C'],
+                "op": "e",
+                "m": [  
+                        ['LRALU-IN'] + CC_notEX + CC_CHKC, 
+                        ['ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO  
+                    ], 
+                "true": [
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO  
+                    ] },    
 
     "INCp": {   "c": 0xEE,  
                 "d": "Increment Memory by One (page)",  
@@ -414,7 +504,15 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEX, 
                         ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
-                    ] },                     
+                    ] },     
+
+    "INY": {   "c": 0xC8,  
+                "d": "Increment Index Y by One",  
+                "f": ['Z'],  
+                "m": [  
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notEY, 
+                        ['ERALU-OUT', 'LZN'] + CC_LY + CC_ALU_DETECT_ZERO 
+                    ] },                    
 
     "DECp": {   "c": 0xCE,  
                 "d": "Decrement Memory by One (page)",  
@@ -434,6 +532,14 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEX, 
                         ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
+                    ] },   
+
+    "DEY": {   "c": 0xCB,  
+                "d": "Decrement Index Y by One",  
+                "f": ['Z'],  
+                "m": [  
+                        ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEY, 
+                        ['ERALU-OUT', 'LZN'] + CC_LY + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "EORi": {   "c": 0x49,  
@@ -463,8 +569,25 @@ INSTRUCTIONS_SET = {
                 "m": [  
                         CC_LTMP + CC_notEACC, 
                         ['tmpS1', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO 
-                        
                     ] },  
+
+    "ROLer": { "c": 0x2B,  #carry is NOT set with removed bit value (!= 6502)
+                "d": "Rotate One Bit Left (Index E)",
+                "op": "e",  
+                "f": ['Z', 'N'], 
+                "m": [  
+                        CC_LTMP + CC_notEE, 
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO 
+                    ] }, 
+
+    "ROLdr": { "c": 0x2C,  #carry is NOT set with removed bit value (!= 6502)
+                "d": "Rotate One Bit Left (Index D)",
+                "op": "d",  
+                "f": ['Z', 'N'], 
+                "m": [  
+                        CC_LTMP + CC_notED, 
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO 
+                    ] }, 
 
     "ROLp": {   "c": 0x26,  #carry is NOT set with removed bit value (!= 6502)
                 "d": "Rotate One Bit Left (page)", 
@@ -488,6 +611,23 @@ INSTRUCTIONS_SET = {
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
      
+    "RORer": { "c": 0x6B,  #carry is NOT set with removed bit value (!= 6502)
+                "d": "Rotate One Bit Right (Index E)",
+                "op": "e",  
+                "f": ['Z', 'N'], 
+                "m": [  
+                        CC_LTMP + CC_notEE, 
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO 
+                    ] }, 
+
+    "RORdr": { "c": 0x6C,  #carry is NOT set with removed bit value (!= 6502)
+                "d": "Rotate One Bit Right (Index D)",
+                "op": "d",  
+                "f": ['Z', 'N'], 
+                "m": [  
+                        CC_LTMP + CC_notED, 
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO 
+                    ] }, 
 
     "RORp": {   "c": 0x66, #carry is NOT set with removed bit value (!= 6502) 
                 "d": "Rotate One Bit Right (page)", 
@@ -510,6 +650,18 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEACC,
                     ] },      
 
+    "CMPp": {   "c": 0x5C,  
+                "d": "Compare Memory with Accumulator (page)", 
+                "f": ['Z', 'C'],
+                "v": "u16",
+                "m": [  
+                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
+                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEACC,
+                    ] },   
+
     "CPXi": {   "c": 0xE0,  
                 "d": "Compare Memory and Index X (immediate)", 
                 "f": ['Z', 'C'],
@@ -518,6 +670,60 @@ INSTRUCTIONS_SET = {
                         ['ERAM', 'LRALU-IN', 'EPCADDR'], 
                         ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
                     ] },      
+
+    "CPXyr": {  "c": 0xE1,  
+                "d": "Compare Index Y and Index X (Index Y)", 
+                "f": ['Z', 'C'],
+                "op": "y",
+                "m": [  
+                        ['LRALU-IN'] + CC_notEY, 
+                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
+                    ] },   
+
+    "CPXer": {  "c": 0xE2,  
+                "d": "Compare Index E and Index X (Index E)", 
+                "f": ['Z', 'C'],
+                "op": "e",
+                "m": [  
+                        ['LRALU-IN'] + CC_notEE, 
+                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
+                    ] },   
+
+    "CPXdr": {  "c": 0xEB,  
+                "d": "Compare Index E and Index X (Index D)", 
+                "f": ['Z', 'C'],
+                "op": "d",
+                "m": [  
+                        ['LRALU-IN'] + CC_notED, 
+                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
+                    ] },   
+
+    "CPYi": {   "c": 0xE3,  
+                "d": "Compare Memory and Index Y (immediate)", 
+                "f": ['Z', 'C'],
+                "v": "u8",
+                "m": [  
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEY,
+                    ] },      
+
+    "CPEi": {   "c": 0xE4,  
+                "d": "Compare Memory with Index E (immediate)", 
+                "f": ['Z', 'C'],
+                "v": "u8",
+                "m": [  
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEE,
+                    ] },   
+
+    "CPDi": {   "c": 0xE5,  
+                "d": "Compare Memory with Index D (immediate)", 
+                "f": ['Z', 'C'],
+                "v": "u8",
+                "m": [  
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notED,
+                    ] },   
 
     "JMPp": {   "c": 0x4C,  
                 "d": "Jump to New Location (page)", 

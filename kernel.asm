@@ -20,11 +20,13 @@
 
 #include "ruledef.asm"
 #include "tests.asm"
+#include "math.asm"
 
 #const keyInterruptCounter = 0x8F8E
 #const timerInterruptCounter = 0x8F8F
 
 #addr 0x0000
+
 boot:
     sei             ; disable int
     lda 0x00
@@ -33,16 +35,13 @@ boot:
     lda 0x0C        ; enable key + timer only
     tai
     cli             ; enable int
-    jsr tests
-loop:
-    lda keyInterruptCounter
-    tao
-    jmp loop
+    jsr MICROCODE_test
+    jsr MATH_test
 
 main:
     lda keyInterruptCounter
     tao
-    hlt
+    jmp main
 
 ;
 ; default interrupt handler routine
