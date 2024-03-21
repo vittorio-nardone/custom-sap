@@ -532,6 +532,15 @@ MICROCODE_test:
     cpx D
     bne .fail
 
+.test31:                 ; Test #31: RND generator
+    ldo 0x31
+    lda 0x6012           ; Seed
+    lda 0x6012
+.test31_loop:
+    lda 0x6010
+    cmp 0x2a             ; try until test value is generated
+    bne .test31_loop
+
 .test99:                 ; Test #99: Test Stack (> 256 values)
     ldo 0x99
     lda 0x07

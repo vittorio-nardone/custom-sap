@@ -611,7 +611,7 @@ INSTRUCTIONS_SET = {
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
      
-    "RORer": { "c": 0x6B,  #carry is NOT set with removed bit value (!= 6502)
+    "RORer": {  "c": 0x6B,  #carry is NOT set with removed bit value (!= 6502)
                 "d": "Rotate One Bit Right (Index E)",
                 "op": "e",  
                 "f": ['Z', 'N'], 
@@ -620,7 +620,7 @@ INSTRUCTIONS_SET = {
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO 
                     ] }, 
 
-    "RORdr": { "c": 0x6C,  #carry is NOT set with removed bit value (!= 6502)
+    "RORdr": {  "c": 0x6C,  #carry is NOT set with removed bit value (!= 6502)
                 "d": "Rotate One Bit Right (Index D)",
                 "op": "d",  
                 "f": ['Z', 'N'], 

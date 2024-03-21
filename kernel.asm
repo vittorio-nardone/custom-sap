@@ -4,7 +4,11 @@
 ; 0x0000-0x5FFF (24k) - ROM
 ;       0x00FF-(?)  - reserved for interrupt routine
 ; 0x6000-0x67FF (2K) - device I/O
-;       0x600? - keyboard (8 locations, in) 
+;       0x600? - keyboard (8 locations, lda) 
+;       0x601? - xorshift random generator (lda)
+;           0x6010 - low random byte
+;           0x6011 - high random byte
+;           0x6012 - random init (call N times for seeding)
 ; 0x6800-0x7FFF (6K) - 6k for video 
 ; 0x8000-0xFFFF (32k) - RAM
 ;       0xF000-0xFFFF (4k) - reserved for stack
@@ -26,7 +30,6 @@
 #const timerInterruptCounter = 0x8F8F
 
 #addr 0x0000
-
 boot:
     sei             ; disable int
     lda 0x00
