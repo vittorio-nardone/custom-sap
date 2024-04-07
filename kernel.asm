@@ -30,6 +30,25 @@
 #const timerInterruptCounter = 0x8F8F
 
 #addr 0x0000
+; CLK Speed test
+;     sei
+; .start:    
+;     scs
+;     ldx 0x00
+;     ldy 0x01
+; .loop:
+;     inx
+;     txa
+;     tao
+;     cpx 0x10
+;     bne .loop
+;     dey
+;     cpy 0x00
+;     bne .start
+;     scf
+;     ldx 0x00
+;     jmp .loop
+
 boot:
     sei             ; disable int
     lda 0x00

@@ -80,13 +80,13 @@ CC_notEY   = ['rE1', 'rE0']
 CC_notETMP = ['rE2']
 CC_notED   = ['rE2', 'rE0']
 CC_notEE   = ['rE2', 'rE1']
-#CC_avail  = ['rE2', 'rE1', 'rE0]
+CC_notLOWSPEED = ['rE2', 'rE1', 'rE0']
 
 # Load (C) MUX
 CC_LACC    = ['rL0']
 CC_LX      = ['rL1']
 CC_LY      = ['rL1', 'rL0']
-#CC_avail  = ['rL2']
+CC_HIGHSPEED  = ['rL2']
 CC_LD      = ['rL2', 'rL0']
 CC_LE      = ['rL2', 'rL1']
 CC_LOUT    = ['rL2', 'rL1', 'rL0']
@@ -152,6 +152,14 @@ INSTRUCTIONS_SET = {
     "HLT": {    "c": 0xFF,  
                 "d": "Freeze CPU",     
                 "m": [ ['notHLT'] ] },
+
+    "SCS": {    "c": 0x01,  
+                "d": "Set CPU speed to SLOW",     
+                "m": [ CC_notLOWSPEED ] },
+
+    "SCF": {    "c": 0x02,  
+                "d": "Set CPU speed to FAST",     
+                "m": [ CC_HIGHSPEED ] },
 
     "LDAi": {   "c": 0xA9,  
                 "d": "Load Accumulator with Memory (immediate)", 

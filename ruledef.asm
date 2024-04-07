@@ -5,6 +5,14 @@
 	HLT => { 
 		0xFF
  	} 
+	; Set CPU speed to SLOW 
+	SCS => { 
+		0x01
+ 	} 
+	; Set CPU speed to FAST 
+	SCF => { 
+		0x02
+ 	} 
 	; Load Accumulator with Memory (immediate) [Z]
 	LDA {value: u8} => { 
 		assert(value >= 0)
