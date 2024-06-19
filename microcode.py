@@ -504,8 +504,7 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID'], 
-                        ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'],
-                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LZN']  + CC_ALU_DETECT_ZERO  
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
                     ] },     
 
     "INX": {   "c": 0xE8,  
@@ -738,7 +737,6 @@ INSTRUCTIONS_SET = {
     "JMPp": {   "c": 0x4C,  
                 "d": "Jump to New Location (zero page)", 
                 "v": "u16",
-                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP,
                         ['CPC'], 
