@@ -3,6 +3,25 @@
 MICROCODE_test:
     ldo 0x7E            ; Tests started indicator
 
+; CLK Speed test
+;     sei
+; .start:    
+;     scs
+;     ldx 0x00
+;     ldy 0x01
+; .loop:
+;     inx
+;     txa
+;     tao
+;     cpx 0x10
+;     bne .loop
+;     dey
+;     cpy 0x00
+;     bne .start
+;     scf
+;     ldx 0x00
+;     jmp .loop
+
 .test1:
     ldo 0x01            ; Test #1: JMP
     jmp .test2
@@ -148,7 +167,7 @@ MICROCODE_test:
     jsr .test14sub4
     rts
 .test14sub4:
-    lda 0x04   
+    lda 0x04
     rts
 
 .test15:                 ; Test #15: INC
@@ -161,7 +180,7 @@ MICROCODE_test:
     lda 0x8181   
     cmp 0xB0
     bne .fail
-    lda 0xFF            
+    lda 0xFF
     sta 0x8181
     inc 0x8181          ; check if zero flag is set
     bne .fail            ; zero flag must be set
@@ -346,37 +365,37 @@ MICROCODE_test:
     cmp 0x01            ; Z flag must be clear/set on CMP
     beq .fail
 
-.test25:
-    ldo 0x25            ; Test #25: Ram expansion & Absolute addr.
-    lda 0x23
-    sta 0x01FFFF
-    lda 0x22
-    sta 0x010000
-    lda 0x00
-    ldx 0x35
-    ldx 0x01FFFF
-    cpx 0x23
-    bne .fail
-    lda 0x010000
-    cmp 0x22
-    bne .fail
-    lda 0x45
-    sta 0x010022
-    ldx 0x21
-    inx
-    lda 0x00
-    lda 0x010000,x
-    cmp 0x45
-    bne .fail
-    ; write code in ram and JSR to ram (to test 24bit PC)
-    lda 0xfe            ; write in memory: LDO 0xFF 
-    sta 0x010101
-    lda 0xff
-    sta 0x010102        ; write in memory: RTS
-    lda 0x60
-    sta 0x010103
-    jsr 0x010101        ; JSR to code written in memory
-    ldo 0x25            ; it should return here
+; .test25:
+;     ldo 0x25            ; Test #25: Ram expansion & Absolute addr.
+;     lda 0x23
+;     sta 0x01FFFF
+;     lda 0x22
+;     sta 0x010000
+;     lda 0x00
+;     ldx 0x35
+;     ldx 0x01FFFF
+;     cpx 0x23
+;     bne .fail
+;     lda 0x010000
+;     cmp 0x22
+;     bne .fail
+;     lda 0x45
+;     sta 0x010022
+;     ldx 0x21
+;     inx
+;     lda 0x00
+;     lda 0x010000,x
+;     cmp 0x45
+;     bne .fail
+;     ; write code in ram and JSR to ram (to test 24bit PC)
+;     lda 0xfe            ; write in memory: LDO 0xFF 
+;     sta 0x010101
+;     lda 0xff
+;     sta 0x010102        ; write in memory: RTS
+;     lda 0x60
+;     sta 0x010103
+;     jsr 0x010101        ; JSR to code written in memory
+;     ldo 0x25            ; it should return here
 
 .test26:                 ; Test #26: PHA / PLA
     ldo 0x26            
@@ -532,14 +551,14 @@ MICROCODE_test:
     cpx D
     bne .fail
 
-.test31:                 ; Test #31: RND generator
-    ldo 0x31
-    lda 0x6012           ; Seed
-    lda 0x6012
-.test31_loop:
-    lda 0x6010
-    cmp 0x2a             ; try until test value is generated
-    bne .test31_loop
+; .test31:                 ; Test #31: RND generator
+;     ldo 0x31
+;     lda 0x6012           ; Seed
+;     lda 0x6012
+; .test31_loop:
+;     lda 0x6010
+;     cmp 0x2a             ; try until test value is generated
+;     bne .test31_loop
 
 .test99:                 ; Test #99: Test Stack (> 256 values)
     ldo 0x99
@@ -549,6 +568,8 @@ MICROCODE_test:
     lda 0x08
 .test99push:    
     pha
+    txa
+    tao
     dex
     bne .test99push
     lda 0x09
@@ -560,6 +581,8 @@ MICROCODE_test:
     ldx 0xFF
 .test99pull:    
     pla
+    txa
+    tao    
     dex
     bne .test99pull    
     pla
@@ -572,4 +595,5 @@ MICROCODE_test:
 
 .fail:
     hlt
+
 

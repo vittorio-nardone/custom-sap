@@ -30,46 +30,43 @@
 #const timerInterruptCounter = 0x8F8F
 
 #addr 0x0000
-; CLK Speed test
-;     sei
-; .start:    
-;     scs
-;     ldx 0x00
-;     ldy 0x01
-; .loop:
-;     inx
-;     txa
-;     tao
-;     cpx 0x10
-;     bne .loop
-;     dey
-;     cpy 0x00
-;     bne .start
-;     scf
-;     ldx 0x00
-;     jmp .loop
-
 boot:
+    scf
     sei             ; disable int
     lda 0x00
     sta keyInterruptCounter
     sta timerInterruptCounter
-    lda 0x0C        ; enable key + timer only
+    lda 0x04        ; enable key + timer only
     tai
     cli             ; enable int
     jsr MICROCODE_test
     jsr MATH_test
 
 main:
-    lda keyInterruptCounter
-    tao
+    ;ldo timerInterruptCounter
+    lda 0x9000
     jmp main
 
 ;
 ; default interrupt handler routine
 ;
-#addr 0x00FF    
+#addr 0x00FF  
 interrupt:
+    sta 0x9000 ; accumulator
+    pla
+    sta 0x9001 ; page
+    pla
+    sta 0x9002 ; h
+    pla
+    tao        ; show l
+
+    pha        ; l
+    lda 0x9002 
+    pha        ; h
+    lda 0x9001 
+    pha        ; page
+    lda 0x9000 ; acc
+
     pha
 interrupt_keyboard_check:
     tia

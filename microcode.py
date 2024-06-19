@@ -21,7 +21,7 @@ CONTROL_BITS = {
     "EMAR":         { "eeprom": 0, "bit": 5, "lowActive": False },
     "WRAM":         { "eeprom": 0, "bit": 6, "lowActive": False },
     "ERAM":         { "eeprom": 0, "bit": 7, "lowActive": False },
-    ## EEPROM #2 - Alu/Flags board
+    ## EEPROM #2 - Alu board
     "LRALU-IN":     { "eeprom": 1, "bit": 0, "lowActive": False },
     "LRALU-OUT":    { "eeprom": 1, "bit": 1, "lowActive": False },
     "ALUS0":        { "eeprom": 1, "bit": 2, "lowActive": False },
@@ -171,7 +171,7 @@ INSTRUCTIONS_SET = {
                     ] },
 
     "LDAp": {   "c": 0xAD,  
-                "d": "Load Accumulator with Memory (page)", 
+                "d": "Load Accumulator with Memory (zero page)", 
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
@@ -246,7 +246,7 @@ INSTRUCTIONS_SET = {
                     ] },               
 
     "LDXp": {   "c": 0xA3,  
-                "d": "Load Index X with Memory (page)", 
+                "d": "Load Index X with Memory (zero page)", 
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
@@ -297,7 +297,7 @@ INSTRUCTIONS_SET = {
                     ] },   
 
     "STAp": {   "c": 0x8D,  
-                "d": "Store Accumulator in Memory (page)", 
+                "d": "Store Accumulator in Memory (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'LMARH', 'EPCADDR'], 
@@ -368,6 +368,7 @@ INSTRUCTIONS_SET = {
                         ['LZN'] + CC_ALU_DETECT_ZERO + CC_LX + CC_notEACC 
                     ] },   
 
+
     "TYA":  {   "c": 0xBA,  
                 "d": "Transfer Index Y to Accumulator", 
                 "m": [  
@@ -419,7 +420,7 @@ INSTRUCTIONS_SET = {
                     ] },     
 
     "ADCp": {   "c": 0x6D,  
-                "d": "Add Memory to Accumulator with Carry (page)",   
+                "d": "Add Memory to Accumulator with Carry (zero page)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
@@ -464,7 +465,7 @@ INSTRUCTIONS_SET = {
                     ] },     
 
     "SBCp": {   "c": 0xED,  
-                "d": "Subtract Memory from Accumulator with Borrow (page)",  
+                "d": "Subtract Memory from Accumulator with Borrow (zero page)",  
                 "f": ['Z', 'C'], 
                 "v": "u16",
                 "m": [  
@@ -495,7 +496,7 @@ INSTRUCTIONS_SET = {
                     ] },    
 
     "INCp": {   "c": 0xEE,  
-                "d": "Increment Memory by One (page)",  
+                "d": "Increment Memory by One (zero page)",  
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [  
@@ -503,7 +504,8 @@ INSTRUCTIONS_SET = {
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID'], 
-                        ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LZN']  + CC_ALU_DETECT_ZERO  
                     ] },     
 
     "INX": {   "c": 0xE8,  
@@ -523,7 +525,7 @@ INSTRUCTIONS_SET = {
                     ] },                    
 
     "DECp": {   "c": 0xCE,  
-                "d": "Decrement Memory by One (page)",  
+                "d": "Decrement Memory by One (zero page)",  
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [  
@@ -598,7 +600,7 @@ INSTRUCTIONS_SET = {
                     ] }, 
 
     "ROLp": {   "c": 0x26,  #carry is NOT set with removed bit value (!= 6502)
-                "d": "Rotate One Bit Left (page)", 
+                "d": "Rotate One Bit Left (zero page)", 
                 "f": ['Z', 'N'], 
                 "v": "u16",
                 "m": [  
@@ -638,7 +640,7 @@ INSTRUCTIONS_SET = {
                     ] }, 
 
     "RORp": {   "c": 0x66, #carry is NOT set with removed bit value (!= 6502) 
-                "d": "Rotate One Bit Right (page)", 
+                "d": "Rotate One Bit Right (zero page)", 
                 "f": ['Z', 'N'], 
                 "v": "u16",
                 "m": [  
@@ -659,7 +661,7 @@ INSTRUCTIONS_SET = {
                     ] },      
 
     "CMPp": {   "c": 0x5C,  
-                "d": "Compare Memory with Accumulator (page)", 
+                "d": "Compare Memory with Accumulator (zero page)", 
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
@@ -734,7 +736,7 @@ INSTRUCTIONS_SET = {
                     ] },   
 
     "JMPp": {   "c": 0x4C,  
-                "d": "Jump to New Location (page)", 
+                "d": "Jump to New Location (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP,
@@ -758,7 +760,7 @@ INSTRUCTIONS_SET = {
                     ] },       
 
     "JSRp": {   "c": 0x20,  
-                "d": "Jump to New Location Saving Return Address (page)", 
+                "d": "Jump to New Location Saving Return Address (zero page)", 
                 "v": "u16",
                 "b": [0x00],
                 "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
@@ -827,7 +829,7 @@ INSTRUCTIONS_SET = {
                     ] },      
 
     "BEQp": {   "c": 0xF0,  
-                "d": "Branch on Result Zero (page)", 
+                "d": "Branch on Result Zero (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
@@ -841,7 +843,7 @@ INSTRUCTIONS_SET = {
                     ] },   
 
     "BNEp": {   "c": 0xD0,  
-                "d": "Branch on Result not Zero (page)", 
+                "d": "Branch on Result not Zero (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
@@ -855,7 +857,7 @@ INSTRUCTIONS_SET = {
                     ] },   
 
     "BCSp": {   "c": 0xB0,  
-                "d": "Branch on Carry Set (page)", 
+                "d": "Branch on Carry Set (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
@@ -869,7 +871,7 @@ INSTRUCTIONS_SET = {
                     ] },    
 
     "BCCp": {   "c": 0x90,  
-                "d": "Branch on Carry Clear (page)", 
+                "d": "Branch on Carry Clear (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
@@ -883,7 +885,7 @@ INSTRUCTIONS_SET = {
                     ] },                                          
 
     "BMI": {   "c": 0x30,  
-                "d": "Branch on Result Minus (page)", 
+                "d": "Branch on Result Minus (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
@@ -897,7 +899,7 @@ INSTRUCTIONS_SET = {
                     ] }, 
 
     "BPLp": {   "c": 0x10,  
-                "d": "Branch on Result Plus (page)", 
+                "d": "Branch on Result Plus (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
@@ -920,7 +922,7 @@ INSTRUCTIONS_SET = {
                     ] },
 
     "LDOp": {   "c": 0xFD,  
-                "d": "Load Output with Memory (page)", 
+                "d": "Load Output with Memory (zero page)", 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'LMARH', 'EPCADDR'], 
@@ -960,9 +962,9 @@ INSTRUCTIONS_SET = {
                         CC_INC_STACK_POINTER, 
                         ['ESP', 'WRAM'] + CC_notEPCPAGE,
                         CC_INC_STACK_POINTER, 
-                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notEACC,
+                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notEACC,   # 0x0000
                         ['ERALU-OUT'] + CC_notLPCHP0,
-                        ['ALUM', 'ALUS2', 'ALUS3', 'LRALU-OUT']  + CC_notEACC,
+                        ['ALUM', 'ALUS2', 'ALUS3', 'LRALU-OUT']  + CC_notEACC,   # 0xFF
                         ['ERALU-OUT', 'notDISI'] + CC_notLPCL
                      ] },    
 
@@ -978,7 +980,7 @@ INSTRUCTIONS_SET = {
                         CC_DEC_STACK_POINTER,
                         ['ESP', 'ERAM'] + CC_notLPCL,
                         CC_DEC_STACK_POINTER,
-                        ['ESP', 'ERAM', 'LC', 'LZN', 'notENAI'] + CC_EFRIN,  
+                        ['ESP', 'ERAM', 'LC', 'LZN', 'notENAI'] + CC_EFRIN  
                     ] },           
 
     "SEI":  {   "c": 0x78,  

@@ -19,7 +19,7 @@
 		assert(value <= 0xff)
 		0xA9 @ value
  	} 
-	; Load Accumulator with Memory (page) [Z]
+	; Load Accumulator with Memory (zero page) [Z]
 	LDA {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -49,7 +49,7 @@
 		assert(value <= 0xff)
 		0xA2 @ value
  	} 
-	; Load Index X with Memory (page) [Z]
+	; Load Index X with Memory (zero page) [Z]
 	LDX {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -79,7 +79,7 @@
 		assert(value <= 0xff)
 		0xA6 @ value
  	} 
-	; Store Accumulator in Memory (page) 
+	; Store Accumulator in Memory (zero page) 
 	STA {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -147,7 +147,7 @@
 		assert(value <= 0xff)
 		0x69 @ value
  	} 
-	; Add Memory to Accumulator with Carry (page) [Z C]
+	; Add Memory to Accumulator with Carry (zero page) [Z C]
 	ADC {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -163,7 +163,7 @@
 		assert(value <= 0xff)
 		0xE9 @ value
  	} 
-	; Subtract Memory from Accumulator with Borrow (page) [Z C]
+	; Subtract Memory from Accumulator with Borrow (zero page) [Z C]
 	SBC {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -173,7 +173,7 @@
 	SBX e => { 
 		0xEF
  	} 
-	; Increment Memory by One (page) [Z]
+	; Increment Memory by One (zero page) [Z]
 	INC {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -187,7 +187,7 @@
 	INY => { 
 		0xC8
  	} 
-	; Decrement Memory by One (page) [Z]
+	; Decrement Memory by One (zero page) [Z]
 	DEC {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -225,7 +225,7 @@
 	ROL d => { 
 		0x2C
  	} 
-	; Rotate One Bit Left (page) [Z N]
+	; Rotate One Bit Left (zero page) [Z N]
 	ROL {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -243,7 +243,7 @@
 	ROR d => { 
 		0x6C
  	} 
-	; Rotate One Bit Right (page) [Z N]
+	; Rotate One Bit Right (zero page) [Z N]
 	ROR {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -255,7 +255,7 @@
 		assert(value <= 0xff)
 		0xC9 @ value
  	} 
-	; Compare Memory with Accumulator (page) [Z C]
+	; Compare Memory with Accumulator (zero page) [Z C]
 	CMP {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -297,7 +297,7 @@
 		assert(value <= 0xff)
 		0xE5 @ value
  	} 
-	; Jump to New Location (page) 
+	; Jump to New Location (zero page) 
 	JMP {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -309,7 +309,7 @@
 		assert(value <= 0xffffff)
 		0x4D @ value
  	} 
-	; Jump to New Location Saving Return Address (page) 
+	; Jump to New Location Saving Return Address (zero page) 
 	JSR {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -333,37 +333,37 @@
 	PLA => { 
 		0x68
  	} 
-	; Branch on Result Zero (page) 
+	; Branch on Result Zero (zero page) 
 	BEQ {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0xF0 @ value
  	} 
-	; Branch on Result not Zero (page) 
+	; Branch on Result not Zero (zero page) 
 	BNE {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0xD0 @ value
  	} 
-	; Branch on Carry Set (page) 
+	; Branch on Carry Set (zero page) 
 	BCS {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0xB0 @ value
  	} 
-	; Branch on Carry Clear (page) 
+	; Branch on Carry Clear (zero page) 
 	BCC {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x90 @ value
  	} 
-	; Branch on Result Minus (page) 
+	; Branch on Result Minus (zero page) 
 	BMI {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x30 @ value
  	} 
-	; Branch on Result Plus (page) 
+	; Branch on Result Plus (zero page) 
 	BPL {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -375,7 +375,7 @@
 		assert(value <= 0xff)
 		0xFE @ value
  	} 
-	; Load Output with Memory (page) 
+	; Load Output with Memory (zero page) 
 	LDO {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
