@@ -738,6 +738,7 @@ INSTRUCTIONS_SET = {
     "JMPp": {   "c": 0x4C,  
                 "d": "Jump to New Location (zero page)", 
                 "v": "u16",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP,
                         ['CPC'], 
