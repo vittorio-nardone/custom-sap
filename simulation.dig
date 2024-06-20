@@ -6722,6 +6722,16 @@ If STA, ignored</string>
       </elementAttributes>
       <pos x="11200" y="7520"/>
     </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>CLK PC</string>
+        </entry>
+      </elementAttributes>
+      <pos x="10780" y="8300"/>
+    </visualElement>
   </visualElements>
   <wires>
     <wire>
@@ -8227,6 +8237,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="4100" y="8300"/>
       <p2 x="4120" y="8300"/>
+    </wire>
+    <wire>
+      <p1 x="10760" y="8300"/>
+      <p2 x="10780" y="8300"/>
     </wire>
     <wire>
       <p1 x="9080" y="13420"/>
@@ -18021,10 +18035,6 @@ If STA, ignored</string>
       <p2 x="4020" y="9040"/>
     </wire>
     <wire>
-      <p1 x="9680" y="9040"/>
-      <p2 x="10280" y="9040"/>
-    </wire>
-    <wire>
       <p1 x="6040" y="13140"/>
       <p2 x="6060" y="13140"/>
     </wire>
@@ -19371,6 +19381,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="12100" y="9140"/>
       <p2 x="12360" y="9140"/>
+    </wire>
+    <wire>
+      <p1 x="7480" y="9140"/>
+      <p2 x="10280" y="9140"/>
     </wire>
     <wire>
       <p1 x="4340" y="13240"/>
@@ -20762,10 +20776,10 @@ If STA, ignored</string>
     </wire>
     <wire>
       <p1 x="10280" y="8400"/>
-      <p2 x="10280" y="9040"/>
+      <p2 x="10280" y="9140"/>
     </wire>
     <wire>
-      <p1 x="10280" y="9040"/>
+      <p1 x="10280" y="9140"/>
       <p2 x="10280" y="9480"/>
     </wire>
     <wire>
@@ -24134,6 +24148,10 @@ If STA, ignored</string>
     </wire>
     <wire>
       <p1 x="7480" y="6000"/>
+      <p2 x="7480" y="9140"/>
+    </wire>
+    <wire>
+      <p1 x="7480" y="9140"/>
       <p2 x="7480" y="14120"/>
     </wire>
     <wire>
@@ -27337,8 +27355,8 @@ If STA, ignored</string>
       <p2 x="10760" y="5900"/>
     </wire>
     <wire>
-      <p1 x="10760" y="8400"/>
-      <p2 x="10760" y="8940"/>
+      <p1 x="10760" y="8300"/>
+      <p2 x="10760" y="8400"/>
     </wire>
     <wire>
       <p1 x="10760" y="9480"/>
@@ -27347,6 +27365,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="10760" y="10520"/>
       <p2 x="10760" y="11060"/>
+    </wire>
+    <wire>
+      <p1 x="10760" y="8400"/>
+      <p2 x="10760" y="8940"/>
     </wire>
     <wire>
       <p1 x="10760" y="10020"/>

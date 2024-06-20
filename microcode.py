@@ -739,9 +739,11 @@ INSTRUCTIONS_SET = {
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
-                        CC_notETMP + CC_notLPCHP0
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                         CC_notETMP + CC_notLPCL, 
+                         ['ESP', 'ERAM'] + CC_notLPCHP0 
                     ] },     
 
     "JMPa": {   "c": 0x4D,  

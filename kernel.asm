@@ -42,9 +42,16 @@ boot:
     jsr MICROCODE_test
     jsr MATH_test
 
+    cli
+
 main:
     ;ldo timerInterruptCounter
-    lda 0x9000
+;    cli
+    inx
+    txa
+    lda timerInterruptCounter
+;    sei
+;    tao
     jmp main
 
 ;
@@ -58,8 +65,10 @@ interrupt:
     pla
     sta 0x9002 ; h
     pla
+    cmp 0x1D
+    beq .skip
     tao        ; show l
-
+.skip:
     pha        ; l
     lda 0x9002 
     pha        ; h
