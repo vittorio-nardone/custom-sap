@@ -737,18 +737,18 @@ INSTRUCTIONS_SET = {
     "JMPp": {   "c": 0x4C,  
                 "d": "Jump to New Location (zero page)", 
                 "v": "u16",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP,
-                        ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
-                         CC_notETMP + CC_notLPCL, 
-                         ['ESP', 'ERAM'] + CC_notLPCHP0 
-                    ] },     
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP + CC_notLPCHP0
+                    ] },                  
 
     "JMPa": {   "c": 0x4D,  
                 "d": "Jump to New Location (absolute)", 
                 "v": "u24",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP,
                         ['ESP', 'WRAM'] + CC_notETMP,

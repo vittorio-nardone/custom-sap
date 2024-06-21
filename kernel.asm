@@ -45,15 +45,17 @@ boot:
     cli
 
 main:
-    ;ldo timerInterruptCounter
-;    cli
+    ldo timerInterruptCounter
     inx
-    txa
-    lda timerInterruptCounter
-;    sei
-;    tao
+    inx
+    inx
+    cpx 0x23
+    bpl .test
+    inx
     jmp main
-
+.test:
+    inx
+    jmp main
 ;
 ; default interrupt handler routine
 ;
@@ -65,8 +67,8 @@ interrupt:
     pla
     sta 0x9002 ; h
     pla
-    cmp 0x1D
-    beq .skip
+    ; cmp 0x1D
+    ; beq .skip
     tao        ; show l
 .skip:
     pha        ; l
