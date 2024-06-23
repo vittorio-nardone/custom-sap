@@ -77,7 +77,7 @@ DIVIDE_INT:
 ;
 
 MATH_test:
-    ldo 0xA1                ; Test #A1: Integer division
+    ;ldo 0xA1                ; Test #A1: Integer division
     ldx 0x85
     ldy 0x05
     jsr DIVIDE_INT

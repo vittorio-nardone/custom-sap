@@ -28,6 +28,7 @@
 
 #const keyInterruptCounter = 0x8F8E
 #const timerInterruptCounter = 0x8F8F
+#const int1InterruptCounter = 0x8F8B
 
 #addr 0x0000
 boot:
@@ -36,7 +37,8 @@ boot:
     lda 0x00
     sta keyInterruptCounter
     sta timerInterruptCounter
-    lda 0x04        ; enable key + timer only
+    sta int1InterruptCounter
+    lda 0x01        ; set int mask
     tai
     cli             ; enable int
     jsr MICROCODE_test
@@ -45,40 +47,41 @@ boot:
     cli
 
 main:
-    ldo timerInterruptCounter
-    inx
-    inx
-    inx
-    cpx 0x23
-    bpl .test
-    inx
+    ldo int1InterruptCounter
+
+    ;jsr MICROCODE_test
+    jsr MATH_test
     jmp main
-.test:
-    inx
-    jmp main
+
 ;
 ; default interrupt handler routine
 ;
 #addr 0x00FF  
 interrupt:
-    sta 0x9000 ; accumulator
-    pla
-    sta 0x9001 ; page
-    pla
-    sta 0x9002 ; h
-    pla
-    ; cmp 0x1D
-    ; beq .skip
-    tao        ; show l
-.skip:
-    pha        ; l
-    lda 0x9002 
-    pha        ; h
-    lda 0x9001 
-    pha        ; page
-    lda 0x9000 ; acc
-
+;     sta 0x9000 ; accumulator
+;     pla
+;     sta 0x9001 ; page
+;     pla
+;     sta 0x9002 ; h
+;     pla
+;     ; cmp 0x1D
+;     ; beq .skip
+;     tao        ; show l
+; .skip:
+;     pha        ; l
+;     lda 0x9002 
+;     pha        ; h
+;     lda 0x9001 
+;     pha        ; page
+;     lda 0x9000 ; acc
     pha
+interrupt_1_check:
+    tia
+    and 0x01
+    beq interrupt_return
+    inc int1InterruptCounter
+    jmp interrupt_return 
+
 interrupt_keyboard_check:
     tia
     and 0x08
@@ -91,6 +94,9 @@ interrupt_timer_check:
 interrupt_return:
     pla
     rti             
+
+
+
 
 keyboard_scan:
     txa

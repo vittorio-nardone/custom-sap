@@ -764,7 +764,7 @@ INSTRUCTIONS_SET = {
                 "d": "Jump to New Location Saving Return Address (zero page)", 
                 "v": "u16",
                 "b": [0x00],
-                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ESP', 'WRAM'] + CC_notEPCL,
                         CC_INC_STACK_POINTER,
@@ -781,7 +781,7 @@ INSTRUCTIONS_SET = {
     "JSRa": {   "c": 0x21,  
                 "d": "Jump to New Location Saving Return Address (absolute)", 
                 "v": "u24",
-                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ESP', 'WRAM'] + CC_notEPCL,
                         CC_INC_STACK_POINTER,
@@ -801,7 +801,7 @@ INSTRUCTIONS_SET = {
 
     "RTS":  {   "c": 0x60,  
                 "d": "Return from Subroutine", 
-                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR, CC_PC_INCREMENT ],
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         CC_DEC_STACK_POINTER,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE,
@@ -832,6 +832,7 @@ INSTRUCTIONS_SET = {
     "BEQp": {   "c": 0xF0,  
                 "d": "Branch on Result Zero (zero page)", 
                 "v": "u16",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
@@ -846,6 +847,7 @@ INSTRUCTIONS_SET = {
     "BNEp": {   "c": 0xD0,  
                 "d": "Branch on Result not Zero (zero page)", 
                 "v": "u16",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
@@ -860,6 +862,7 @@ INSTRUCTIONS_SET = {
     "BCSp": {   "c": 0xB0,  
                 "d": "Branch on Carry Set (zero page)", 
                 "v": "u16",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
@@ -874,6 +877,7 @@ INSTRUCTIONS_SET = {
     "BCCp": {   "c": 0x90,  
                 "d": "Branch on Carry Clear (zero page)", 
                 "v": "u16",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
@@ -888,6 +892,7 @@ INSTRUCTIONS_SET = {
     "BMI": {   "c": 0x30,  
                 "d": "Branch on Result Minus (zero page)", 
                 "v": "u16",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
@@ -902,6 +907,7 @@ INSTRUCTIONS_SET = {
     "BPLp": {   "c": 0x10,  
                 "d": "Branch on Result Plus (zero page)", 
                 "v": "u16",
+                "t0": [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], [], CC_PC_INCREMENT ],
                 "m": [  
                         ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
