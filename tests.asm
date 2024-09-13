@@ -560,6 +560,43 @@ MICROCODE_test:
 ;     cmp 0x2a             ; try until test value is generated
 ;     bne .test31_loop
 
+.test32:                ; Test #32: BIT
+    ldo 0x32
+    lda 0x23
+    sta 0x8111
+    lda 0x11
+    bit 0x008111        ; Absolute - 0x23 and 0x11 != 0 
+    beq .fail    
+    bit 0x8111          ; Zero page - 0x23 and 0x11 != 0
+    beq .fail           
+    cmp 0x11            ; Acc is not changed
+    bne .fail
+    lda 0x04
+    bit 0x8111          ; Zero page - 0x23 and 0x04 = 0
+    bne .fail
+    cmp 0x04            ; Acc is not changed
+    bne .fail           
+    bit 0x04            ; Immediate - 0x04 and 0x04 != 0
+    beq .fail
+
+.test33:                ; Test #33: ADD
+    ldo 0x33
+    lda 0x20
+    sta 0x8130          ; 0x20 -> 0x8130 
+    lda 0x04            ; 0x04 -> acc
+    ldx 0x30            ; 0x30 -> x
+    add 0x8100,x        ; 0x04 (acc) + [0x8100 + 0x30 (x)] = 0x04 + [0x8130] = 0x04 + 0x20 = 0x24
+    cmp 0x24
+    bne .fail
+    lda 0x02            ; 0x02 -> acc
+    ldx 0x55            ; 0x55 -> x
+    add 0x80DB,x        ; 0x02 (acc) + [0x80DB + 0x55 (x)] = 0x02 + [0x8130] = 0x02 + 0x20 = 0x22
+    cmp 0x22
+    bne .fail 
+    add 0x0080DB,x      ; 0x22 (acc) + [0x80DB + 0x55 (x)] = 0x22 + [0x8130] = 0x22 + 0x20 = 0x42  (absolute)
+    cmp 0x42
+    bne .fail
+
 .test99:                 ; Test #99: Test Stack (> 256 values)
     ldo 0x99
     lda 0x07

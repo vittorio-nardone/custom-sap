@@ -1599,6 +1599,10 @@ IC inc (CP) is activated by falling CLK</string>
       <elementName>Clock</elementName>
       <elementAttributes>
         <entry>
+          <string>runRealTime</string>
+          <boolean>true</boolean>
+        </entry>
+        <entry>
           <string>rotation</string>
           <rotation rotation="2"/>
         </entry>
@@ -1608,7 +1612,7 @@ IC inc (CP) is activated by falling CLK</string>
         </entry>
         <entry>
           <string>Frequency</string>
-          <int>10</int>
+          <int>60</int>
         </entry>
       </elementAttributes>
       <pos x="10840" y="4580"/>
@@ -23795,10 +23799,6 @@ If STA, ignored</string>
       <p2 x="2340" y="9280"/>
     </wire>
     <wire>
-      <p1 x="7460" y="-900"/>
-      <p2 x="7460" y="-320"/>
-    </wire>
-    <wire>
       <p1 x="7460" y="-320"/>
       <p2 x="7460" y="1600"/>
     </wire>
@@ -24133,10 +24133,6 @@ If STA, ignored</string>
     <wire>
       <p1 x="2360" y="8240"/>
       <p2 x="2360" y="8260"/>
-    </wire>
-    <wire>
-      <p1 x="7480" y="-920"/>
-      <p2 x="7480" y="-280"/>
     </wire>
     <wire>
       <p1 x="7480" y="-280"/>
@@ -24513,10 +24509,6 @@ If STA, ignored</string>
     <wire>
       <p1 x="2380" y="8240"/>
       <p2 x="2380" y="8400"/>
-    </wire>
-    <wire>
-      <p1 x="7500" y="-940"/>
-      <p2 x="7500" y="-200"/>
     </wire>
     <wire>
       <p1 x="7500" y="-200"/>
@@ -25477,10 +25469,6 @@ If STA, ignored</string>
     <wire>
       <p1 x="12680" y="14560"/>
       <p2 x="12680" y="14940"/>
-    </wire>
-    <wire>
-      <p1 x="7560" y="-1040"/>
-      <p2 x="7560" y="0"/>
     </wire>
     <wire>
       <p1 x="7560" y="0"/>
@@ -27691,6 +27679,18 @@ If STA, ignored</string>
       <p2 x="3620" y="3480"/>
     </wire>
     <wire>
+      <p1 x="7720" y="700"/>
+      <p2 x="7720" y="740"/>
+    </wire>
+    <wire>
+      <p1 x="7720" y="1320"/>
+      <p2 x="7720" y="1360"/>
+    </wire>
+    <wire>
+      <p1 x="7720" y="1040"/>
+      <p2 x="7720" y="1080"/>
+    </wire>
+    <wire>
       <p1 x="12840" y="3080"/>
       <p2 x="12840" y="3860"/>
     </wire>
@@ -27705,18 +27705,6 @@ If STA, ignored</string>
     <wire>
       <p1 x="2600" y="7240"/>
       <p2 x="2600" y="7260"/>
-    </wire>
-    <wire>
-      <p1 x="7720" y="700"/>
-      <p2 x="7720" y="740"/>
-    </wire>
-    <wire>
-      <p1 x="7720" y="1320"/>
-      <p2 x="7720" y="1360"/>
-    </wire>
-    <wire>
-      <p1 x="7720" y="1040"/>
-      <p2 x="7720" y="1080"/>
     </wire>
     <wire>
       <p1 x="1580" y="680"/>

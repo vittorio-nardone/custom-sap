@@ -11,7 +11,9 @@
 ;           0x6012 - random init (call N times for seeding)
 ; 0x6800-0x7FFF (6K) - 6k for video 
 ; 0x8000-0xFFFF (32k) - RAM
+;       0x8000-0x8400 (1k) - reserved for kernel operations
 ;       0xF000-0xFFFF (4k) - reserved for stack
+;
 ;
 ; Memory expansion board (64k) - RAM
 ; 0x010000 - 0x01FFFF
@@ -32,56 +34,55 @@
 
 #addr 0x0000
 boot:
+    ldo 0x00
     scf
     sei             ; disable int
     lda 0x00
     sta keyInterruptCounter
     sta timerInterruptCounter
     sta int1InterruptCounter
-    lda 0x01        ; set int mask
+    lda 0x04        ; set int mask
     tai
-    cli             ; enable int
-    jsr MICROCODE_test
+    ; jsr MICROCODE_test
     jsr MATH_test
-
-    cli
 
 main:
-    ldo int1InterruptCounter
+    
+    cli
 
-    ;jsr MICROCODE_test
+.loop:
+    ldo timerInterruptCounter
     jsr MATH_test
-    jmp main
+    jmp .loop
+
+;     ldx 0x00
+;     ldy 0x00
+;     lda 0x00
+
+; loop:
+;     inx
+;     cpx 0xFF
+;     bne loop
+;     jmp loop_2
+
+; #addr 0x1000     
+; loop_2:
+;     ldx 0x00
+;     iny
+;     cpy 0xFF
+;     bne loop
+;     ldy 0x00
+;     clc
+;     adc 0x01
+;     tao
+;     jmp loop
 
 ;
 ; default interrupt handler routine
 ;
 #addr 0x00FF  
 interrupt:
-;     sta 0x9000 ; accumulator
-;     pla
-;     sta 0x9001 ; page
-;     pla
-;     sta 0x9002 ; h
-;     pla
-;     ; cmp 0x1D
-;     ; beq .skip
-;     tao        ; show l
-; .skip:
-;     pha        ; l
-;     lda 0x9002 
-;     pha        ; h
-;     lda 0x9001 
-;     pha        ; page
-;     lda 0x9000 ; acc
     pha
-interrupt_1_check:
-    tia
-    and 0x01
-    beq interrupt_return
-    inc int1InterruptCounter
-    jmp interrupt_return 
-
 interrupt_keyboard_check:
     tia
     and 0x08
@@ -96,14 +97,13 @@ interrupt_return:
     rti             
 
 
-
-
 keyboard_scan:
     txa
     pha
     ldx 0x07
 keyboard_scan_loop:
-    lda 0x6000,x
+    lda 0x6000,x            ; key ROW
+    cmp 0xFF
     bne keyboard_scan_keypressed
     cpx 0x00
     beq interrupt_timer_end
@@ -111,6 +111,7 @@ keyboard_scan_loop:
     jmp keyboard_scan_loop
 keyboard_scan_keypressed:
     inc keyInterruptCounter
+    txa
     tao
 interrupt_timer_end:
     pla
