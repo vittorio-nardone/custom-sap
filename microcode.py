@@ -1244,16 +1244,16 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
                         ['ERALU-OUT', 'LMARH'],
 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
 
@@ -1273,16 +1273,16 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
                         ['ERALU-OUT', 'LMARH'],
 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },      
 
@@ -1300,16 +1300,16 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
                         ['ERALU-OUT', 'LMARH'],
 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
 
@@ -1329,16 +1329,16 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
                         ['ERALU-OUT', 'LMARH'],
 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 

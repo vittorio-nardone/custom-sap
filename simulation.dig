@@ -6736,6 +6736,66 @@ If STA, ignored</string>
       </elementAttributes>
       <pos x="10780" y="8300"/>
     </visualElement>
+    <visualElement>
+      <elementName>7474.dig</elementName>
+      <elementAttributes/>
+      <pos x="7760" y="-1360"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Ground</elementName>
+      <elementAttributes/>
+      <pos x="7720" y="-1020"/>
+    </visualElement>
+    <visualElement>
+      <elementName>VDD</elementName>
+      <elementAttributes/>
+      <pos x="7920" y="-1420"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>TEST Out</string>
+        </entry>
+      </elementAttributes>
+      <pos x="7700" y="-1540"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>TEST CLK2x</string>
+        </entry>
+      </elementAttributes>
+      <pos x="7700" y="-1600"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>TEST CLK</string>
+        </entry>
+      </elementAttributes>
+      <pos x="7700" y="-1680"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Not</elementName>
+      <elementAttributes/>
+      <pos x="7960" y="-860"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>TEST Out2</string>
+        </entry>
+      </elementAttributes>
+      <pos x="8240" y="-1160"/>
+    </visualElement>
   </visualElements>
   <wires>
     <wire>
@@ -7527,6 +7587,10 @@ If STA, ignored</string>
       <p2 x="15960" y="-1080"/>
     </wire>
     <wire>
+      <p1 x="7720" y="-1080"/>
+      <p2 x="7920" y="-1080"/>
+    </wire>
+    <wire>
       <p1 x="10800" y="6200"/>
       <p2 x="11100" y="6200"/>
     </wire>
@@ -8067,6 +8131,10 @@ If STA, ignored</string>
       <p2 x="5060" y="2140"/>
     </wire>
     <wire>
+      <p1 x="7720" y="-1120"/>
+      <p2 x="7760" y="-1120"/>
+    </wire>
+    <wire>
       <p1 x="9160" y="-1120"/>
       <p2 x="16000" y="-1120"/>
     </wire>
@@ -8579,6 +8647,10 @@ If STA, ignored</string>
       <p2 x="16040" y="-1160"/>
     </wire>
     <wire>
+      <p1 x="7880" y="-1160"/>
+      <p2 x="8240" y="-1160"/>
+    </wire>
+    <wire>
       <p1 x="10080" y="6280"/>
       <p2 x="10400" y="6280"/>
     </wire>
@@ -8595,10 +8667,6 @@ If STA, ignored</string>
       <p2 x="1420" y="6280"/>
     </wire>
     <wire>
-      <p1 x="2060" y="6280"/>
-      <p2 x="2280" y="6280"/>
-    </wire>
-    <wire>
       <p1 x="2560" y="6280"/>
       <p2 x="3320" y="6280"/>
     </wire>
@@ -8609,6 +8677,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="1540" y="6280"/>
       <p2 x="1740" y="6280"/>
+    </wire>
+    <wire>
+      <p1 x="2060" y="6280"/>
+      <p2 x="2280" y="6280"/>
     </wire>
     <wire>
       <p1 x="4380" y="1160"/>
@@ -9295,6 +9367,14 @@ If STA, ignored</string>
       <p2 x="16080" y="-1200"/>
     </wire>
     <wire>
+      <p1 x="7540" y="-1200"/>
+      <p2 x="7760" y="-1200"/>
+    </wire>
+    <wire>
+      <p1 x="7880" y="-1200"/>
+      <p2 x="8100" y="-1200"/>
+    </wire>
+    <wire>
       <p1 x="8820" y="1200"/>
       <p2 x="8860" y="1200"/>
     </wire>
@@ -9903,6 +9983,14 @@ If STA, ignored</string>
       <p2 x="8460" y="12500"/>
     </wire>
     <wire>
+      <p1 x="7460" y="-1240"/>
+      <p2 x="7760" y="-1240"/>
+    </wire>
+    <wire>
+      <p1 x="7880" y="-1240"/>
+      <p2 x="8000" y="-1240"/>
+    </wire>
+    <wire>
       <p1 x="8660" y="1240"/>
       <p2 x="8700" y="1240"/>
     </wire>
@@ -10485,6 +10573,14 @@ If STA, ignored</string>
     <wire>
       <p1 x="1100" y="7420"/>
       <p2 x="1340" y="7420"/>
+    </wire>
+    <wire>
+      <p1 x="7380" y="-1280"/>
+      <p2 x="7760" y="-1280"/>
+    </wire>
+    <wire>
+      <p1 x="7880" y="-1280"/>
+      <p2 x="7920" y="-1280"/>
     </wire>
     <wire>
       <p1 x="11220" y="6400"/>
@@ -11115,6 +11211,14 @@ If STA, ignored</string>
       <p2 x="9820" y="12580"/>
     </wire>
     <wire>
+      <p1 x="7720" y="-1320"/>
+      <p2 x="7760" y="-1320"/>
+    </wire>
+    <wire>
+      <p1 x="7880" y="-1320"/>
+      <p2 x="7920" y="-1320"/>
+    </wire>
+    <wire>
       <p1 x="11020" y="6440"/>
       <p2 x="11080" y="6440"/>
     </wire>
@@ -11703,6 +11807,14 @@ If STA, ignored</string>
       <p2 x="12820" y="12620"/>
     </wire>
     <wire>
+      <p1 x="7880" y="-1360"/>
+      <p2 x="7920" y="-1360"/>
+    </wire>
+    <wire>
+      <p1 x="7720" y="-1360"/>
+      <p2 x="7760" y="-1360"/>
+    </wire>
+    <wire>
       <p1 x="10940" y="6480"/>
       <p2 x="11040" y="6480"/>
     </wire>
@@ -12241,6 +12353,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="12500" y="12660"/>
       <p2 x="12820" y="12660"/>
+    </wire>
+    <wire>
+      <p1 x="7720" y="-1400"/>
+      <p2 x="7920" y="-1400"/>
     </wire>
     <wire>
       <p1 x="10860" y="6520"/>
@@ -13975,6 +14091,10 @@ If STA, ignored</string>
       <p2 x="2240" y="2560"/>
     </wire>
     <wire>
+      <p1 x="7540" y="-1540"/>
+      <p2 x="7700" y="-1540"/>
+    </wire>
+    <wire>
       <p1 x="8620" y="1540"/>
       <p2 x="8880" y="1540"/>
     </wire>
@@ -14573,6 +14693,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="12600" y="12860"/>
       <p2 x="12820" y="12860"/>
+    </wire>
+    <wire>
+      <p1 x="7380" y="-1600"/>
+      <p2 x="7700" y="-1600"/>
     </wire>
     <wire>
       <p1 x="880" y="6720"/>
@@ -15417,6 +15541,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="10020" y="2700"/>
       <p2 x="10060" y="2700"/>
+    </wire>
+    <wire>
+      <p1 x="7460" y="-1680"/>
+      <p2 x="7700" y="-1680"/>
     </wire>
     <wire>
       <p1 x="3380" y="1680"/>
@@ -18143,6 +18271,14 @@ If STA, ignored</string>
       <p2 x="2840" y="7000"/>
     </wire>
     <wire>
+      <p1 x="8000" y="-860"/>
+      <p2 x="8100" y="-860"/>
+    </wire>
+    <wire>
+      <p1 x="7380" y="-860"/>
+      <p2 x="7960" y="-860"/>
+    </wire>
+    <wire>
       <p1 x="3700" y="860"/>
       <p2 x="3740" y="860"/>
     </wire>
@@ -19203,6 +19339,10 @@ If STA, ignored</string>
       <p2 x="5420" y="1960"/>
     </wire>
     <wire>
+      <p1 x="7460" y="-940"/>
+      <p2 x="8000" y="-940"/>
+    </wire>
+    <wire>
       <p1 x="3640" y="940"/>
       <p2 x="3820" y="940"/>
     </wire>
@@ -19248,10 +19388,6 @@ If STA, ignored</string>
     </wire>
     <wire>
       <p1 x="2040" y="6060"/>
-      <p2 x="2060" y="6060"/>
-    </wire>
-    <wire>
-      <p1 x="2060" y="6060"/>
       <p2 x="2800" y="6060"/>
     </wire>
     <wire>
@@ -19547,6 +19683,10 @@ If STA, ignored</string>
       <p2 x="3660" y="6080"/>
     </wire>
     <wire>
+      <p1 x="2060" y="6080"/>
+      <p2 x="2780" y="6080"/>
+    </wire>
+    <wire>
       <p1 x="3660" y="6080"/>
       <p2 x="5420" y="6080"/>
     </wire>
@@ -19560,7 +19700,7 @@ If STA, ignored</string>
     </wire>
     <wire>
       <p1 x="1900" y="6080"/>
-      <p2 x="2780" y="6080"/>
+      <p2 x="2060" y="6080"/>
     </wire>
     <wire>
       <p1 x="4440" y="960"/>
@@ -20491,10 +20631,6 @@ If STA, ignored</string>
       <p2 x="2060" y="5640"/>
     </wire>
     <wire>
-      <p1 x="2060" y="6060"/>
-      <p2 x="2060" y="6280"/>
-    </wire>
-    <wire>
       <p1 x="2060" y="1420"/>
       <p2 x="2060" y="1840"/>
     </wire>
@@ -20505,6 +20641,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="2060" y="2780"/>
       <p2 x="2060" y="2860"/>
+    </wire>
+    <wire>
+      <p1 x="2060" y="6080"/>
+      <p2 x="2060" y="6280"/>
     </wire>
     <wire>
       <p1 x="12300" y="5300"/>
@@ -22895,12 +23035,24 @@ If STA, ignored</string>
       <p2 x="2260" y="8340"/>
     </wire>
     <wire>
-      <p1 x="7380" y="-240"/>
-      <p2 x="7380" y="480"/>
+      <p1 x="7380" y="-1600"/>
+      <p2 x="7380" y="-1280"/>
     </wire>
     <wire>
       <p1 x="7380" y="1540"/>
       <p2 x="7380" y="7740"/>
+    </wire>
+    <wire>
+      <p1 x="7380" y="-1280"/>
+      <p2 x="7380" y="-860"/>
+    </wire>
+    <wire>
+      <p1 x="7380" y="-860"/>
+      <p2 x="7380" y="-240"/>
+    </wire>
+    <wire>
+      <p1 x="7380" y="-240"/>
+      <p2 x="7380" y="480"/>
     </wire>
     <wire>
       <p1 x="7380" y="480"/>
@@ -23797,6 +23949,18 @@ If STA, ignored</string>
     <wire>
       <p1 x="2340" y="8880"/>
       <p2 x="2340" y="9280"/>
+    </wire>
+    <wire>
+      <p1 x="7460" y="-1680"/>
+      <p2 x="7460" y="-1240"/>
+    </wire>
+    <wire>
+      <p1 x="7460" y="-1240"/>
+      <p2 x="7460" y="-940"/>
+    </wire>
+    <wire>
+      <p1 x="7460" y="-940"/>
+      <p2 x="7460" y="-320"/>
     </wire>
     <wire>
       <p1 x="7460" y="-320"/>
@@ -25125,6 +25289,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="7540" y="-140"/>
       <p2 x="7540" y="1140"/>
+    </wire>
+    <wire>
+      <p1 x="7540" y="-1540"/>
+      <p2 x="7540" y="-1200"/>
     </wire>
     <wire>
       <p1 x="7540" y="1140"/>
@@ -27679,6 +27847,10 @@ If STA, ignored</string>
       <p2 x="3620" y="3480"/>
     </wire>
     <wire>
+      <p1 x="7720" y="-1320"/>
+      <p2 x="7720" y="-1120"/>
+    </wire>
+    <wire>
       <p1 x="7720" y="700"/>
       <p2 x="7720" y="740"/>
     </wire>
@@ -27689,6 +27861,18 @@ If STA, ignored</string>
     <wire>
       <p1 x="7720" y="1040"/>
       <p2 x="7720" y="1080"/>
+    </wire>
+    <wire>
+      <p1 x="7720" y="-1400"/>
+      <p2 x="7720" y="-1360"/>
+    </wire>
+    <wire>
+      <p1 x="7720" y="-1120"/>
+      <p2 x="7720" y="-1080"/>
+    </wire>
+    <wire>
+      <p1 x="7720" y="-1080"/>
+      <p2 x="7720" y="-1020"/>
     </wire>
     <wire>
       <p1 x="12840" y="3080"/>
@@ -28581,10 +28765,6 @@ If STA, ignored</string>
     <wire>
       <p1 x="2680" y="1620"/>
       <p2 x="2680" y="2580"/>
-    </wire>
-    <wire>
-      <p1 x="6780" y="-300"/>
-      <p2 x="6780" y="400"/>
     </wire>
     <wire>
       <p1 x="6780" y="12980"/>
@@ -29987,6 +30167,22 @@ If STA, ignored</string>
       <p2 x="3820" y="8600"/>
     </wire>
     <wire>
+      <p1 x="7920" y="-1420"/>
+      <p2 x="7920" y="-1400"/>
+    </wire>
+    <wire>
+      <p1 x="7920" y="-1280"/>
+      <p2 x="7920" y="-1080"/>
+    </wire>
+    <wire>
+      <p1 x="7920" y="-1400"/>
+      <p2 x="7920" y="-1360"/>
+    </wire>
+    <wire>
+      <p1 x="7920" y="-1360"/>
+      <p2 x="7920" y="-1320"/>
+    </wire>
+    <wire>
       <p1 x="13040" y="2880"/>
       <p2 x="13040" y="3200"/>
     </wire>
@@ -30949,6 +31145,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="2880" y="1420"/>
       <p2 x="2880" y="1480"/>
+    </wire>
+    <wire>
+      <p1 x="8000" y="-1240"/>
+      <p2 x="8000" y="-940"/>
     </wire>
     <wire>
       <p1 x="12100" y="3360"/>
@@ -32129,6 +32329,10 @@ If STA, ignored</string>
     <wire>
       <p1 x="13220" y="12420"/>
       <p2 x="13220" y="12820"/>
+    </wire>
+    <wire>
+      <p1 x="8100" y="-1200"/>
+      <p2 x="8100" y="-860"/>
     </wire>
     <wire>
       <p1 x="7080" y="100"/>

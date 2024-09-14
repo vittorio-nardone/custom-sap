@@ -43,7 +43,7 @@ boot:
     sta int1InterruptCounter
     lda 0x04        ; set int mask
     tai
-    ; jsr MICROCODE_test
+    jsr MICROCODE_test
     jsr MATH_test
 
 main:

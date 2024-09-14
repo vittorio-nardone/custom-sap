@@ -1,4 +1,5 @@
 #once
+#addr 0x1000
 #include "square.asm"
 
 ; **********************************************************
@@ -120,15 +121,8 @@ MULTIPLY_INT:
 	tay                 ; y = 0x0E
    	ldx 0x80ff          ; x = 0x23
 	lda SQTAB_LSB,x     ; acc = 0xC9
-
 	sub SQTAB_LSB,y     ; 0xC9 - 0xC4 = 0x05
 	sta 0x80fe          ; 0x05 -> fe
-
-    tao
-    hlt
-
-
-
 	lda SQTAB_MSB,x     ; acc = 0x04
 	sub SQTAB_MSB,y     ; 0x04 - 0x00 = 0x04
 	sta 0x80ff          ; 0x04 -> ff
@@ -139,22 +133,20 @@ MULTIPLY_INT:
 	sta 0x80fe          ; 0xbe -> fe
 	lda 0x80ff          ; a = 0x04
 	add SQTAB_MSB,x     ; 0x04 + 0x01 = 0x05
-
-
-
-
-    ror 0x80fe          ; 0xbe >> 0x5f
-    bit 0x01            ; 0x05 and 0x01 = 0x01 != 0
-    beq .nocarry
-    tax                 ; x = 0x05
-    lda 0x80fe          ; a = 0x5f
+ 
+	bit 0x01
+    bne .carry
     clc
-    adc 0x80            ; 0x5f + 0x80 = 0xdf -> a
-    sta 0x80fe          ; 0xdf -> fe
-    txa 
+    ror a               ; 0x05 >> a = 0x02
+    ror 0x80fe          ; 0xbe >> 0x5f
+	ldx 0x80fe	        ; x = 0xdf
+    rts
 
-.nocarry:
-	ror a               ; 0x05 >> a = 0x02
+.carry:
+    clc
+    ror a               ; 0x05 >> a = 0x02
+    sec
+    ror 0x80fe          ; 0xbe >> 0x5f + C = 0xdf
 	ldx 0x80fe	        ; x = 0xdf
     rts
 
@@ -164,23 +156,23 @@ MULTIPLY_INT:
 
 MATH_test:
 ; ;    ldo 0xA1                ; Test #A1: Integer division
-;     ldx 0x85
-;     ldy 0x05
-;     jsr DIVIDE_INT
-;     cmp 0x1A
-;     bne .fail
-;     cpx 0x03
-;     bne .fail
-;     cpy 0x05
-;     bne .fail
+    ldx 0x85
+    ldy 0x05
+    jsr DIVIDE_INT
+    cmp 0x1A
+    bne .fail
+    cpx 0x03
+    bne .fail
+    cpy 0x05
+    bne .fail
 
 ;    ldo 0xA2               ; Test #A2: Integer multiplication
-    lda 0x15
-    ldx 0x23
-    jsr MULTIPLY_INT        ; 0x15 * 0x23 = 0x02DF
-    cmp 0x02
+    lda 0x58
+    ldx 0x45
+    jsr MULTIPLY_INT        ; 0x58 * 0x45 = 0x17B8
+    cmp 0x17
     bne .fail
-    cpx 0xDF
+    cpx 0xB8
     bne .fail
 
     rts
