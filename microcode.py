@@ -1589,48 +1589,77 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
-    "ROLacc": { "c": 0x2A,  #carry is NOT set with removed bit value (!= 6502)
+    "ROLacc": { "c": 0x2A, 
                 "d": "Rotate One Bit Left (accumulator)",
                 "op": "a",  
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "m": [  
-                        CC_LTMP + CC_notEACC, 
-                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ] },  
+                        ['LZN'] + CC_LTMP + CC_notEACC, 
+                        CC_CHKN,
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ],
+                "true": 
+                    [  
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ]                    },  
 
-    "ROLer": { "c": 0x2B,  #carry is NOT set with removed bit value (!= 6502)
+    "ROLer": { "c": 0x2B, 
                 "d": "Rotate Register E One Bit Left",
                 "op": "e",  
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "m": [  
-                        CC_LTMP + CC_notEE, 
-                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO 
+                        ['LZN'] + CC_LTMP + CC_notEE, 
+                        CC_CHKN,
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ],
+                "true": 
+                    [
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO,
+                        CC_SEC
                     ] }, 
 
-    "ROLdr": { "c": 0x2C,  #carry is NOT set with removed bit value (!= 6502)
+    "ROLdr": { "c": 0x2C,  
                 "d": "Rotate Register D One Bit Left",
                 "op": "d",  
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "m": [  
-                        CC_LTMP + CC_notED, 
-                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO 
-                    ] }, 
+                        ['LZN'] + CC_LTMP + CC_notED, 
+                        CC_CHKN,
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ], 
+                "true":
+                    [
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ]    
+                    }, 
 
-    "ROLp": {   "c": 0x26,  #carry is NOT set with removed bit value (!= 6502)
+    "ROLp": {   "c": 0x26,  
                 "d": "Rotate One Bit Left (zero page)", 
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
-                        ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO
+                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LZN'] + CC_LTMP,
+                        CC_CHKN,
+                        ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ],
+                "true": 
+                    [
+                        ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        CC_SEC      
                     ] },
 
-    "ROLa": {   "c": 0x54,  #carry is NOT set with removed bit value (!= 6502)
+    "ROLa": {   "c": 0x54,  
                 "d": "Rotate One Bit Left (absolute)", 
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "v": "u24",
                 "m": [  
                         ['ERAM', 'LMARPAGE', 'EPCADDR'],
@@ -1638,52 +1667,106 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
-                        ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO
+                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LZN'] + CC_LTMP,
+                        CC_CHKN,
+                        ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ],
+                "true": 
+                    [
+                        ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        CC_SEC
                     ] },                    
 
-    "RORacc": { "c": 0x6A, #carry is NOT set with removed bit value (!= 6502) 
+    "RORacc": { "c": 0x6A, 
                 "d": "Rotate One Bit Right (accumulator)",
                 "op": "a",  
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "m": [  
-                        CC_LTMP + CC_notEACC, 
-                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO 
+                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
+                        ['ERALU-OUT'] + CC_LTMP,                                 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
+                        ['ERALU-OUT', 'LRALU-IN'],
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, # AND
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,
+                        CC_CHKZ + CC_LTMP + CC_notEACC,                         
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ],
+                "true":
+                    [
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
                     ] },  
      
-    "RORer": {  "c": 0x6B,  #carry is NOT set with removed bit value (!= 6502)
+    "RORer": {  "c": 0x6B, 
                 "d": "Rotate Register E One Bit Right",
                 "op": "e",  
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "m": [  
-                        CC_LTMP + CC_notEE, 
-                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO 
-                    ] }, 
+                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
+                        ['ERALU-OUT'] + CC_LTMP,                                 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
+                        ['ERALU-OUT', 'LRALU-IN'],
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEE,  # AND
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                    
+                        CC_CHKZ + CC_LTMP + CC_notEE, 
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO,
+                        CC_SEC 
+                    ],
+                "true":
+                    [
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ] },  
 
-    "RORdr": {  "c": 0x6C,  #carry is NOT set with removed bit value (!= 6502)
+    "RORdr": {  "c": 0x6C,  
                 "d": "otate Register D One Bit Right",
                 "op": "d",  
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "m": [  
-                        CC_LTMP + CC_notED, 
-                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO 
+                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
+                        ['ERALU-OUT'] + CC_LTMP,                                 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
+                        ['ERALU-OUT', 'LRALU-IN'],
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notED,  # AND
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                                        
+                        CC_CHKZ + CC_LTMP + CC_notED, 
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO,
+                        CC_SEC 
+                    ],
+                "true":
+                    [
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
                     ] }, 
 
-    "RORp": {   "c": 0x66, #carry is NOT set with removed bit value (!= 6502) 
+    "RORp": {   "c": 0x66, 
                 "d": "Rotate One Bit Right (zero page)", 
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
-                        ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO
+                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
+                        ['ERALU-OUT'] + CC_LTMP,                                 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
+                        ['ERALU-OUT', 'LRALU-IN'],
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,    
+                        CC_CHKZ + ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
+                        ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ],
+                "true": [
+                        ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
                     ] },
 
-    "RORa": {   "c": 0x55, #carry is NOT set with removed bit value (!= 6502) 
+    "RORa": {   "c": 0x55, 
                 "d": "Rotate One Bit Right (absolute)", 
-                "f": ['Z', 'N'], 
+                "f": ['Z', 'N', 'C'], 
                 "v": "u24",
                 "m": [  
                         ['ERAM', 'LMARPAGE', 'EPCADDR'],
@@ -1691,9 +1774,20 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
-                        ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO
-                    ] },                    
+                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
+                        ['ERALU-OUT'] + CC_LTMP,                                 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
+                        ['ERALU-OUT', 'LRALU-IN'],
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                         
+                        CC_CHKZ + ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
+                        ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ],
+                "true": [
+                        ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                ] },                    
 
     "ORAi": {   "c": 0x0B,  
                 "d": "OR Memory with Accumulator (immediate)",  

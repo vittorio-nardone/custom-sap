@@ -346,6 +346,84 @@ MICROCODE_test:
     lda 0x8111
     cmp 0x40
     bne .fail
+    clc                 ; test input/output Carry (acc/zero page/absolute - ROL/ROC)
+    lda 0xF8
+    rol A
+    bcc .fail
+    cmp 0xF0
+    bne .fail
+    sec
+    lda 0xF8
+    rol A
+    bcc .fail
+    cmp 0xF1
+    bne .fail
+    sec
+    lda 0x05
+    rol A
+    bcs .fail
+    cmp 0x0B
+    bne .fail    
+    clc
+    lda 0x05
+    rol A
+    bcs .fail
+    cmp 0x0A
+    bne .fail    
+
+    clc                 
+    lda 0xF8
+    sta 0x8111
+    rol 0x8111
+    bcc .fail
+    lda 0x8111
+    cmp 0xF0
+    bne .fail
+
+    sec
+    lda 0x05
+    sta 0x8111
+    rol 0x8111
+    bcs .fail
+    lda 0x8111
+    cmp 0x0B
+    bne .fail
+
+    clc                
+    lda 0x78
+    sta 0x8111
+    ror 0x8111
+    bcs .fail
+    lda 0x8111
+    cmp 0x3C
+    bne .fail
+
+    sec
+    lda 0x05
+    sta 0x8111
+    ror 0x8111
+    bcc .fail
+    lda 0x8111
+    cmp 0x82
+    bne .fail    
+
+    sec
+    lda 0x05
+    sta 0x008111
+    rol 0x008111
+    bcs .fail
+    lda 0x008111
+    cmp 0x0B
+    bne .fail
+
+    clc                
+    lda 0x78
+    sta 0x008111
+    ror 0x008111
+    bcs .fail
+    lda 0x008111
+    cmp 0x3C
+    bne .fail
 
 .test23:
     ldo 0x23            ; Test #23: INX / DEX / CPX

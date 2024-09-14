@@ -597,49 +597,49 @@
 	PLA => { 
 		0x68
  	} 
-	; Rotate One Bit Left (absolute) [Z N]
+	; Rotate One Bit Left (absolute) [Z N C]
 	ROL {value: u24} => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x54 @ value
  	} 
-	; Rotate One Bit Left (accumulator) [Z N]
+	; Rotate One Bit Left (accumulator) [Z N C]
 	ROL a => { 
 		0x2A
  	} 
-	; Rotate Register D One Bit Left [Z N]
+	; Rotate Register D One Bit Left [Z N C]
 	ROL d => { 
 		0x2C
  	} 
-	; Rotate Register E One Bit Left [Z N]
+	; Rotate Register E One Bit Left [Z N C]
 	ROL e => { 
 		0x2B
  	} 
-	; Rotate One Bit Left (zero page) [Z N]
+	; Rotate One Bit Left (zero page) [Z N C]
 	ROL {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x26 @ value
  	} 
-	; Rotate One Bit Right (absolute) [Z N]
+	; Rotate One Bit Right (absolute) [Z N C]
 	ROR {value: u24} => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x55 @ value
  	} 
-	; Rotate One Bit Right (accumulator) [Z N]
+	; Rotate One Bit Right (accumulator) [Z N C]
 	ROR a => { 
 		0x6A
  	} 
-	; otate Register D One Bit Right [Z N]
+	; otate Register D One Bit Right [Z N C]
 	ROR d => { 
 		0x6C
  	} 
-	; Rotate Register E One Bit Right [Z N]
+	; Rotate Register E One Bit Right [Z N C]
 	ROR e => { 
 		0x6B
  	} 
-	; Rotate One Bit Right (zero page) [Z N]
+	; Rotate One Bit Right (zero page) [Z N C]
 	ROR {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)

@@ -55,28 +55,6 @@ main:
     jsr MATH_test
     jmp .loop
 
-;     ldx 0x00
-;     ldy 0x00
-;     lda 0x00
-
-; loop:
-;     inx
-;     cpx 0xFF
-;     bne loop
-;     jmp loop_2
-
-; #addr 0x1000     
-; loop_2:
-;     ldx 0x00
-;     iny
-;     cpy 0xFF
-;     bne loop
-;     ldy 0x00
-;     clc
-;     adc 0x01
-;     tao
-;     jmp loop
-
 ;
 ; default interrupt handler routine
 ;

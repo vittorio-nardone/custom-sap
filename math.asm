@@ -80,28 +80,40 @@ DIVIDE_INT:
 ; SUBROUTINE: MULTIPLY_INT
 ;
 ; DESCRIPTION:
+;   This subroutine performs an integer multiplication of two 8-bit values stored in registers A and X. 
+;   The result is a 16-bit value, with the most significant byte (MSB) returned in A, and the least significant byte (LSB) returned in X.
+;   The subroutine utilizes lookup tables (SQTAB_LSB and SQTAB_MSB) to efficiently perform the multiplication through table-based squaring 
+;   and difference of squares method.
 ;
 ; INPUTS:
-;   A : factor
-;   X : factor
+;   A : 8-bit factor 1
+;   X : 8-bit factor 2
 ;
 ; OUTPUTS:
-;   A : result MSB
-;   X : result LSB
+;   A : Most Significant Byte (MSB) of the multiplication result
+;   X : Least Significant Byte (LSB) of the multiplication result
 ;
 ; DESTROY:
+;   A : Modified during calculation
+;   X : Modified during calculation
+;   Y : Used as a temporary register during calculation
 ;
 ; FLAGS AFFECTED:
+;   (Z) - Zero flag: unpredictable result
+;   (N) - Negative flag: unpredictable result
+;   (C) - Carry flag: unpredictable result
 ;
 ; USAGE:
+;   To use this subroutine, load the two 8-bit values into registers A and X, then call the subroutine using `jsr MULTIPLY_INT`.
+;   After execution, the MSB of the result will be in register A, and the LSB will be in register X.
 ;
 ; EXAMPLE:
-;   lda 0x15   
-;   ldx 0x23   
-;   jsr MULTIPLY_INT 
-    ; 0x15 * 0x23 = 0x02DF
-;   ; Result: A = 0x02   
-;   ;         X = 0xDF
+;   lda 0x15        ; Load 0x15 into A (first factor)
+;   ldx 0x23        ; Load 0x23 into X (second factor)
+;   jsr MULTIPLY_INT ; Call the MULTIPLY_INT subroutine
+;   ; After execution:
+;   ; A = 0x02      ; MSB of the result (0x02DF)
+;   ; X = 0xDF      ; LSB of the result (0x02DF)
 ;
 ; AUTHOR: VN
 ; LAST UPDATE: 13/09/2024
@@ -133,19 +145,8 @@ MULTIPLY_INT:
 	sta 0x80fe          ; 0xbe -> fe
 	lda 0x80ff          ; a = 0x04
 	add SQTAB_MSB,x     ; 0x04 + 0x01 = 0x05
- 
-	bit 0x01
-    bne .carry
     clc
-    ror a               ; 0x05 >> a = 0x02
-    ror 0x80fe          ; 0xbe >> 0x5f
-	ldx 0x80fe	        ; x = 0xdf
-    rts
-
-.carry:
-    clc
-    ror a               ; 0x05 >> a = 0x02
-    sec
+    ror a               ; 0x05 >> a = 0x02 + C
     ror 0x80fe          ; 0xbe >> 0x5f + C = 0xdf
 	ldx 0x80fe	        ; x = 0xdf
     rts
