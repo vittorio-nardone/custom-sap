@@ -1682,13 +1682,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Rotate One Bit Right (accumulator)",
                 "op": "a",  
                 "f": ['Z', 'N', 'C'], 
+                "b": [0x01],
                 "m": [  
-                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
-                        ['ERALU-OUT'] + CC_LTMP,                                 
-                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
-                        ['ERALU-OUT', 'LRALU-IN'],
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, # AND
-                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['CPC','LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO, 
                         CC_CHKZ + CC_LTMP + CC_notEACC,                         
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
                         CC_SEC
@@ -1703,12 +1701,10 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Rotate Register E One Bit Right",
                 "op": "e",  
                 "f": ['Z', 'N', 'C'], 
+                "b": [0x01],
                 "m": [  
-                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
-                        ['ERALU-OUT'] + CC_LTMP,                                 
-                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
-                        ['ERALU-OUT', 'LRALU-IN'],
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEE,  # AND
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEE,  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                    
                         CC_CHKZ + CC_LTMP + CC_notEE, 
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO,
@@ -1724,12 +1720,10 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "otate Register D One Bit Right",
                 "op": "d",  
                 "f": ['Z', 'N', 'C'], 
+                "b": [0x01],
                 "m": [  
-                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
-                        ['ERALU-OUT'] + CC_LTMP,                                 
-                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
-                        ['ERALU-OUT', 'LRALU-IN'],
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notED,  # AND
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notED,  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                                        
                         CC_CHKZ + CC_LTMP + CC_notED, 
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO,
@@ -1744,18 +1738,17 @@ INSTRUCTIONS_SET = dict(sorted({
     "RORp": {   "c": 0x66, 
                 "d": "Rotate One Bit Right (zero page)", 
                 "f": ['Z', 'N', 'C'], 
+                "b": [0x01],
                 "v": "u16",
                 "m": [  
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
-                        ['ERALU-OUT'] + CC_LTMP,                                 
-                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
-                        ['ERALU-OUT', 'LRALU-IN'],
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
+                        ['CPC'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,    
-                        CC_CHKZ + ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
                         CC_SEC
                     ],
@@ -1767,6 +1760,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "RORa": {   "c": 0x55, 
                 "d": "Rotate One Bit Right (absolute)", 
                 "f": ['Z', 'N', 'C'], 
+                "b": [0x01],
                 "v": "u24",
                 "m": [  
                         ['ERAM', 'LMARPAGE', 'EPCADDR'],
@@ -1774,13 +1768,11 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notETMP,         # 0x00 
-                        ['ERALU-OUT'] + CC_LTMP,                                 
-                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,                  
-                        ['ERALU-OUT', 'LRALU-IN'],
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
+                        ['CPC'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                         
-                        CC_CHKZ + ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
                         CC_SEC
                     ],
@@ -2139,6 +2131,44 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ESP', 'ERAM'] + CC_notLPCPAGE 
                     ] },       
 
+    "JMPindp": {   "c": 0x8F,  
+                "d": "Jump to New Location (indirect - zero page)", 
+                "v": "u16",
+                "m": [  
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP + CC_notLPCHP0,
+
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'],
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL,
+                        CC_notETMP + CC_notLPCHP0 
+                    ] },    
+
+    "JMPinda": {   "c": 0x91,  
+                "d": "Jump to New Location (indirect - absolute)", 
+                "v": "u24",
+                "m": [  
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ESP', 'WRAM'] + CC_notETMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP + CC_notLPCH,
+                        ['ESP', 'ERAM'] + CC_notLPCPAGE,
+
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ESP', 'WRAM'] + CC_notETMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP + CC_notLPCH,
+                        ['ESP', 'ERAM'] + CC_notLPCPAGE                         
+                    ] },                                       
+
     "JSRp": {   "c": 0x20,  
                 "d": "Jump to New Location Saving Return Address (zero page)", 
                 "v": "u16",
@@ -2175,6 +2205,60 @@ INSTRUCTIONS_SET = dict(sorted({
                         CC_notETMP  + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE  
                     ] },    
+
+    "JSRindp": { "c": 0x92,  
+                "d": "Jump to New Location Saving Return Address (indirect - zero page)", 
+                "v": "u16",
+                "b": [0x00],                
+                "m": [  
+                        ['ESP', 'WRAM'] + CC_notEPCL,
+                        CC_INC_STACK_POINTER,
+                        ['ESP', 'WRAM'] + CC_notEPCH,
+                        CC_INC_STACK_POINTER,
+                        ['ESP', 'WRAM'] + CC_notEPCPAGE,
+                        CC_INC_STACK_POINTER,
+
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP  + CC_notLPCHP0,  
+
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP  + CC_notLPCHP0                          
+                    ] },      
+
+    "JSRinda": {
+                "c": 0x93,  
+                "d": "Jump to New Location Saving Return Address (indirect - absolute)", 
+                "v": "u24",
+                "m": [  
+                        ['ESP', 'WRAM'] + CC_notEPCL,
+                        CC_INC_STACK_POINTER,
+                        ['ESP', 'WRAM'] + CC_notEPCH,
+                        CC_INC_STACK_POINTER,
+                        ['ESP', 'WRAM'] + CC_notEPCPAGE,
+                        CC_INC_STACK_POINTER,
+
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ESP', 'WRAM'] + CC_notETMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP  + CC_notLPCH,
+                        ['ESP', 'ERAM'] + CC_notLPCPAGE,
+
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ESP', 'WRAM'] + CC_notETMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['CPC'], 
+                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        CC_notETMP  + CC_notLPCH,
+                        ['ESP', 'ERAM'] + CC_notLPCPAGE                          
+                    ] },                        
 
     "RTS":  {   "c": 0x60,  
                 "d": "Return from Subroutine", 
@@ -2661,7 +2745,9 @@ def generateRuldef():
 
             f.writelines([  '\t; ' + INSTRUCTIONS_SET[i]['d'], ' ', flags , '\n',
                             '\t', i[:3], 
-                            (' {value: ' + INSTRUCTIONS_SET[i]['v'] + '}') if 'v' in INSTRUCTIONS_SET[i] else '', 
+                            (' (' if i[3:6] == 'ind' else ' ') + 
+                            (('{value: ' + INSTRUCTIONS_SET[i]['v'] + '}') if 'v' in INSTRUCTIONS_SET[i] else '') +  
+                            (')' if i[3:6] == 'ind' else ''),    
                             (',' + INSTRUCTIONS_SET[i]['i'] + ' ') if 'i' in INSTRUCTIONS_SET[i] else '', 
                             (' ' + INSTRUCTIONS_SET[i]['op']) if 'op' in INSTRUCTIONS_SET[i] else '',
                             ' => { \n',
@@ -2687,6 +2773,8 @@ def generateIstructionsCsv():
         'a': 'absolute',
         'p': 'zero page',
         'acc': 'accumulator',
+        'indp': 'indirect - zero page',
+        'inda': 'indirect - absolute',
 
         'px': 'zero page - X index',
         'py': 'zero page - Y index',
@@ -2724,7 +2812,9 @@ def generateIstructionsCsv():
                 '"' + ' '.join(INSTRUCTIONS_SET[i]['f'] if 'f' in INSTRUCTIONS_SET[i] else []) + '"', 
                 '"' + INSTRUCTIONS_SET[i]['d'] + '"',   
                 '"' + i[:3] + ((' ' + INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
-                      + ((' ' + sample_values[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else '')
+                      + (' (' if i[3:6] == 'ind' else ' ')
+                      + ((sample_values[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else '')
+                      + (')' if i[3:6] == 'ind' else '')
                       + ((', ' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '') 
                       + '"'
                       )

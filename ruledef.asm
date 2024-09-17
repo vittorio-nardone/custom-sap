@@ -8,11 +8,11 @@
 		0x03 @ value
  	} 
 	; Add Register D to Accumulator with Carry [Z C]
-	ADC d => { 
+	ADC  d => { 
 		0x6F
  	} 
 	; Add Register E to Accumulator with Carry [Z C]
-	ADC e => { 
+	ADC  e => { 
 		0x06
  	} 
 	; Add Memory to Accumulator with Carry (immediate) [Z C]
@@ -58,11 +58,11 @@
 		0x08 @ value
  	} 
 	; AND Register D with Accumulator [Z]
-	AND d => { 
+	AND  d => { 
 		0x09
  	} 
 	; AND Register E with Accumulator [Z]
-	AND e => { 
+	AND  e => { 
 		0x0A
  	} 
 	; AND Memory with Accumulator (immediate) [Z]
@@ -168,7 +168,7 @@
 		0x10 @ value
  	} 
 	; Jump to interrupt handler routine [I]
-	BRK => { 
+	BRK  => { 
 		0x00
  	} 
 	; Branch on oVerflow Clear (absolute) 
@@ -196,11 +196,11 @@
 		0x64 @ value
  	} 
 	; Clear Carry Flag [C]
-	CLC => { 
+	CLC  => { 
 		0x18
  	} 
 	; Clear interrupt disable [I]
-	CLI => { 
+	CLI  => { 
 		0x58
  	} 
 	; Compare Memory with Accumulator (absolute) [Z C]
@@ -228,7 +228,7 @@
 		0x44 @ value
  	} 
 	; Compare Register E and Register D [Z C]
-	CPD e => { 
+	CPD  e => { 
 		0x51
  	} 
 	; Compare Memory with Register D (immediate) [Z C]
@@ -268,11 +268,11 @@
 		0x4A @ value
  	} 
 	; Compare Register D and Register X [Z C]
-	CPX d => { 
+	CPX  d => { 
 		0xEB
  	} 
 	; Compare Register E and Register X [Z C]
-	CPX e => { 
+	CPX  e => { 
 		0xE2
  	} 
 	; Compare Memory and Register X (immediate) [Z C]
@@ -288,7 +288,7 @@
 		0x47 @ value
  	} 
 	; Compare Register Y and Register X [Z C]
-	CPX y => { 
+	CPX  y => { 
 		0xE1
  	} 
 	; Compare Memory with Register Y (absolute) [Z C]
@@ -298,11 +298,11 @@
 		0x4E @ value
  	} 
 	; Compare Register D and Register Y [Z C]
-	CPY d => { 
+	CPY  d => { 
 		0x4F
  	} 
 	; Compare Register E and Register Y [Z C]
-	CPY e => { 
+	CPY  e => { 
 		0x50
  	} 
 	; Compare Memory and Register Y (immediate) [Z C]
@@ -330,19 +330,19 @@
 		0xCE @ value
  	} 
 	; Decrement Register D by One [Z]
-	DED => { 
+	DED  => { 
 		0x28
  	} 
 	; Decrement Register E by One [Z]
-	DEE => { 
+	DEE  => { 
 		0x2D
  	} 
 	; Decrement Register X by One [Z]
-	DEX => { 
+	DEX  => { 
 		0xCA
  	} 
 	; Decrement Register Y by One [Z]
-	DEY => { 
+	DEY  => { 
 		0xCB
  	} 
 	; Exclusive-OR Memory with Accumulator (absolute) [Z]
@@ -352,11 +352,11 @@
 		0x12 @ value
  	} 
 	; Exclusive-OR Register D with Accumulator [Z]
-	EOR d => { 
+	EOR  d => { 
 		0x13
  	} 
 	; Exclusive-OR Register E with Accumulator [Z]
-	EOR e => { 
+	EOR  e => { 
 		0x14
  	} 
 	; Exclusive-OR Memory with Accumulator (immediate) [Z]
@@ -372,7 +372,7 @@
 		0x11 @ value
  	} 
 	; Freeze CPU 
-	HLT => { 
+	HLT  => { 
 		0xFF
  	} 
 	; Increment Memory by One (absolute) [Z]
@@ -388,19 +388,19 @@
 		0xEE @ value
  	} 
 	; Increment Register D by One [Z]
-	IND => { 
+	IND  => { 
 		0x2E
  	} 
 	; Increment Register E by One [Z]
-	INE => { 
+	INE  => { 
 		0x2F
  	} 
 	; Increment Register X by One [Z]
-	INX => { 
+	INX  => { 
 		0xE8
  	} 
 	; Increment Register Y by One [Z]
-	INY => { 
+	INY  => { 
 		0xC8
  	} 
 	; Jump to New Location (absolute) 
@@ -408,6 +408,18 @@
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x4D @ value
+ 	} 
+	; Jump to New Location (indirect - absolute) 
+	JMP ({value: u24}) => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0x91 @ value
+ 	} 
+	; Jump to New Location (indirect - zero page) 
+	JMP ({value: u16}) => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x8F @ value
  	} 
 	; Jump to New Location (zero page) 
 	JMP {value: u16} => { 
@@ -420,6 +432,18 @@
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x21 @ value
+ 	} 
+	; Jump to New Location Saving Return Address (indirect - absolute) 
+	JSR ({value: u24}) => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0x93 @ value
+ 	} 
+	; Jump to New Location Saving Return Address (indirect - zero page) 
+	JSR ({value: u16}) => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x92 @ value @ 0x00
  	} 
 	; Jump to New Location Saving Return Address (zero page) 
 	JSR {value: u16} => { 
@@ -560,7 +584,7 @@
 		0x37 @ value
  	} 
 	; No Operation 
-	NOP => { 
+	NOP  => { 
 		0xEA
  	} 
 	; OR Memory with Accumulator (absolute) [Z]
@@ -570,11 +594,11 @@
 		0x0D @ value
  	} 
 	; OR Register D with Accumulator [Z]
-	ORA d => { 
+	ORA  d => { 
 		0x0E
  	} 
 	; OR Register E with Accumulator [Z]
-	ORA e => { 
+	ORA  e => { 
 		0x0F
  	} 
 	; OR Memory with Accumulator (immediate) [Z]
@@ -590,11 +614,11 @@
 		0x0C @ value
  	} 
 	; Push Accumulator on Stack 
-	PHA => { 
+	PHA  => { 
 		0x48
  	} 
 	; Pull Accumulator from Stack [Z]
-	PLA => { 
+	PLA  => { 
 		0x68
  	} 
 	; Rotate One Bit Left (absolute) [Z N C]
@@ -604,15 +628,15 @@
 		0x54 @ value
  	} 
 	; Rotate One Bit Left (accumulator) [Z N C]
-	ROL a => { 
+	ROL  a => { 
 		0x2A
  	} 
 	; Rotate Register D One Bit Left [Z N C]
-	ROL d => { 
+	ROL  d => { 
 		0x2C
  	} 
 	; Rotate Register E One Bit Left [Z N C]
-	ROL e => { 
+	ROL  e => { 
 		0x2B
  	} 
 	; Rotate One Bit Left (zero page) [Z N C]
@@ -625,32 +649,32 @@
 	ROR {value: u24} => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
-		0x55 @ value
+		0x55 @ value @ 0x01
  	} 
 	; Rotate One Bit Right (accumulator) [Z N C]
-	ROR a => { 
-		0x6A
+	ROR  a => { 
+		0x6A @ 0x01
  	} 
 	; otate Register D One Bit Right [Z N C]
-	ROR d => { 
-		0x6C
+	ROR  d => { 
+		0x6C @ 0x01
  	} 
 	; Rotate Register E One Bit Right [Z N C]
-	ROR e => { 
-		0x6B
+	ROR  e => { 
+		0x6B @ 0x01
  	} 
 	; Rotate One Bit Right (zero page) [Z N C]
 	ROR {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
-		0x66 @ value
+		0x66 @ value @ 0x01
  	} 
 	; Return from Interrupt [I]
-	RTI => { 
+	RTI  => { 
 		0x40
  	} 
 	; Return from Subroutine 
-	RTS => { 
+	RTS  => { 
 		0x60
  	} 
 	; Subtract Memory from Accumulator with Borrow (absolute) [Z C]
@@ -660,11 +684,11 @@
 		0x5B @ value
  	} 
 	; Subtract Register D from Accumulator with Borrow [Z C]
-	SBC d => { 
+	SBC  d => { 
 		0x5D
  	} 
 	; Subtract Register E from Accumulator with Borrow [Z C]
-	SBC e => { 
+	SBC  e => { 
 		0x5E
  	} 
 	; Subtract Memory from Accumulator with Borrow (immediate) [Z C]
@@ -680,23 +704,23 @@
 		0xED @ value
  	} 
 	; Subtract Register E from Register X with Borrow [Z C]
-	SBX e => { 
+	SBX  e => { 
 		0xEF
  	} 
 	; Set clock speed to Fast 
-	SCF => { 
+	SCF  => { 
 		0x02
  	} 
 	; Set clock speed to Slow 
-	SCS => { 
+	SCS  => { 
 		0x01
  	} 
 	; Set Carry Flag [C]
-	SEC => { 
+	SEC  => { 
 		0x38
  	} 
 	; Set interrupt disable [I]
-	SEI => { 
+	SEI  => { 
 		0x78
  	} 
 	; Store Accumulator in Memory (absolute) 
@@ -880,63 +904,63 @@
 		0x88 @ value
  	} 
 	; Transfer Accumulator to Register D [Z]
-	TAD => { 
+	TAD  => { 
 		0x56
  	} 
 	; Transfer Accumulator to Register E [Z]
-	TAE => { 
+	TAE  => { 
 		0x57
  	} 
 	; Transfer Accumulator to Interrupt mask register 
-	TAI => { 
+	TAI  => { 
 		0xAE
  	} 
 	; Transfer Accumulator to Output [Z]
-	TAO => { 
+	TAO  => { 
 		0xAB
  	} 
 	; Transfer Accumulator to Register X [Z]
-	TAX => { 
+	TAX  => { 
 		0xAA
  	} 
 	; Transfer Accumulator to Register Y [Z]
-	TAY => { 
+	TAY  => { 
 		0xBB
  	} 
 	; Transfer Register D to Accumulator [Z]
-	TDA => { 
+	TDA  => { 
 		0x59
  	} 
 	; Transfer Register D to Register X [Z]
-	TDX => { 
+	TDX  => { 
 		0x9C
  	} 
 	; Transfer Register E to Accumulator [Z]
-	TEA => { 
+	TEA  => { 
 		0x5A
  	} 
 	; Transfer Register E to Register Y [Z]
-	TEY => { 
+	TEY  => { 
 		0x8C
  	} 
 	; Transfer Interrupt register to Accumulator [Z]
-	TIA => { 
+	TIA  => { 
 		0xAC
  	} 
 	; Transfer Register X to Accumulator [Z]
-	TXA => { 
+	TXA  => { 
 		0x8A
  	} 
 	; Transfer Register X to Register D [Z]
-	TXD => { 
+	TXD  => { 
 		0x9B
  	} 
 	; Transfer Register Y to Accumulator [Z]
-	TYA => { 
+	TYA  => { 
 		0xBA
  	} 
 	; Transfer Register Y to Register E [Z]
-	TYE => { 
+	TYE  => { 
 		0x8B
  	} 
 }

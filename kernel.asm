@@ -47,13 +47,22 @@ boot:
     jsr MATH_test
 
 main:
+    lda 0x15
+    sta 0x8384
+    lda 0x00
+    sta 0x8385
     
     cli
 
 .loop:
-    ldo timerInterruptCounter
+    ;ldo timerInterruptCounter
     jsr MATH_test
+    jsr (0x8384)
     jmp .loop
+
+#addr 0x1500
+    ldo timerInterruptCounter
+    rts
 
 ;
 ; default interrupt handler routine
