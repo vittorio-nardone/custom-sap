@@ -23,3 +23,10 @@ cargo install customasm
 ```sh
 pip install intelhex
 ```
+
+### Serial
+```sh
+ls /dev/cu*
+minicom --device /dev/cu.usbserial-1423240  
+minicom --device /dev/cu.usbserial-A50285BI  
+```

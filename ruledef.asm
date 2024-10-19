@@ -8,11 +8,11 @@
 		0x03 @ value
  	} 
 	; Add Register D to Accumulator with Carry [Z C]
-	ADC  d => { 
+	ADC d => { 
 		0x6F
  	} 
 	; Add Register E to Accumulator with Carry [Z C]
-	ADC  e => { 
+	ADC e => { 
 		0x06
  	} 
 	; Add Memory to Accumulator with Carry (immediate) [Z C]
@@ -58,11 +58,11 @@
 		0x08 @ value
  	} 
 	; AND Register D with Accumulator [Z]
-	AND  d => { 
+	AND d => { 
 		0x09
  	} 
 	; AND Register E with Accumulator [Z]
-	AND  e => { 
+	AND e => { 
 		0x0A
  	} 
 	; AND Memory with Accumulator (immediate) [Z]
@@ -228,7 +228,7 @@
 		0x44 @ value
  	} 
 	; Compare Register E and Register D [Z C]
-	CPD  e => { 
+	CPD e => { 
 		0x51
  	} 
 	; Compare Memory with Register D (immediate) [Z C]
@@ -268,11 +268,11 @@
 		0x4A @ value
  	} 
 	; Compare Register D and Register X [Z C]
-	CPX  d => { 
+	CPX d => { 
 		0xEB
  	} 
 	; Compare Register E and Register X [Z C]
-	CPX  e => { 
+	CPX e => { 
 		0xE2
  	} 
 	; Compare Memory and Register X (immediate) [Z C]
@@ -288,7 +288,7 @@
 		0x47 @ value
  	} 
 	; Compare Register Y and Register X [Z C]
-	CPX  y => { 
+	CPX y => { 
 		0xE1
  	} 
 	; Compare Memory with Register Y (absolute) [Z C]
@@ -298,11 +298,11 @@
 		0x4E @ value
  	} 
 	; Compare Register D and Register Y [Z C]
-	CPY  d => { 
+	CPY d => { 
 		0x4F
  	} 
 	; Compare Register E and Register Y [Z C]
-	CPY  e => { 
+	CPY e => { 
 		0x50
  	} 
 	; Compare Memory and Register Y (immediate) [Z C]
@@ -352,11 +352,11 @@
 		0x12 @ value
  	} 
 	; Exclusive-OR Register D with Accumulator [Z]
-	EOR  d => { 
+	EOR d => { 
 		0x13
  	} 
 	; Exclusive-OR Register E with Accumulator [Z]
-	EOR  e => { 
+	EOR e => { 
 		0x14
  	} 
 	; Exclusive-OR Memory with Accumulator (immediate) [Z]
@@ -474,6 +474,10 @@
 		assert(value >= 0)
 		assert(value <= 0xff)
 		0xA9 @ value
+ 	} 
+	; Load Accumulator with Memory (indirect DE - zero page - X index) [Z O]
+	LDA (de),x  => { 
+		0x94
  	} 
 	; Load Accumulator with Memory (zero page) [Z]
 	LDA {value: u16} => { 
@@ -594,11 +598,11 @@
 		0x0D @ value
  	} 
 	; OR Register D with Accumulator [Z]
-	ORA  d => { 
+	ORA d => { 
 		0x0E
  	} 
 	; OR Register E with Accumulator [Z]
-	ORA  e => { 
+	ORA e => { 
 		0x0F
  	} 
 	; OR Memory with Accumulator (immediate) [Z]
@@ -617,9 +621,41 @@
 	PHA  => { 
 		0x48
  	} 
+	; Push Register D on Stack 
+	PHD  => { 
+		0x95
+ 	} 
+	; Push Register E on Stack 
+	PHE  => { 
+		0x96
+ 	} 
+	; Push Register X on Stack 
+	PHX  => { 
+		0x97
+ 	} 
+	; Push Register Y on Stack 
+	PHY  => { 
+		0x98
+ 	} 
 	; Pull Accumulator from Stack [Z]
 	PLA  => { 
 		0x68
+ 	} 
+	; Pull Register D from Stack [Z]
+	PLD  => { 
+		0x99
+ 	} 
+	; Pull Register E from Stack [Z]
+	PLE  => { 
+		0x9A
+ 	} 
+	; Pull Register X from Stack [Z]
+	PLX  => { 
+		0x9E
+ 	} 
+	; Pull Register Y from Stack [Z]
+	PLY  => { 
+		0x9F
  	} 
 	; Rotate One Bit Left (absolute) [Z N C]
 	ROL {value: u24} => { 
@@ -628,15 +664,15 @@
 		0x54 @ value
  	} 
 	; Rotate One Bit Left (accumulator) [Z N C]
-	ROL  a => { 
+	ROL a => { 
 		0x2A
  	} 
 	; Rotate Register D One Bit Left [Z N C]
-	ROL  d => { 
+	ROL d => { 
 		0x2C
  	} 
 	; Rotate Register E One Bit Left [Z N C]
-	ROL  e => { 
+	ROL e => { 
 		0x2B
  	} 
 	; Rotate One Bit Left (zero page) [Z N C]
@@ -652,15 +688,15 @@
 		0x55 @ value @ 0x01
  	} 
 	; Rotate One Bit Right (accumulator) [Z N C]
-	ROR  a => { 
+	ROR a => { 
 		0x6A @ 0x01
  	} 
 	; otate Register D One Bit Right [Z N C]
-	ROR  d => { 
+	ROR d => { 
 		0x6C @ 0x01
  	} 
 	; Rotate Register E One Bit Right [Z N C]
-	ROR  e => { 
+	ROR e => { 
 		0x6B @ 0x01
  	} 
 	; Rotate One Bit Right (zero page) [Z N C]
@@ -684,11 +720,11 @@
 		0x5B @ value
  	} 
 	; Subtract Register D from Accumulator with Borrow [Z C]
-	SBC  d => { 
+	SBC d => { 
 		0x5D
  	} 
 	; Subtract Register E from Accumulator with Borrow [Z C]
-	SBC  e => { 
+	SBC e => { 
 		0x5E
  	} 
 	; Subtract Memory from Accumulator with Borrow (immediate) [Z C]
@@ -704,7 +740,7 @@
 		0xED @ value
  	} 
 	; Subtract Register E from Register X with Borrow [Z C]
-	SBX  e => { 
+	SBX e => { 
 		0xEF
  	} 
 	; Set clock speed to Fast 
@@ -740,6 +776,10 @@
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x70 @ value
+ 	} 
+	; Store Accumulator in Memory (indirect DE - zero page - X index) [O]
+	STA (de),x  => { 
+		0xA1
  	} 
 	; Store Accumulator in Memory (zero page) 
 	STA {value: u16} => { 

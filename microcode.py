@@ -214,6 +214,24 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },      
 
+    "LDAindregdepx": {  "c": 0x94,  # Cross page not supported
+                "d": "Load Accumulator with Memory (indirect DE - zero page - X index)", 
+                "f": ['Z','O'],
+                "op": "de",
+                "i": "x",
+                "m": [  
+                        ['LMARPAGEZERO', 'LRALU-IN'] + CC_notEE, 
+                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notED,
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+                        ['ERALU-OUT', 'LMARH'],
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ] },                          
+
     "LDAax": {  "c": 0xBE,  # Cross page not supported
                 "d": "Load Accumulator with Memory (absolute - X index)", 
                 "f": ['Z','O'],
@@ -452,6 +470,24 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
                     ] },   
+
+    "STAindregdepx": {  "c": 0xA1,  # Cross page not supported
+                "d": "Store Accumulator in Memory (indirect DE - zero page - X index)", 
+                "i": "x",
+                "op": "de",
+                "f": ['O'],
+                "m": [  
+                        ['LMARPAGEZERO', 'LRALU-IN'] + CC_notEE, 
+                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notED,
+                        ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
+                    ],               
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+                        ['ERALU-OUT', 'LMARH'],
+                        ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
+                    ] },                      
 
     "STAax": {  "c": 0x62,  # Cross page not supported
                 "d": "Store Accumulator in Memory (absolute - X index)", 
@@ -2281,6 +2317,34 @@ INSTRUCTIONS_SET = dict(sorted({
                         CC_INC_STACK_POINTER,
                     ] },      
 
+    "PHD":  {   "c": 0x95,  
+                "d": "Push Register D on Stack", 
+                "m": [  
+                        ['ESP', 'WRAM'] + CC_notED,
+                        CC_INC_STACK_POINTER,
+                    ] },      
+
+    "PHE":  {   "c": 0x96,  
+                "d": "Push Register E on Stack", 
+                "m": [  
+                        ['ESP', 'WRAM'] + CC_notEE,
+                        CC_INC_STACK_POINTER,
+                    ] },      
+
+    "PHX":  {   "c": 0x97,  
+                "d": "Push Register X on Stack", 
+                "m": [  
+                        ['ESP', 'WRAM'] + CC_notEX,
+                        CC_INC_STACK_POINTER,
+                    ] },      
+
+    "PHY":  {   "c": 0x98,  
+                "d": "Push Register Y on Stack", 
+                "m": [  
+                        ['ESP', 'WRAM'] + CC_notEY,
+                        CC_INC_STACK_POINTER,
+                    ] },                                                                                      
+
     "PLA":  {   "c": 0x68,  
                 "d": "Pull Accumulator from Stack", 
                 "f": ['Z'],
@@ -2288,6 +2352,38 @@ INSTRUCTIONS_SET = dict(sorted({
                         CC_DEC_STACK_POINTER,
                         ['ESP', 'ERAM', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },      
+
+    "PLD":  {   "c": 0x99,  
+                "d": "Pull Register D from Stack", 
+                "f": ['Z'],
+                "m": [  
+                        CC_DEC_STACK_POINTER,
+                        ['ESP', 'ERAM', 'LZN'] + CC_LD + CC_ALU_DETECT_ZERO
+                    ] },     
+
+    "PLE":  {   "c": 0x9A,  
+                "d": "Pull Register E from Stack", 
+                "f": ['Z'],
+                "m": [  
+                        CC_DEC_STACK_POINTER,
+                        ['ESP', 'ERAM', 'LZN'] + CC_LE + CC_ALU_DETECT_ZERO
+                    ] },     
+
+    "PLX":  {   "c": 0x9E,  
+                "d": "Pull Register X from Stack", 
+                "f": ['Z'],
+                "m": [  
+                        CC_DEC_STACK_POINTER,
+                        ['ESP', 'ERAM', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO
+                    ] },     
+
+    "PLY":  {   "c": 0x9F,  
+                "d": "Pull Register Y from Stack", 
+                "f": ['Z'],
+                "m": [  
+                        CC_DEC_STACK_POINTER,
+                        ['ESP', 'ERAM', 'LZN'] + CC_LY + CC_ALU_DETECT_ZERO
+                    ] },                                                                                     
 
     "BEQp": {   "c": 0xF0,  
                 "d": "Branch on Result Zero (zero page)", 
@@ -2747,9 +2843,10 @@ def generateRuldef():
                             '\t', i[:3], 
                             (' (' if i[3:6] == 'ind' else ' ') + 
                             (('{value: ' + INSTRUCTIONS_SET[i]['v'] + '}') if 'v' in INSTRUCTIONS_SET[i] else '') +  
+                            ((INSTRUCTIONS_SET[i]['op']) if 'op' in INSTRUCTIONS_SET[i] else ''),
                             (')' if i[3:6] == 'ind' else ''),    
                             (',' + INSTRUCTIONS_SET[i]['i'] + ' ') if 'i' in INSTRUCTIONS_SET[i] else '', 
-                            (' ' + INSTRUCTIONS_SET[i]['op']) if 'op' in INSTRUCTIONS_SET[i] else '',
+                            
                             ' => { \n',
                             ('\t\tassert(value >= 0)\n\t\tassert(value <= 0xff)\n') if 'v' in INSTRUCTIONS_SET[i] and INSTRUCTIONS_SET[i]['v'] == 'u8' else '',
                             ('\t\tassert(value >= 0)\n\t\tassert(value <= 0xffff)\n') if 'v' in INSTRUCTIONS_SET[i] and INSTRUCTIONS_SET[i]['v'] == 'u16' else '',
@@ -2775,6 +2872,7 @@ def generateIstructionsCsv():
         'acc': 'accumulator',
         'indp': 'indirect - zero page',
         'inda': 'indirect - absolute',
+        'indregdepx': 'indirect registry (DE) - zero page - X index',
 
         'px': 'zero page - X index',
         'py': 'zero page - Y index',
@@ -2811,9 +2909,10 @@ def generateIstructionsCsv():
                 1 + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0) + (values_len[INSTRUCTIONS_SET[i]['v']] if 'v' in INSTRUCTIONS_SET[i] else 0),
                 '"' + ' '.join(INSTRUCTIONS_SET[i]['f'] if 'f' in INSTRUCTIONS_SET[i] else []) + '"', 
                 '"' + INSTRUCTIONS_SET[i]['d'] + '"',   
-                '"' + i[:3] + ((' ' + INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
+                '"' + i[:3] 
                       + (' (' if i[3:6] == 'ind' else ' ')
                       + ((sample_values[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else '')
+                      + ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
                       + (')' if i[3:6] == 'ind' else '')
                       + ((', ' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '') 
                       + '"'

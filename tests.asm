@@ -1,5 +1,5 @@
 #once
-#addr 0x0200
+#bank kernel
 MICROCODE_test:
     ldo 0x7E            ; Tests started indicator
 
