@@ -1815,7 +1815,26 @@ INSTRUCTIONS_SET = dict(sorted({
                 "true": [
                         ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
                         ['notCLC']
-                ] },                    
+                ] },                
+
+    "LSRacc": { "c": 0xA8, 
+                "d": "Shift One Bit Right (accumulator)",
+                "op": "a",  
+                "f": ['Z', 'N', 'C'], 
+                "b": [0x01],
+                "m": [  
+                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['CPC','LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO, 
+                        ['notCLC'] + CC_CHKZ + CC_LTMP + CC_notEACC,                         
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ],
+                "true":
+                    [
+                        ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ] },                      
 
     "ORAi": {   "c": 0x0B,  
                 "d": "OR Memory with Accumulator (immediate)",  

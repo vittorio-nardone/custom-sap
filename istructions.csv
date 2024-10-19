@@ -105,6 +105,7 @@ Opcode,Instruction,Mode,Cycles,Cycles when condition is true (min),Len,Flags,Des
 0x39,"LDY","absolute",8,,4,"Z","Load Register Y with Memory (absolute)","LDY 0x2234FA"
 0xA0,"LDY","immediate",4,,2,"Z","Load Register Y with Memory (immediate)","LDY 0x07"
 0x37,"LDY","zero page",6,,3,"Z","Load Register Y with Memory (zero page)","LDY 0x7503"
+0xA8,"LSR","accumulator",8,5,2,"Z N C","Shift One Bit Right (accumulator)","LSR A"
 0xEA,"NOP","",2,,1,"","No Operation","NOP "
 0x0D,"ORA","absolute",10,,4,"Z","OR Memory with Accumulator (absolute)","ORA 0x2234FA"
 0x0E,"ORA","D registry",5,,1,"Z","OR Register D with Accumulator","ORA D"

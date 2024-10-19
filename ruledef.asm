@@ -587,6 +587,10 @@
 		assert(value <= 0xffff)
 		0x37 @ value
  	} 
+	; Shift One Bit Right (accumulator) [Z N C]
+	LSR a => { 
+		0xA8 @ 0x01
+ 	} 
 	; No Operation 
 	NOP  => { 
 		0xEA
