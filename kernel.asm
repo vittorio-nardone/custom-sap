@@ -40,6 +40,7 @@
 #include "banks.asm"
 #include "tests.asm"
 #include "math.asm"
+#include "utils.asm"
 #include "serial.asm"
 #include "interrupt.asm"
 
@@ -55,8 +56,9 @@ boot:
 
 
 #const MAIN_MENU_STATUS = 0x8000
-#const MAIN_MENU_INPUT_BUFFER = 0x8001
- 
+#const MAIN_MENU_INPUT_BUFFER_COUNT = 0x8001
+#const MAIN_MENU_INPUT_BUFFER = 0x8002
+
 #bank kernel
 main:
     scs
@@ -73,13 +75,13 @@ main:
 .init:
     lda 0x00
     sta MAIN_MENU_STATUS
-    ldd MAIN_MENU_INPUT_BUFFER[15:8]
-    lde MAIN_MENU_INPUT_BUFFER[7:0]
-    ldx 0x00
 
 .ready:
+    jsr ACIA_SEND_NEWLINE
+    lda 0x00
+    sta MAIN_MENU_INPUT_BUFFER_COUNT
     lda 0x3E
-    sta ACIA_RW_DATA_ADDR  ; write prompt TODO check status before
+    jsr ACIA_SEND_CHAR
 
 .loop:
     ;ldo timerInterruptCounter
@@ -89,22 +91,20 @@ main:
     bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL ; check if Receive Data Register is full
     beq .loop
     lda ACIA_RW_DATA_ADDR  ; read serial 1 data
-    sta ACIA_RW_DATA_ADDR  ; write back serial 1 data TODO check status before
+    jsr ACIA_SEND_CHAR
     tao
     cmp 0x0D
     beq .cmd_entered
-    sta (de),x
-    inx
+    ldx MAIN_MENU_INPUT_BUFFER_COUNT
+    sta MAIN_MENU_INPUT_BUFFER,x
+    inc MAIN_MENU_INPUT_BUFFER_COUNT
     jmp .loop
 
 .cmd_entered:
+    ldx MAIN_MENU_INPUT_BUFFER_COUNT 
     cpx 0x00
     beq .menu_show_help
-
-    txa
-    tay
-    ldx 0x00
-    lda (de),x
+    lda MAIN_MENU_INPUT_BUFFER
     cmp "d"
     beq .menu_dump_command
     cmp "l"
@@ -114,30 +114,124 @@ main:
     cmp "h"
     beq .menu_halt_command
 .menu_show_error:
-    phd
-    phe
     ldd .menu_error_msg[15:8]
     lde .menu_error_msg[7:0]
     jsr ACIA_SEND_STRING
-    ple
-    pld
-    ldx 0x00
     jmp .ready    
 
 .menu_show_help:
-    phd
-    phe
     ldd .menu_help_msg[15:8]
     lde .menu_help_msg[7:0]
     jsr ACIA_SEND_STRING
-    ple
-    pld
-    ldx 0x00
     jmp .ready    
 
 .menu_dump_command:
-    ; todo
-    jmp .ready
+    ldd 0x00
+    lde 0x00
+
+    lda MAIN_MENU_INPUT_BUFFER_COUNT
+    cmp 0x01
+    beq .menu_dump_command_start
+    cmp 0x05
+    bne .menu_show_error
+
+    lda MAIN_MENU_INPUT_BUFFER + 1
+    ldx MAIN_MENU_INPUT_BUFFER + 2
+    jsr HEXBIN
+    tad
+
+    lda MAIN_MENU_INPUT_BUFFER + 3
+    ldx MAIN_MENU_INPUT_BUFFER + 4
+    jsr HEXBIN
+    tae
+ 
+.menu_dump_command_start:
+    ldy 0x00
+
+.menu_dump_command_dump_16byte:   
+    jsr ACIA_SEND_NEWLINE
+
+    tda
+    jsr ACIA_SEND_HEX
+
+    tea
+    jsr ACIA_SEND_HEX
+
+    lda 0x3a
+    jsr ACIA_SEND_CHAR
+
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+
+    ldx 0x00
+
+.menu_dump_command_dump_byte:    
+    lda (de),x
+    phx
+    jsr ACIA_SEND_HEX
+    plx
+    lda 0x20
+    jsr ACIA_SEND_CHAR  
+
+    inx
+    cpx 0x04
+    beq .menu_dump_command_dump_byte_space
+    cpx 0x08
+    beq .menu_dump_command_dump_byte_space
+    cpx 0x0C
+    beq .menu_dump_command_dump_byte_space
+    cpx 0x10
+    beq .menu_dump_command_dump_byte_space
+    jmp .menu_dump_command_dump_byte_eor_check
+    
+.menu_dump_command_dump_byte_space:        
+    lda 0x20
+    jsr ACIA_SEND_CHAR    
+    
+.menu_dump_command_dump_byte_eor_check:        
+    cpx 0x10
+    bne .menu_dump_command_dump_byte
+    
+    ldx 0x00
+
+.menu_dump_command_dump_char: 
+
+    lda (de),x
+    cmp 0x1F
+    bcc .menu_dump_command_dump_char_dot
+    cmp 0x7E
+    bcs .menu_dump_command_dump_char_dot
+    jmp .menu_dump_command_dump_char_send
+
+.menu_dump_command_dump_char_dot:
+    lda 0x2E
+
+.menu_dump_command_dump_char_send:
+    jsr ACIA_SEND_CHAR 
+    inx
+
+    cpx 0x08
+    bne .menu_dump_command_dump_char_eor_check
+
+    lda 0x20
+    jsr ACIA_SEND_CHAR    
+    
+.menu_dump_command_dump_char_eor_check:    
+    cpx 0x10
+    bne .menu_dump_command_dump_char
+
+    iny
+    cpy 0x10
+    beq .ready
+    
+    tea
+    clc
+    adc 0x10
+    tae
+    bcs .menu_dump_command_dump_16byte
+
+    ind
+    jmp .menu_dump_command_dump_16byte
 
 .menu_load_command:
     ; todo
@@ -155,10 +249,11 @@ main:
   #d 0x0A, 0x0D
   #d "Project OTTO - Kernel v1.0", 0x0A, 0x0D
   #d "Available commands:", 0x0A, 0x0D
-  #d "   d - dump memory", 0x0A, 0x0D
-  #d "   l - load application", 0x0A, 0x0D
-  #d "   r - run application", 0x0A, 0x0D
-  #d "   h - halt system", 0x0A, 0x0D
+  #d "   d      - dump memory", 0x0A, 0x0D
+  #d "   dxxxx  - dump memory from address xxxx", 0x0A, 0x0D  
+  #d "   l      - load application", 0x0A, 0x0D
+  #d "   r      - run application", 0x0A, 0x0D
+  #d "   h      - halt system", 0x0A, 0x0D
   #d 0x00
 
 .menu_error_msg:

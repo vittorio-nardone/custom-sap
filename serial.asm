@@ -1,6 +1,8 @@
 #once
 #bank kernel
 
+#include "utils.asm"
+
 ; **********************************************************
 ; CONSTANTS
 ;
@@ -161,6 +163,96 @@ ACIA_WAIT_SEND_CLEAR:
   beq .send_clr_loop
   pla  
   rts    
+
+; **********************************************************
+; SUBROUTINE: ACIA_SEND_CHAR
+;
+; DESCRIPTION:
+;
+; INPUTS:
+;   A
+;
+; OUTPUTS:
+;
+; DESTROY:
+;
+; FLAGS AFFECTED:
+;
+; USAGE:
+;
+; EXAMPLE:
+;
+; AUTHOR: VN
+; LAST UPDATE: 20/10/2024
+; **********************************************************
+
+ACIA_SEND_CHAR:
+    jsr ACIA_WAIT_SEND_CLEAR
+    sta ACIA_RW_DATA_ADDR
+    rts
+
+; **********************************************************
+; SUBROUTINE: ACIA_SEND_HEX
+;
+; DESCRIPTION:
+;
+; INPUTS:
+;   A
+;
+; OUTPUTS:
+;
+; DESTROY:
+;   A X
+;
+; FLAGS AFFECTED:
+;
+; USAGE:
+;
+; EXAMPLE:
+;
+; AUTHOR: VN
+; LAST UPDATE: 20/10/2024
+; **********************************************************
+
+ACIA_SEND_HEX:
+    jsr BINHEX
+    jsr ACIA_WAIT_SEND_CLEAR
+    sta ACIA_RW_DATA_ADDR
+    txa
+    jsr ACIA_WAIT_SEND_CLEAR
+    sta ACIA_RW_DATA_ADDR
+    rts    
+
+; **********************************************************
+; SUBROUTINE: ACIA_SEND_NEWLINE
+;
+; DESCRIPTION:
+;
+; INPUTS:
+;
+; OUTPUTS:
+;
+; DESTROY:
+;   A
+;
+; FLAGS AFFECTED:
+;
+; USAGE:
+;
+; EXAMPLE:
+;
+; AUTHOR: VN
+; LAST UPDATE: 20/10/2024
+; **********************************************************
+
+ACIA_SEND_NEWLINE:
+    lda 0x0A
+    jsr ACIA_WAIT_SEND_CLEAR
+    sta ACIA_RW_DATA_ADDR
+    lda 0x0D
+    jsr ACIA_WAIT_SEND_CLEAR
+    sta ACIA_RW_DATA_ADDR
+    rts    
 
 ; **********************************************************
 ; SUBROUTINE: ACIA_READ_TO_BUFFER

@@ -1552,7 +1552,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "d",
                 "m": [  
                         ['LRALU-IN'] + CC_notED, 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1562,7 +1562,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "e",
                 "m": [  
                         ['LRALU-IN'] + CC_notEE, 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1611,7 +1611,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "d",
                 "m": [  
                         ['LRALU-IN'] + CC_notED, 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1621,7 +1621,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "e",
                 "m": [  
                         ['LRALU-IN'] + CC_notEE, 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1880,7 +1880,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "d",
                 "m": [  
                         ['LRALU-IN'] + CC_notED, 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1890,7 +1890,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "e",
                 "m": [  
                         ['LRALU-IN'] + CC_notEE, 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
