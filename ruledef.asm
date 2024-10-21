@@ -77,6 +77,10 @@
 		assert(value <= 0xffff)
 		0x07 @ value
  	} 
+	; Shift Left One Bit (accumulator) [Z N C]
+	ASL a => { 
+		0xAF
+ 	} 
 	; Branch on Carry Clear (absolute) 
 	BCC {value: u24} => { 
 		assert(value >= 0x10000)

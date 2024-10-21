@@ -13,6 +13,7 @@ Opcode,Instruction,Mode,Cycles,Cycles when condition is true (min),Len,Flags,Des
 0x0A,"AND","E registry",5,,1,"Z","AND Register E with Accumulator","AND E"
 0x29,"AND","immediate",5,,2,"Z","AND Memory with Accumulator (immediate)","AND 0x07"
 0x07,"AND","zero page",8,,3,"Z","AND Memory with Accumulator (zero page)","AND 0x7503"
+0xAF,"ASL","accumulator",6,5,1,"Z N C","Shift Left One Bit (accumulator)","ASL A"
 0x19,"BCC","absolute",10,6,4,"","Branch on Carry Clear (absolute)","BCC 0x2234FA"
 0x90,"BCC","zero page",6,5,3,"","Branch on Carry Clear (zero page)","BCC 0x7503"
 0x22,"BCS","absolute",6,10,4,"","Branch on Carry Set (absolute)","BCS 0x2234FA"

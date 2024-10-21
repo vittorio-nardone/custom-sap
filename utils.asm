@@ -58,14 +58,10 @@ BINHEX:
 ;
 HEXBIN:                    ; assumes text is in BYTE_CONV_H and BYTE_CONV_L
     jsr .asc_hex_to_bin    ; convert to number - result is in A
-    clc
-    rol a
-    clc
-    rol a
-    clc
-    rol a
-    clc
-    rol a
+    asl a
+    asl a
+    asl a
+    asl a
     phd
     tad                    ; and store
     txa

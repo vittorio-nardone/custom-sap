@@ -250,7 +250,7 @@ main:
   #d "Project OTTO - Kernel v1.0", 0x0A, 0x0D
   #d "Available commands:", 0x0A, 0x0D
   #d "   d      - dump memory", 0x0A, 0x0D
-  #d "   dxxxx  - dump memory from address xxxx", 0x0A, 0x0D  
+  #d "   dxxxx  - dump memory starting from address xxxx", 0x0A, 0x0D  
   #d "   l      - load application", 0x0A, 0x0D
   #d "   r      - run application", 0x0A, 0x0D
   #d "   h      - halt system", 0x0A, 0x0D

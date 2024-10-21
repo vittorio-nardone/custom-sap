@@ -1625,6 +1625,22 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
+    "ASLacc": { "c": 0xAF, 
+                "d": "Shift Left One Bit (accumulator)",
+                "op": "a",  
+                "f": ['Z', 'N', 'C'], 
+                "m": [  
+                        ['LZN', 'notCLC'] + CC_LTMP + CC_notEACC, 
+                        CC_CHKN,
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ],
+                "true": 
+                    [  
+                        ['tmpS1', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ] },                              
+
     "ROLacc": { "c": 0x2A, 
                 "d": "Rotate One Bit Left (accumulator)",
                 "op": "a",  
