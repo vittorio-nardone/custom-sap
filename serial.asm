@@ -12,11 +12,13 @@
 #const ACIA_RW_DATA_ADDR = ACIA_CONTROL_STATUS_ADDR + 1
 #const ACIA_INIT_MASTER_RESET = 0x03    ; master reset
 #const ACIA_INIT_115200_8N1 = 0x15      ; base init value
+#const ACIA_INIT_28800_8N1 = 0x16       ; base init value
 #const ACIA_INIT_ENABLE_RX_INT = 0x80   ; add this to enable RX interrupt
 #const ACIA_INIT_ENABLE_TX_INT = 0x20   ; add this to enable TX interrupt
 
 #const ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL = 0x01
 #const ACIA_STATUS_REG_TRANSMIT_DATA_REGISTER_EMPTY = 0x02
+#const ACIA_STATUS_REG_RECEIVER_OVERRUN = 0x20
 
 #const ACIA_1_RX_BUFFER_AVAILABLE   = 0x83F1
 #const ACIA_1_RX_BUFFER_PULL_INDEX  = 0x83F2 
@@ -44,7 +46,7 @@
 ; LAST UPDATE: 06/10/2024
 ; **********************************************************
  
-SERIAL_INIT:
+ACIA_INIT:
     pha
     lda ACIA_INIT_MASTER_RESET
     sta ACIA_CONTROL_STATUS_ADDR
@@ -87,6 +89,8 @@ ACIA_SEND_STRING:
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
     inx
+    bne .send_char
+    ind
     jmp .send_char
 .send_end:
     rts
