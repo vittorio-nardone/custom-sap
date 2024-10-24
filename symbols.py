@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     print("Custom-SAP - Symbols file generator")
 
-    print("Generating Square table file symbols.asm")
+    print("Generating file symbols.asm")
     generateSymbolsFile()   
 
     print("All done\n")
