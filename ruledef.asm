@@ -595,6 +595,10 @@
 	LSR a => { 
 		0xA8 @ 0x01
  	} 
+	; Not Carry Flag [C]
+	NOC  => { 
+		0xB1
+ 	} 
 	; No Operation 
 	NOP  => { 
 		0xEA

@@ -18,6 +18,9 @@
 ; 0x6800-0x7FFF (6K) - 6k for video 
 ; 0x8000-0xFFFF (32k) - RAM
 ;       0x8000-0x83FF (1k) - reserved for kernel operations
+
+;           0x8100-0x811F  - MEMORY management variables            
+
 ;           0x8200-0x82FF  - XMODEM buffer
 ;           0x8338-0x833F  - XMODEM variables
 ;
@@ -31,6 +34,7 @@
 ;           0x83FA-0x83FB  - pointer to INT2 interrupt handler (serial)
 ;           0x83FC-0x83FD  - pointer to TIMER interrupt handler
 ;           0x83FE-0x83FF  - pointer to KEYB interrupt handler
+;       0x8400-0xEFFF (27k) - ram for apps (108 pages of 256 bytes) 
 ;       0xF000-0xFFFF (4k) - reserved for stack
 ;
 ;

@@ -2727,7 +2727,18 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['C'],
                 "m": [  
                         CC_SEC, 
-                     ] },                    
+                     ] },              
+
+    "NOC": {   "c": 0xB1,  
+                "d": "Not Carry Flag", 
+                "f": ['C'],
+                "m": [  
+                        CC_CHKC,
+                        CC_SEC,
+                    ],
+                "true": [
+                        ['notCLC'],
+                    ] },                             
 
     "NOP": {    "c": 0xEA,  
                 "d": "No Operation",     

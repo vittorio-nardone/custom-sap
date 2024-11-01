@@ -1,6 +1,7 @@
 #once
 #bank kernel
 #include "square.asm"
+#include "power2.asm"
 
 ; **********************************************************
 ; SUBROUTINE: DIVIDE_INT
