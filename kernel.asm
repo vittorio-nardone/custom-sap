@@ -46,8 +46,9 @@
 ;
 ;  Flag register
 ;  N x x x Z C x x
-
-
+;
+;  Overflow flag != 6502 implementation. It's used internally for indexing and value is equal to carry
+;
 ; TODO
 ; - XMODEM durante ricezione dati fare check timeout (qualcosa di molto veloce, altrimenti perdiamo byte)
 ; - XMODEM rendere tutte le label locali + pulizia/refactoring

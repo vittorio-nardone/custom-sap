@@ -1915,8 +1915,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
-                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },      
 
     "CMPp": {   "c": 0x5C,  
@@ -1924,11 +1925,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
-                        ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEACC,
+                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['CPC', 'LMARPAGEZERO'],  
+                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['CPC', 'LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
                     ] },   
 
     "CMPa": {   "c": 0x42,  
@@ -1940,9 +1942,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEACC,
+                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['CPC', 'LRALU-IN'] + CC_notEACC, 
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
                     ] },                       
 
     "CPXi": {   "c": 0xE0,  
@@ -1950,8 +1953,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
-                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
+                        ['LRALU-IN'] + CC_notEX,
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },    
 
     "CPXp": {   "c": 0x47,  
@@ -1959,11 +1963,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
-                        ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
+                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['CPC', 'LMARPAGEZERO'],  
+                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['CPC', 'LRALU-IN'] + CC_notEX,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO             
                     ] },   
 
     "CPXa": {   "c": 0x4A,  
@@ -1975,9 +1980,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX, 
+                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['CPC', 'LRALU-IN'] + CC_notEX, 
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
                     ] },                            
 
     "CPXyr": {  "c": 0xE1,  
@@ -1985,8 +1991,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "y",
                 "m": [  
-                        ['LRALU-IN'] + CC_notEY, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
+                        ['LRALU-IN'] + CC_notEX, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEY,
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                            
                     ] },   
 
     "CPXer": {  "c": 0xE2,  
@@ -1994,8 +2001,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "e",
                 "m": [  
-                        ['LRALU-IN'] + CC_notEE, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
+                        ['LRALU-IN'] + CC_notEX, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO   
                     ] },   
 
     "CPXdr": {  "c": 0xEB,  
@@ -2003,8 +2011,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "d",
                 "m": [  
-                        ['LRALU-IN'] + CC_notED, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEX,
+                        ['LRALU-IN'] + CC_notEX, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notED,
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO   
                     ] },   
 
     "CPYdr": {  "c": 0x4F,  
@@ -2012,8 +2021,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "d",
                 "m": [  
-                        ['LRALU-IN'] + CC_notED, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEY,
+                        ['LRALU-IN'] + CC_notEY, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notED,
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO   
                     ] },      
 
     "CPYer": {  "c": 0x50,  
@@ -2021,8 +2031,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "e",
                 "m": [  
-                        ['LRALU-IN'] + CC_notEE, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEY,
+                        ['LRALU-IN'] + CC_notEY, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO   
                     ] },          
 
     "CPDer": {  "c": 0x51,  
@@ -2030,8 +2041,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "e",
                 "m": [  
-                        ['LRALU-IN'] + CC_notEE, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notED,
+                        ['LRALU-IN'] + CC_notED, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO   
                     ] },                                                         
 
     "CPYi": {   "c": 0xE3,  
@@ -2039,8 +2051,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
-                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEY,
+                        ['LRALU-IN'] + CC_notEY,
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },      
 
     "CPYp": {   "c": 0x4B,  
@@ -2048,11 +2061,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
-                        ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEY,
+                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['CPC', 'LMARPAGEZERO'],  
+                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['CPC', 'LRALU-IN'] + CC_notEY,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO         
                     ] },   
 
     "CPYa": {   "c": 0x4E,  
@@ -2064,9 +2078,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEY, 
+                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['CPC', 'LRALU-IN'] + CC_notEY, 
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
                     ] },                            
 
     "CPEi": {   "c": 0xE4,  
@@ -2074,8 +2089,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
-                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEE,
+                        ['LRALU-IN'] + CC_notEE,
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "CPEp": {   "c": 0x45,  
@@ -2083,11 +2099,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
-                        ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEE,
+                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['CPC', 'LMARPAGEZERO'],  
+                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['CPC', 'LRALU-IN'] + CC_notEE,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
                     ] },   
 
     "CPEa": {   "c": 0x46,  
@@ -2099,9 +2116,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notEE, 
+                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['CPC', 'LRALU-IN'] + CC_notEE, 
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
                     ] },                                                
 
     "CPDi": {   "c": 0xE5,  
@@ -2109,8 +2127,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
-                        ['CPC', 'ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notED,
+                        ['LRALU-IN'] + CC_notED,
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },   
 
     "CPDp": {   "c": 0x43,  
@@ -2118,11 +2137,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
-                        ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notED,
+                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['CPC', 'LMARPAGEZERO'],  
+                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['CPC', 'LRALU-IN'] + CC_notED,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
                     ] },   
 
     "CPDa": {   "c": 0x44,  
@@ -2134,9 +2154,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARH', 'EPCADDR'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
-                        ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LC', 'LZN'] + CC_notED,
+                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['CPC', 'LRALU-IN'] + CC_notED, 
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO   
                     ] },      
 
     "BITi": {   "c": 0x15,  
