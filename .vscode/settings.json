@@ -1,0 +1,10 @@
+{
+    "emeraldwalk.runonsave": {
+        "commands": [
+        {
+            "match": "\\.asm$",
+            "cmd": "./generate-all.sh"
+        }
+    ]
+    }
+}

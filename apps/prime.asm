@@ -1,5 +1,5 @@
-#include "../ruledef.asm"
-#include "../symbols.asm"
+#include "../assembly/ruledef.asm"
+#include "../kernel/symbols.asm"
 
 #bankdef ram
 {
@@ -71,8 +71,22 @@ Print:
 PrintLoop:
     LDA PrimeMap,y
     BEQ NotPrime
+
+    PHX
+    PHY
     TYA
-    JSR ACIA_SEND_HEX
+    JSR byte_to_ascii 
+
+    PHA
+    TXA      
+    JSR ACIA_SEND_CHAR
+    TYA
+    JSR ACIA_SEND_CHAR
+    PLA
+    JSR ACIA_SEND_CHAR
+
+    PLY
+    PLX
     LDA 0x20
     JSR ACIA_SEND_CHAR
     INE
@@ -113,3 +127,68 @@ PrimeMap:
     #d 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
     #d 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
     #d 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+
+
+; Convert byte in A to ASCII decimal string
+; Input: A register (0-255)
+; Output: X,Y,A  
+
+byte_to_ascii:
+   
+    pha               ; Store original number
+    
+    ; Handle hundreds digit
+    ldx 0x00
+    cmp 100
+    bcc tens          ; If < 100, skip hundreds
+    
+    ; Divide by 100
+    pla             
+    sec
+    ldy 0x00
+hundreds_loop:
+    cmp 100
+    bcc hundreds_end
+    sbc 100
+    iny
+    bcs hundreds_loop
+    
+hundreds_end:  
+    ; Store remainder and convert hundreds to ASCII
+    pha
+    tya
+    ora 0x30        ; Convert to ASCII
+    tax             ; Store hundreds digit
+    
+tens:
+    ; Handle tens digit
+    ldy 0x00
+    pla
+    pha
+    cmp 10
+    bcc ones        ; If < 10, skip tens
+    
+    ; Divide by 10
+    pla
+    sec
+    ldy 0x00
+tens_loop:
+    cmp 10
+    bcc tens_end
+    sbc 10
+    iny
+    bcs tens_loop
+
+tens_end:    
+    ; Store remainder and convert tens to ASCII
+    pha
+    tya
+    ora 0x30        ; Convert to ASCII
+    tay             ; Store tens digit
+    
+ones:
+    ; Handle ones digit
+    pla
+    ora 0x30        ; Convert to ASCII
+    rts

@@ -2899,7 +2899,7 @@ def generateInstructions(ihs):
 ##
 ## 
 def generateRuldef():
-    with open('ruledef.asm', 'w') as f:
+    with open('assembly/ruledef.asm', 'w') as f:
         f.write('#once\n')
         f.write('#ruledef\n')
         f.write('{\n')

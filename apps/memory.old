@@ -1,0 +1,170 @@
+#include "../assembly/ruledef.asm"
+#include "../kernel/symbols.asm"
+
+#bankdef ram
+{
+    #addr 0x9000
+    #size 0x1000
+    #outp 0
+}
+
+; Constants
+; PAGE_SIZE   = 256           ; Page size in bytes
+MAX_PAGES   = 108           ; Maximum number of manageable pages
+BITMAP_SIZE = 13            ; Bitmap size in bytes (108 pages = 13 bytes)
+
+#const bitmap   = 0x8100      ; -0x810C - Bitmap to track allocated pages
+#const temp     = 0x810D      ; Temporary variable
+#const page_num = 0x810E      ; Current page number
+#const byte_pos = 0x810F      ; Byte position in bitmap
+#const bit_pos  = 0x8110      ; Bit position in byte
+
+
+#bank ram
+
+test:
+    jsr init
+    ldx 0x00
+.test_loop:
+    jsr allocate_page
+    inx
+    cpx 0x12
+    bne .test_loop
+    tao
+    rts
+
+init:
+    ldx 0x00
+    lda 0x00
+.init_loop:
+    sta bitmap,x
+    inx
+    cpx BITMAP_SIZE
+    bne .init_loop
+    rts
+
+; Page allocation routine
+; Output: A = allocated page number ($FF if error)
+;         X, Y preserved
+allocate_page:
+    phx                    ; Save registers 
+    phy
+    phd
+
+    ldx 0x00               ; Start from first bitmap byte
+.next_byte:
+    lda bitmap,x           ; Load current byte
+    cmp 0xFF               ; Check if byte is full
+    bne .found_byte        ; If not full, look for free bit
+    inx
+    cpx BITMAP_SIZE        ; Check if end of bitmap
+    bne .next_byte
+    
+    ; No page available
+    lda 0xFF
+    jmp .exit
+
+.found_byte:
+    ldy 0x00               ; Start from first bit
+    tad                    ; Transfer bitmap value in d
+.check_bit:
+    lda bit_masks,y
+    and d                  ; Check bit
+    beq .bit_found
+    iny
+    jmp .check_bit
+
+.bit_found:    
+    ; Free bit found - calculate page number
+;
+;    byte 00 -> first 8 pages -> 0x0000 - 0x0700 (offset) 
+;    byte 01 -> other 8 pages -> 0x0800 - 0x0F00 (offset)
+;    
+    txa
+    asl a
+    asl a
+    asl a                 ; Multiply by 8 (byte_pos * 8)
+    sta page_num
+    tya
+    clc
+    adc page_num          ; Add bit offset
+    sta page_num
+    
+    ; Mark page as allocated
+    lda bitmap,x
+    tad
+    lda bit_masks,y
+    ora d
+    sta bitmap,x
+    
+    lda page_num          ; Return page number
+    jmp .exit
+
+
+.exit:
+    pld                    ; Restore registers
+    ply
+    plx
+    rts
+
+; Page deallocation routine
+; Input: A = page number to deallocate
+; Output: A = 0 if success, $FF if error
+;         X, Y preserved
+deallocate_page:
+    phx                    ; Save registers
+    phy
+    phd
+    
+    sta page_num
+    cmp MAX_PAGES        ; Check if valid page number
+    bcs .dealloc_error
+    
+    ; Calculate bitmap position
+    lsr                  ; Divide by 8
+    lsr
+    lsr
+    sta byte_pos
+    
+    lda page_num
+    and 0x07             ; Get last 3 bits
+    sta bit_pos
+    
+    ldx byte_pos
+    ldy bit_pos
+    lda bitmap,x          ; Load current byte
+    and bit_masks_inv,y   ; Clear bit
+    sta bitmap,x
+    
+    lda 0x00                ; Success
+    jmp .dealloc_exit
+    
+.dealloc_error:
+    lda 0xFF              ; Error
+    
+.dealloc_exit:
+    pld                    ; Restore registers
+    ply
+    plx
+    rts
+
+; Lookup tables for bit masks
+bit_masks:
+    #d %00000001
+    #d %00000010
+    #d %00000100
+    #d %00001000
+    #d %00010000
+    #d %00100000
+    #d %01000000
+    #d %10000000
+
+bit_masks_inv:
+    #d %11111110
+    #d %11111101
+    #d %11111011
+    #d %11110111
+    #d %11101111
+    #d %11011111
+    #d %10111111
+    #d %01111111    

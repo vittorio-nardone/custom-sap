@@ -5,7 +5,7 @@
 ## 
 def generateSquareTable():
 
-    with open('square.asm', 'w') as f:
+    with open('kernel/square.asm', 'w') as f:
         f.write("#once\n\n")
         f.write("; **********************************************************\n")
         f.write("; SQUARE LOOKUP TABLE\n")
@@ -26,7 +26,7 @@ def generateSquareTable():
 ## 
 def generatePowerOfTwoTable():
 
-    with open('power2.asm', 'w') as f:
+    with open('kernel/power2.asm', 'w') as f:
         f.write("#once\n\n")
         f.write("; **********************************************************\n")
         f.write("; POWER OF 2 LOOKUP TABLE\n")

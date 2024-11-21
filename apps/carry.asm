@@ -1,5 +1,5 @@
-#include "../ruledef.asm"
-#include "../symbols.asm"
+#include "../assembly/ruledef.asm"
+#include "../kernel/symbols.asm"
 
 #bankdef ram
 {

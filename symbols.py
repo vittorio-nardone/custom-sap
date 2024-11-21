@@ -10,7 +10,7 @@ def generateSymbolsFile():
         lines = infile.readlines()
     
     # Open the output file to write the modified content
-    with open('symbols.asm', 'w') as f:
+    with open('kernel/symbols.asm', 'w') as f:
         for line in lines:
             # Only add the prefix if the line does not contain a dot (.)
             if '.' not in line:
