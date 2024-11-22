@@ -258,7 +258,7 @@ main:
     clc
     adc 0x10
     tae
-    bcs .menu_dump_command_dump_16byte
+    bcc .menu_dump_command_dump_16byte
 
     ind
     jmp .menu_dump_command_dump_16byte
