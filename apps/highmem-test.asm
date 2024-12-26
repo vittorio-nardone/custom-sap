@@ -16,5 +16,5 @@ loop:
     tao
     sta 0x011000,x
     inx
-    ;bne loop
+    bne loop
     rts

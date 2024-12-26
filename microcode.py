@@ -166,7 +166,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LACC + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZN', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },
 
@@ -175,9 +175,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },
 
@@ -186,11 +186,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },
 
@@ -200,9 +200,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u16",
                 "i": "x",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LACC,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC,  
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
@@ -257,11 +257,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u24",
                 "i": "x",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'EPCADDR'] + CC_LACC,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC,  
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
@@ -279,9 +279,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u16",
                 "i": "y",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LACC,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC,  
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
@@ -299,11 +299,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u24",
                 "i": "y",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'EPCADDR'] + CC_LACC,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC,  
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
@@ -321,7 +321,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LX + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZN', 'EPCADDR', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },               
 
@@ -330,9 +330,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },
 
@@ -341,11 +341,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },
 
@@ -354,7 +354,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LY + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZN', 'EPCADDR', 'MEMADDRVALID'] + CC_LY + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },   
 
@@ -363,9 +363,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LY + CC_ALU_DETECT_ZERO 
                     ] },
 
@@ -374,11 +374,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LY + CC_ALU_DETECT_ZERO 
                     ] },                        
 
@@ -387,7 +387,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LD + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZN', 'EPCADDR', 'MEMADDRVALID'] + CC_LD + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },   
 
@@ -396,9 +396,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LD + CC_ALU_DETECT_ZERO 
                     ] },
 
@@ -407,11 +407,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LD + CC_ALU_DETECT_ZERO 
                     ] },                    
 
@@ -420,7 +420,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LZN', 'EPCADDR'] + CC_LE + CC_ALU_DETECT_ZERO, 
+                        ['ERAM', 'LZN', 'EPCADDR', 'MEMADDRVALID'] + CC_LE + CC_ALU_DETECT_ZERO, 
                         ['CPC']  
                     ] },   
 
@@ -429,9 +429,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LE + CC_ALU_DETECT_ZERO 
                     ] },
 
@@ -440,11 +440,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LE + CC_ALU_DETECT_ZERO 
                     ] },                     
 
@@ -452,9 +452,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Accumulator in Memory (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
                     ] },      
 
@@ -462,11 +462,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Accumulator in Memory (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'], 
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
                     ] },  
 
@@ -476,9 +476,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -533,11 +533,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],            
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -555,9 +555,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "y",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -575,11 +575,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "y",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],            
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -595,9 +595,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Register X in Memory (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEX  
                     ] },      
 
@@ -605,11 +605,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Register X in Memory (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'], 
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEX  
                     ] },  
 
@@ -619,9 +619,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "y",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -639,11 +639,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "y",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],            
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -659,9 +659,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Register Y in Memory (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEY  
                     ] },      
 
@@ -669,11 +669,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Register Y in Memory (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'], 
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEY  
                     ] },  
 
@@ -683,9 +683,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -703,11 +703,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],            
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -723,9 +723,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Register D in Memory (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notED  
                     ] },      
 
@@ -733,11 +733,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Register D in Memory (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'], 
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notED  
                     ] },  
 
@@ -747,9 +747,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -767,11 +767,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],            
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -789,9 +789,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "y",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -809,11 +809,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "y",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],            
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -829,9 +829,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Register E in Memory (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEE  
                     ] },      
 
@@ -839,11 +839,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Store Register E in Memory (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'], 
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEE  
                     ] },  
 
@@ -853,9 +853,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -873,11 +873,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],            
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -895,9 +895,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "y",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -915,11 +915,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "y",
                 "f": ['O'],
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],            
-                        ['ERAM', 'EPCADDR'] + CC_LTMP, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
@@ -1041,7 +1041,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'] + CC_CHKC, 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'] + CC_CHKC, 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
@@ -1055,9 +1055,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'] + CC_CHKC,                                           
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -1072,11 +1072,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'] + CC_CHKC,                                           
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -1093,9 +1093,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u16",
                 "i": "x",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
@@ -1120,11 +1120,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u24",
                 "i": "x",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],                    
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
@@ -1149,9 +1149,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u16",
                 "i": "y",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
@@ -1176,11 +1176,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u24",
                 "i": "y",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],                    
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
@@ -1232,11 +1232,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['LRALU-IN'] + CC_notEACC + CC_CHKC, 
-                        ['ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ], 
                 "true": [
-                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
@@ -1245,9 +1245,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'], 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                     
                         ['CPC', 'LRALU-IN'] + CC_notEACC + CC_CHKC, 
                         ['EMAR', 'ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -1262,11 +1262,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'], 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                    
                         ['CPC', 'LRALU-IN'] + CC_notEACC + CC_CHKC, 
                         ['EMAR', 'ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -1311,9 +1311,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u16",
                 "i": "x",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
@@ -1338,11 +1338,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u24",
                 "i": "x",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],                    
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
@@ -1367,9 +1367,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u16",
                 "i": "y",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
@@ -1394,11 +1394,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u24",
                 "i": "y",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],                    
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
@@ -1435,9 +1435,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID'], 
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
                     ] },  
@@ -1447,11 +1447,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID'], 
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
                     ] },                            
@@ -1493,9 +1493,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'], 
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
                     ] },   
@@ -1505,11 +1505,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'], 
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
                     ] },                       
@@ -1551,7 +1551,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },   
@@ -1561,9 +1561,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [                        
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
@@ -1574,11 +1574,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u24",
                 "m": [                        
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
@@ -1610,7 +1610,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
@@ -1620,9 +1620,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [                        
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
@@ -1633,11 +1633,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u24",
                 "m": [                        
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
@@ -1733,9 +1733,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'N', 'C'], 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LZN'] + CC_LTMP,
                         CC_CHKN,
                         ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
@@ -1752,11 +1752,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'N', 'C'], 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID', 'LZN'] + CC_LTMP,
                         CC_CHKN,
                         ['tmpS1', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
@@ -1774,7 +1774,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC','LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO, 
                         CC_CHKZ + CC_LTMP + CC_notEACC,                         
@@ -1793,7 +1793,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEE,  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                    
                         CC_CHKZ + CC_LTMP + CC_notEE, 
@@ -1812,7 +1812,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notED,  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                                        
                         CC_CHKZ + CC_LTMP + CC_notED, 
@@ -1831,11 +1831,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "b": [0x01],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,    
                         ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
@@ -1853,13 +1853,13 @@ INSTRUCTIONS_SET = dict(sorted({
                 "b": [0x01],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                         
                         ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
@@ -1877,7 +1877,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], #Load 0x01
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC','LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO, 
                         ['notCLC'] + CC_CHKZ + CC_LTMP + CC_notEACC,                         
@@ -1895,7 +1895,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
@@ -1905,9 +1905,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [                        
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
@@ -1918,11 +1918,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u24",
                 "m": [                        
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
@@ -1954,7 +1954,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['LRALU-IN'] + CC_notEACC,
-                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },      
 
@@ -1963,9 +1963,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                     
                         ['CPC', 'LRALU-IN'] + CC_notEACC,
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
@@ -1976,11 +1976,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                    
                         ['CPC', 'LRALU-IN'] + CC_notEACC, 
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
@@ -1992,7 +1992,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['LRALU-IN'] + CC_notEX,
-                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },    
 
@@ -2001,9 +2001,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                     
                         ['CPC', 'LRALU-IN'] + CC_notEX,
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO             
@@ -2014,11 +2014,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                    
                         ['CPC', 'LRALU-IN'] + CC_notEX, 
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
@@ -2090,7 +2090,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['LRALU-IN'] + CC_notEY,
-                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },      
 
@@ -2099,9 +2099,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                     
                         ['CPC', 'LRALU-IN'] + CC_notEY,
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO         
@@ -2112,11 +2112,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                    
                         ['CPC', 'LRALU-IN'] + CC_notEY, 
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
@@ -2128,7 +2128,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['LRALU-IN'] + CC_notEE,
-                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },   
 
@@ -2137,9 +2137,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                     
                         ['CPC', 'LRALU-IN'] + CC_notEE,
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
@@ -2150,11 +2150,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                    
                         ['CPC', 'LRALU-IN'] + CC_notEE, 
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
@@ -2166,7 +2166,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['LRALU-IN'] + CC_notED,
-                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR'],
+                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO 
                     ] },   
 
@@ -2175,9 +2175,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'],                     
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                     
                         ['CPC', 'LRALU-IN'] + CC_notED,
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO    
@@ -2188,11 +2188,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'],                    
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                    
                         ['CPC', 'LRALU-IN'] + CC_notED, 
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO   
@@ -2203,7 +2203,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR'], 
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
                     ] },  
@@ -2213,9 +2213,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u16",
                 "m": [                        
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
@@ -2226,11 +2226,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z'],  
                 "v": "u24",
                 "m": [                        
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
                         ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
@@ -2241,9 +2241,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Jump to New Location (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCHP0
                     ] },                  
 
@@ -2251,12 +2251,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Jump to New Location (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE 
                     ] },       
@@ -2265,14 +2265,14 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Jump to New Location (indirect - zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCHP0,
 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'],
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL,
                         CC_notETMP + CC_notLPCHP0 
                     ] },    
 
@@ -2280,21 +2280,21 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Jump to New Location (indirect - absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE,
 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE                         
                     ] },                                       
@@ -2310,9 +2310,9 @@ INSTRUCTIONS_SET = dict(sorted({
                         CC_INC_STACK_POINTER,
                         ['ESP', 'WRAM'] + CC_notEPCPAGE,
                         CC_INC_STACK_POINTER,
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0  
                     ] },      
 
@@ -2326,12 +2326,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         CC_INC_STACK_POINTER,
                         ['ESP', 'WRAM'] + CC_notEPCPAGE,
                         CC_INC_STACK_POINTER,
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE  
                     ] },    
@@ -2348,14 +2348,14 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ESP', 'WRAM'] + CC_notEPCPAGE,
                         CC_INC_STACK_POINTER,
 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0,  
 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0                          
                     ] },      
 
@@ -2371,21 +2371,21 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ESP', 'WRAM'] + CC_notEPCPAGE,
                         CC_INC_STACK_POINTER,
 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE,
 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE                          
                     ] },                        
@@ -2483,13 +2483,13 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Result Zero (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
                         ['CPC']
                     ],
                 "true": [
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0 
                     ] },   
 
@@ -2497,9 +2497,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Result not Zero (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCHP0 
                     ],
                 "true": [
@@ -2511,13 +2511,13 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Carry Set (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
                         ['CPC']
                     ],
                 "true": [
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0 
                     ] },    
 
@@ -2525,9 +2525,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Carry Clear (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0
                     ],
                 "true": [
@@ -2539,13 +2539,13 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Result Minus (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
                         ['CPC']
                     ],
                 "true": [
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0 
                     ] }, 
 
@@ -2553,9 +2553,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Result Plus (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0
                     ],
                 "true": [
@@ -2567,7 +2567,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Result Zero (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
                         ['CPC'],
                         ['CPC']
@@ -2575,9 +2575,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "true": [
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE                         
                     ] },   
@@ -2586,12 +2586,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Result not Zero (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKZ,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE     
                     ],
@@ -2605,7 +2605,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Carry Set (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
                         ['CPC'],
                         ['CPC']
@@ -2613,9 +2613,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "true": [
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE     
                     ] },    
@@ -2624,12 +2624,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Carry Clear (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKC,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKC,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE     
                     ],
@@ -2643,7 +2643,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Result Minus (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
                         ['CPC'],
                         ['CPC']
@@ -2651,9 +2651,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "true": [
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE     
                     ] }, 
@@ -2662,12 +2662,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on Result Plus (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKN,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKN,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE     
                     ],
@@ -2682,9 +2682,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on oVerflow Clear (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKO,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKO,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0
                     ],
                 "true": [
@@ -2696,13 +2696,13 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on oVerflow Set (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKO,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKO,
                         ['CPC'], 
                         ['CPC']
                     ],
                 "true": [
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP  + CC_notLPCHP0 
                     ] },    
 
@@ -2710,12 +2710,12 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on oVerflow Clear (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKO,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKO,
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE     
                     ],
@@ -2729,7 +2729,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Branch on oVerflow Set (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LTMP + CC_CHKO,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKO,
                         ['CPC'], 
                         ['CPC'],
                         ['CPC']
@@ -2737,9 +2737,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "true": [
                         ['ESP', 'WRAM'] + CC_notETMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_LTMP,
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
                         ['CPC'], 
-                        ['ERAM', 'EPCADDR'] + CC_notLPCL, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
                         CC_notETMP + CC_notLPCH,
                         ['ESP', 'ERAM'] + CC_notLPCPAGE     
                     ] },    
@@ -2748,7 +2748,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Load Output with Memory (immediate)", 
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'EPCADDR'] + CC_LOUT, 
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LOUT, 
                         ['CPC']  
                     ] },
 
@@ -2756,9 +2756,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Load Output with Memory (zero page)", 
                 "v": "u16",
                 "m": [  
-                        ['ERAM', 'LMARH', 'EPCADDR'], 
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LOUT  
                     ] },
 
@@ -2766,11 +2766,11 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Load Output with Memory (absolute)", 
                 "v": "u24",
                 "m": [  
-                        ['ERAM', 'LMARPAGE', 'EPCADDR'],
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARH', 'EPCADDR'],
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
-                        ['ERAM', 'LMARL', 'EPCADDR'], 
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LOUT  
                     ] },                        
 
