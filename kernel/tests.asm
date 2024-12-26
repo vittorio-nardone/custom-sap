@@ -443,37 +443,37 @@ MICROCODE_test:
     cmp 0x01            ; Z flag must be clear/set on CMP
     beq .fail
 
-; .test25:
-;     ldo 0x25            ; Test #25: Ram expansion & Absolute addr.
-;     lda 0x23
-;     sta 0x01FFFF
-;     lda 0x22
-;     sta 0x010000
-;     lda 0x00
-;     ldx 0x35
-;     ldx 0x01FFFF
-;     cpx 0x23
-;     bne .fail
-;     lda 0x010000
-;     cmp 0x22
-;     bne .fail
-;     lda 0x45
-;     sta 0x010022
-;     ldx 0x21
-;     inx
-;     lda 0x00
-;     lda 0x010000,x
-;     cmp 0x45
-;     bne .fail
-;     ; write code in ram and JSR to ram (to test 24bit PC)
-;     lda 0xfe            ; write in memory: LDO 0xFF 
-;     sta 0x010101
-;     lda 0xff
-;     sta 0x010102        ; write in memory: RTS
-;     lda 0x60
-;     sta 0x010103
-;     jsr 0x010101        ; JSR to code written in memory
-;     ldo 0x25            ; it should return here
+.test25:
+    ldo 0x25            ; Test #25: Ram expansion & Absolute addr.
+    lda 0x23
+    sta 0x01FFFF
+    lda 0x22
+    sta 0x010000
+    lda 0x00
+    ldx 0x35
+    ldx 0x01FFFF
+    cpx 0x23
+    bne .fail
+    lda 0x010000
+    cmp 0x22
+    bne .fail
+    lda 0x45
+    sta 0x010022
+    ldx 0x21
+    inx
+    lda 0x00
+    lda 0x010000,x
+    cmp 0x45
+    bne .fail
+    ; write code in ram and JSR to ram (to test 24bit PC)
+    lda 0xfe            ; write in memory: LDO 0xFF 
+    sta 0x010101
+    lda 0xff
+    sta 0x010102        ; write in memory: RTS
+    lda 0x60
+    sta 0x010103
+    jsr 0x010101        ; JSR to code written in memory
+    ldo 0x25            ; it should return here
 
 .test26:                 ; Test #26: PHA / PLA
     ldo 0x26            

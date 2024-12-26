@@ -62,11 +62,12 @@
 ; zero page variables (adjust these to suit your needs)
 ;
 ;
-#const XMODEM_CRC			=	0x8338		; CRC lo byte  (two byte variable)
-#const XMODEM_CRCH			=	0x8339		; CRC hi byte  
+#const XMODEM_CRC			=	0x8337		; CRC lo byte  (two byte variable)
+#const XMODEM_CRCH			=	0x8338		; CRC hi byte  
 
-#const XMODEM_PTRH			=	0x833a		; data pointer (two byte variable)
-#const XMODEM_PTR			=	0x833b		; data pointer (two byte variable)
+#const XMODEM_PTRP			=	0x8339		; data pointer (three byte variable)
+#const XMODEM_PTRH			=	0x833a		; data pointer 
+#const XMODEM_PTR			=	0x833b		; data pointer 
 
 
 #const XMODEM_BLK_NO		=	0x833c			; block number 
@@ -125,6 +126,7 @@
 ; Start of program (adjust to your needs)
 ;
 XMODEM:
+	sty XMODEM_PTRP
 	std XMODEM_PTRH
 	ste XMODEM_PTR
 	lda	0x01
@@ -244,12 +246,17 @@ XMODEM:
 	ldy 0x02
 .CopyBlk3:
 	lda	XMODEM_RECEIVE_BUFFER,y		; get data byte from buffer
+	phy
+	ldy XMODEM_PTRP
 	ldd XMODEM_PTRH
 	lde XMODEM_PTR
-	sta	(de),x						; save to target
+	sta	(yde),x						; save to target
+	ply
 	inc	XMODEM_PTR					; point to next address
 	bne	.CopyBlk4					; did it step over page boundary?
 	inc	XMODEM_PTRH					; adjust high address for page crossing
+	bne	.CopyBlk4					; did it step over page boundary?
+	inc	XMODEM_PTRP					; adjust high address for page crossing	
 .CopyBlk4:
 	iny								; point to next data byte
 	cpy	0x82						; is it the last byte

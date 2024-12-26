@@ -22,7 +22,7 @@
 ;           0x8100-0x811F  - MEMORY management variables            
 
 ;           0x8200-0x82FF  - XMODEM buffer
-;           0x8338-0x833F  - XMODEM variables
+;           0x8337-0x833F  - XMODEM variables
 ;
 ;           0x83F1         - ACIA 1 rx buffer size
 ;           0x83F2-0x83F3  - ACIA 1 rx buffer push/pull indexes
@@ -77,9 +77,11 @@ boot:
 
 #const MAIN_MENU_STATUS = 0x8000
 #const MAIN_MENU_INPUT_BUFFER_COUNT = 0x8001
-#const MAIN_MENU_RUN_MSB = 0x8002
-#const MAIN_MENU_RUN_LSB = 0x8003
-#const MAIN_MENU_INPUT_BUFFER = 0x8004  ; - 0x8013 (max 16 chars)
+#const MAIN_MENU_RUN_PAGE = 0x8002
+#const MAIN_MENU_RUN_MSB = 0x8003
+#const MAIN_MENU_RUN_LSB = 0x8004
+#const MAIN_MENU_DUMP_ROW = 0x8005
+#const MAIN_MENU_INPUT_BUFFER = 0x8006  ; - 0x8015 (max 16 chars)
 
 #bank kernel
 main:
@@ -106,9 +108,6 @@ main:
     jsr ACIA_SEND_CHAR
 
 .loop:
-    ;ldo timerInterruptCounter
-    ;jsr MATH_test
-
     lda ACIA_CONTROL_STATUS_ADDR  ; read serial 1 status
     bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL ; check if Receive Data Register is full
     beq .loop
@@ -155,16 +154,40 @@ main:
     beq .menu_upload_command_ok
     jmp .ready    
 
-.menu_dump_command:
-    ldd 0x90
-    lde 0x00
+; --------------------------------------
 
+.menu_read_address:
     lda MAIN_MENU_INPUT_BUFFER_COUNT
     cmp 0x01
-    beq .menu_dump_command_start
+    beq .menu_read_address_default
     cmp 0x05
-    bne .menu_show_error
+    beq .menu_read_address_len5
+    cmp 0x07
+    beq .menu_read_address_len7
+    sec
+    rts
 
+.menu_read_address_len7:
+    lda MAIN_MENU_INPUT_BUFFER + 1
+    ldx MAIN_MENU_INPUT_BUFFER + 2
+    jsr HEXBIN
+    tay
+
+    lda MAIN_MENU_INPUT_BUFFER + 3
+    ldx MAIN_MENU_INPUT_BUFFER + 4
+    jsr HEXBIN
+    tad
+
+    lda MAIN_MENU_INPUT_BUFFER + 5
+    ldx MAIN_MENU_INPUT_BUFFER + 6
+    jsr HEXBIN
+    tae
+    clc
+    rts
+
+.menu_read_address_len5:
+    ldy 0x00
+    
     lda MAIN_MENU_INPUT_BUFFER + 1
     ldx MAIN_MENU_INPUT_BUFFER + 2
     jsr HEXBIN
@@ -174,12 +197,31 @@ main:
     ldx MAIN_MENU_INPUT_BUFFER + 4
     jsr HEXBIN
     tae
- 
-.menu_dump_command_start:
+    clc
+    rts
+
+.menu_read_address_default:  
     ldy 0x00
+    ldd 0x90
+    lde 0x00
+    clc
+    rts
+
+; --------------------------------------
+
+.menu_dump_command:
+    jsr .menu_read_address
+    bcs .menu_show_error
+
+.menu_dump_command_start:
+    lda 0x00
+    sta MAIN_MENU_DUMP_ROW
 
 .menu_dump_command_dump_16byte:   
     jsr ACIA_SEND_NEWLINE
+
+    tya
+    jsr ACIA_SEND_HEX
 
     tda
     jsr ACIA_SEND_HEX
@@ -196,7 +238,7 @@ main:
     ldx 0x00
 
 .menu_dump_command_dump_byte:    
-    lda (de),x
+    lda (yde),x
     phx
     jsr ACIA_SEND_HEX
     plx
@@ -226,7 +268,7 @@ main:
 
 .menu_dump_command_dump_char: 
 
-    lda (de),x
+    lda (yde),x
     cmp 0x1F
     bcc .menu_dump_command_dump_char_dot
     cmp 0x7E
@@ -239,7 +281,6 @@ main:
 .menu_dump_command_dump_char_send:
     jsr ACIA_SEND_CHAR 
     inx
-
     cpx 0x08
     bne .menu_dump_command_dump_char_eor_check
 
@@ -250,8 +291,9 @@ main:
     cpx 0x10
     bne .menu_dump_command_dump_char
 
-    iny
-    cpy 0x10
+    inc MAIN_MENU_DUMP_ROW
+    lda MAIN_MENU_DUMP_ROW
+    cmp 0x10
     beq .ready
     
     tea
@@ -261,27 +303,14 @@ main:
     bcc .menu_dump_command_dump_16byte
 
     ind
+    bne .menu_dump_command_dump_16byte
+
+    iny
     jmp .menu_dump_command_dump_16byte
 
 .menu_upload_command:
-    ldd 0x90
-    lde 0x00
-
-    lda MAIN_MENU_INPUT_BUFFER_COUNT
-    cmp 0x01
-    beq .menu_upload_command_start
-    cmp 0x05
-    bne .menu_show_error
-
-    lda MAIN_MENU_INPUT_BUFFER + 1
-    ldx MAIN_MENU_INPUT_BUFFER + 2
-    jsr HEXBIN
-    tad
-
-    lda MAIN_MENU_INPUT_BUFFER + 3
-    ldx MAIN_MENU_INPUT_BUFFER + 4
-    jsr HEXBIN
-    tae
+    jsr .menu_read_address
+    bcs .menu_show_error
 
 .menu_upload_command_start:
     phd
@@ -296,7 +325,6 @@ main:
     cli
     sta MAIN_MENU_STATUS    
     jmp .ready
-
 
 .menu_upload_command_error:
     ldd .menu_upload_command_error_msg[15:8]
@@ -315,29 +343,16 @@ main:
     jmp .ready
 
 .menu_run_command:
-    ldd 0x90
-    lde 0x00
-
-    lda MAIN_MENU_INPUT_BUFFER_COUNT
-    cmp 0x01
-    beq .menu_run_command_start
-    cmp 0x05
-    bne .menu_show_error
-
-    lda MAIN_MENU_INPUT_BUFFER + 1
-    ldx MAIN_MENU_INPUT_BUFFER + 2
-    jsr HEXBIN
-    tad
-
-    lda MAIN_MENU_INPUT_BUFFER + 3
-    ldx MAIN_MENU_INPUT_BUFFER + 4
-    jsr HEXBIN
-    tae
+    jsr .menu_read_address
+    bcs .menu_show_error
 
 .menu_run_command_start:
+    sty MAIN_MENU_RUN_PAGE
     std MAIN_MENU_RUN_MSB
     ste MAIN_MENU_RUN_LSB
-    jsr (MAIN_MENU_RUN_MSB)
+    
+    ;jsr (MAIN_MENU_RUN_PAGE)
+    #d 0x93, 0x00, MAIN_MENU_RUN_PAGE[15:8],  MAIN_MENU_RUN_PAGE[7:0]
 
     ldd .menu_run_command_end_msg[15:8]
     lde .menu_run_command_end_msg[7:0]

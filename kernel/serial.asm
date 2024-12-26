@@ -228,6 +228,39 @@ ACIA_SEND_HEX:
     rts    
 
 ; **********************************************************
+; SUBROUTINE: ACIA_SEND_DECIMAL
+;
+; DESCRIPTION:
+;
+; INPUTS:
+;   A
+;
+; OUTPUTS:
+;
+; DESTROY:
+;   A X Y
+;
+; FLAGS AFFECTED:
+;
+; USAGE:
+;
+; EXAMPLE:
+;
+; AUTHOR: VN
+; LAST UPDATE: 21/11/2024
+; **********************************************************
+
+ACIA_SEND_DECIMAL:
+    jsr BINDEC
+    jsr ACIA_WAIT_SEND_CLEAR
+    stx ACIA_RW_DATA_ADDR
+    jsr ACIA_WAIT_SEND_CLEAR
+    sty ACIA_RW_DATA_ADDR
+    jsr ACIA_WAIT_SEND_CLEAR
+    sta ACIA_RW_DATA_ADDR
+    rts    
+
+; **********************************************************
 ; SUBROUTINE: ACIA_SEND_NEWLINE
 ;
 ; DESCRIPTION:
@@ -257,6 +290,35 @@ ACIA_SEND_NEWLINE:
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
     rts    
+
+; **********************************************************
+; SUBROUTINE: ACIA_READ_CHAR
+;
+; DESCRIPTION:
+;
+; INPUTS:
+;
+; OUTPUTS:
+;
+; DESTROY:
+;   
+;
+; FLAGS AFFECTED:
+;
+; USAGE:
+;
+; EXAMPLE:
+;
+; AUTHOR: VN
+; LAST UPDATE: 21/11/2024
+; **********************************************************
+
+ACIA_READ_CHAR:
+    lda ACIA_CONTROL_STATUS_ADDR  ; read serial 1 status
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL ; check if Receive Data Register is full
+    beq ACIA_READ_CHAR
+    lda ACIA_RW_DATA_ADDR  ; read serial 1 data
+    rts
 
 ; **********************************************************
 ; SUBROUTINE: ACIA_READ_TO_BUFFER

@@ -78,3 +78,67 @@ HEXBIN:                    ; assumes text is in BYTE_CONV_H and BYTE_CONV_L
     sbc 0x07                ; otherwise subtract another $07 for A-F
 .asc_hex_to_bin_end:
     rts                     ; value is returned in A
+
+
+;================================================================================
+;
+;BINDEC: CONVERT BINARY BYTE TO DECIMAL ASCII CHARS
+;
+;   ————————————————————————————————————
+;   Preparatory Ops: .A: byte to convert
+;
+;   Returned Values: .X: MSN ASCII char
+;                    .Y: 
+;                    .A: LSN ASCII char
+;   ————————————————————————————————————
+;
+BINDEC:
+    pha                 ; Store original number
+                        ; Handle hundreds digit
+    ldx 0x00
+    cmp 100
+    bcc .tens           ; If < 100, skip hundreds
+                        ; Divide by 100
+    pla             
+    sec
+    ldy 0x00
+.hundreds_loop:
+    cmp 100
+    bcc .hundreds_end
+    sbc 100
+    iny
+    bcs .hundreds_loop
+.hundreds_end:  
+                        ; Store remainder and convert hundreds to ASCII
+    pha
+    tya
+    ora 0x30            ; Convert to ASCII
+    tax                 ; Store hundreds digit 
+.tens:
+                        ; Handle tens digit
+    ldy 0x00
+    pla
+    pha
+    cmp 10
+    bcc .ones           ; If < 10, skip tens  
+                        ; Divide by 10
+    pla
+    sec
+    ldy 0x00
+.tens_loop:
+    cmp 10
+    bcc .tens_end
+    sbc 10
+    iny
+    bcs .tens_loop
+.tens_end:    
+                        ; Store remainder and convert tens to ASCII
+    pha
+    tya
+    ora 0x30            ; Convert to ASCII
+    tay                 ; Store tens digit
+.ones:
+                        ; Handle ones digit
+    pla
+    ora 0x30            ; Convert to ASCII
+    rts

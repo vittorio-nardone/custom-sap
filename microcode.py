@@ -113,7 +113,7 @@ CC_EFROUT   = ['alufE2', 'alufE1']
 CC_SEC      = ['alufE2', 'alufE1', 'alufE0'] 
 
 ######## 
-CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR','ERAM','EPCADDR', 'MEMADDRVALID']
+CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR', 'ERAM', 'EPCADDR', 'MEMADDRVALID']
 CC_PC_INCREMENT                     = ['CPC']
 CC_LAST_T                           = ['notNOP']
 
@@ -230,7 +230,26 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ] },                          
+                    ] },            
+
+    "LDAindregydeax": {  "c": 0xB2,  # Cross page not supported
+                "d": "Load Accumulator with Memory (indirect YDE - absolute - X index)", 
+                "f": ['Z','O'],
+                "op": "yde",
+                "i": "x",
+                "m": [  
+                        ['LMARPAGE'] + CC_notEY,
+                        ['LRALU-IN'] + CC_notEE, 
+                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notED,
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+                        ['ERALU-OUT', 'LMARH'],
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ] },                      
 
     "LDAax": {  "c": 0xBE,  # Cross page not supported
                 "d": "Load Accumulator with Memory (absolute - X index)", 
@@ -487,7 +506,26 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
-                    ] },                      
+                    ] },         
+
+    "STAindregydeax": {  "c": 0xB3,  # Cross page not supported
+                "d": "Store Accumulator in Memory (indirect YDE - absolute - X index)", 
+                "i": "x",
+                "op": "yde",
+                "f": ['O'],
+                "m": [  
+                        ['LMARPAGE'] + CC_notEY,
+                        ['LRALU-IN'] + CC_notEE, 
+                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notED,
+                        ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
+                    ],               
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+                        ['ERALU-OUT', 'LMARH'],
+                        ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
+                    ] },                   
 
     "STAax": {  "c": 0x62,  # Cross page not supported
                 "d": "Store Accumulator in Memory (absolute - X index)", 
@@ -2940,6 +2978,7 @@ def generateIstructionsCsv():
         'indp': 'indirect - zero page',
         'inda': 'indirect - absolute',
         'indregdepx': 'indirect registry (DE) - zero page - X index',
+        'indregydeax': 'indirect registry (YDE) - absolute - X index',
 
         'px': 'zero page - X index',
         'py': 'zero page - Y index',

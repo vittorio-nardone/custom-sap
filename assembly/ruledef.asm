@@ -483,6 +483,10 @@
 	LDA (de),x  => { 
 		0x94
  	} 
+	; Load Accumulator with Memory (indirect YDE - absolute - X index) [Z O]
+	LDA (yde),x  => { 
+		0xB2
+ 	} 
 	; Load Accumulator with Memory (zero page) [Z]
 	LDA {value: u16} => { 
 		assert(value >= 0)
@@ -792,6 +796,10 @@
 	; Store Accumulator in Memory (indirect DE - zero page - X index) [O]
 	STA (de),x  => { 
 		0xA1
+ 	} 
+	; Store Accumulator in Memory (indirect YDE - absolute - X index) [O]
+	STA (yde),x  => { 
+		0xB3
  	} 
 	; Store Accumulator in Memory (zero page) 
 	STA {value: u16} => { 
