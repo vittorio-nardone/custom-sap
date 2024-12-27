@@ -50,10 +50,6 @@
 ;  Overflow flag != 6502 implementation. It's used internally for indexing and value is equal to carry
 ;
 ;
-; TODO
-; - XMODEM durante ricezione dati fare check timeout (qualcosa di molto veloce, altrimenti perdiamo byte)
-; - XMODEM rendere tutte le label locali + pulizia/refactoring
-
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -135,7 +131,7 @@ main:
     cmp "r"
     beq .menu_run_command
     cmp "h"
-    beq .menu_halt_command
+    beq .menu_help_command
 .menu_show_error:
     ldd .menu_error_msg[15:8]
     lde .menu_error_msg[7:0]
@@ -153,6 +149,15 @@ main:
     cpy 0x02
     beq .menu_upload_command_ok
     jmp .ready    
+
+.menu_help_command:
+    ldd .menu_help_msg[15:8]
+    lde .menu_help_msg[7:0]
+    jsr ACIA_SEND_STRING
+    ldd .menu_adv_help_msg[15:8]
+    lde .menu_adv_help_msg[7:0]
+    jsr ACIA_SEND_STRING
+    jmp .ready
 
 ; --------------------------------------
 
@@ -321,7 +326,7 @@ main:
     ple
     pld
     sei
-    jsr XMODEM
+    jsr XMODEM_RCV
     cli
     sta MAIN_MENU_STATUS    
     jmp .ready
@@ -360,17 +365,31 @@ main:
 
     jmp .ready
 
-.menu_halt_command:
-    hlt
-
 .menu_help_msg:
     #d 0x0A, 0x0D, 0x0A, 0x0D
-    #d "Project OTTO - Kernel v1.0", 0x0A, 0x0D, 0x0A, 0x0D
+    #d "Project OTTO - Kernel v1.1", 0x0A, 0x0D, 0x0A, 0x0D
     #d "Valid commands (default address 0x9000):", 0x0A, 0x0D
-    #d "   dxxxx  - dump memory ", 0x0A, 0x0D
-    #d "   uxxxx  - upload application", 0x0A, 0x0D
-    #d "   rxxxx  - run application", 0x0A, 0x0D
-    #d "   h      - halt system", 0x0A, 0x0D
+    #d "   dyyxxxx  - dump memory ", 0x0A, 0x0D
+    #d "   uyyxxxx  - upload application", 0x0A, 0x0D
+    #d "   ryyxxxx  - run application", 0x0A, 0x0D
+    #d "   h        - show help", 0x0A, 0x0D
+    #d 0x00
+
+.menu_adv_help_msg:    
+    #d 0x0A, 0x0D
+    #d "Examples:", 0x0A, 0x0D
+    #d "   d        - dump the contents of memory at the default address", 0x0A, 0x0D
+    #d "   d8000    - dump the contents of memory starting from location 0x8000", 0x0A, 0x0D
+    #d "   u010000  - upload an application and store it at location 0x010000", 0x0A, 0x0D
+    #d "   r010000  - run the application at location 0x020000", 0x0A, 0x0D
+    #d 0x0A, 0x0D  
+    #d "Memory map:", 0x0A, 0x0D     
+    #d "   0x0000-0x5FFF      - ROM", 0x0A, 0x0D
+    #d "   0x6000-0x83FF      - reserved", 0x0A, 0x0D
+    #d "   0x8400-0xEFFF      - free RAM (27KB)", 0x0A, 0x0D
+    #d "   0xF000-0xFFFF      - reserved", 0x0A, 0x0D
+    #d "   0x010000-0x01FFFF  - free RAM (64KB) - expansion #1", 0x0A, 0x0D
+    #d "   0x020000-0x02FFFF  - free RAM (64KB) - expansion #2", 0x0A, 0x0D
     #d 0x00
 
 .menu_error_msg:

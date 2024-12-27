@@ -125,7 +125,7 @@
 
 ; Start of program (adjust to your needs)
 ;
-XMODEM:
+XMODEM_RCV:
 	sty XMODEM_PTRP
 	std XMODEM_PTRH
 	ste XMODEM_PTR

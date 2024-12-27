@@ -10,11 +10,11 @@
 }
 
 #bank ram
-    ldx 0x05
+    ldx 0x00
 loop:
     txa
     tao
-    sta 0x011000,x
+    sta 0x021000,x
     inx
     bne loop
     rts
