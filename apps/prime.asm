@@ -3,8 +3,8 @@
 
 #bankdef ram
 {
-    #addr 0x9000
-    #size 0x1000
+    #addr 0x8400
+    #size 0x6C00
     #outp 0
 }
 

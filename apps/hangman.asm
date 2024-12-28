@@ -28,7 +28,7 @@
 ;   - Uses timer counter for pseudo-random word selection
 ;
 ; Memory Usage:
-;   - RAM bank at 0x9000
+;   - RAM bank at 0x8400
 ;   - Dedicated memory areas for game state tracking
 ;
 ; Created: 21/11/2024
@@ -41,9 +41,9 @@
 ; Memory bank definition for RAM
 #bankdef ram
 {
-    #addr 0x9000   ; Starting address of RAM
-    #size 0x1000   ; Size of RAM bank (4096 bytes)
-    #outp 0        ; Output configuration
+    #addr 0x8400
+    #size 0x6C00
+    #outp 0
 }
 
 #bank ram
