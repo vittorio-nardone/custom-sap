@@ -3052,7 +3052,7 @@ def generateIstructionsAsm():
                             i[:3]  + (' (' if i[3:6] == 'ind' else ''),
                             ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
                                 + (')' if i[3:6] == 'ind' else '')
-                                + ((INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '')  
+                                + ((',' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '')  
                         )
                     )
         f.write(".OPCODE_NOTVALID: \n    #d  0x00, \"NOT VALID\", 0x00, \"\", 0x00\n\n\n") 

@@ -491,8 +491,6 @@ main:
 .menu_disassembler_command_print_prefix_end:
     inx
     stx MAIN_MENU_OPCODE_PTR
-    lda 0x20
-    jsr ACIA_SEND_CHAR
 
 .menu_disassembler_command_print_value: 
     lda MAIN_MENU_OPCODE_LENGTH_2
@@ -501,7 +499,9 @@ main:
     ; Restore pointer
     jsr .menu_load_address
     ldx 0x00
-
+    
+    lda 0x20
+    jsr ACIA_SEND_CHAR
     lda "0"
     jsr ACIA_SEND_CHAR
     lda "x"

@@ -54,9 +54,11 @@ BINHEX:
 ; 
 ;
 ;   Returned Values:  A
+;
+;   Warning: don't check if chars are valid (0-F)
 ;   ————————————————————————————————————
 ;
-HEXBIN:                    ; assumes text is in BYTE_CONV_H and BYTE_CONV_L
+HEXBIN:                    ; assumes text is in A and X
     jsr .asc_hex_to_bin    ; convert to number - result is in A
     asl a
     asl a
@@ -73,9 +75,12 @@ HEXBIN:                    ; assumes text is in BYTE_CONV_H and BYTE_CONV_L
 .asc_hex_to_bin:            ; assumes ASCII char val is in A
     sec
     sbc 0x30                ; subtract $30 - this is good for 0-9
-    cmp 0x10                ; is value more than 10?
+    cmp 0x0A                ; is value >= 10?
     bcc .asc_hex_to_bin_end ; if not, we're okay
     sbc 0x07                ; otherwise subtract another $07 for A-F
+    cmp 0x10                ; is value >= 16?
+    bcc .asc_hex_to_bin_end ; if not, we're okay
+    sbc 0x20                ; otherwise subtract another $20 for a-f
 .asc_hex_to_bin_end:
     rts                     ; value is returned in A
 
