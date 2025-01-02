@@ -24,3 +24,8 @@ JEQ 0x8900  ; do something if A == 0 then RTS
 ...         
 ...
 ```
+
+## [hardware] PAL/NTSC video card
+Add a video card to Otto!
+
+

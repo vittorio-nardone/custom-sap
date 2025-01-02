@@ -1,10 +1,12 @@
 # Project Otto
 
+<img src="media/otto-wip.jpg" width="300">
+
 Project Otto, or simply Otto, is an 8-bit TTL homebrew retro computer. I call it "homebrew" because it was designed, simulated, and assembled entirely in my apartment. "Retro" because it was built using integrated circuits typically used during the 70s/80s.
 
 The choice that heavily influenced the development effort was not to use microprocessors from that era. Instead, I opted to create a custom CPU, building its individual components with TTL integrated circuits from the 7400 series, mostly of the LS (Low-power Schottky TTL) type.
 
-Otto is inspired by the SAP (Simple As Possible) computer, described in the book "Digital Computer Electronics" by Albert Paul Malvino (ISBN 0-02-800594-5).
+Otto is inspired by the SAP (Simple As Possible) computer, described in the book ["Digital Computer Electronics"](https://ia803000.us.archive.org/8/items/367026792DigitalComputerElectronicsAlbertPaulMalvinoAndJeraldABrownPdf1/367026792-Digital-Computer-Electronics-Albert-Paul-Malvino-and-Jerald-A-Brown-pdf%20%281%29.pdf) by Albert Paul Malvino and Jerald A. Brown (ISBN 0-02-800594-5).
 
 This choice allowed me to understand and experience firsthand how a single assembly instruction is executed by hardware components and gave me great freedom in terms of CPU characteristics. I still implemented an instruction set not too different from the MOS 6502, to have the ability to easily port a vast library of open source software available online.
 
@@ -124,7 +126,7 @@ minicom --device /dev/cu.usbserial-A50285BI
 
 # Credits
 
-* porting of the "XMODEM/CRC Receiver for the 65C02" by Daryl Rictor & Ross Archer 
+* porting of the ["XMODEM/CRC Receiver for the 65C02" by Daryl Rictor & Ross Archer](https://codebase64.org/doku.php?id=base:xmodem-receive)
 
 # License
 
