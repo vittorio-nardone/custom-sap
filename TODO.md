@@ -25,7 +25,8 @@ JEQ 0x8900  ; do something if A == 0 then RTS
 ...
 ```
 
-## [hardware] PAL/NTSC video card
+## [hardware] PAL/NTSC video board
 Add a video card to Otto!
 
-
+## [hardware] Keyboard interface board
+The keyboard interface board was tested quickly but is not working as expected.
