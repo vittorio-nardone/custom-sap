@@ -39,34 +39,58 @@ MAIN:
 
     lda 0x00                   ; Initialize input buffer counter
     sta INPUT_BUFFER_COUNT
+    sta INPUT_BUFFER_COUNT+1
+    ldd INPUT_BUFFER[15:8]     ; Initialize input buffer PTR  
+    lde INPUT_BUFFER[7:0] 
 
 .loop:                         ; Input reading loop
-    lda ACIA_CONTROL_STATUS_ADDR                   ; Check serial port status
-    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL ; Wait for data
-    beq .loop                                      ; If no data, keep waiting
-    lda ACIA_RW_DATA_ADDR                         ; Read character from serial port
-    jsr ACIA_SEND_CHAR                            ; Echo character back
+    jsr ACIA_READ_CHAR
+    cmp 0x0D  
+    beq .loop_send_newline
+    jsr ACIA_SEND_CHAR                            ; Echo character back                              ;
     tao                                           ; Transfer A to O register
-    cmp 0x0D                                      ; Check for Enter key (CR)
-    beq RUN                                       ; If Enter, start execution
-    ldx INPUT_BUFFER_COUNT                        ; Get current buffer position
-    sta INPUT_BUFFER,x                            ; Store character in buffer
-    inc INPUT_BUFFER_COUNT                        ; Increment buffer counter
-    cpx 0xFF                                      ; Check if buffer is full
+    cmp 0x09                                      ; Check for TAB key
+    beq RUN                                       ; If TAB, start execution
+    ldx INPUT_BUFFER_COUNT+1                      ; Get current buffer position
+    sta (de),x                                    ; Store character in buffer
+    inc INPUT_BUFFER_COUNT+1                      ; Increment buffer counter
+    bne .loop                                     ; Buffer not full, continue reading input
+    inc INPUT_BUFFER_COUNT                        ; Increment buffer counter (MSB)
+    ind                                           ; Increment buffer pointer (MSB)
+    cpd 0xB0                                      ; Check if buffer is full
     beq RUN                                       ; If full, start execution
     jmp .loop                                     ; Continue reading input
 
+.loop_send_newline:
+    jsr ACIA_SEND_NEWLINE      ; Print newline
+    jmp .loop  
+
 RUN:
+    lda 0x00                   ; Initialize run position 
+    sta PRG_RUN_POS
+    sta PRG_RUN_POS+1
+    sta PRG_MEMORY_PTR         ; Initialize data pointer
+    ldd INPUT_BUFFER[15:8]     ; Initialize input buffer PTR  
+    lde INPUT_BUFFER[7:0] 
     jsr ACIA_SEND_NEWLINE      ; Print newline
     jsr .clean_memory          ; Initialize program memory
-    ldx 0x00                   ; Initialize program counter
-    stx PRG_POINTER           ; Initialize data pointer
 
 .cmd_loop:                     ; Main interpretation loop
-    cpx INPUT_BUFFER_COUNT     ; Check if we've reached end of input
-    beq MAIN                   ; If yes, return to main prompt
-    lda INPUT_BUFFER,x         ; Load next command
-    inx                        ; Increment program counter
+    jsr .cmd_check_eof         ; Check if we've reached end of input   
+    bcs END                    ; If yes, return to main prompt
+
+    lda ACIA_CONTROL_STATUS_ADDR                   ; Check serial port status
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL ; Wait for data
+    beq .cmd_loop_next                             ; If no data, continue
+    lda ACIA_RW_DATA_ADDR                          ; Read character from serial port
+    cmp 0x1B                    ; Check for ESC key
+    beq END                     ; If ESC, stop execution
+
+.cmd_loop_next:
+    ldx PRG_RUN_POS+1
+    lda (de),x                 ; Load next command
+    jsr .cmd_inc_prg_run_pos   ; Increment program counter
+
     ; Compare with each Brainfuck command
     cmp ">"                    ; Increment pointer command
     beq .cmd_inc_ptr
@@ -89,17 +113,48 @@ RUN:
     cli                        ; Enable interrupts
     rts                        ; Return from subroutine
 
+; Compare the two 16bit values
+.cmd_check_eof:
+    lda PRG_RUN_POS
+    cmp INPUT_BUFFER_COUNT
+    bne .cmd_check_eof_false
+    lda PRG_RUN_POS+1
+    cmp INPUT_BUFFER_COUNT+1
+    bne .cmd_check_eof_false
+    sec
+    rts
+.cmd_check_eof_false:
+    clc
+    rts
+
+.cmd_inc_prg_run_pos:
+    inc PRG_RUN_POS+1
+    bne .cmd_inc_prg_run_pos_end
+    inc PRG_RUN_POS
+    ind
+.cmd_inc_prg_run_pos_end:
+    rts
+
+.cmd_dec_prg_run_pos:
+    lda PRG_RUN_POS+1
+    bne .cmd_dec_prg_run_pos_end
+    dec PRG_RUN_POS
+    ded
+.cmd_dec_prg_run_pos_end:
+    dec PRG_RUN_POS+1
+    rts
+
 ; Command implementations
 .cmd_inc_ptr:                  ; Increment data pointer
-    inc PRG_POINTER
+    inc PRG_MEMORY_PTR
     jmp .cmd_loop
 
 .cmd_dec_ptr:                  ; Decrement data pointer
-    dec PRG_POINTER
+    dec PRG_MEMORY_PTR
     jmp .cmd_loop
 
 .cmd_inc_value:                ; Increment value at pointer
-    ldy PRG_POINTER
+    ldy PRG_MEMORY_PTR
     lda PRG_MEMORY,y
     clc                        ; Clear carry flag
     adc 0x01                   ; Add 1
@@ -107,7 +162,7 @@ RUN:
     jmp .cmd_loop
 
 .cmd_dec_value:                ; Decrement value at pointer
-    ldy PRG_POINTER
+    ldy PRG_MEMORY_PTR
     lda PRG_MEMORY,y
     sec                        ; Set carry flag
     sbc 0x01                   ; Subtract 1
@@ -115,10 +170,14 @@ RUN:
     jmp .cmd_loop
 
 .cmd_start_loop:               ; Handle loop start '['
-    ldy PRG_POINTER
+    ldy PRG_MEMORY_PTR
     lda PRG_MEMORY,y          ; Check value at pointer
     beq .cmd_skip             ; If zero, skip to matching ]
-    phx                       ; Push current position for later
+    lda PRG_RUN_POS+1         ; Push current position for later
+    pha
+    lda PRG_RUN_POS
+    pha
+    phd
     jmp .cmd_loop
 
 .cmd_skip:                     ; Skip loop if value is zero
@@ -126,10 +185,11 @@ RUN:
     jmp .cmd_loop
 
 .cmd_skip_loop:                ; Find matching ] bracket
-    cpx INPUT_BUFFER_COUNT
-    beq MAIN
-    lda INPUT_BUFFER,x
-    inx
+    jsr .cmd_check_eof         ; Check if we've reached end of input   
+    bcs END                    ; If yes, return to main prompt
+    ldx PRG_RUN_POS+1
+    lda (de),x
+    jsr .cmd_inc_prg_run_pos
     cmp "["                    ; Handle nested loops
     beq .cmd_skip_recurse
     cmp "]"
@@ -141,22 +201,27 @@ RUN:
     jmp .cmd_skip_loop
 
 .cmd_end_loop:                 ; Handle loop end ']'
-    plx                        ; Restore position from start of loop
-    dex                        ; Go back one to reprocess [
+    pld                        ; Restore position from start of loop
+    pla
+    sta PRG_RUN_POS
+    pla
+    sta PRG_RUN_POS+1                     
+    jsr .cmd_dec_prg_run_pos   ; Go back one to reprocess [
     jmp .cmd_loop
 
 .cmd_read_char:                ; Read input character
-    lda ACIA_CONTROL_STATUS_ADDR                   ; Check serial status
-    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL ; Wait for input
-    beq .cmd_read_char
-    lda ACIA_RW_DATA_ADDR      ; Read character
-    ldy PRG_POINTER
+    jsr ACIA_READ_CHAR
+    ldy PRG_MEMORY_PTR
     sta PRG_MEMORY,y           ; Store in memory
     jmp .cmd_loop
 
 .cmd_print_char:               ; Output character
-    ldy PRG_POINTER
+    ldy PRG_MEMORY_PTR
     lda PRG_MEMORY,y  
+    jsr ACIA_SEND_CHAR         ; Send to serial port
+    cmp 0x0A
+    bne .cmd_loop
+    lda 0x0D
     jsr ACIA_SEND_CHAR         ; Send to serial port
     jmp .cmd_loop  
 
@@ -168,6 +233,17 @@ RUN:
     inx
     bne .clean_memory_loop
     rts
+
+END:
+    jsr ACIA_SEND_NEWLINE      ; Print newline
+    ldd PROMPT_MSG_2[15:8]       ; Load high byte of prompt message
+    lde PROMPT_MSG_2[7:0]        ; Load low byte of prompt message
+    jsr ACIA_SEND_STRING       ; Display prompt
+    jsr ACIA_READ_CHAR
+    cmp 0x09
+    bne MAIN
+    jmp RUN
+
 
 ; Message section
 WELCOME_MSG:                   ; Welcome message text
@@ -189,29 +265,17 @@ WELCOME_MSG:                   ; Welcome message text
     #d 0x00    
 
 PROMPT_MSG:                    ; Prompt message text
-    #d "Ready: write your code and press ENTER", 0x0A, 0x0D, 0x00
+    #d "Ready: write your code and press TAB. Press ESC to interrupt execution.", 0x0A, 0x0D, 0x00
+
+PROMPT_MSG_2:                  ; Prompt message text
+    #d "Execution completed: press TAB to run again or any other key to enter a new program.", 0x0A, 0x0D, 0x00
 
 ; Data section
 ; Program buffers and variables
-INPUT_BUFFER:                  ; Buffer for storing input program (256 bytes)
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+PRG_RUN_POS:                   ; Current command in execution
+    #d 0x00, 0x00
 
-INPUT_BUFFER_COUNT:            ; Counter for characters in input buffer
+PRG_MEMORY_PTR:                ; Program memory pointer
     #d 0x00
 
 PRG_MEMORY:                    ; Program memory space (256 bytes)
@@ -232,5 +296,7 @@ PRG_MEMORY:                    ; Program memory space (256 bytes)
     #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
-PRG_POINTER:                   ; Program memory pointer
+INPUT_BUFFER_COUNT:            ; Counter for characters in input buffer
+    #d 0x00, 0x00
+INPUT_BUFFER:                  ; Buffer for storing input program (max 4K bytes)
     #d 0x00

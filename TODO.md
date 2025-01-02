@@ -9,6 +9,23 @@ Index address mode for INC and DEC. Example:
 INC 0x0000,x 
 ```
 
+## [assembly] INC/DEC for A
+INC and DEC for A registry. One of the following syntax:
+
+```sh
+INC A  
+INA      
+```
+
+## [assembly] INC/DEC for 16bit 
+INC and DEC for a 16bit integer in memory. The u16/u24 value is the address of the LSB.
+
+Example: INW meaning is "increment word" (unsigned 16bit integer)
+```sh
+INW 0x0112 
+DEW      
+```
+
 ## [assembly] JEQ / JNE  
 Jump on Result Zero to New Location Saving Return Address.
 * JEQ as a combination of BEQ and JSR istructions
