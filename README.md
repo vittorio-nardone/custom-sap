@@ -16,18 +16,18 @@ This layout provides the ability to modify or evolve individual parts of the sys
 
 The microcode needed to execute assembly instructions is stored on EEPROM. Each board hosts one or more EEPROMs if necessary.
 
-Summarizing the technical characteristics, which we will explore in detail in the next chapters of the book, Otto is configured as follows:
+Summarizing the technical characteristics, Otto is configured as follows:
 * 8-bit TTL CPU (7400 family)
 * 1 MHz clock frequency (software reducible to 250KHz)
 * 1 KHz debugging clock frequency (software reducible to 250Hz)
 * 6 user-accessible registers (A, X, Y, D, E, and OUT)
 * 24 KB ROM
-* 32 KB main RAM (4 KB for stack) +
-* 128 KB RAM expansion
+* 32 KB zero-page RAM (4 KB for stack)
+* 128 KB RAM expansion (2x 64KB pages)
 * 8-bit ALU (74181) and shift register
 * 8-bit data bus - 24-bit address bus - 13-bit control bus
 * 2x serial/USB interface
-* 3x maskable interrupt lines and timer interrupt (10Hz)
+* 3x maskable interrupt lines and 10Hz timer interrupt
 
 # Repository Contents
 
