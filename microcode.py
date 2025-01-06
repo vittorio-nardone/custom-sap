@@ -3050,7 +3050,8 @@ def generateIstructionsAsm():
                             ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else 0) + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0),
                             ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else 0),
                             i[:3]  + (' (' if i[3:6] == 'ind' else ''),
-                            ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
+                            (' ' if (('op' in INSTRUCTIONS_SET[i]) and (i[3:6] != 'ind')) else '')    
+                                + ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
                                 + (')' if i[3:6] == 'ind' else '')
                                 + ((',' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '')  
                         )
