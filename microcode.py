@@ -120,7 +120,7 @@ CC_LAST_T                           = ['notNOP']
 CC_INC_STACK_POINTER           = ['SPD', 'notCSP']
 CC_DEC_STACK_POINTER           = ['notCSP']
 
-CC_ALU_DETECT_ZERO             = ['LRALU-IN', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3']
+CC_ALU_DETECT_ZERO             = ['LRALU-IN', 'ALUM']
 
 DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], CC_PC_INCREMENT ]
 
