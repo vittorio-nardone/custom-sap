@@ -28,8 +28,8 @@ CONTROL_BITS = {
     "ALUS1":        { "eeprom": 1, "bit": 3, "lowActive": False },
     "ALUS2":        { "eeprom": 1, "bit": 4, "lowActive": False },
     "ALUS3":        { "eeprom": 1, "bit": 5, "lowActive": False },
-    "ALUCN":        { "eeprom": 1, "bit": 6, "lowActive": False },
-    "ALUM":         { "eeprom": 1, "bit": 7, "lowActive": False }, 
+    "aluE0":        { "eeprom": 1, "bit": 6, "lowActive": False },
+    "aluE1":        { "eeprom": 1, "bit": 7, "lowActive": False }, 
     ## EEPROM #3 - Alu/Flags board
     "notCLC":       { "eeprom": 2, "bit": 0, "lowActive": True },   
     "LO":           { "eeprom": 2, "bit": 1, "lowActive": False },   
@@ -112,6 +112,10 @@ CC_EFRIN    = ['alufE2', 'alufE0']
 CC_EFROUT   = ['alufE2', 'alufE1']
 CC_SEC      = ['alufE2', 'alufE1', 'alufE0'] 
 
+CC_ALUCN    = ['aluE0']  # set to 1 the CN input of the lower ALU
+CC_ALUCARRY = ['aluE1']  # connect notCARRY to the CN input of the lower ALU
+CC_ALUM     = ['aluE1', 'aluE0'] # set to 1 the M input of the both ALUs
+
 ######## 
 CC_LOAD_PC_POINTED_RAM_INTO_IR      = ['LIR', 'ERAM', 'EPCADDR', 'MEMADDRVALID']
 CC_PC_INCREMENT                     = ['CPC']
@@ -120,7 +124,7 @@ CC_LAST_T                           = ['notNOP']
 CC_INC_STACK_POINTER           = ['SPD', 'notCSP']
 CC_DEC_STACK_POINTER           = ['notCSP']
 
-CC_ALU_DETECT_ZERO             = ['LRALU-IN', 'ALUM']
+CC_ALU_DETECT_ZERO             = ['LRALU-IN', 'aluE1', 'aluE0']
 
 DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], CC_PC_INCREMENT ]
 
@@ -203,7 +207,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC,  
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -221,7 +225,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "i": "x",
                 "m": [  
                         ['LMARPAGEZERO', 'LRALU-IN'] + CC_notEE, 
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notED,
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -240,7 +244,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "m": [  
                         ['LMARPAGE'] + CC_notEY,
                         ['LRALU-IN'] + CC_notEE, 
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notED,
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -262,7 +266,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC,  
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -282,7 +286,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC,  
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -304,7 +308,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LACC,  
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notEACC,
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
@@ -479,7 +483,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
@@ -497,7 +501,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['O'],
                 "m": [  
                         ['LMARPAGEZERO', 'LRALU-IN'] + CC_notEE, 
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notED,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
@@ -516,7 +520,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "m": [  
                         ['LMARPAGE'] + CC_notEY,
                         ['LRALU-IN'] + CC_notEE, 
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notED,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
@@ -538,7 +542,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
@@ -558,7 +562,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
@@ -580,7 +584,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
@@ -622,7 +626,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEX  
@@ -644,7 +648,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEX  
@@ -686,7 +690,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEY  
@@ -708,7 +712,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEY  
@@ -750,7 +754,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notED  
@@ -772,7 +776,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notED  
@@ -792,7 +796,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notED  
@@ -814,7 +818,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notED  
@@ -856,7 +860,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEE  
@@ -878,7 +882,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEE  
@@ -898,7 +902,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEE  
@@ -920,7 +924,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP, 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,  
                         ['LMARH'] + CC_notETMP,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEE  
@@ -1041,13 +1045,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'] + CC_CHKC, 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ], 
-                "true": [
-                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },     
 
     "ADCp": {   "c": 0x6D,  
@@ -1058,12 +1058,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'] + CC_CHKC,                                           
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ], 
-                "true": [
-                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
                                              
@@ -1077,12 +1073,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'] + CC_CHKC,                                           
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ], 
-                "true": [
-                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },                         
 
@@ -1096,12 +1088,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1109,7 +1101,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
 
@@ -1125,12 +1117,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1138,7 +1130,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },            
 
@@ -1152,12 +1144,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1165,7 +1157,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
 
@@ -1181,12 +1173,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1194,7 +1186,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },                                     
 
@@ -1203,13 +1195,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "d",
                 "m": [  
-                        ['LRALU-IN'] + CC_CHKC + CC_notED,
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
+                        ['LRALU-IN'] + CC_notED,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ], 
-                "true": [
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },  
 
     "ADCer": {  "c": 0x06,  
@@ -1217,13 +1205,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "e",
                 "m": [  
-                        ['LRALU-IN'] + CC_CHKC + CC_notEE,
-                        ['ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
+                        ['LRALU-IN'] + CC_notEE,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ], 
-                "true": [
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC']  + CC_notEACC,
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO
                     ] },  
 
     "SBCi": {   "c": 0xE9,  
@@ -1231,13 +1215,9 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "v": "u8",
                 "m": [  
-                        ['LRALU-IN'] + CC_notEACC + CC_CHKC, 
-                        ['ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
+                        ['LRALU-IN'] + CC_notEACC, 
+                        ['ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['CPC', 'ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
-                    ], 
-                "true": [
-                        ['ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'EPCADDR', 'MEMADDRVALID'],
-                        ['CPC', 'ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
     "SBCp": {   "c": 0xED,  
@@ -1248,13 +1228,9 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],  
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                     
-                        ['CPC', 'LRALU-IN'] + CC_notEACC + CC_CHKC, 
-                        ['EMAR', 'ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['CPC', 'LRALU-IN'] + CC_notEACC, 
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ], 
-                "true": [
-                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
     "SBCa": {   "c": 0x5B,  
@@ -1267,13 +1243,9 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'],                    
-                        ['CPC', 'LRALU-IN'] + CC_notEACC + CC_CHKC, 
-                        ['EMAR', 'ERAM', 'ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['CPC', 'LRALU-IN'] + CC_notEACC, 
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ], 
-                "true": [
-                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },       
 
     "SBCdr": {  "c": 0x5D,  
@@ -1281,12 +1253,8 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "d",
                 "m": [  
-                        ['LRALU-IN'] + CC_notEACC + CC_CHKC, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notED,
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
-                    ], 
-                "true": [
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notED,
+                        ['LRALU-IN'] + CC_notEACC, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notED + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },           
 
@@ -1295,12 +1263,8 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "e",
                 "m": [  
-                        ['LRALU-IN'] + CC_notEACC + CC_CHKC, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
-                        ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
-                    ], 
-                "true": [
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['LRALU-IN'] + CC_notEACC, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },                                                        
 
@@ -1314,7 +1278,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
@@ -1343,7 +1307,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
@@ -1370,7 +1334,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
@@ -1399,7 +1363,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'ALUCN', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY, 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
                         ['LMARH'] + CC_notETMP,
 
@@ -1421,12 +1385,8 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'C'],
                 "op": "e",
                 "m": [  
-                        ['LRALU-IN'] + CC_notEX + CC_CHKC, 
-                        ['ALUCN', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
-                        ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO  
-                    ], 
-                "true": [
-                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['LRALU-IN'] + CC_notEX, 
+                        ['ALUS1', 'ALUS2', 'LRALU-OUT', 'LC'] + CC_notEE + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO  
                     ] },    
 
@@ -1496,7 +1456,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'], 
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'] + CC_ALUCN, 
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
                     ] },   
 
@@ -1510,7 +1470,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'], 
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'] + CC_ALUCN, 
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
                     ] },                       
 
@@ -1518,7 +1478,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Decrement Register X by One",  
                 "f": ['Z'],  
                 "m": [  
-                        ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEX, 
+                        ['LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEX + CC_ALUCN, 
                         ['ERALU-OUT', 'LZN'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },   
 
@@ -1526,7 +1486,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Decrement Register Y by One",  
                 "f": ['Z'],  
                 "m": [  
-                        ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEY, 
+                        ['LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEY + CC_ALUCN, 
                         ['ERALU-OUT', 'LZN'] + CC_LY + CC_ALU_DETECT_ZERO 
                     ] },   
 
@@ -1534,7 +1494,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Decrement Register D by One",  
                 "f": ['Z'],  
                 "m": [  
-                        ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notED, 
+                        ['LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notED + CC_ALUCN, 
                         ['ERALU-OUT', 'LZN'] + CC_LD + CC_ALU_DETECT_ZERO 
                     ] },   
 
@@ -1542,7 +1502,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Decrement Register E by One",  
                 "f": ['Z'],  
                 "m": [  
-                        ['LRALU-IN', 'LRALU-OUT', 'ALUCN', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEE, 
+                        ['LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3'] + CC_notEE + CC_ALUCN, 
                         ['ERALU-OUT', 'LZN'] + CC_LE + CC_ALU_DETECT_ZERO 
                     ] },   
 
@@ -1552,7 +1512,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },   
 
@@ -1565,7 +1525,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'LMARPAGEZERO'],  
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },       
 
@@ -1580,7 +1540,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },      
 
@@ -1590,7 +1550,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "d",
                 "m": [  
                         ['LRALU-IN'] + CC_notED, 
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUS1', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1600,7 +1560,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "e",
                 "m": [  
                         ['LRALU-IN'] + CC_notEE, 
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS2'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUS1', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1611,7 +1571,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
@@ -1624,7 +1584,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'LMARPAGEZERO'],  
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },       
 
@@ -1639,7 +1599,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },      
 
@@ -1649,7 +1609,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "d",
                 "m": [  
                         ['LRALU-IN'] + CC_notED, 
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1659,7 +1619,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "e",
                 "m": [  
                         ['LRALU-IN'] + CC_notEE, 
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1775,7 +1735,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "b": [0x01],
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
-                        ['CPC','LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['CPC','LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO, 
                         CC_CHKZ + CC_LTMP + CC_notEACC,                         
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
@@ -1794,7 +1754,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "b": [0x01],
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEE,  # AND
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEE + CC_ALUM,  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                    
                         CC_CHKZ + CC_LTMP + CC_notEE, 
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LE + CC_ALU_DETECT_ZERO,
@@ -1813,7 +1773,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "b": [0x01],
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notED,  # AND
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notED + CC_ALUM,  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                                        
                         CC_CHKZ + CC_LTMP + CC_notED, 
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LD + CC_ALU_DETECT_ZERO,
@@ -1836,7 +1796,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_ALUM,  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,    
                         ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
@@ -1860,7 +1820,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC'],
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'],  # AND
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_ALUM,  # AND
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO,                         
                         ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['tmpS0', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
@@ -1878,7 +1838,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "b": [0x01],
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
-                        ['CPC','LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['CPC','LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO, 
                         ['notCLC'] + CC_CHKZ + CC_LTMP + CC_notEACC,                         
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
@@ -1896,7 +1856,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },  
 
@@ -1909,7 +1869,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'LMARPAGEZERO'],  
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC + CC_ALUM,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },       
 
@@ -1924,7 +1884,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },      
 
@@ -1934,7 +1894,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "d",
                 "m": [  
                         ['LRALU-IN'] + CC_notED, 
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -1944,7 +1904,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "e",
                 "m": [  
                         ['LRALU-IN'] + CC_notEE, 
-                        ['LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC, 
+                        ['LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS2'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] }, 
 
@@ -2204,7 +2164,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "v": "u8",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
                     ] },  
 
@@ -2217,7 +2177,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'LMARPAGEZERO'],  
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
                     ] },       
 
@@ -2232,7 +2192,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],   
-                        ['CPC', 'LRALU-OUT', 'ALUM', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC, 
+                        ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
                     ] },      
 
@@ -2816,9 +2776,9 @@ INSTRUCTIONS_SET = dict(sorted({
                         CC_INC_STACK_POINTER, 
                         ['ESP', 'WRAM'] + CC_notEPCPAGE,
                         CC_INC_STACK_POINTER, 
-                        ['ALUM', 'ALUS0', 'ALUS1', 'LRALU-OUT']  + CC_notEACC,   # 0x0000
+                        ['ALUS0', 'ALUS1', 'LRALU-OUT'] + CC_notEACC + CC_ALUM,   # 0x0000
                         ['ERALU-OUT'] + CC_notLPCHP0,
-                        ['ALUM', 'ALUS2', 'ALUS3', 'LRALU-OUT']  + CC_notEACC,   # 0xFF
+                        ['ALUS2', 'ALUS3', 'LRALU-OUT']  + CC_notEACC + CC_ALUM,   # 0xFF
                         ['ERALU-OUT', 'notDISI'] + CC_notLPCL
                      ] },    
 
