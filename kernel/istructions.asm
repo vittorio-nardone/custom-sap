@@ -398,7 +398,7 @@ ISTRUCTIONS:
 .OPCODE_0xFF: 
     #d  0x00, 0x00, "HLT", 0x00, "", 0x00
 .OPCODE_NOTVALID: 
-    #d  0x00, "NOT VALID", 0x00, "", 0x00
+    #d  0x00, 0x00, "NOT VALID", 0x00, "", 0x00
 
 
 ; **********************************************************

@@ -3016,7 +3016,7 @@ def generateIstructionsAsm():
                                 + ((',' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '')  
                         )
                     )
-        f.write(".OPCODE_NOTVALID: \n    #d  0x00, \"NOT VALID\", 0x00, \"\", 0x00\n\n\n") 
+        f.write(".OPCODE_NOTVALID: \n    #d  0x00, 0x00, \"NOT VALID\", 0x00, \"\", 0x00\n\n\n") 
         f.write("; **********************************************************\n")
         f.write(";  Opcode description lookup table MSB\n\n")
         f.write(".OPCODE_MSB:\n")  
