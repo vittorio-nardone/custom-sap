@@ -9,9 +9,12 @@
 }
 
 #bank ram
+    jsr VT100_ERASE_SCREEN
+    jsr VT100_BG_RED
     ldd .hello_msg[15:8]
     lde .hello_msg[7:0]
     jsr ACIA_SEND_STRING
+    jsr VT100_TEXT_RESET
     ldo 0xAA
     rts
 

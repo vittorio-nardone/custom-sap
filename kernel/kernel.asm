@@ -19,7 +19,8 @@
 ; 0x8000-0xFFFF (32k) - RAM
 ;       0x8000-0x83FF (1k) - reserved for kernel operations
 
-;           0x8100-0x811F  - MEMORY management variables            
+;           0x8100-0x811F  - MEMORY management variables  
+;           0x8120-0x812F  - VT100 variables          
 
 ;           0x8200-0x82FF  - XMODEM buffer
 ;           0x8337-0x833F  - XMODEM variables
@@ -59,6 +60,7 @@
 #include "serial.asm"
 #include "interrupt.asm"
 #include "xmodem.asm"
+#include "vt100.asm"
 #include "istructions.asm"
 
 #bank low_kernel
@@ -550,7 +552,7 @@ main:
 
 .menu_help_msg:
     #d 0x0A, 0x0D, 0x0A, 0x0D
-    #d "Project OTTO - Kernel v1.2.2", 0x0A, 0x0D, 0x0A, 0x0D
+    #d "Project OTTO - Kernel v1.2.3", 0x0A, 0x0D, 0x0A, 0x0D
     #d "Valid commands (default address 0x8400):", 0x0A, 0x0D
     #d "   ayyxxxx  - disAssemble memory ", 0x0A, 0x0D
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D

@@ -8,6 +8,6 @@
 #bankdef kernel
 {
     #addr 0x0200
-    #size 0x1E00
+    #size 0x5E00
     #outp 8 * 0x0200
 }
