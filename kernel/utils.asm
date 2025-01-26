@@ -119,6 +119,7 @@ BINDEC:
     tya
     ora 0x30            ; Convert to ASCII
     tax                 ; Store hundreds digit 
+    jmp .tens_begin
 .tens:
                         ; Handle tens digit
     ldy 0x00
@@ -127,6 +128,7 @@ BINDEC:
     cmp 10
     bcc .ones           ; If < 10, skip tens  
                         ; Divide by 10
+.tens_begin:
     pla
     sec
     ldy 0x00
