@@ -5,17 +5,6 @@
 ; https://www.vittorionardone.it
 ;==========================================================
 
-; C64
-; BGCOLOR       = 0xd020
-; BORDERCOLOR   = 0xd021
-; BASIC         = 0x0801
-; SCREENRAM     = 0x0400
-; CLEARSCREEN   = 0xe544  
-; BSOUT         = 0xffd2                ;kernel character output sub
-; BSOUTPTR      = 0xfb                  ;zero page pointer
-; BUINTOUT      = 0xbdcd                ;basic print XA as unsigned integer
-; CURSORPOS     = 0xe50a                ;current cursor position
-
 ;==========================================================
 ; INCLUDE
 ;==========================================================
@@ -47,9 +36,6 @@ QUEENCHAR:
     #d 0x51
 BOARDCHAR:
     #d 0x2E
-COLOR:
-    #d 0x01
-
 
 ;==========================================================
 ; CODE
@@ -86,10 +72,7 @@ entry:
                
 .entrystore:
                 sta NDIM                ; store dimension
-
-                ; lda 0x00                ; print dimension
-                ; ldx NDIM
-                ; jsr BUINTOUT              
+      
                 jsr ACIA_SEND_NEWLINE
 ;
                 ; jsr starttimer	        ; start seconds counter
@@ -104,9 +87,9 @@ entry:
                 rts                     ; exit the program
 
 .welcome:
-    #d 0x0A, 0x0D, "c64 n queens puzzle", 0x0A, 0x0D, 0x00 
+    #d 0x0A, 0x0D, "Otto (n) queens puzzle solver", 0x0A, 0x0D, 0x00 
 .dimension:
-    #d "dimension (4-12)? ", 0x00
+    #d "Chessboard dimension (4-12)? ", 0x00
 
 ;==========================================================
 ; Init
@@ -254,9 +237,9 @@ run:
                 rts                     ; end of the run
 
 .found:
-    #d 0x0A, 0x0D, "solutions found: ", 0x00 
+    #d 0x0A, 0x0D, "Solutions found: ", 0x00 
 .timeelapsed:
-    #d 0x0A, 0x0D, "duration in seconds: ", 0x00
+    #d 0x0A, 0x0D, "Duration in seconds: ", 0x00
 
 ;==========================================================
 ; Wait for a key pressed (result in A)
@@ -583,21 +566,7 @@ ROWCOUNT:
     #d 0x00
 
 printboard:
-;                 lda CURSORX            ; first time call? 
-;                 cmp 0xFF
-;                 bne .printsetcursor
-;                 sec
-;                 jsr CURSORPOS           ; get & store cursor position 
-;                 stx CURSORX            
-;                 sty CURSORY
-;                 jmp .printboardinit
-; ;
-; .printsetcursor:
-;                 ldx CURSORX            ; restore cursor position
-;                 ldy CURSORY
-;                 clc
-;                 jsr CURSORPOS 
-;                            
+                       
 .printboardinit:
                 jsr VT100_ERASE_SCREEN  
 
