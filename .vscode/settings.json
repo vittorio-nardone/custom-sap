@@ -3,7 +3,7 @@
         "commands": [
         {
             "match": "\\.asm$",
-            "cmd": "./generate-all.sh"
+            "cmd": "PATH='/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin'; zsh ./generate-all.sh"
         }
     ]
     }
