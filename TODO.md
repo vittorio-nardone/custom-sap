@@ -2,6 +2,19 @@
 
 This file is used to track possible enhancements.
 
+## [assembly] CMP 
+Index address mode for CMP. Example:
+
+```sh
+CMP 0x0000,y 
+```
+## [assembly] ADC /SBC
+Index address mode for ADC/SBC. Replace ADD/SUB. Example:
+
+```sh
+ADC 0x0000,y 
+```
+
 ## [assembly] INC/DEC 
 Index address mode for INC and DEC. Example:
 

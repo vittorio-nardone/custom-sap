@@ -405,3 +405,44 @@ ACIA_PULL_FROM_BUFFER:
 .acia_read_to_buffer_nochar:
     clc
     rts    
+
+
+; **********************************************************
+; SUBROUTINE: ACIA_SEND_DECIMAL32
+;
+; DESCRIPTION:
+;
+; INPUTS:
+;   BINDEC32_VALUE: 32 bit value to convert LSB -> MSB
+;
+; OUTPUTS:
+;
+; DESTROY:
+;   A X Y
+;
+; FLAGS AFFECTED:
+;
+; USAGE:
+;
+; EXAMPLE:
+;
+; AUTHOR: VN
+; LAST UPDATE: 29/01/2025
+; **********************************************************
+ACIA_SEND_DECIMAL32:
+        jsr BINDEC32
+        ldx 0x09
+.l1:
+        lda BINDEC32_RESULT,x
+        bne .l2
+        dex             ; skip leading zeros
+        bne .l1
+
+.l2:
+        lda BINDEC32_RESULT,x
+        ora 0x30
+        tao
+        jsr ACIA_SEND_CHAR
+        dex
+        bpl .l2
+        rts

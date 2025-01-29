@@ -1079,7 +1079,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },                         
 
     "ADDpx": {  "c": 0x04,  # Cross page not supported
-                            # Carry is not added because a double CHK is required
+                            # -> no more true! # Carry is not added because a double CHK is required
                 "d": "Add Memory to Accumulator (zero page - X index)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
@@ -1106,7 +1106,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },  
 
     "ADDax": {  "c": 0x05,  # Cross page not supported
-                            # Carry is not added because a double CHK is required
+                            # -> no more true! # Carry is not added because a double CHK is required
                 "d": "Add Memory to Accumulator (absolute - X index)",   
                 "f": ['Z', 'C'],
                 "v": "u24",
@@ -1135,7 +1135,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },            
 
     "ADDpy": {  "c": 0x86,  # Cross page not supported
-                            # Carry is not added because a double CHK is required
+                            # -> no more true! # Carry is not added because a double CHK is required
                 "d": "Add Memory to Accumulator (zero page - Y index)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
@@ -1162,7 +1162,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },  
 
     "ADDay": {  "c": 0x87,  # Cross page not supported
-                            # Carry is not added because a double CHK is required
+                            # -> no more true! # Carry is not added because a double CHK is required
                 "d": "Add Memory to Accumulator (absolute - Y index)",   
                 "f": ['Z', 'C'],
                 "v": "u24",
@@ -1269,7 +1269,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },                                                        
 
     "SUBpx": {  "c": 0x5F,  # Cross page not supported
-                            # Carry is not added because a double CHK is required
+                            # -> no more true! # Carry is not added because a double CHK is required
                 "d": "Subtract Memory from Accumulator (zero page - X index)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
@@ -1296,7 +1296,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },  
 
     "SUBax": {  "c": 0x61,  # Cross page not supported
-                            # Carry is not added because a double CHK is required
+                            # -> no more true! # Carry is not added because a double CHK is required
                 "d": "Subtract Memory from Accumulator (absolute - X index)",   
                 "f": ['Z', 'C'],
                 "v": "u24",
@@ -1325,7 +1325,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },      
 
     "SUBpy": {  "c": 0x88,  # Cross page not supported
-                            # Carry is not added because a double CHK is required
+                            # -> no more true! # Carry is not added because a double CHK is required
                 "d": "Subtract Memory from Accumulator (zero page - Y index)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
@@ -1352,7 +1352,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },  
 
     "SUBay": {  "c": 0x89,  # Cross page not supported
-                            # Carry is not added because a double CHK is required
+                            # -> no more true! # Carry is not added because a double CHK is required
                 "d": "Subtract Memory from Accumulator (absolute - Y index)",   
                 "f": ['Z', 'C'],
                 "v": "u24",

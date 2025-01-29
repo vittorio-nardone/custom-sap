@@ -1,6 +1,9 @@
 #once
 #bank kernel
 
+#const BINDEC32_VALUE = 0x8340 ; - 0x8343
+#const BINDEC32_RESULT = 0x8344 ; - 0x834D
+
 ;================================================================================
 ;
 ;BINHEX: CONVERT BINARY BYTE TO HEX ASCII CHARS
@@ -149,3 +152,47 @@ BINDEC:
     pla
     ora 0x30            ; Convert to ASCII
     rts
+
+;================================================================================
+;
+;BINDEC32: CONVERT BINARY 32 BIT VALUES TO MAX 10 DECIMAL DIGITS
+;
+;   ————————————————————————————————————
+;   Preparatory Ops: 
+;        BINDEC32_VALUE: 32 bit value to convert LSB -> MSB
+;
+;   Returned Values: 
+;        BINDEC32_RESULT: 10 decimal digits
+;   Destroy:
+;        X, Y, A, BINDEC32_VALUE
+;   ————————————————————————————————————
+;
+BINDEC32:
+        ldx 0x00
+.l3:
+        jsr .div10
+        sta BINDEC32_RESULT,x
+        inx
+        cpx 10
+        bne .l3
+        rts
+
+        ; divides a 32 bit value by 10
+        ; remainder is returned in akku
+.div10:
+        ldy 32         ; 32 bits
+        lda 0x00
+        clc
+.l4:
+        rol a
+        cmp 10
+        bcc .skip
+        sbc 10
+.skip:
+        rol BINDEC32_VALUE
+        rol BINDEC32_VALUE+1
+        rol BINDEC32_VALUE+2
+        rol BINDEC32_VALUE+3
+        dey
+        bpl .l4
+        rts

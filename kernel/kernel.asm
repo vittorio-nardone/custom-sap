@@ -25,6 +25,8 @@
 ;           0x8200-0x82FF  - XMODEM buffer
 ;           0x8337-0x833F  - XMODEM variables
 ;
+;           0x8340-0x834D  - UTILS variables
+;
 ;           0x83F1         - ACIA 1 rx buffer size
 ;           0x83F2-0x83F3  - ACIA 1 rx buffer push/pull indexes
 ;           0x83F4-0x83F5  - pointer to ACIA 1 rx buffer 
