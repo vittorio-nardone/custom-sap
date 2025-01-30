@@ -1923,6 +1923,114 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
                     ] },   
 
+    "CMPpx": {  "c": 0xB4,  
+                "d": "Compare Memory with Accumulator (zero page - X index)", 
+                "f": ['Z', 'C'],
+                "v": "u16",
+                "i": "x",
+                "m": [  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notETMP,                  
+                        
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ], 
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
+                        ['ERALU-OUT', 'LMARH'],
+
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ] },  
+
+   "CMPpy": {  "c": 0xB5,  
+                "d": "Compare Memory with Accumulator (zero page - Y index)", 
+                "f": ['Z', 'C'],
+                "v": "u16",
+                "i": "y",
+                "m": [  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notETMP,                  
+                        
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ], 
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
+                        ['ERALU-OUT', 'LMARH'],
+
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ] }, 
+
+    "CMPax": {  "c": 0xB6,  
+                "d": "Compare Memory with Accumulator (absolute - X index)", 
+                "f": ['Z', 'C'],
+                "v": "u24",
+                "i": "x",
+                "m": [  
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
+                        ['CPC'],                    
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
+                        ['CPC'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notETMP,           
+                        
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ], 
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
+                        ['ERALU-OUT', 'LMARH'],
+
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ] },  
+
+   "CMPay": {  "c": 0xB7,  
+                "d": "Compare Memory with Accumulator (absolute - Y index)", 
+                "f": ['Z', 'C'],
+                "v": "u24",
+                "i": "y",
+                "m": [  
+                        ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
+                        ['CPC'],                    
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,  
+                        ['CPC'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notETMP,                  
+                        
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ], 
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
+                        ['ERALU-OUT', 'LMARH'],
+
+                        ['LRALU-IN'] + CC_notEACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ] }, 
+
     "CMPa": {   "c": 0x42,  
                 "d": "Compare Memory with Accumulator (absolute)", 
                 "f": ['Z', 'C'],

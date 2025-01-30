@@ -53,8 +53,34 @@ MICROCODE_test:
     lda 0x05
     sta 0x8001
     cmp 0x8001
-    beq .test5
+    beq .test4sub2
     hlt
+.test4sub2:        ; Test CMP x,y indexed            
+    ldx 0x34
+    ldy 0x05
+    lda 0x05
+    sta 0x8001
+    cmp 0x7fcd,x
+    bne .fail
+    cmp 0x7ffc,y
+    bne .fail
+    lda 0x20
+    cmp 0x7fcd,x
+    beq .fail
+    cmp 0x7ffc,y
+    beq .fail
+
+    lda 0x05
+    sta 0x018001
+    cmp 0x017fcd,x
+    bne .fail
+    cmp 0x017ffc,y
+    bne .fail
+    lda 0x20
+    cmp 0x017fcd,x
+    beq .fail
+    cmp 0x017ffc,y
+    beq .fail
 
 .test5:
     ldo 0x05            ; Test #5: BNE

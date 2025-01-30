@@ -166,6 +166,18 @@ BINDEC:
 ;   Destroy:
 ;        X, Y, A, BINDEC32_VALUE
 ;   ————————————————————————————————————
+;   Example:    
+;       ; Convert 0x010203 to decimal (66051) and send to ACIA
+;       lda 0x03
+;       sta BINDEC32_VALUE
+;       lda 0x02
+;       sta BINDEC32_VALUE+1
+;       lda 0x01
+;       sta BINDEC32_VALUE+2
+;       lda 0x00
+;       sta BINDEC32_VALUE+3
+;       jsr ACIA_SEND_DECIMAL32
+;   ————————————————————————————————————
 ;
 BINDEC32:
         ldx 0x00

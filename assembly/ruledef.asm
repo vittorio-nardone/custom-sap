@@ -213,6 +213,18 @@
 		assert(value <= 0xffffff)
 		0x42 @ value
  	} 
+	; Compare Memory with Accumulator (absolute - X index) [Z C]
+	CMP {value: u24},x  => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0xB6 @ value
+ 	} 
+	; Compare Memory with Accumulator (absolute - Y index) [Z C]
+	CMP {value: u24},y  => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0xB7 @ value
+ 	} 
 	; Compare Memory with Accumulator (immediate) [Z C]
 	CMP {value: u8} => { 
 		assert(value >= 0)
@@ -224,6 +236,18 @@
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x5C @ value
+ 	} 
+	; Compare Memory with Accumulator (zero page - X index) [Z C]
+	CMP {value: u16},x  => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0xB4 @ value
+ 	} 
+	; Compare Memory with Accumulator (zero page - Y index) [Z C]
+	CMP {value: u16},y  => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0xB5 @ value
  	} 
 	; Compare Memory with Register D (absolute) [Z C]
 	CPD {value: u24} => { 

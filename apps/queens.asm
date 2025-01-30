@@ -277,13 +277,7 @@ undoqueen:
                 ldx 0x00
                 lda QUEENCHAR 
 .undoqueenl1:
-                tad
-                pha
-                lda CHESSBOARD,y        ; get chessboard cell
-                tae
-                pla
-                cpd e                   ; queen found?
-                ;cmp CHESSBOARD,y        ; queen found?
+                cmp CHESSBOARD,y        ; queen found?
                 beq .undoqueenstart
                 iny
                 inx                     ; increase counter
@@ -302,13 +296,8 @@ undoqueen:
                 sta CLEANVALUE         
                 
 .undoqueenl2:
-                ldd CLEANVALUE 
-                pha
-                lda CHESSBOARD,y        ; get chessboard cell
-                tae
-                pla
-                cpd e                   ; queen found?      
-                ; cmp CHESSBOARD,y        ; correct value?
+                lda CLEANVALUE     
+                cmp CHESSBOARD,y        ; correct value?
                 bne .undoqueennext
                 lda BOARDCHAR
                 sta CHESSBOARD,y        ; replace with empty char
