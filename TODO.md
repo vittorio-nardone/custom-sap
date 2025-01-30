@@ -8,7 +8,7 @@ Index address mode for CMP. Example:
 ```sh
 CMP 0x0000,y 
 ```
-## [assembly] ADC /SBC
+## [DONE] [assembly] ADC /SBC
 Index address mode for ADC/SBC. Replace ADD/SUB. Example:
 
 ```sh

@@ -7,6 +7,18 @@
 		assert(value <= 0xffffff)
 		0x03 @ value
  	} 
+	; Add Memory to Accumulator with Carry (absolute - X index) [Z C]
+	ADC {value: u24},x  => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0x05 @ value
+ 	} 
+	; Add Memory to Accumulator with Carry (absolute - Y index) [Z C]
+	ADC {value: u24},y  => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0x87 @ value
+ 	} 
 	; Add Register D to Accumulator with Carry [Z C]
 	ADC d => { 
 		0x6F
@@ -27,26 +39,14 @@
 		assert(value <= 0xffff)
 		0x6D @ value
  	} 
-	; Add Memory to Accumulator (absolute - X index) [Z C]
-	ADD {value: u24},x  => { 
-		assert(value >= 0x10000)
-		assert(value <= 0xffffff)
-		0x05 @ value
- 	} 
-	; Add Memory to Accumulator (absolute - Y index) [Z C]
-	ADD {value: u24},y  => { 
-		assert(value >= 0x10000)
-		assert(value <= 0xffffff)
-		0x87 @ value
- 	} 
-	; Add Memory to Accumulator (zero page - X index) [Z C]
-	ADD {value: u16},x  => { 
+	; Add Memory to Accumulator with Carry (zero page - X index) [Z C]
+	ADC {value: u16},x  => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x04 @ value
  	} 
-	; Add Memory to Accumulator (zero page - Y index) [Z C]
-	ADD {value: u16},y  => { 
+	; Add Memory to Accumulator with Carry (zero page - Y index) [Z C]
+	ADC {value: u16},y  => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x86 @ value
@@ -735,6 +735,18 @@
 		assert(value <= 0xffffff)
 		0x5B @ value
  	} 
+	; Subtract Memory from Accumulator with Borrow (absolute - X index) [Z C]
+	SBC {value: u24},x  => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0x61 @ value
+ 	} 
+	; Subtract Memory from Accumulator with Borrow (absolute - Y index) [Z C]
+	SBC {value: u24},y  => { 
+		assert(value >= 0x10000)
+		assert(value <= 0xffffff)
+		0x89 @ value
+ 	} 
 	; Subtract Register D from Accumulator with Borrow [Z C]
 	SBC d => { 
 		0x5D
@@ -754,6 +766,18 @@
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0xED @ value
+ 	} 
+	; Subtract Memory from Accumulator with Borrow (zero page - X index) [Z C]
+	SBC {value: u16},x  => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x5F @ value
+ 	} 
+	; Subtract Memory from Accumulator with Borrow (zero page - Y index) [Z C]
+	SBC {value: u16},y  => { 
+		assert(value >= 0)
+		assert(value <= 0xffff)
+		0x88 @ value
  	} 
 	; Subtract Register E from Register X with Borrow [Z C]
 	SBX e => { 
@@ -938,30 +962,6 @@
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x77 @ value
- 	} 
-	; Subtract Memory from Accumulator (absolute - X index) [Z C]
-	SUB {value: u24},x  => { 
-		assert(value >= 0x10000)
-		assert(value <= 0xffffff)
-		0x61 @ value
- 	} 
-	; Subtract Memory from Accumulator (absolute - Y index) [Z C]
-	SUB {value: u24},y  => { 
-		assert(value >= 0x10000)
-		assert(value <= 0xffffff)
-		0x89 @ value
- 	} 
-	; Subtract Memory from Accumulator (zero page - X index) [Z C]
-	SUB {value: u16},x  => { 
-		assert(value >= 0)
-		assert(value <= 0xffff)
-		0x5F @ value
- 	} 
-	; Subtract Memory from Accumulator (zero page - Y index) [Z C]
-	SUB {value: u16},y  => { 
-		assert(value >= 0)
-		assert(value <= 0xffff)
-		0x88 @ value
  	} 
 	; Transfer Accumulator to Register D [Z]
 	TAD  => { 

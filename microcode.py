@@ -1078,9 +1078,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },                         
 
-    "ADDpx": {  "c": 0x04,  # Cross page not supported
-                            # -> no more true! # Carry is not added because a double CHK is required
-                "d": "Add Memory to Accumulator (zero page - X index)",   
+    "ADCpx": {  "c": 0x04,  # Cross page not supported
+                "d": "Add Memory to Accumulator with Carry (zero page - X index)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "i": "x",
@@ -1093,7 +1092,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notETMP,
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1101,13 +1100,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
 
-    "ADDax": {  "c": 0x05,  # Cross page not supported
-                            # -> no more true! # Carry is not added because a double CHK is required
-                "d": "Add Memory to Accumulator (absolute - X index)",   
+    "ADCax": {  "c": 0x05,  # Cross page not supported
+                "d": "Add Memory to Accumulator with Carry (absolute - X index)",   
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "i": "x",
@@ -1122,7 +1120,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notETMP,
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1130,13 +1128,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },            
 
-    "ADDpy": {  "c": 0x86,  # Cross page not supported
-                            # -> no more true! # Carry is not added because a double CHK is required
-                "d": "Add Memory to Accumulator (zero page - Y index)",   
+    "ADCpy": {  "c": 0x86,  # Cross page not supported
+                "d": "Add Memory to Accumulator with Carry (zero page - Y index)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "i": "y",
@@ -1149,7 +1146,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notETMP,
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1157,13 +1154,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
 
-    "ADDay": {  "c": 0x87,  # Cross page not supported
-                            # -> no more true! # Carry is not added because a double CHK is required
-                "d": "Add Memory to Accumulator (absolute - Y index)",   
+    "ADCay": {  "c": 0x87,  # Cross page not supported
+                "d": "Add Memory to Accumulator with Carry (absolute - Y index)",   
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "i": "y",
@@ -1178,7 +1174,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notETMP,
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1186,7 +1182,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['EMAR', 'ERAM', 'LRALU-IN', 'MEMADDRVALID'],                                           
-                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCN,
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEACC + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },                                     
 
@@ -1268,9 +1264,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO  
                     ] },                                                        
 
-    "SUBpx": {  "c": 0x5F,  # Cross page not supported
-                            # -> no more true! # Carry is not added because a double CHK is required
-                "d": "Subtract Memory from Accumulator (zero page - X index)",   
+    "SBCpx": {  "c": 0x5F,  # Cross page not supported
+                "d": "Subtract Memory from Accumulator with Borrow (zero page - X index)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "i": "x",
@@ -1283,7 +1278,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notETMP,
 
                         ['LRALU-IN'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1291,13 +1286,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['LRALU-IN'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
 
-    "SUBax": {  "c": 0x61,  # Cross page not supported
-                            # -> no more true! # Carry is not added because a double CHK is required
-                "d": "Subtract Memory from Accumulator (absolute - X index)",   
+    "SBCax": {  "c": 0x61,  # Cross page not supported
+                "d": "Subtract Memory from Accumulator with Borrow (absolute - X index)",   
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "i": "x",
@@ -1312,7 +1306,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notETMP,
 
                         ['LRALU-IN'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1320,13 +1314,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['LRALU-IN'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },      
 
-    "SUBpy": {  "c": 0x88,  # Cross page not supported
-                            # -> no more true! # Carry is not added because a double CHK is required
-                "d": "Subtract Memory from Accumulator (zero page - Y index)",   
+    "SBCpy": {  "c": 0x88,  # Cross page not supported
+                "d": "Subtract Memory from Accumulator with Borrow (zero page - Y index)",   
                 "f": ['Z', 'C'],
                 "v": "u16",
                 "i": "y",
@@ -1339,7 +1332,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notETMP,
 
                         ['LRALU-IN'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1347,13 +1340,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['LRALU-IN'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },  
 
-    "SUBay": {  "c": 0x89,  # Cross page not supported
-                            # -> no more true! # Carry is not added because a double CHK is required
-                "d": "Subtract Memory from Accumulator (absolute - Y index)",   
+    "SBCay": {  "c": 0x89,  # Cross page not supported
+                "d": "Subtract Memory from Accumulator with Borrow (absolute - Y index)",   
                 "f": ['Z', 'C'],
                 "v": "u24",
                 "i": "y",
@@ -1368,7 +1360,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notETMP,
 
                         ['LRALU-IN'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ], 
                 "true": [
@@ -1376,7 +1368,7 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
 
                         ['LRALU-IN'] + CC_notEACC,
-                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['EMAR', 'ERAM', 'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
                         ['ERALU-OUT', 'LZN'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
