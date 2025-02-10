@@ -130,4 +130,4 @@
 #const MAIN_MENU_OPCODE_LENGTH_2 = 0x8009
 #const MAIN_MENU_OPCODE_PTR = 0x800a
 #const MAIN_MENU_INPUT_BUFFER = 0x800b
-#const main = 0x19ec
+#const main = 0x19e4

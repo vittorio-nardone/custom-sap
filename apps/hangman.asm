@@ -104,7 +104,7 @@ begin:
     cpy word_index  ; Compare current word index with desired index
     beq .find_word_founded
     
-    lda (de),x  ; Load current character 
+    lda de,x  ; Load current character 
     bne .find_word_inc_ptr
     iny  ; Increment word count when null terminator found
 .find_word_inc_ptr:
@@ -120,7 +120,7 @@ begin:
     ldx 0x00
 .find_word_length_loop:  
     ; Find the length of the random word
-    lda (de),x
+    lda de,x
     beq .calculate_max_tries
     inx
     jmp .find_word_length_loop
@@ -161,7 +161,7 @@ begin:
     ldd word_ptr
     lde word_ptr+1
     ldx current_char_index
-    lda (de),x
+    lda de,x
     beq .ask_user  ; End of word reached
     sta current_char
 
@@ -170,7 +170,7 @@ begin:
     lde tries_chars[7:0]
     ldx 0x00
 .print_placeholder_char_search:
-    lda (de),x
+    lda de,x
     cmp current_char
     beq .print_placeholder_print_char
     inx
@@ -225,7 +225,7 @@ begin:
     ldd tries_chars[15:8]
     lde tries_chars[7:0]
     ldx tries_chars_index
-    sta (de),x  ; Store revealed character
+    sta de,x  ; Store revealed character
     inc tries_chars_index
     inc tries_count
     jmp .print_placeholder
@@ -273,7 +273,7 @@ begin:
     lde word_ptr+1
     ldx 0x00
 .compare_word_loop:
-    lda (de),x
+    lda de,x
     beq .compare_word_length  ; End of word reached
     sta current_char
     lda guess_word,x

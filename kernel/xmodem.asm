@@ -250,7 +250,7 @@ XMODEM_RCV:
 	ldy XMODEM_PTRP
 	ldd XMODEM_PTRH
 	lde XMODEM_PTR
-	sta	(yde),x						; save to target
+	sta	yde,x						; save to target
 	ply
 	inc	XMODEM_PTR					; point to next address
 	bne	.CopyBlk4					; did it step over page boundary?

@@ -52,7 +52,7 @@ MAIN:
     cmp 0x09                                      ; Check for TAB key
     beq RUN                                       ; If TAB, start execution
     ldx INPUT_BUFFER_COUNT+1                      ; Get current buffer position
-    sta (de),x                                    ; Store character in buffer
+    sta de,x                                    ; Store character in buffer
     inc INPUT_BUFFER_COUNT+1                      ; Increment buffer counter
     bne .loop                                     ; Buffer not full, continue reading input
     inc INPUT_BUFFER_COUNT                        ; Increment buffer counter (MSB)
@@ -88,7 +88,7 @@ RUN:
 
 .cmd_loop_next:
     ldx PRG_RUN_POS+1
-    lda (de),x                 ; Load next command
+    lda de,x                 ; Load next command
     jsr .cmd_inc_prg_run_pos   ; Increment program counter
 
     ; Compare with each Brainfuck command
@@ -188,7 +188,7 @@ RUN:
     jsr .cmd_check_eof         ; Check if we've reached end of input   
     bcs END                    ; If yes, return to main prompt
     ldx PRG_RUN_POS+1
-    lda (de),x
+    lda de,x
     jsr .cmd_inc_prg_run_pos
     cmp "["                    ; Handle nested loops
     beq .cmd_skip_recurse

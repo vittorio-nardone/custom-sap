@@ -218,8 +218,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },      
 
-    "LDAindregdepx": {  "c": 0x94,  # Cross page not supported
-                "d": "Load Accumulator with Memory (indirect DE - zero page - X index)", 
+    "LDAdepx": {  "c": 0x94,  # Cross page not supported
+                "d": "Load Accumulator with Memory (DE pointer - zero page - X index)", 
                 "f": ['Z','O'],
                 "op": "de",
                 "i": "x",
@@ -234,10 +234,30 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ] },            
+                    ] },   
 
-    "LDAindregydeax": {  "c": 0xB2,  # Cross page not supported
-                "d": "Load Accumulator with Memory (indirect YDE - absolute - X index)", 
+    # "LDAindpx": {  "c": 0x95,  # Cross page not supported
+    #                "d": "Load Accumulator with Memory (indirect - zero page - X index)", 
+    #             "f": ['Z','O'],
+    #             "i": "x",
+    #             "m": [  
+    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
+    #                     ['CPC'], 
+
+    #                     ['LMARPAGEZERO', 'LRALU-IN'] + CC_notEE, 
+    #                     ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
+    #                     ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+    #                     ['LMARH'] + CC_notED,
+    #                     ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+    #                 ],
+    #             "true": [
+    #                     ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+    #                     ['ERALU-OUT', 'LMARH'],
+    #                     ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+    #                 ] },               
+
+    "LDAydeax": {  "c": 0xB2,  # Cross page not supported
+                "d": "Load Accumulator with Memory (YDE pointer - absolute - X index)", 
                 "f": ['Z','O'],
                 "op": "yde",
                 "i": "x",
@@ -494,8 +514,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
                     ] },   
 
-    "STAindregdepx": {  "c": 0xA1,  # Cross page not supported
-                "d": "Store Accumulator in Memory (indirect DE - zero page - X index)", 
+    "STAdepx": {  "c": 0xA1,  # Cross page not supported
+                "d": "Store Accumulator in Memory (DE pointer - zero page - X index)", 
                 "i": "x",
                 "op": "de",
                 "f": ['O'],
@@ -512,8 +532,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
                     ] },         
 
-    "STAindregydeax": {  "c": 0xB3,  # Cross page not supported
-                "d": "Store Accumulator in Memory (indirect YDE - absolute - X index)", 
+    "STAydeax": {  "c": 0xB3,  # Cross page not supported
+                "d": "Store Accumulator in Memory (YDE pointer - absolute - X index)", 
                 "i": "x",
                 "op": "yde",
                 "f": ['O'],
@@ -3037,8 +3057,8 @@ def generateIstructionsCsv():
         'acc': 'accumulator',
         'indp': 'indirect - zero page',
         'inda': 'indirect - absolute',
-        'indregdepx': 'indirect registry (DE) - zero page - X index',
-        'indregydeax': 'indirect registry (YDE) - absolute - X index',
+        'depx': 'DE pointer - zero page - X index',
+        'ydeax': 'YDE pointer - absolute - X index',
 
         'px': 'zero page - X index',
         'py': 'zero page - Y index',
@@ -3080,7 +3100,7 @@ def generateIstructionsCsv():
                       + ((sample_values[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else '')
                       + ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
                       + (')' if i[3:6] == 'ind' else '')
-                      + ((', ' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '') 
+                      + ((',' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '') 
                       + '"'
                       )
             )

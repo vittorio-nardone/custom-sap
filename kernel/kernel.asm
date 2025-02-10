@@ -276,7 +276,7 @@ main:
     ldx 0x00
 
 .menu_dump_command_dump_byte:    
-    lda (yde),x
+    lda yde,x
     phx
     jsr ACIA_SEND_HEX
     plx
@@ -306,7 +306,7 @@ main:
 
 .menu_dump_command_dump_char: 
 
-    lda (yde),x
+    lda yde,x
     cmp 0x1F
     bcc .menu_dump_command_dump_char_dot
     cmp 0x7E
@@ -424,7 +424,7 @@ main:
 
 .menu_disassembler_command_get_opcode:  
     ldx 0x00
-    lda (yde),x         ; get code
+    lda yde,x         ; get code
     pha
     
     jsr ACIA_SEND_HEX   ; print it
@@ -445,10 +445,10 @@ main:
 
     ; get value length
     ldx 0x00
-    lda (de),x 
+    lda de,x 
     sta MAIN_MENU_OPCODE_LENGTH
     inx
-    lda (de),x 
+    lda de,x 
     sta MAIN_MENU_OPCODE_LENGTH_2
 
     ; Restore pointer
@@ -459,7 +459,7 @@ main:
     cpx MAIN_MENU_OPCODE_LENGTH
     beq .menu_disassembler_command_dump_value_end
 
-    lda (yde),x         ; get code
+    lda yde,x         ; get code
     phx
     jsr ACIA_SEND_HEX   ; print it
     lda 0x20
@@ -486,7 +486,7 @@ main:
     ldx 0x02
 
 .menu_disassembler_command_print_prefix_get_char:
-    lda (de),x          ; get char
+    lda de,x          ; get char
     beq .menu_disassembler_command_print_prefix_end
     jsr ACIA_SEND_CHAR
     inx
@@ -515,7 +515,7 @@ main:
     cpx MAIN_MENU_OPCODE_LENGTH_2
     beq .menu_disassembler_command_print_value_end
 
-    lda (yde),x         ; get code
+    lda yde,x         ; get code
     phx
     jsr ACIA_SEND_HEX   ; print it
     plx
@@ -532,7 +532,7 @@ main:
     ldx MAIN_MENU_OPCODE_PTR
 
 .menu_disassembler_command_print_suffix_get_char:
-    lda (de),x          ; get char
+    lda de,x          ; get char
     beq .menu_disassembler_command_print_suffix_end
     jsr ACIA_SEND_CHAR
     inx

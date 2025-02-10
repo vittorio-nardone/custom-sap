@@ -497,19 +497,15 @@
 		assert(value <= 0xffffff)
 		0x32 @ value
  	} 
+	; Load Accumulator with Memory (DE pointer - zero page - X index) [Z O]
+	LDA de,x  => { 
+		0x94
+ 	} 
 	; Load Accumulator with Memory (immediate) [Z]
 	LDA {value: u8} => { 
 		assert(value >= 0)
 		assert(value <= 0xff)
 		0xA9 @ value
- 	} 
-	; Load Accumulator with Memory (indirect DE - zero page - X index) [Z O]
-	LDA (de),x  => { 
-		0x94
- 	} 
-	; Load Accumulator with Memory (indirect YDE - absolute - X index) [Z O]
-	LDA (yde),x  => { 
-		0xB2
  	} 
 	; Load Accumulator with Memory (zero page) [Z]
 	LDA {value: u16} => { 
@@ -528,6 +524,10 @@
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x31 @ value
+ 	} 
+	; Load Accumulator with Memory (YDE pointer - absolute - X index) [Z O]
+	LDA yde,x  => { 
+		0xB2
  	} 
 	; Load Register D with Memory (absolute) [Z]
 	LDD {value: u24} => { 
@@ -841,13 +841,9 @@
 		assert(value <= 0xffffff)
 		0x70 @ value
  	} 
-	; Store Accumulator in Memory (indirect DE - zero page - X index) [O]
-	STA (de),x  => { 
+	; Store Accumulator in Memory (DE pointer - zero page - X index) [O]
+	STA de,x  => { 
 		0xA1
- 	} 
-	; Store Accumulator in Memory (indirect YDE - absolute - X index) [O]
-	STA (yde),x  => { 
-		0xB3
  	} 
 	; Store Accumulator in Memory (zero page) 
 	STA {value: u16} => { 
@@ -866,6 +862,10 @@
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x6E @ value
+ 	} 
+	; Store Accumulator in Memory (YDE pointer - absolute - X index) [O]
+	STA yde,x  => { 
+		0xB3
  	} 
 	; Store Register D in Memory (absolute) 
 	STD {value: u24} => { 
