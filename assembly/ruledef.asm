@@ -7,13 +7,13 @@
 		assert(value <= 0xffffff)
 		0x03 @ value
  	} 
-	; Add Memory to Accumulator with Carry (absolute - X index) [Z C]
+	; Add Memory to Accumulator with Carry (absolute - X index) [Z C O]
 	ADC {value: u24},x  => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x05 @ value
  	} 
-	; Add Memory to Accumulator with Carry (absolute - Y index) [Z C]
+	; Add Memory to Accumulator with Carry (absolute - Y index) [Z C O]
 	ADC {value: u24},y  => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
@@ -39,13 +39,13 @@
 		assert(value <= 0xffff)
 		0x6D @ value
  	} 
-	; Add Memory to Accumulator with Carry (zero page - X index) [Z C]
+	; Add Memory to Accumulator with Carry (zero page - X index) [Z C O]
 	ADC {value: u16},x  => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x04 @ value
  	} 
-	; Add Memory to Accumulator with Carry (zero page - Y index) [Z C]
+	; Add Memory to Accumulator with Carry (zero page - Y index) [Z C O]
 	ADC {value: u16},y  => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -175,30 +175,6 @@
 	BRK  => { 
 		0x00
  	} 
-	; Branch on oVerflow Clear (absolute) 
-	BVC {value: u24} => { 
-		assert(value >= 0x10000)
-		assert(value <= 0xffffff)
-		0x65 @ value
- 	} 
-	; Branch on oVerflow Clear (zero page) 
-	BVC {value: u16} => { 
-		assert(value >= 0)
-		assert(value <= 0xffff)
-		0x63 @ value
- 	} 
-	; Branch on oVerflow Set (absolute) 
-	BVS {value: u24} => { 
-		assert(value >= 0x10000)
-		assert(value <= 0xffffff)
-		0x67 @ value
- 	} 
-	; Branch on oVerflow Set (zero page) 
-	BVS {value: u16} => { 
-		assert(value >= 0)
-		assert(value <= 0xffff)
-		0x64 @ value
- 	} 
 	; Clear Carry Flag [C]
 	CLC  => { 
 		0x18
@@ -213,13 +189,13 @@
 		assert(value <= 0xffffff)
 		0x42 @ value
  	} 
-	; Compare Memory with Accumulator (absolute - X index) [Z C]
+	; Compare Memory with Accumulator (absolute - X index) [Z C O]
 	CMP {value: u24},x  => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0xB6 @ value
  	} 
-	; Compare Memory with Accumulator (absolute - Y index) [Z C]
+	; Compare Memory with Accumulator (absolute - Y index) [Z C O]
 	CMP {value: u24},y  => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
@@ -237,13 +213,13 @@
 		assert(value <= 0xffff)
 		0x5C @ value
  	} 
-	; Compare Memory with Accumulator (zero page - X index) [Z C]
+	; Compare Memory with Accumulator (zero page - X index) [Z C O]
 	CMP {value: u16},x  => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0xB4 @ value
  	} 
-	; Compare Memory with Accumulator (zero page - Y index) [Z C]
+	; Compare Memory with Accumulator (zero page - Y index) [Z C O]
 	CMP {value: u16},y  => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -479,87 +455,87 @@
 		assert(value <= 0xffff)
 		0x20 @ value @ 0x00
  	} 
-	; Load Accumulator with Memory (absolute) [Z]
+	; Load Accumulator with Memory (absolute) [Z N]
 	LDA {value: u24} => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0xA7 @ value
  	} 
-	; Load Accumulator with Memory (absolute - X index) [Z O]
+	; Load Accumulator with Memory (absolute - X index) [Z O N]
 	LDA {value: u24},x  => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0xBE @ value
  	} 
-	; Load Accumulator with Memory (absolute - Y index) [Z O]
+	; Load Accumulator with Memory (absolute - Y index) [Z O N]
 	LDA {value: u24},y  => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x32 @ value
  	} 
-	; Load Accumulator with Memory (DE pointer - zero page - X index) [Z O]
+	; Load Accumulator with Memory (DE pointer - zero page - X index) [Z O N]
 	LDA de,x  => { 
 		0x94
  	} 
-	; Load Accumulator with Memory (immediate) [Z]
+	; Load Accumulator with Memory (immediate) [Z N]
 	LDA {value: u8} => { 
 		assert(value >= 0)
 		assert(value <= 0xff)
 		0xA9 @ value
  	} 
-	; Load Accumulator with Memory (zero page) [Z]
+	; Load Accumulator with Memory (zero page) [Z N]
 	LDA {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0xAD @ value
  	} 
-	; Load Accumulator with Memory (zero page - X index) [Z O]
+	; Load Accumulator with Memory (zero page - X index) [Z O N]
 	LDA {value: u16},x  => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0xBD @ value
  	} 
-	; Load Accumulator with Memory (zero page - Y index) [Z O]
+	; Load Accumulator with Memory (zero page - Y index) [Z O N]
 	LDA {value: u16},y  => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x31 @ value
  	} 
-	; Load Accumulator with Memory (YDE pointer - absolute - X index) [Z O]
+	; Load Accumulator with Memory (YDE pointer - absolute - X index) [Z O N]
 	LDA yde,x  => { 
 		0xB2
  	} 
-	; Load Register D with Memory (absolute) [Z]
+	; Load Register D with Memory (absolute) [Z N]
 	LDD {value: u24} => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x34 @ value
  	} 
-	; Load Register D with Memory (immediate) [Z]
+	; Load Register D with Memory (immediate) [Z N]
 	LDD {value: u8} => { 
 		assert(value >= 0)
 		assert(value <= 0xff)
 		0xA5 @ value
  	} 
-	; Load Register D with Memory (zero page) [Z]
+	; Load Register D with Memory (zero page) [Z N]
 	LDD {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0x33 @ value
  	} 
-	; Load Register E with Memory (absolute) [Z]
+	; Load Register E with Memory (absolute) [Z N]
 	LDE {value: u24} => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x36 @ value
  	} 
-	; Load Register E with Memory (immediate) [Z]
+	; Load Register E with Memory (immediate) [Z N]
 	LDE {value: u8} => { 
 		assert(value >= 0)
 		assert(value <= 0xff)
 		0xA6 @ value
  	} 
-	; Load Register E with Memory (zero page) [Z]
+	; Load Register E with Memory (zero page) [Z N]
 	LDE {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -583,37 +559,37 @@
 		assert(value <= 0xffff)
 		0xFD @ value
  	} 
-	; Load Register X with Memory (absolute) [Z]
+	; Load Register X with Memory (absolute) [Z N]
 	LDX {value: u24} => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0xA4 @ value
  	} 
-	; Load Register X with Memory (immediate) [Z]
+	; Load Register X with Memory (immediate) [Z N]
 	LDX {value: u8} => { 
 		assert(value >= 0)
 		assert(value <= 0xff)
 		0xA2 @ value
  	} 
-	; Load Register X with Memory (zero page) [Z]
+	; Load Register X with Memory (zero page) [Z N]
 	LDX {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
 		0xA3 @ value
  	} 
-	; Load Register Y with Memory (absolute) [Z]
+	; Load Register Y with Memory (absolute) [Z N]
 	LDY {value: u24} => { 
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x39 @ value
  	} 
-	; Load Register Y with Memory (immediate) [Z]
+	; Load Register Y with Memory (immediate) [Z N]
 	LDY {value: u8} => { 
 		assert(value >= 0)
 		assert(value <= 0xff)
 		0xA0 @ value
  	} 
-	; Load Register Y with Memory (zero page) [Z]
+	; Load Register Y with Memory (zero page) [Z N]
 	LDY {value: u16} => { 
 		assert(value >= 0)
 		assert(value <= 0xffff)
@@ -622,10 +598,6 @@
 	; Shift One Bit Right (accumulator) [Z N C]
 	LSR a => { 
 		0xA8 @ 0x01
- 	} 
-	; Not Carry Flag [C]
-	NOC  => { 
-		0xB1
  	} 
 	; No Operation 
 	NOP  => { 

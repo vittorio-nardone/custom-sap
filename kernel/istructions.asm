@@ -181,16 +181,8 @@ ISTRUCTIONS:
     #d  0x03, 0x03, "SBC", 0x00, ",X", 0x00
 .OPCODE_0x62: 
     #d  0x03, 0x03, "STA", 0x00, ",X", 0x00
-.OPCODE_0x63: 
-    #d  0x02, 0x02, "BVC", 0x00, "", 0x00
-.OPCODE_0x64: 
-    #d  0x02, 0x02, "BVS", 0x00, "", 0x00
-.OPCODE_0x65: 
-    #d  0x03, 0x03, "BVC", 0x00, "", 0x00
 .OPCODE_0x66: 
     #d  0x03, 0x02, "ROR", 0x00, "", 0x00
-.OPCODE_0x67: 
-    #d  0x03, 0x03, "BVS", 0x00, "", 0x00
 .OPCODE_0x68: 
     #d  0x00, 0x00, "PLA", 0x00, "", 0x00
 .OPCODE_0x69: 
@@ -337,8 +329,6 @@ ISTRUCTIONS:
     #d  0x00, 0x00, "ASL", 0x00, " A", 0x00
 .OPCODE_0xB0: 
     #d  0x02, 0x02, "BCS", 0x00, "", 0x00
-.OPCODE_0xB1: 
-    #d  0x00, 0x00, "NOC", 0x00, "", 0x00
 .OPCODE_0xB2: 
     #d  0x00, 0x00, "LDA", 0x00, " YDE,X", 0x00
 .OPCODE_0xB3: 
@@ -512,11 +502,11 @@ ISTRUCTIONS:
     #d .OPCODE_0x60[15:8]
     #d .OPCODE_0x61[15:8]
     #d .OPCODE_0x62[15:8]
-    #d .OPCODE_0x63[15:8]
-    #d .OPCODE_0x64[15:8]
-    #d .OPCODE_0x65[15:8]
+    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_0x66[15:8]
-    #d .OPCODE_0x67[15:8]
+    #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_0x68[15:8]
     #d .OPCODE_0x69[15:8]
     #d .OPCODE_0x6A[15:8]
@@ -590,7 +580,7 @@ ISTRUCTIONS:
     #d .OPCODE_0xAE[15:8]
     #d .OPCODE_0xAF[15:8]
     #d .OPCODE_0xB0[15:8]
-    #d .OPCODE_0xB1[15:8]
+    #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_0xB2[15:8]
     #d .OPCODE_0xB3[15:8]
     #d .OPCODE_0xB4[15:8]
@@ -774,11 +764,11 @@ ISTRUCTIONS:
     #d .OPCODE_0x60[7:0]
     #d .OPCODE_0x61[7:0]
     #d .OPCODE_0x62[7:0]
-    #d .OPCODE_0x63[7:0]
-    #d .OPCODE_0x64[7:0]
-    #d .OPCODE_0x65[7:0]
+    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_0x66[7:0]
-    #d .OPCODE_0x67[7:0]
+    #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_0x68[7:0]
     #d .OPCODE_0x69[7:0]
     #d .OPCODE_0x6A[7:0]
@@ -852,7 +842,7 @@ ISTRUCTIONS:
     #d .OPCODE_0xAE[7:0]
     #d .OPCODE_0xAF[7:0]
     #d .OPCODE_0xB0[7:0]
-    #d .OPCODE_0xB1[7:0]
+    #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_0xB2[7:0]
     #d .OPCODE_0xB3[7:0]
     #d .OPCODE_0xB4[7:0]

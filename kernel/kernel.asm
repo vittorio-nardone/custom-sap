@@ -68,7 +68,7 @@
 #bank low_kernel
 #addr 0x0000
 boot:
-    sei             ; disable int
+    sei             ; disable interrupts
     scf
     ldo 0x00
     jsr MICROCODE_test

@@ -55,6 +55,9 @@ JEQ 0x8900  ; do something if A == 0 then RTS
 ...
 ```
 
+## [assembly] INC/DEC/INX.. should set N flag
+INC and DEC operations set Z flag only but should set N flag too (according to the 6502 datasheet)
+
 ## [hardware] PAL/NTSC video board
 Add a video card to Otto!
 

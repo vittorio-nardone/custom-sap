@@ -334,7 +334,7 @@ MICROCODE_test:
     sec
     rol a               ; 0x88 << 1 bit + carry = 0x111 
     cmp 0x11
-    bne .fail            
+    bne .fail  
     lda 0x23
     clc
     ror A               ; 0x23 >> 1 bit = 0x11
