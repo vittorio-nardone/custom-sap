@@ -1,8 +1,11 @@
 from microcode import INSTRUCTIONS_SET
+from serial import Serial
+from virtualserialports import VirtualSerialPorts
 import sys
 import select
 import tty
 import termios
+import argparse
 
 class OttoCPU:
     def __init__(self):
@@ -21,6 +24,7 @@ class OttoCPU:
         
         # I/O simulation
         self.KEY = None  # Keyboard input
+        self.serial_io = None  # Serial port
 
         # Initialize flags
         self.Z = False  # Zero flag
@@ -39,7 +43,7 @@ class OttoCPU:
             'ram': {'start': 0x8000, 'stop': 0xFFFF, 'read_only': False, 'io': False},
             'ram_ext_1': {'start': 0x010000, 'stop': 0x01FFFF, 'read_only': False, 'io': False},
             'ram_ext_2': {'start': 0x020000, 'stop': 0x02FFFF, 'read_only': False, 'io': False},
-            'keyboard': {'start': 0x6020, 'stop': 0x6021, 'read_only': False, 'io': True},
+            'acia_1': {'start': 0x6020, 'stop': 0x6021, 'read_only': False, 'io': True},
         }
         
         # Initialize instruction set
@@ -48,10 +52,16 @@ class OttoCPU:
     
     def _init_instructions(self):
         """Initialize the instruction set"""
-        for i in INSTRUCTIONS_SET.values():
-            if i.get('sim',None) is not None:
-                self.instructions[i['c']] = i['sim']
+        for key, value in INSTRUCTIONS_SET.items():
+            if value.get('sim',None) is not None:
+                self.instructions[value['c']] = value['sim']
+            else:
+                print(f"-> warning: instruction 0x{value['c']:02X} - {key[:3]} not implemented")
     
+    def set_serial_port(self, serial_port):
+        """Set the serial port for I/O simulation"""
+        self.serial_io = Serial(serial_port, 115200, timeout=0)
+
     def push(self, value):
         """Push a value onto the stack"""
         self.write_byte(self.SP, value)
@@ -65,36 +75,35 @@ class OttoCPU:
         self.update_negative_flag(result)
         return result
 
-    def load_binary(self, filename, region, offset=0):
-        """Load a binary file into memory"""
+    def load_binary(self, filename, address):
+        """Load a binary file into memory at a specific address"""
         try:
             with open(filename, 'rb') as f:
                 data = f.read()
         except FileNotFoundError:
             raise FileNotFoundError(f"Could not open binary file: {filename}")
         
-        # Determine the target address
-        if region not in self.memory_regions:
-            raise ValueError(f"Invalid memory region: {region}")
+        # Check if the address is within a valid, not read-only region
+        valid_region = None
+        for region_name, region in self.memory_regions.items():
+            if region['start'] <= address <= region['stop']:
+                valid_region = region
+                break
         
-        start_addr, end_addr = self.memory_regions[region]['start'], self.memory_regions[region]['stop']
-        load_addr = start_addr + offset
-        
-        # Check if the offset is within the region
-        if offset < 0 or load_addr > end_addr:
-            raise ValueError(f"Offset {hex(offset)} is outside region {region}")
+        if not valid_region:
+            raise ValueError(f"Address {hex(address)} is not within a valid region")
         
         # Check if the file will fit in the region
-        if load_addr + len(data) > end_addr + 1:
+        end_address = address + len(data) - 1
+        if end_address > valid_region['stop']:
             raise ValueError(
-                f"Binary file ({len(data)} bytes) too large for region {region} "
-                f"at offset {hex(offset)} (space available: {end_addr - load_addr + 1} bytes)"
+                f"Binary file ({len(data)} bytes) too large for region {region_name} "
+                f"starting at address {hex(address)} (space available: {valid_region['stop'] - address + 1} bytes)"
             )
         
         # Perform the load
         for i, byte in enumerate(data):
-            addr = load_addr + i
-            self.memory[addr] = byte
+            self.memory[address + i] = byte
 
     def reset(self):
         """Reset the CPU to its initial state"""
@@ -112,7 +121,7 @@ class OttoCPU:
         if opcode in self.instructions:
             exec(self.instructions[opcode])
         else:
-            raise Exception(f"Unknown opcode: {hex(opcode)}")
+            raise Exception(f"Unknown opcode: 0x{opcode:02X}")
     
     def update_zero_flag(self, value):
         """Update Zero flag based on result"""
@@ -189,10 +198,11 @@ class OttoCPU:
             self.push((self.PC >> 16) & 0xFF)
             self.push((self.PC >> 8) & 0xFF)
             self.push(self.PC & 0xFF)
-            
+
         self.PC = self.get_address_from_operands(mem_operands_size)
-        if (indirect == True):
-            self.PC = self.get_address_from_operands(mem_operands_size)
+        if (indirect == True):   
+            self.PC -= 1
+            self.PC = self.get_address_from_operands(mem_operands_size)   
 
     def rts(self):
         self.PC = self.pop() + (self.pop() << 8) + (self.pop() << 16) + 4
@@ -296,13 +306,13 @@ class OttoCPU:
 
     def get_address_from_operands(self, size, index=None):
         """Calculate the address from operands with optional index"""
-        if index:
+        if index != None:
             self.O = (self.memory[self.PC + size] + index) > 0xFF
         match size:
             case 2:
-                return self.memory[self.PC + 1] * 256 + self.memory[self.PC + 2] + (index if index else 0)
+                return self.memory[self.PC + 1] * 256 + self.memory[self.PC + 2] + (index if index != None else 0)
             case 3:
-                return self.memory[self.PC + 1] * 65536 + self.memory[self.PC + 2] * 256 + self.memory[self.PC + 3] + (index if index else 0)
+                return self.memory[self.PC + 1] * 65536 + self.memory[self.PC + 2] * 256 + self.memory[self.PC + 3] + (index if index != None else 0)
             case _:
                 raise ValueError(f"Invalid operand size: {size}")
 
@@ -329,14 +339,22 @@ class OttoCPU:
                     return self.memory[address]
                 else:
                     if address == 0x6021:
-                        if self.KEY == None:
+                        if self.serial_io != None:
+                            if self.serial_io.in_waiting > 0:
+                                return self.serial_io.read(1)[0]
+                            else:
+                                return 0x00
+                        elif self.KEY == None:
                             return 0x00
                         else:
                             key = self.KEY
                             self.KEY = None
                             return key
                     elif address == 0x6020:
-                        return 0x03 if self.KEY != None else 0x02
+                        if self.serial_io != None:
+                            return 0x03 if self.serial_io.in_waiting > 0 else 0x02
+                        else:
+                            return 0x03 if self.KEY != None else 0x02
                     
         raise Exception(f"Invalid memory read at {hex(address)}")
     
@@ -353,8 +371,11 @@ class OttoCPU:
                     self.memory[address] = value
                 else:
                     if address == 0x6021:
-                        print(f"{chr(value)}", end="")
-                        sys.stdout.flush()
+                        if self.serial_io != None:
+                            self.serial_io.write(bytes([value]))
+                        else:
+                            print(f"{chr(value)}", end="")
+                            sys.stdout.flush()
                 return
 
         # TODO add support for IO regions
@@ -383,38 +404,54 @@ def keyboard_hit():
 ##
 ##
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Project OTTO - Simulator")
+    parser.add_argument("--program", type=str, help="Path to the binary program file to load")
+    parser.add_argument("--address", type=lambda x: int(x, 0), default=0x8400, help="Memory address to load the program (default: 0x8400)")
+    parser.add_argument("--simulate-serial", action="store_true", help="Simulate serial ports instead of using stdin/stdout")
+    args = parser.parse_args()
+
+    print("\nProject OTTO - Simulator v1.1.0")
     # Create a new OttoCPU instance
     cpu = OttoCPU()
 
+    print("-> loading kernel into rom memory")
     # Load the kernel into memory
-    cpu.load_binary("roms/kernel-rom.bin", "rom")
+    cpu.load_binary("roms/kernel-rom.bin", cpu.memory_regions['rom']['start'])
     
-    # Load a program into memory
-    cpu.load_binary("roms/helloworld.bin", "ram", offset=0x400)
+     # Load a program into memory if provided
+    if args.program:
+        print(f"-> loading program {args.program} into memory")
+        cpu.load_binary(args.program, args.address)
     
     # Run the simulator
-    print("Otto CPU Simulator")
     old_settings = termios.tcgetattr(sys.stdin)
     try:
         tty.setcbreak(sys.stdin.fileno())
-        while cpu.HLT == False:
 
-            if keyboard_hit():
-                key = ord(sys.stdin.read(1))
-                cpu.push_key(key)
+        if args.simulate_serial:
+            with VirtualSerialPorts(2, False, False) as ports:
+                cpu.set_serial_port(ports[0])
+                print(f"-> use serial port {ports[1]} to communicate with the CPU")
 
-            cpu.step()
+                # Flush stdout, in case the ports are being read in a pipe. Else
+                # Python will buffer it and block.
+                sys.stdout.flush()
+
+                while cpu.HLT == False: 
+                    cpu.step()
+        else:
+            while cpu.HLT == False:    
+                if keyboard_hit():
+                    key = ord(sys.stdin.read(1))
+                    cpu.push_key(key)
+                cpu.step()
     except Exception as e:
-        print(f"\nError executing opcode {cpu.IR:02X}: {e}", end="")
+        print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
 
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
     
     print("\nSystem halted.")
-
-        #print(f"\rPC:{cpu.PC:06X} MAR:{cpu.MAR:06X} SP:{cpu.SP:04X} A:{cpu.A:02X} D:{cpu.D:02X} E:{cpu.E:02X} X:{cpu.X:02X} Y:{cpu.Y:02X} OUT:{cpu.OUT:02X} Z:{'t' if cpu.Z else 'f'} C:{'t' if cpu.C else 'f'} N:{'t' if cpu.N else 'f'} I:{'t' if cpu.I else 'f'} O:{'t' if cpu.O else 'f'}", end="")      
-        #sys.stdout.flush()
-
             
  
     

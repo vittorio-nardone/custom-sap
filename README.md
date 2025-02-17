@@ -87,6 +87,19 @@ This repository houses the complete design files and software components for the
    * Use the example applications as reference
    * Build and upload applications
 
+## Otto simulator
+
+Otto Simulator is a Python application that emulates Otto's hardware architecture. The simulator uses the same kernel and implements the identical instruction set as the physical device.
+To run the simulator, use the following command:
+```bash
+python ./simulate.py
+```
+
+The simulator can also communicate through a virtual serial port, allowing you to use terminal emulators like minicom - just as you would with the actual Otto hardware:
+```bash
+python ./simulate.py --simulate-serial
+```
+
 ## Control words ROM generation
 ```sh
 python microcode.py
@@ -114,6 +127,11 @@ cargo install customasm
 pip install intelhex
 ```
 
+### Python library pySerial (simulator)
+```sh
+pip install pyserial
+```
+
 # Serial communication
 
 I use minicom to communicate with Otto and upload files using XMODEM protocol.
@@ -127,6 +145,7 @@ minicom --device /dev/cu.usbserial-A50285BI  -c on
 # Credits
 
 * porting of the ["XMODEM/CRC Receiver for the 65C02" by Daryl Rictor & Ross Archer](https://codebase64.org/doku.php?id=base:xmodem-receive)
+* the great ["virtual serial port" Python library by Ezra Morris](https://github.com/ezramorris/PyVirtualSerialPorts)  
 
 # License
 
