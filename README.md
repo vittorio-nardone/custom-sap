@@ -100,6 +100,8 @@ The simulator can also communicate through a virtual serial port, allowing you t
 python ./simulate.py --simulate-serial
 ```
 
+<img src="media/otto-kernel.png" width="600">
+
 ## Control words ROM generation
 ```sh
 python microcode.py
