@@ -3203,8 +3203,7 @@ def generateRuldef():
                             (('{value: ' + INSTRUCTIONS_SET[i]['v'] + '}') if 'v' in INSTRUCTIONS_SET[i] else '') +  
                             ((INSTRUCTIONS_SET[i]['op']) if 'op' in INSTRUCTIONS_SET[i] else ''),
                             (')' if i[3:6] == 'ind' else ''),    
-                            (',' + INSTRUCTIONS_SET[i]['i'] + ' ') if 'i' in INSTRUCTIONS_SET[i] else '', 
-                            
+                            (',' + INSTRUCTIONS_SET[i]['i'] + ' ') if 'i' in INSTRUCTIONS_SET[i] else '',                             
                             ' => { \n',
                             ('\t\tassert(value >= 0)\n\t\tassert(value <= 0xff)\n') if 'v' in INSTRUCTIONS_SET[i] and INSTRUCTIONS_SET[i]['v'] == 'u8' else '',
                             ('\t\tassert(value >= 0x100)\n\t\tassert(value <= 0xffff)\n') if 'v' in INSTRUCTIONS_SET[i] and INSTRUCTIONS_SET[i]['v'] == 'u16' else '',
@@ -3214,6 +3213,13 @@ def generateRuldef():
                             ''.join([' @ ' + '0x' + '{:02X}'.format(x) for x in INSTRUCTIONS_SET[i]['b']]) if 'b' in INSTRUCTIONS_SET[i] else '',
                             '\n \t} \n'
                         ])
+            
+            if len(i) == 4 and i[3] == 'i': # immediate addressing, create alias with # prefix
+                f.writelines([  '\t', 
+                                i[:3] + (' #{value: ' + INSTRUCTIONS_SET[i]['v'] + '}') +  
+                                ' => asm { ' + i[:3] + (' {value} }'),
+                                '\n'
+                            ])
         f.write('}\n')
 
 ##################################################################

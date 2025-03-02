@@ -34,6 +34,7 @@
 		assert(value <= 0xff)
 		0x69 @ value
  	} 
+	ADC #{value: u8} => asm { ADC {value} }
 	; Add Memory to Accumulator with Carry (zero page) [Z N C]
 	ADC {value: u16} => { 
 		assert(value >= 0x100)
@@ -72,6 +73,7 @@
 		assert(value <= 0xff)
 		0x29 @ value
  	} 
+	AND #{value: u8} => asm { AND {value} }
 	; AND Memory with Accumulator (zero page) [Z N]
 	AND {value: u16} => { 
 		assert(value >= 0x100)
@@ -130,6 +132,7 @@
 		assert(value <= 0xff)
 		0x15 @ value
  	} 
+	BIT #{value: u8} => asm { BIT {value} }
 	; Test Accumulator BITs with Memory (zero page) [Z N]
 	BIT {value: u16} => { 
 		assert(value >= 0x100)
@@ -208,6 +211,7 @@
 		assert(value <= 0xff)
 		0xC9 @ value
  	} 
+	CMP #{value: u8} => asm { CMP {value} }
 	; Compare Memory with Accumulator (zero page) [Z N C]
 	CMP {value: u16} => { 
 		assert(value >= 0x100)
@@ -242,6 +246,7 @@
 		assert(value <= 0xff)
 		0xE5 @ value
  	} 
+	CPD #{value: u8} => asm { CPD {value} }
 	; Compare Memory with Register D (zero page) [Z N C]
 	CPD {value: u16} => { 
 		assert(value >= 0x100)
@@ -260,6 +265,7 @@
 		assert(value <= 0xff)
 		0xE4 @ value
  	} 
+	CPE #{value: u8} => asm { CPE {value} }
 	; Compare Memory with Register E (zero page) [Z N C]
 	CPE {value: u16} => { 
 		assert(value >= 0x100)
@@ -286,6 +292,7 @@
 		assert(value <= 0xff)
 		0xE0 @ value
  	} 
+	CPX #{value: u8} => asm { CPX {value} }
 	; Compare Memory with Register X (zero page) [Z N C]
 	CPX {value: u16} => { 
 		assert(value >= 0x100)
@@ -316,6 +323,7 @@
 		assert(value <= 0xff)
 		0xE3 @ value
  	} 
+	CPY #{value: u8} => asm { CPY {value} }
 	; Compare Memory with Register Y (zero page) [Z N C]
 	CPY {value: u16} => { 
 		assert(value >= 0x100)
@@ -370,6 +378,7 @@
 		assert(value <= 0xff)
 		0x49 @ value
  	} 
+	EOR #{value: u8} => asm { EOR {value} }
 	; Exclusive-OR Memory with Accumulator (zero page) [Z N]
 	EOR {value: u16} => { 
 		assert(value >= 0x100)
@@ -484,6 +493,7 @@
 		assert(value <= 0xff)
 		0xA9 @ value
  	} 
+	LDA #{value: u8} => asm { LDA {value} }
 	; Load Accumulator with Memory (zero page) [Z N]
 	LDA {value: u16} => { 
 		assert(value >= 0x100)
@@ -518,6 +528,7 @@
 		assert(value <= 0xff)
 		0xA5 @ value
  	} 
+	LDD #{value: u8} => asm { LDD {value} }
 	; Load Register D with Memory (zero page) [Z N]
 	LDD {value: u16} => { 
 		assert(value >= 0x100)
@@ -536,6 +547,7 @@
 		assert(value <= 0xff)
 		0xA6 @ value
  	} 
+	LDE #{value: u8} => asm { LDE {value} }
 	; Load Register E with Memory (zero page) [Z N]
 	LDE {value: u16} => { 
 		assert(value >= 0x100)
@@ -554,6 +566,7 @@
 		assert(value <= 0xff)
 		0xFE @ value
  	} 
+	LDO #{value: u8} => asm { LDO {value} }
 	; Load Output with Memory (zero page) 
 	LDO {value: u16} => { 
 		assert(value >= 0x100)
@@ -572,6 +585,7 @@
 		assert(value <= 0xff)
 		0xA2 @ value
  	} 
+	LDX #{value: u8} => asm { LDX {value} }
 	; Load Register X with Memory (zero page) [Z N]
 	LDX {value: u16} => { 
 		assert(value >= 0x100)
@@ -590,6 +604,7 @@
 		assert(value <= 0xff)
 		0xA0 @ value
  	} 
+	LDY #{value: u8} => asm { LDY {value} }
 	; Load Register Y with Memory (zero page) [Z N]
 	LDY {value: u16} => { 
 		assert(value >= 0x100)
@@ -624,6 +639,7 @@
 		assert(value <= 0xff)
 		0x0B @ value
  	} 
+	ORA #{value: u8} => asm { ORA {value} }
 	; OR Memory with Accumulator (zero page) [Z N]
 	ORA {value: u16} => { 
 		assert(value >= 0x100)
@@ -758,6 +774,7 @@
 		assert(value <= 0xff)
 		0xE9 @ value
  	} 
+	SBC #{value: u8} => asm { SBC {value} }
 	; Subtract Memory from Accumulator with Borrow (zero page) [Z N C]
 	SBC {value: u16} => { 
 		assert(value >= 0x100)
