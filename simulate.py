@@ -207,21 +207,21 @@ class OttoCPU:
     def rts(self):
         self.PC = self.pop() + (self.pop() << 8) + (self.pop() << 16) + 4
 
-    def math_operation(self, operation, current_value=None, operator_immediate=None, operator_registry=None, operator_mem_operands_size=None, operator_index=None):
+    def math_operation(self, operation, current_value=None, operator_immediate=None, operator_registry=None, operator_mem_operands_size=None, operator_index=None, extra_bytes=0):
 
         operator = None
         if (operator_immediate):
             operator = self.read_byte(self.PC+1)
-            self.PC += 2
+            self.PC += 2 + extra_bytes
         elif (operator_mem_operands_size):
             self.MAR = self.get_address_from_operands(operator_mem_operands_size, operator_index)
             operator = self.read_byte(self.MAR)
-            self.PC += operator_mem_operands_size + 1
+            self.PC += operator_mem_operands_size + 1 + extra_bytes
         elif (operator_registry):
             operator = getattr(self, operator_registry)
-            self.PC += 1
+            self.PC += 1 + extra_bytes
         else:
-            self.PC += 1
+            self.PC += 1 + extra_bytes
 
         if operator == None:
             if operation in ['adc', 'sbc', 'cmp', 'eor', 'and', 'or', 'inc' ,'dec']:
@@ -249,6 +249,17 @@ class OttoCPU:
                 self.update_negative_flag(result & 0xFF)
                 if operator_mem_operands_size:
                     self.write_byte(self.MAR, result)
+            case 'asl':
+                if current_value == None:
+                    if operator == None:
+                        raise ValueError("current_value must be provided for ASL operation")
+                    else:
+                        current_value = operator
+                result = (current_value << 1)
+                self.C = result > 0xFF
+                self.update_negative_flag(result & 0xFF)
+                if operator_mem_operands_size:
+                    self.write_byte(self.MAR, result)
             case 'ror':
                 if current_value == None:
                     if operator == None:
@@ -263,7 +274,7 @@ class OttoCPU:
             case 'lsr':
                 if current_value == None:
                     if operator == None:
-                        raise ValueError("current_value must be provided for ROR operation")
+                        raise ValueError("current_value must be provided for LSR operation")
                     else:
                         current_value = operator
                 result = (current_value >> 1)

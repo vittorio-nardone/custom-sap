@@ -368,6 +368,27 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
                     ] },
 
+    "LDXpy": {  "c": 0x1C,  # Cross page not supported
+                "d": "Load Register X with Memory (zero page - Y index)", 
+                "f": ['Z','O','N'],
+                "v": "u16",
+                "i": "y",
+                "sim": "self.X = self.load_from_memory(mem_operands_size=2, index=self.Y)",
+                "m": [  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LX,  
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEY + CC_ALUCN, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notEX,
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notEX,
+                        ['ERALU-OUT', 'LMARH'],
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LX + CC_ALU_DETECT_ZERO 
+                    ] },     
+
     "LDYi": {   "c": 0xA0,  
                 "d": "Load Register Y with Memory (immediate)", 
                 "f": ['Z','N'],
@@ -404,6 +425,27 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LY + CC_ALU_DETECT_ZERO 
                     ] },                        
 
+    "LDYpx": {  "c": 0x1D,  # Cross page not supported
+                "d": "Load Register Y with Memory (zero page - X index)", 
+                "f": ['Z','O','N'],
+                "v": "u16",
+                "i": "x",
+                "sim": "self.Y = self.load_from_memory(mem_operands_size=2, index=self.X)",
+                "m": [  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LY,  
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notEY,
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LY + CC_ALU_DETECT_ZERO 
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notEY,
+                        ['ERALU-OUT', 'LMARH'],
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LY + CC_ALU_DETECT_ZERO 
+                    ] },    
+
     "LDDi": {   "c": 0xA5,  
                 "d": "Load Register D with Memory (immediate)", 
                 "f": ['Z','N'],
@@ -438,7 +480,28 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LD + CC_ALU_DETECT_ZERO 
-                    ] },                    
+                    ] },   
+
+    "LDDpx": {  "c": 0x1E,  # Cross page not supported
+                "d": "Load Register D with Memory (zero page - X index)", 
+                "f": ['Z','O','N'],
+                "v": "u16",
+                "i": "x",
+                "sim": "self.D = self.load_from_memory(mem_operands_size=2, index=self.X)",
+                "m": [  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LD,  
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notED,
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LD + CC_ALU_DETECT_ZERO 
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+                        ['ERALU-OUT', 'LMARH'],
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LD + CC_ALU_DETECT_ZERO 
+                    ] },                     
 
     "LDEi": {   "c": 0xA6,  
                 "d": "Load Register E with Memory (immediate)", 
@@ -474,7 +537,28 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LE + CC_ALU_DETECT_ZERO 
-                    ] },                     
+                    ] },      
+
+    "LDEpx": {  "c": 0x1F,  # Cross page not supported
+                "d": "Load Register E with Memory (zero page - X index)", 
+                "f": ['Z','O','N'],
+                "v": "u16",
+                "i": "x",
+                "sim": "self.E = self.load_from_memory(mem_operands_size=2, index=self.X)",
+                "m": [  
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LE,  
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN, 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO,       
+                        ['LMARH'] + CC_notEE,
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LE + CC_ALU_DETECT_ZERO 
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+                        ['ERALU-OUT', 'LMARH'],
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LE + CC_ALU_DETECT_ZERO 
+                    ] },                 
 
     "STAp": {   "c": 0x8D,  
                 "d": "Store Accumulator in Memory (zero page)", 
@@ -1727,6 +1811,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Shift Left One Bit (accumulator)",
                 "op": "a",  
                 "f": ['Z', 'N', 'C'], 
+                "sim": "self.A = self.math_operation('asl', self.A)",
                 "m": [  
                         ['LZN', 'notCLC'] + CC_LTMP + CC_notEACC, 
                         CC_CHKN,
@@ -1737,7 +1822,27 @@ INSTRUCTIONS_SET = dict(sorted({
                     [  
                         ['tmpS1', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
                         CC_SEC
-                    ] },                              
+                    ] },        
+
+    "ASLp": { "c": 0x1A, 
+                "d": "Shift Left One Bit (zero page)",
+                "v": "u16",
+                "f": ['Z', 'N', 'C'], 
+                "sim": "self.math_operation('asl', operator_mem_operands_size=2)",
+                "m": [  
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'LMARPAGEZERO'],  
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'notCLC', 'MEMADDRVALID'] + CC_LTMP, 
+                        CC_CHKN,
+                        ['tmpS1', 'LZN', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ],
+                "true": 
+                    [  
+                        ['tmpS1', 'LZN', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ] },                       
 
     "ROLacc": { "c": 0x2A, 
                 "d": "Rotate One Bit Left (accumulator)",
@@ -1838,7 +1943,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "a",  
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
-                "sim": "self.A = self.math_operation('ror', self.A)",
+                "sim": "self.A = self.math_operation('ror', self.A, extra_bytes=1)",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC','LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
@@ -1858,7 +1963,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "e",  
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
-                "sim": "self.E = self.math_operation('ror', self.E)",
+                "sim": "self.E = self.math_operation('ror', self.E, extra_bytes=1)",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEE + CC_ALUM,  # AND
@@ -1878,7 +1983,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "d",  
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
-                "sim": "self.D = self.math_operation('ror', self.D)",
+                "sim": "self.D = self.math_operation('ror', self.D, extra_bytes=1)",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC', 'LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notED + CC_ALUM,  # AND
@@ -1898,7 +2003,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
                 "v": "u16",
-                "sim": "self.math_operation('ror', operator_mem_operands_size=2)",
+                "sim": "self.math_operation('ror', operator_mem_operands_size=2, extra_bytes=1)",
                 "m": [  
                         ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC', 'LMARPAGEZERO'],
@@ -1921,7 +2026,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
                 "v": "u24",
-                "sim": "self.math_operation('ror', operator_mem_operands_size=3)",
+                "sim": "self.math_operation('ror', operator_mem_operands_size=3, extra_bytes=1)",
                 "m": [  
                         ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],
@@ -1946,7 +2051,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "op": "a",  
                 "f": ['Z', 'N', 'C'], 
                 "b": [0x01],
-                "sim": "self.A = self.math_operation('lsr', self.A)",
+                "sim": "self.A = self.math_operation('lsr', self.A, extra_bytes=1)",
                 "m": [  
                         ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
                         ['CPC','LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0'] + CC_notEACC + CC_ALUM, 
@@ -1959,7 +2064,31 @@ INSTRUCTIONS_SET = dict(sorted({
                     [
                         ['tmpS0', 'LZN'] + CC_notETMP + CC_LACC + CC_ALU_DETECT_ZERO,
                         ['notCLC']
-                    ] },                      
+                    ] },            
+
+    "LSRp": { "c": 0x1B, 
+                "d": "Shift One Bit Right (zero page)",
+                "v": "u16",
+                "f": ['Z', 'N', 'C'], 
+                "b": [0x01],
+                "sim": "self.math_operation('lsr', operator_mem_operands_size=2, extra_bytes=1)",
+                "m": [  
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'],
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'], #Load 0x01
+                        ['CPC','LRALU-OUT', 'ALUS1', 'ALUS3', 'ALUS0', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_ALUM, 
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO, 
+                        ['notCLC', 'EMAR', 'ERAM', 'MEMADDRVALID'] + CC_CHKZ + CC_LTMP,                         
+                        ['tmpS0', 'LZN', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        CC_SEC
+                    ],
+                "true":
+                    [
+                        ['tmpS0', 'LZN', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notETMP + CC_ALU_DETECT_ZERO,
+                        ['notCLC']
+                    ] },           
 
     "ORAi": {   "c": 0x0B,  
                 "d": "OR Memory with Accumulator (immediate)",  
@@ -1990,7 +2119,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "OR Memory with Accumulator (absolute)",  
                 "f": ['Z', 'N'],  
                 "v": "u24",
-                "sim": "self.A = self.math_operation('or', self.A, operator_mem_operands_size=4)",
+                "sim": "self.A = self.math_operation('or', self.A, operator_mem_operands_size=3)",
                 "m": [                        
                         ['ERAM', 'LMARPAGE', 'EPCADDR', 'MEMADDRVALID'],
                         ['CPC'],

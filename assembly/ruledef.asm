@@ -84,6 +84,12 @@
 	ASL a => { 
 		0xAF
  	} 
+	; Shift Left One Bit (zero page) [Z N C]
+	ASL {value: u16} => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0x1A @ value
+ 	} 
 	; Branch on Carry Clear (absolute) 
 	BCC {value: u24} => { 
 		assert(value >= 0x10000)
@@ -535,6 +541,12 @@
 		assert(value <= 0xffff)
 		0x33 @ value
  	} 
+	; Load Register D with Memory (zero page - X index) [Z O N]
+	LDD {value: u16},x  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0x1E @ value
+ 	} 
 	; Load Register E with Memory (absolute) [Z N]
 	LDE {value: u24} => { 
 		assert(value >= 0x10000)
@@ -553,6 +565,12 @@
 		assert(value >= 0x100)
 		assert(value <= 0xffff)
 		0x35 @ value
+ 	} 
+	; Load Register E with Memory (zero page - X index) [Z O N]
+	LDE {value: u16},x  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0x1F @ value
  	} 
 	; Load Output with Memory (absolute) 
 	LDO {value: u24} => { 
@@ -592,6 +610,12 @@
 		assert(value <= 0xffff)
 		0xA3 @ value
  	} 
+	; Load Register X with Memory (zero page - Y index) [Z O N]
+	LDX {value: u16},y  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0x1C @ value
+ 	} 
 	; Load Register Y with Memory (absolute) [Z N]
 	LDY {value: u24} => { 
 		assert(value >= 0x10000)
@@ -611,9 +635,21 @@
 		assert(value <= 0xffff)
 		0x37 @ value
  	} 
+	; Load Register Y with Memory (zero page - X index) [Z O N]
+	LDY {value: u16},x  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0x1D @ value
+ 	} 
 	; Shift One Bit Right (accumulator) [Z N C]
 	LSR a => { 
 		0xA8 @ 0x01
+ 	} 
+	; Shift One Bit Right (zero page) [Z N C]
+	LSR {value: u16} => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0x1B @ value @ 0x01
  	} 
 	; No Operation 
 	NOP  => { 

@@ -59,6 +59,18 @@ ISTRUCTIONS:
     #d  0x00, 0x00, "CLC", 0x00, "", 0x00
 .OPCODE_0x19: 
     #d  0x03, 0x03, "BCC", 0x00, "", 0x00
+.OPCODE_0x1A: 
+    #d  0x02, 0x02, "ASL", 0x00, "", 0x00
+.OPCODE_0x1B: 
+    #d  0x03, 0x02, "LSR", 0x00, "", 0x00
+.OPCODE_0x1C: 
+    #d  0x02, 0x02, "LDX", 0x00, ",Y", 0x00
+.OPCODE_0x1D: 
+    #d  0x02, 0x02, "LDY", 0x00, ",X", 0x00
+.OPCODE_0x1E: 
+    #d  0x02, 0x02, "LDD", 0x00, ",X", 0x00
+.OPCODE_0x1F: 
+    #d  0x02, 0x02, "LDE", 0x00, ",X", 0x00
 .OPCODE_0x20: 
     #d  0x03, 0x02, "JSR", 0x00, "", 0x00
 .OPCODE_0x21: 
@@ -429,12 +441,12 @@ ISTRUCTIONS:
     #d .OPCODE_0x17[15:8]
     #d .OPCODE_0x18[15:8]
     #d .OPCODE_0x19[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0x1A[15:8]
+    #d .OPCODE_0x1B[15:8]
+    #d .OPCODE_0x1C[15:8]
+    #d .OPCODE_0x1D[15:8]
+    #d .OPCODE_0x1E[15:8]
+    #d .OPCODE_0x1F[15:8]
     #d .OPCODE_0x20[15:8]
     #d .OPCODE_0x21[15:8]
     #d .OPCODE_0x22[15:8]
@@ -691,12 +703,12 @@ ISTRUCTIONS:
     #d .OPCODE_0x17[7:0]
     #d .OPCODE_0x18[7:0]
     #d .OPCODE_0x19[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0x1A[7:0]
+    #d .OPCODE_0x1B[7:0]
+    #d .OPCODE_0x1C[7:0]
+    #d .OPCODE_0x1D[7:0]
+    #d .OPCODE_0x1E[7:0]
+    #d .OPCODE_0x1F[7:0]
     #d .OPCODE_0x20[7:0]
     #d .OPCODE_0x21[7:0]
     #d .OPCODE_0x22[7:0]

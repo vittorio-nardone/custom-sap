@@ -249,7 +249,7 @@ MICROCODE_test:
     cmp 0x33
     bne .fail
 
-.test19:                 ; Test #19: X index 
+.test19:                 ; Test #19: X,Y index 
     ldo 0x19
     lda 0x34            ; Test lda with index (no carry)
     sta 0x8182          ; Store a value in 0x8182
@@ -283,6 +283,22 @@ MICROCODE_test:
     beq .fail
     cmp 0x23
     bne .fail   
+
+    lda 0x32            ; Test ldy with x index
+    sta 0x8102          ; Store a value in 0x8102
+    ldy 0x00            ; Clean y
+    ldx 0x03            
+    ldy 0x80FF,X        ; Load from 0x8180 + 0x02 (X) = 0x8182
+    cpy 0x32            
+    bne .fail
+   
+    lda 0x33            ; Test ldx with y index
+    sta 0x8114          ; Store a value in 0x8102
+    ldx 0x00            ; Clean x
+    ldy 0x15            
+    ldx 0x80FF,y        ; Load from 0x8180 + 0x02 (X) = 0x8182
+    cpx 0x33            
+    bne .fail
 
 .test20:
     ldo 0x20            ; Test #20: SBC with/out Carry (Borrow)
