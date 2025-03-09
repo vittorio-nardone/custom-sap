@@ -129,9 +129,10 @@ cargo install customasm
 pip install intelhex
 ```
 
-### Python library pySerial (simulator)
+### Python libraries required by the simulator
 ```sh
 pip install pyserial
+pip install watchdog
 ```
 
 # Serial communication

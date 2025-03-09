@@ -6,6 +6,9 @@ import select
 import tty
 import termios
 import argparse
+from watchdog.observers import Observer 
+from watchdog.events import FileSystemEventHandler 
+import os
 
 class OttoCPU:
     def __init__(self):
@@ -291,6 +294,9 @@ class OttoCPU:
                 result = current_value & operator
             case 'or':
                 result = current_value | operator
+                print (f"current_value: {current_value}")
+                print (f"operator: {operator}")
+                print (f"result: {result}")
             case 'inc':
                 result = operator + 1
                 if operator_mem_operands_size:
@@ -406,9 +412,20 @@ def load_program(cpu, program, start_address=0x8000):
         cpu.memory[start_address + i] = byte
     cpu.PC = start_address
 
-
 def keyboard_hit():
     return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
+
+# Helper class to reload a program into memory when the file changes
+class FileChangeHandler(FileSystemEventHandler): 
+    def __init__(self, cpu, filepath, address): 
+        self.cpu = cpu 
+        self.program = filepath
+        self.address = address
+
+    def on_modified(self, event):
+        if event.src_path == os.path.abspath(self.program):
+            print(f"-> file {self.program} is changed, reloading it into memory")
+            self.cpu.load_binary(self.program, self.address)
 
 ##################################################################
 ## Main
@@ -433,6 +450,12 @@ if __name__ == "__main__":
     if args.program:
         print(f"-> loading program {args.program} into memory")
         cpu.load_binary(args.program, args.address)
+
+        # Set up file change handler
+        event_handler = FileChangeHandler(cpu, args.program, args.address)
+        observer = Observer()
+        observer.schedule(event_handler, path=os.path.dirname(args.program), recursive=False)
+        observer.start()
     
     # Run the simulator
     old_settings = termios.tcgetattr(sys.stdin)
