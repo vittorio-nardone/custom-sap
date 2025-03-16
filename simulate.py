@@ -294,9 +294,6 @@ class OttoCPU:
                 result = current_value & operator
             case 'or':
                 result = current_value | operator
-                print (f"current_value: {current_value}")
-                print (f"operator: {operator}")
-                print (f"result: {result}")
             case 'inc':
                 result = operator + 1
                 if operator_mem_operands_size:

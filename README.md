@@ -100,6 +100,11 @@ The simulator can also communicate through a virtual serial port, allowing you t
 python ./simulate.py --simulate-serial
 ```
 
+The simulator can also load a specific binary file in the memory and monitor it for updates.
+```bash
+python ./simulate.py --simulate-serial --program roms/_test_.bin
+```
+
 <img src="media/otto-kernel.png" width="600">
 
 ## Control words ROM generation

@@ -364,6 +364,10 @@
 	DEY  => { 
 		0xCB
  	} 
+	; Dump registers in the simulator logs 
+	DMP  => { 
+		0xF7
+ 	} 
 	; Exclusive-OR Memory with Accumulator (absolute) [Z N]
 	EOR {value: u24} => { 
 		assert(value >= 0x10000)

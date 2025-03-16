@@ -64,6 +64,7 @@ Opcode,Instruction,Mode,Cycles,Cycles when condition is true (min),Len,Flags,Des
 0x2D,"DEE","",4,,1,"Z N","Decrement Register E by One","DEE "
 0xCA,"DEX","",4,,1,"Z N","Decrement Register X by One","DEX "
 0xCB,"DEY","",4,,1,"Z N","Decrement Register Y by One","DEY "
+0xF7,"DMP","",2,,1,"","Dump registers in the simulator logs","DMP "
 0x12,"EOR","absolute",10,,4,"Z N","Exclusive-OR Memory with Accumulator (absolute)","EOR 0x2234FA"
 0x13,"EOR","D registry",5,,1,"Z N","Exclusive-OR Register D with Accumulator","EOR D"
 0x14,"EOR","E registry",5,,1,"Z N","Exclusive-OR Register E with Accumulator","EOR E"
