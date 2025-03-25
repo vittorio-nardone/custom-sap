@@ -19,7 +19,7 @@
 ; 0x8000-0xFFFF (32k) - RAM
 ;       0x8000-0x83FF (1k) - reserved for kernel operations
 
-;           0x8100-0x811F  - MEMORY management variables  
+;           0x8100-0x810F  - MEMORY management variables  
 ;           0x8120-0x812F  - VT100 variables          
 
 ;           0x8200-0x82FF  - XMODEM buffer
@@ -40,7 +40,6 @@
 ;       0x8400-0xEFFF (27k) - ram for apps (108 pages of 256 bytes) 
 ;       0xF000-0xFFFF (4k) - reserved for stack
 ;
-;
 ; Memory expansion board (64k) - RAM
 ; 0x010000 - 0x01FFFF
 ; 
@@ -59,6 +58,7 @@
 #include "tests.asm"
 #include "math.asm"
 ; #include "float.asm" - Work in progress
+#include "memory.asm"
 #include "utils.asm"
 #include "serial.asm"
 #include "interrupt.asm"
