@@ -76,6 +76,14 @@ F_INIT:
 #const F_DICT_EXEC_USER_ITEM = F_MEMORY_START + 0x0126
 #const F_STATUS_COUNT = F_MEMORY_START + 0x0127
 
+#const F_FIND_TOKEN_MSB = F_MEMORY_START + 0x0128
+#const F_FIND_TOKEN_LSB = F_MEMORY_START + 0x0129
+#const F_FIND_TOKEN_START = F_MEMORY_START + 0x012A
+#const F_FIND_TOKEN_COUNT = F_MEMORY_START + 0x012B
+
+#const F_BI_IF_THEN_START = F_MEMORY_START + 0x012C
+#const F_BI_IF_ELSE_START = F_MEMORY_START + 0x012D
+
 ; TODO: reorganization of the memory layout
 
 ; Placing the stack at the end of the variable area
@@ -228,6 +236,64 @@ F_TOKENIZE:
     bne .loop
 .end:
     rts
+
+F_FIND_TOKEN:
+    ldd F_FIND_TOKEN_MSB
+    lde F_FIND_TOKEN_LSB
+
+    ; save in stack 
+    lda F_TOKEN_START
+    pha
+    lda F_TOKEN_COUNT
+    pha
+
+.next_token:
+    ; set new start
+    clc
+    lda F_TOKEN_COUNT
+    adc F_TOKEN_START
+    sta F_TOKEN_START
+    cmp F_INPUT_BUFFER_COUNT
+    beq .not_found
+
+    jsr F_TOKENIZE
+
+    ;compare
+    ldy F_TOKEN_START
+    ldx 0x00
+
+.cmp_loop:
+    lda de,x
+    beq .check_token_length 
+    cmp F_INPUT_BUFFER_START,y
+    bne .next_token
+    inx
+    iny
+    jmp .cmp_loop
+
+.check_token_length:
+    cpx F_TOKEN_COUNT
+    bne .next_token
+
+.found:
+    lda F_TOKEN_START
+    sta F_FIND_TOKEN_START
+    lda F_TOKEN_COUNT
+    sta F_FIND_TOKEN_COUNT    
+    jmp .done
+
+.not_found:
+    lda 0x00
+    sta F_FIND_TOKEN_START
+    sta F_FIND_TOKEN_COUNT ; not found
+    
+.done:
+    pla 
+    sta F_TOKEN_COUNT
+    pla 
+    sta F_TOKEN_START
+    rts
+
 
 F_PRINT_TOKEN:
     ldy F_TOKEN_COUNT
@@ -432,14 +498,6 @@ F_EXECUTE_DICTIONARY:
     inc F_INPUT_BUFFER_COUNT
     jmp .copy_cmd_loop
 .copy_cmd_end:
-    ; iny
-    ; lda 0x20
-    ; sta F_INPUT_BUFFER_START, y
-    ; iny
-    ; inc F_INPUT_BUFFER_COUNT
-    ; lda 0x1B ; ESC (restore status)
-    ; sta F_INPUT_BUFFER_START, y
-    ; inc F_INPUT_BUFFER_COUNT
     lda 0x00
     sta F_TOKEN_START
     sta F_TOKEN_COUNT
@@ -540,6 +598,7 @@ F_REGISTER_ALL_BUILT_IN_FUNCTIONS:
     _MACRO_REGISTER_BUILT_IN F_BI_SPACES_LABEL, F_BI_SPACES
     _MACRO_REGISTER_BUILT_IN F_BI_DOT_QUOTE_LABEL, F_BI_DOT_QUOTE
     _MACRO_REGISTER_BUILT_IN F_BI_NEW_DEF_LABEL, F_BI_NEW_DEF
+    _MACRO_REGISTER_BUILT_IN F_BI_IF_LABEL, F_BI_IF
     rts
 
 F_REGISTER_BUILT_IN_FUNCTION:
@@ -794,3 +853,124 @@ F_BI_NEW_DEF:
 .error_msg:
     #d "ERROR IN DEFINITION"
     #d 0x00
+
+
+F_BI_IF_LABEL:
+    #d "IF", 0x00 
+F_BI_IF:
+    ; search for THEN
+    lda .then_msg[15:8]
+    sta F_FIND_TOKEN_MSB
+    lda .then_msg[7:0]
+    sta F_FIND_TOKEN_LSB
+    jsr F_FIND_TOKEN
+
+    lda F_FIND_TOKEN_COUNT
+    beq .then_not_found_error
+
+    clc
+    adc F_FIND_TOKEN_START
+    sta F_BI_IF_THEN_START
+
+    ; search for ELSE
+    lda 0x00
+    sta F_BI_IF_ELSE_START
+
+    lda .else_msg[15:8]
+    sta F_FIND_TOKEN_MSB
+    lda .else_msg[7:0]
+    sta F_FIND_TOKEN_LSB
+    jsr F_FIND_TOKEN
+
+    lda F_FIND_TOKEN_COUNT
+    beq .check_condition
+
+    clc
+    adc F_FIND_TOKEN_START
+    sta F_BI_IF_ELSE_START
+
+
+.check_condition:
+    ; store the real end of the full token
+    lda F_BI_IF_THEN_START
+    sec
+    sbc F_TOKEN_START
+    sta F_TOKEN_COUNT
+
+    jsr F_STACK_PULL
+    bcc .end 
+
+    lda F_TOKEN_VALUE
+    beq .condition_false
+
+    ;execute IF
+    jsr F_PUSH_STATUS
+
+    ldx F_TOKEN_START
+    inx
+    inx
+    ldy 0x00
+    sty F_INPUT_BUFFER_COUNT
+
+.if_copy_loop:   
+    lda F_INPUT_BUFFER_START, x
+    sta F_INPUT_BUFFER_START, y
+    inx
+    iny
+    inc F_INPUT_BUFFER_COUNT
+    cpx F_BI_IF_THEN_START
+    beq .copy_end
+    cpx F_BI_IF_ELSE_START
+    beq .copy_end
+    jmp .if_copy_loop
+
+.condition_false:
+    lda F_BI_IF_ELSE_START
+    beq .end
+
+    ;execute ELSE
+    jsr F_PUSH_STATUS
+
+    ldx F_BI_IF_ELSE_START
+    ldy 0x00
+    sty F_INPUT_BUFFER_COUNT
+
+.else_copy_loop:   
+    lda F_INPUT_BUFFER_START, x
+    sta F_INPUT_BUFFER_START, y
+    inx
+    iny
+    inc F_INPUT_BUFFER_COUNT
+    cpx F_BI_IF_THEN_START
+    beq .copy_end
+    jmp .else_copy_loop
+
+.copy_end:
+    sec
+    lda F_INPUT_BUFFER_COUNT
+    sbc 0x04 ; remove THEN/ELSE
+    sta F_INPUT_BUFFER_COUNT
+    lda 0x00
+    sta F_TOKEN_START
+    sta F_TOKEN_COUNT
+    jmp .end
+
+.then_not_found_error:
+    ldd .then_not_found_error_msg[15:8]
+    lde .then_not_found_error_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda #1
+    sta F_EXECUTION_ERROR_FLAG
+
+.end:
+    rts
+
+.then_not_found_error_msg:
+    #d "THEN EXPECTED"
+    #d 0x00
+
+.then_msg:
+    #d "THEN", 0x00
+
+.else_msg:
+    #d "ELSE", 0x00
