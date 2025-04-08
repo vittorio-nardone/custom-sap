@@ -13,12 +13,18 @@
 
 ; **********************************************************
 ; THE STARTING ADDRESS OF THE FORTH MEMORY
-; when porting to kernel, it must be changed to a constant
 #const F_MEMORY_START = 0xB000
+; THE MAX SIZE OF A SINGLE INPUT (64 bytes -> up to 256)
+#const F_MAX_INPUT_SIZE = 0x40
+; THE MAX SIZE OF THE STACK
+#const F_MAX_STACK_SIZE = 0xFF
+; THE MAX SIZE OF THE DICTIONARY (built-in + user)
+#const F_MAX_DICT_SIZE = 0x1000 ; 4K
 ; **********************************************************
 
 FORTH_MAIN:
     jsr F_INIT
+    jsr F_WELCOME
 .loop:
     jsr F_INPUT
     lda F_INPUT_BUFFER_COUNT
@@ -35,15 +41,69 @@ F_INIT:
     lda 0x00
     sta F_STACK_COUNT
     sta F_EXIT_INTERPRETER_FLAG
-    ; init custom dict
-    sta F_DICT_USER_START
-    ; init status count
+    sta F_DICT_BUILT_IN_COUNT
+    sta F_DICT_USER_COUNT
+    ; init status
     sta F_STATUS_COUNT
     ; init built-in dict
     jsr F_REGISTER_ALL_BUILT_IN_FUNCTIONS
     ; reset fonts
     jsr VT100_TEXT_RESET
     rts
+
+F_WELCOME:
+    jsr VT100_ERASE_SCREEN
+    jsr VT100_CURSOR_HOME
+    ldd .welcome_msg[15:8]
+    lde .welcome_msg[7:0]
+    jsr ACIA_SEND_STRING
+    jsr F_STATUS
+    ldd .exit_msg[15:8]
+    lde .exit_msg[7:0]
+    jsr ACIA_SEND_STRING
+    rts
+
+.welcome_msg:
+    #d "Forth compiler for OTTO - v1.0.0", 0x0A, 0x0D, 0x00
+.exit_msg:
+    #d "Use BYE to exit", 0x0A, 0x0D, 0x00
+
+F_STATUS:
+    ldd .memory_start_msg[15:8]
+    lde .memory_start_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda F_MEMORY_START[15:8]
+    jsr ACIA_SEND_HEX
+    lda F_MEMORY_START[7:0]
+    jsr ACIA_SEND_HEX
+    jsr ACIA_SEND_NEWLINE
+
+    ldd .dictionary_msg[15:8]
+    lde .dictionary_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda F_DICT_BUILT_IN_COUNT
+    jsr ACIA_SEND_DECIMAL
+
+    ldd .dictionary_separator[15:8]
+    lde .dictionary_separator[7:0]
+    jsr ACIA_SEND_STRING
+    lda F_DICT_USER_COUNT
+    jsr ACIA_SEND_DECIMAL
+
+    ldd .dictionary_suffix[15:8]
+    lde .dictionary_suffix[7:0]
+    jsr ACIA_SEND_STRING   
+    jsr ACIA_SEND_NEWLINE
+    rts
+
+.memory_start_msg:
+    #d "-> Memory start at address 0x", 0x00 
+.dictionary_msg:
+    #d "-> Dictionary definitions: ", 0x00 
+.dictionary_separator:
+    #d " / ", 0x00 
+.dictionary_suffix:
+    #d " (built-in / user) ", 0x00   
 
 ; **********************************************************
 ; MEMORY OFFSETS
@@ -84,19 +144,20 @@ F_INIT:
 #const F_BI_IF_THEN_START = F_MEMORY_START + 0x012C
 #const F_BI_IF_ELSE_START = F_MEMORY_START + 0x012D
 
-; TODO: reorganization of the memory layout
+#const F_DICT_BUILT_IN_COUNT = F_MEMORY_START + 0x012E
+#const F_DICT_USER_START_LSB = F_MEMORY_START + 0x012F
+#const F_DICT_USER_START_MSB = F_MEMORY_START + 0x0130
+#const F_DICT_USER_COUNT = F_MEMORY_START + 0x0131
 
 ; Placing the stack at the end of the variable area
-#const F_STACK_START = F_MEMORY_START + 0x1000
+#const F_STACK_START = F_MEMORY_START + 0x0200
 
-; Placing the dictionary at the enf of the stack area
-#const F_DICT_BUILT_IN_START = F_MEMORY_START + 0x2000
+; Placing the dictionary at the end of the stack area 
+; The user dictionary is placed at the end of the buil-in dictionary
+#const F_DICT_BUILT_IN_START = F_STACK_START + F_MAX_STACK_SIZE
 
-; Placing the user dictionary at the enf of the built-in dictionary
-#const F_DICT_USER_START = F_MEMORY_START + 0x3000
-
-; Placing the status saving area at the end of the memory
-#const F_STATUS_START = F_MEMORY_START + 0x4000
+; Placing the status saving area at the end of the dictionary 
+#const F_STATUS_START = F_DICT_BUILT_IN_START + F_MAX_DICT_SIZE 
 
 ; **********************************************************
 
@@ -117,12 +178,22 @@ F_INPUT:
     tao
     cmp 0x0D
     beq .cmd_entered
+    cmp 0x7F
+    beq .backspace
     jsr ACIA_SEND_CHAR
     ldx F_INPUT_BUFFER_COUNT
     sta F_INPUT_BUFFER_START,x
     inc F_INPUT_BUFFER_COUNT
-    cpx 0xFF
+    cpx F_MAX_INPUT_SIZE
     beq .show_too_long_error
+    jmp .loop
+
+.backspace:
+    jsr VT100_CURSOR_LEFT
+    jsr VT100_CLEAR_LINE_END
+    lda  F_INPUT_BUFFER_COUNT
+    beq .loop
+    dec F_INPUT_BUFFER_COUNT
     jmp .loop
 
 .cmd_entered:
@@ -385,31 +456,32 @@ F_STACK_PULL:
 F_TOKEN_IS_BUILTIN:
     ldd F_DICT_BUILT_IN_START[15:8]
     lde F_DICT_BUILT_IN_START[7:0]
-
-.check_if_match:   
-    ldx 0x00
-    ldy F_TOKEN_START
-    lda de,x
+    ldy F_DICT_BUILT_IN_COUNT
     beq .dictionary_end
+    
+.check_if_match:   
+    ldx 0x01
+    phy
+    ldy F_TOKEN_START
 
 .check_char_match:
+    lda de,x
+    beq .end_of_dictionary_item
     cmp F_INPUT_BUFFER_START,y
     bne .check_next_dictionary_item 
     inx
     iny
-
-    lda de,x 
-    beq .end_of_dictionary_item
-    cmp 0x1B ; 1B (ESC) is a special terminator meaning "begin with"
-    beq .match
     jmp .check_char_match
 
 .end_of_dictionary_item:
+    dex
     cpx F_TOKEN_COUNT
     bne .check_next_dictionary_item
+    ply 
 
 .match:    
-    ldx 14
+    inx
+    inx
     lda de,x 
     sta F_DICT_EXEC_BUILT_IN_PTR_LSB
     inx
@@ -421,12 +493,17 @@ F_TOKEN_IS_BUILTIN:
     rts
 
 .check_next_dictionary_item:
-    lda #16
+    ply
+    dey
+    beq .dictionary_end
+
+    ldx 0x00
+    lda de, x
     clc
     adc e
     tae
-    lda 0x00
-    adc d
+    tda
+    adc 0x00
     tad
     jmp .check_if_match    
 
@@ -435,37 +512,50 @@ F_TOKEN_IS_BUILTIN:
     rts
 
 F_TOKEN_IS_DICTIONARY:
-    ldd F_DICT_USER_START[15:8]
-    lde F_DICT_USER_START[7:0]
+    ldd F_DICT_USER_START_MSB
+    lde F_DICT_USER_START_LSB
     lda 0x00
     sta F_DICT_EXEC_USER_ITEM
+    ldy F_DICT_USER_COUNT
+    beq .dictionary_end    
 
 .check_if_match:   
-    ldx 0x00
+    ldx 0x01
+    phy
     ldy F_TOKEN_START
-    lda de,x
-    beq .dictionary_end
 
 .check_char_match:
+    lda de,x
+    beq .end_of_dictionary_item
     cmp F_INPUT_BUFFER_START,y
     bne .check_next_dictionary_item 
     inx
     iny
-
-    lda de,x 
-    beq .end_of_dictionary_item
     jmp .check_char_match
 
 .end_of_dictionary_item:
+    dex
     cpx F_TOKEN_COUNT
     bne .check_next_dictionary_item
+    ply
 
 .match:    
     sec
     rts
 
 .check_next_dictionary_item:
-    ind ; 256 bytes each
+    ply
+    dey
+    beq .dictionary_end
+
+    ldx 0x00
+    lda de, x
+    clc
+    adc e
+    tae
+    tda
+    adc 0x00
+    tad
     inc F_DICT_EXEC_USER_ITEM
     jmp .check_if_match    
 
@@ -476,17 +566,34 @@ F_TOKEN_IS_DICTIONARY:
 F_EXECUTE_DICTIONARY:
     jsr F_PUSH_STATUS
 
-    ldd F_DICT_USER_START[15:8]
-    lde F_DICT_USER_START[7:0]
+    ldd F_DICT_USER_START_MSB
+    lde F_DICT_USER_START_LSB
 
 .go_to_item_loop:
     lda F_DICT_EXEC_USER_ITEM
-    beq .copy_cmd
+    beq .find_cmd
     dec F_DICT_EXEC_USER_ITEM
-    ind ; 256 bytes each
+
+    ldx 0x00
+    lda de, x
+    clc
+    adc e
+    tae
+    tda
+    adc 0x00
+    tad
     jmp .go_to_item_loop
+
+.find_cmd:
+    ldx 0x01
+.find_cmd_loop:
+    lda de, x
+    beq .copy_cmd
+    inx
+    jmp .find_cmd_loop
+
 .copy_cmd:
-    ldx 14
+    inx
     ldy 0x00
     sty F_INPUT_BUFFER_COUNT
 .copy_cmd_loop:   
@@ -504,26 +611,38 @@ F_EXECUTE_DICTIONARY:
     rts
 
 ; DICT user records
-; - label (14 bytes, 0x00 terminated, empty if last)
-; - cmd (242 bytes)
-F_DICTONARY_USER_ADD:
-    ldd F_DICT_USER_START[15:8]
-    lde F_DICT_USER_START[7:0]
-    ldx 0x00
-.check_if_free:
-    lda de, x
+; - TOTAL SIZE
+;   - label (0x00 terminated)
+;   - cmd   (0x00 terminated)
+F_DICTIONARY_USER_ADD:
+    ldd F_DICT_USER_START_MSB
+    lde F_DICT_USER_START_LSB
+    ldy F_DICT_USER_COUNT
     beq .add
-    ind ; 256 bytes each
-    jmp .check_if_free
+    ldx 0x00
+.go_to_record_loop:
+    lda de,x
+    clc
+    adc e
+    tae
+    tda
+    adc 0x00
+    tad
+    dey
+    bne .go_to_record_loop
 .add:
-    lda F_DICT_ADD_BUFFER_START, x
+    ldx 0x01
+    ldy 0x00
+.add_loop:
+    lda F_DICT_ADD_BUFFER_START, y
     sta de, x
     beq .copy_cmd
     inx
-    jmp .add
+    iny
+    jmp .add_loop
 .copy_cmd:
-    ldx 14
     ldy F_DICT_ADD_USER_START
+    inx
 .copy_cmd_loop:
     lda F_INPUT_BUFFER_START, y
     sta de, x
@@ -533,40 +652,67 @@ F_DICTONARY_USER_ADD:
     bne .copy_cmd_loop
     lda 0x00
     sta de, x 
+    ; set record size
+    inx
+    txa
+    ldx 0x00
+    sta de, x    
+    ; inc # of user functions
+    inc F_DICT_USER_COUNT 
     rts
 
 ; DICT built-in records
-; - label (14 bytes, 0x00 terminated, empty if last)
-; - ptr to built in LSB  (1 byte)
-; - ptr to built in MSB  (1 byte)
+; - TOTAL SIZE
+;   - label (0x00 terminated)
+;   - ptr to built in LSB  (1 byte)
+;   - ptr to built in MSB  (1 byte)
 F_DICTONARY_BUILT_IN_ADD:
     ldd F_DICT_BUILT_IN_START[15:8]
     lde F_DICT_BUILT_IN_START[7:0]
-    ldx 0x00
-.check_if_free:
-    lda de, x
+    ldy F_DICT_BUILT_IN_COUNT
     beq .add
-    lda #16
+    ldx 0x00
+.go_to_record_loop:
+    lda de,x
     clc
     adc e
     tae
-    lda 0x00
-    adc d
+    tda
+    adc 0x00
     tad
-    jmp .check_if_free
+    dey
+    bne .go_to_record_loop
 .add:
-    lda F_DICT_ADD_BUFFER_START, x
+    ldx 0x01
+    ldy 0x00
+.add_loop:
+    lda F_DICT_ADD_BUFFER_START, y 
     sta de, x
     beq .set_ptr
     inx
-    jmp .add
+    iny
+    jmp .add_loop
 .set_ptr:
-    ldx #14
+    inx
     lda F_DICT_ADD_BUILT_IN_PTR_LSB
     sta de, x
     inx
     lda F_DICT_ADD_BUILT_IN_PTR_MSB
-    sta de, x    
+    sta de, x   
+    inx
+    ; set record size
+    txa
+    ldx 0x00
+    sta de, x
+    ; set initial position of USER dictonary
+    clc
+    adc e
+    sta F_DICT_USER_START_LSB
+    tda
+    adc 0x00
+    sta F_DICT_USER_START_MSB
+    ; inc # of built it functions
+    inc F_DICT_BUILT_IN_COUNT 
     rts
 
 #ruledef
@@ -619,22 +765,32 @@ F_REGISTER_BUILT_IN_FUNCTION:
 
 
 ; STATUS records
-; - F_INPUT_BUFFER_COUNT 
-; - F_TOKEN_START 
-; - F_TOKEN_COUNT 
-; - INPUT_BUFFER (253 bytes)
+; - TOTAL SIZE   
+;    - F_INPUT_BUFFER_COUNT 
+;    - F_TOKEN_START 
+;    - F_TOKEN_COUNT 
+;    - INPUT_BUFFER 
 
 F_PUSH_STATUS:
     ldd F_STATUS_START[15:8]
     lde F_STATUS_START[7:0]
-    ldx F_STATUS_COUNT
-.find_status_record_loop:
+    ldy F_STATUS_COUNT
     beq .push_vars
-    ind ; 256 bytes each
-    dex
-    jmp .find_status_record_loop
-.push_vars:
     ldx 0x00
+
+.go_to_record_loop:
+    lda de,x
+    clc
+    adc e
+    tae
+    tda
+    adc 0x00
+    tad
+    dey
+    bne .go_to_record_loop
+
+.push_vars:
+    ldx 0x01
     lda F_INPUT_BUFFER_COUNT
     sta de, x
     inx
@@ -653,20 +809,30 @@ F_PUSH_STATUS:
     cpy F_INPUT_BUFFER_COUNT
     bne .push_input_loop
     inc F_STATUS_COUNT
+    txa
+    ldx 0x00
+    sta de, x
     rts
 
 F_PULL_STATUS:
     dec F_STATUS_COUNT
     ldd F_STATUS_START[15:8]
     lde F_STATUS_START[7:0]
-    ldx F_STATUS_COUNT
-.find_status_record_loop:
+    ldy F_STATUS_COUNT
     beq .pull_vars
-    ind ; 256 bytes each
-    dex
-    jmp .find_status_record_loop
-.pull_vars:
     ldx 0x00
+.go_to_record_loop:
+    lda de,x
+    clc
+    adc e
+    tae
+    tda
+    adc 0x00
+    tad
+    dey
+    bne .go_to_record_loop
+.pull_vars:
+    ldx 0x01
     lda de, x
     sta F_INPUT_BUFFER_COUNT
     inx
@@ -839,7 +1005,7 @@ F_BI_NEW_DEF:
 
 .add:
     stx F_TOKEN_COUNT
-    jsr F_DICTONARY_USER_ADD
+    jsr F_DICTIONARY_USER_ADD
     rts
 
 .error:
