@@ -1,0 +1,35 @@
+#once
+; **********************************************************
+; All stack-related stuff
+; **********************************************************
+
+F_STACK_PUSH:
+    ; TODO: check max stack size
+    lda F_TOKEN_VALUE
+    ldx F_STACK_COUNT
+    sta F_STACK_START, x
+    inc F_STACK_COUNT 
+    rts
+
+F_STACK_PULL:
+    ldx F_STACK_COUNT
+    beq .stack_is_empty
+    dex 
+    stx F_STACK_COUNT
+    lda F_STACK_START, x
+    sta F_TOKEN_VALUE 
+    sec
+    rts
+
+.stack_is_empty:
+    ldd .stack_is_empty_msg[15:8]
+    lde .stack_is_empty_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda #1
+    sta F_EXECUTION_ERROR_FLAG
+    clc
+    rts    
+
+.stack_is_empty_msg:
+    #d "Stack empty" 
+    #d 0x00
