@@ -119,15 +119,25 @@ main:
     bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL ; check if Receive Data Register is full
     beq .loop
     lda ACIA_RW_DATA_ADDR  ; read serial 1 data
-    jsr ACIA_SEND_CHAR
     tao
     cmp 0x0D
     beq .cmd_entered
+    cmp 0x7F
+    beq .backspace
+    jsr ACIA_SEND_CHAR
     ldx MAIN_MENU_INPUT_BUFFER_COUNT
     sta MAIN_MENU_INPUT_BUFFER,x
     inc MAIN_MENU_INPUT_BUFFER_COUNT
     cpx 0x0F
     beq .menu_show_error
+    jmp .loop
+
+.backspace:
+    jsr VT100_CURSOR_LEFT
+    jsr VT100_CLEAR_LINE_END
+    lda MAIN_MENU_INPUT_BUFFER_COUNT
+    beq .loop
+    dec MAIN_MENU_INPUT_BUFFER_COUNT
     jmp .loop
 
 .cmd_entered:
