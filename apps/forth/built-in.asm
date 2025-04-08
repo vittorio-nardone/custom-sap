@@ -13,12 +13,31 @@ F_REGISTER_ALL_BUILT_IN_FUNCTIONS:
     _MACRO_REGISTER_BUILT_IN F_BI_BYE_LABEL, F_BI_BYE
     _MACRO_REGISTER_BUILT_IN F_BI_DISPLAY_LABEL, F_BI_DISPLAY
     _MACRO_REGISTER_BUILT_IN F_BI_SUM_LABEL, F_BI_SUM
+    _MACRO_REGISTER_BUILT_IN F_BI_SUB_LABEL, F_BI_SUB
     _MACRO_REGISTER_BUILT_IN F_BI_CR_LABEL, F_BI_CR
     _MACRO_REGISTER_BUILT_IN F_BI_SPACE_LABEL, F_BI_SPACE
     _MACRO_REGISTER_BUILT_IN F_BI_SPACES_LABEL, F_BI_SPACES
     _MACRO_REGISTER_BUILT_IN F_BI_DOT_QUOTE_LABEL, F_BI_DOT_QUOTE
     _MACRO_REGISTER_BUILT_IN F_BI_NEW_DEF_LABEL, F_BI_NEW_DEF
     _MACRO_REGISTER_BUILT_IN F_BI_IF_LABEL, F_BI_IF
+
+    _MACRO_REGISTER_BUILT_IN F_BI_EQUAL_LABEL, F_BI_EQUAL
+    _MACRO_REGISTER_BUILT_IN F_BI_DISEQUAL_LABEL, F_BI_DISEQUAL
+    _MACRO_REGISTER_BUILT_IN F_BI_GREATER_LABEL, F_BI_GREATER
+    _MACRO_REGISTER_BUILT_IN F_BI_SMALLER_LABEL, F_BI_SMALLER
+    _MACRO_REGISTER_BUILT_IN F_BI_IS_MORE_THAN_ZERO_LABEL, F_BI_IS_MORE_THAN_ZERO
+    _MACRO_REGISTER_BUILT_IN F_BI_IS_ZERO_LABEL, F_BI_IS_ZERO
+
+    _MACRO_REGISTER_BUILT_IN F_BI_SWAP_LABEL, F_BI_SWAP
+    _MACRO_REGISTER_BUILT_IN F_BI_DUP_LABEL, F_BI_DUP
+    _MACRO_REGISTER_BUILT_IN F_BI_OVER_LABEL, F_BI_OVER
+    _MACRO_REGISTER_BUILT_IN F_BI_ROT_LABEL, F_BI_ROT
+    _MACRO_REGISTER_BUILT_IN F_BI_DROP_LABEL, F_BI_DROP
+
+    _MACRO_REGISTER_BUILT_IN F_BI_2DUP_LABEL, F_BI_2DUP
+    _MACRO_REGISTER_BUILT_IN F_BI_2DROP_LABEL, F_BI_2DROP
+
+    _MACRO_REGISTER_BUILT_IN F_BI_DISPLAY_STACK_LABEL, F_BI_DISPLAY_STACK
     rts
 
 ; ****** START of built-in functions defition ******
@@ -35,6 +54,21 @@ F_BI_DISPLAY:
 .end:
     rts
 
+F_BI_DISPLAY_STACK_LABEL:
+    #d ".S", 0x00
+F_BI_DISPLAY_STACK:
+    lda "<"
+    jsr ACIA_SEND_CHAR
+    lda F_STACK_COUNT
+    jsr ACIA_SEND_DECIMAL
+    lda ">"
+    jsr ACIA_SEND_CHAR    
+    lda " "
+    jsr ACIA_SEND_CHAR   
+    jsr F_STACK_PRINT
+.end:
+    rts
+
 F_BI_EMIT_LABEL:
     #d "EMIT", 0x00
 F_BI_EMIT:
@@ -42,6 +76,109 @@ F_BI_EMIT:
     bcc .end
     lda F_TOKEN_VALUE
     jsr ACIA_SEND_CHAR
+.end:
+    rts
+
+F_BI_SWAP_LABEL:
+    #d "SWAP", 0x00
+F_BI_SWAP:
+    jsr F_STACK_PULL
+    bcc .end
+    ldd F_TOKEN_VALUE
+    jsr F_STACK_PULL
+    bcc .end
+    lde F_TOKEN_VALUE
+    std F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+    ste F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+.end:
+    rts
+
+F_BI_DUP_LABEL:
+    #d "DUP", 0x00
+F_BI_DUP:
+    jsr F_STACK_PULL
+    bcc .end
+    jsr F_STACK_PUSH
+    jsr F_STACK_PUSH
+.end:
+    rts
+
+F_BI_2DUP_LABEL:
+    #d "2DUP", 0x00
+F_BI_2DUP:
+    jsr F_STACK_PULL
+    bcc .end
+    ldd F_TOKEN_VALUE
+    jsr F_STACK_PULL
+    bcc .end    
+    jsr F_STACK_PUSH
+    jsr F_STACK_PUSH
+    std F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+    jsr F_STACK_PUSH
+.end:
+    rts
+
+F_BI_2DROP_LABEL:
+    #d "2DROP", 0x00
+F_BI_2DROP:
+    jsr F_STACK_PULL
+    bcc .end
+    jsr F_STACK_PULL    
+.end:
+    rts
+
+F_BI_OVER_LABEL:
+    #d "OVER", 0x00
+F_BI_OVER:
+    jsr F_STACK_PULL
+    bcc .end
+    ldd F_TOKEN_VALUE
+    jsr F_STACK_PULL
+    bcc .end
+    lde F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+    std F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+    ste F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+.end:
+    rts
+
+F_BI_ROT_LABEL:
+    #d "ROT", 0x00
+F_BI_ROT:
+    jsr F_STACK_PULL
+    bcc .end
+    ldd F_TOKEN_VALUE
+    
+    jsr F_STACK_PULL
+    bcc .end
+    lde F_TOKEN_VALUE
+
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    pha
+    
+    ste F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+
+    std F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+
+    pla
+    sta F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+.end:
+    rts
+
+F_BI_DROP_LABEL:
+    #d "DROP", 0x00
+F_BI_DROP:
+    jsr F_STACK_PULL
 .end:
     rts
 
@@ -61,6 +198,131 @@ F_BI_SUM:
     jsr F_STACK_PUSH
 .end:
     rts
+
+F_BI_SUB_LABEL:
+    #d "-", 0x00
+F_BI_SUB:
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    pha
+    jsr F_STACK_PULL
+    pld
+    bcc .end
+    sec
+    lda F_TOKEN_VALUE
+    sbc d
+    sta F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+.end:
+    rts
+
+F_BI_EQUAL_LABEL:
+    #d "=", 0x00
+F_BI_EQUAL:
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    pha
+    jsr F_STACK_PULL
+    pla
+    bcc .end
+    cmp F_TOKEN_VALUE
+    beq .push_true
+    jsr F_STACK_PUSH_FALSE 
+    rts
+.push_true:
+    jsr F_STACK_PUSH_TRUE 
+.end:
+    rts
+
+F_BI_DISEQUAL_LABEL:
+    #d "<>", 0x00
+F_BI_DISEQUAL:
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    pha
+    jsr F_STACK_PULL
+    pla
+    bcc .end
+    cmp F_TOKEN_VALUE
+    bne .push_true
+    jsr F_STACK_PUSH_FALSE 
+    rts
+.push_true:
+    jsr F_STACK_PUSH_TRUE 
+.end:
+    rts
+
+F_BI_GREATER_LABEL:
+    #d "<", 0x00
+F_BI_GREATER:
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    pha
+    jsr F_STACK_PULL
+    pla
+    bcc .end
+    cmp F_TOKEN_VALUE
+    beq .push_false
+    bcc .push_false
+    jsr F_STACK_PUSH_TRUE
+    rts
+.push_false:
+    jsr F_STACK_PUSH_FALSE 
+.end:
+    rts
+
+F_BI_SMALLER_LABEL:
+    #d ">", 0x00
+F_BI_SMALLER:
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    pha
+    jsr F_STACK_PULL
+    pla
+    bcc .end
+    cmp F_TOKEN_VALUE
+    beq .push_false
+    bcs .push_false
+    jsr F_STACK_PUSH_TRUE
+    rts
+.push_false:
+    jsr F_STACK_PUSH_FALSE 
+.end:
+    rts
+
+F_BI_IS_ZERO_LABEL:
+    #d "0=", 0x00
+F_BI_IS_ZERO:
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    beq .push_true
+    jsr F_STACK_PUSH_FALSE 
+    rts
+.push_true:
+    jsr F_STACK_PUSH_TRUE 
+.end:
+    rts
+
+F_BI_IS_MORE_THAN_ZERO_LABEL:
+    #d "0>", 0x00
+F_BI_IS_MORE_THAN_ZERO:
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    bne .push_true
+    jsr F_STACK_PUSH_FALSE 
+    rts
+.push_true:
+    jsr F_STACK_PUSH_TRUE 
+.end:
+    rts
+
 
 F_BI_CR_LABEL:
     #d "CR", 0x00
@@ -346,9 +608,9 @@ F_BI_FORTH:
 .dictionary_msg:
     #d "Dictionary definitions: ", 0x00 
 .dictionary_separator:
-    #d " / ", 0x00 
+    #d "/", 0x00 
 .dictionary_suffix:
-    #d " (built-in / user) ", 0x00   
+    #d " (built-in/user) ", 0x00   
 
 
 ; ****** END of built-in functions defition ******
