@@ -102,7 +102,7 @@ python ./simulate.py --simulate-serial
 
 The simulator can also load a specific binary file in the memory and monitor it for updates.
 ```bash
-python ./simulate.py --simulate-serial --program roms/_test_.bin
+python ./simulate.py --program roms/_test_.bin
 ```
 
 <img src="media/otto-kernel.png" width="600">

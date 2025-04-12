@@ -37,19 +37,21 @@ FORTH_MAIN:
 #include "forth/stack.asm"
 #include "forth/status.asm"
 #include "forth/utils.asm"
+#include "forth/loops.asm"
 
 ; **********************************************************
 ; Init vars
 ; **********************************************************
 F_INIT:
-    ; init stack
+    ; init stack & other vars
     lda 0x00
     sta F_STACK_COUNT
     sta F_EXIT_INTERPRETER_FLAG
+    sta F_EXECUTION_ABORT_FLAG
     sta F_DICT_BUILT_IN_COUNT
     sta F_DICT_USER_COUNT
-    ; init status
     sta F_STATUS_COUNT
+    sta F_DO_LOOP_COUNT
     ; init built-in dict
     jsr F_REGISTER_ALL_BUILT_IN_FUNCTIONS
     ; reset fonts
@@ -137,6 +139,7 @@ F_ELABORATE:
     lda 0x00
     sta F_TOKEN_START
     sta F_EXECUTION_ERROR_FLAG
+    sta F_EXECUTION_ABORT_FLAG
 
 .loop:
     jsr F_TOKENIZE
@@ -174,6 +177,9 @@ F_ELABORATE:
 
 .next_token:
     lda F_EXECUTION_ERROR_FLAG
+    bne .error
+
+    lda F_EXECUTION_ABORT_FLAG
     bne .end
 
     lda F_TOKEN_COUNT
@@ -190,6 +196,19 @@ F_ELABORATE:
     jsr ACIA_SEND_STRING
 .end:
     rts
+
+.error:
+    ldd F_ERROR_MSG_MSB
+    lde F_ERROR_MSG_LSB
+    jsr ACIA_SEND_STRING
+    lda 0x00
+    sta F_STACK_COUNT
+    sta F_EXIT_INTERPRETER_FLAG
+    sta F_EXECUTION_ABORT_FLAG
+    sta F_STATUS_COUNT
+    sta F_DO_LOOP_COUNT
+    rts
+
 .restore_status:
     jsr F_PULL_STATUS
     jmp .next_token

@@ -9,8 +9,10 @@ F_REGISTER_ALL_BUILT_IN_FUNCTIONS:
     sta F_DICT_BUILT_IN_START
 
     _MACRO_REGISTER_BUILT_IN F_BI_FORTH_LABEL, F_BI_FORTH
+    _MACRO_REGISTER_BUILT_IN F_BI_ABORT_QUOTE_LABEL, F_BI_ABORT_QUOTE
     _MACRO_REGISTER_BUILT_IN F_BI_EMIT_LABEL, F_BI_EMIT
     _MACRO_REGISTER_BUILT_IN F_BI_BYE_LABEL, F_BI_BYE
+    _MACRO_REGISTER_BUILT_IN F_BI_PAGE_LABEL, F_BI_PAGE
     _MACRO_REGISTER_BUILT_IN F_BI_DISPLAY_LABEL, F_BI_DISPLAY
     _MACRO_REGISTER_BUILT_IN F_BI_SUM_LABEL, F_BI_SUM
     _MACRO_REGISTER_BUILT_IN F_BI_SUB_LABEL, F_BI_SUB
@@ -38,9 +40,66 @@ F_REGISTER_ALL_BUILT_IN_FUNCTIONS:
     _MACRO_REGISTER_BUILT_IN F_BI_2DROP_LABEL, F_BI_2DROP
 
     _MACRO_REGISTER_BUILT_IN F_BI_DISPLAY_STACK_LABEL, F_BI_DISPLAY_STACK
+
+    _MACRO_REGISTER_BUILT_IN F_BI_DO_LABEL, F_BI_DO
+    _MACRO_REGISTER_BUILT_IN F_BI_LOOP_LABEL, F_BI_LOOP
+    _MACRO_REGISTER_BUILT_IN F_BI_PLUS_LOOP_LABEL, F_BI_PLUS_LOOP
+    _MACRO_REGISTER_BUILT_IN F_BI_I_LABEL, F_BI_I
+    _MACRO_REGISTER_BUILT_IN F_BI_LEAVE_LABEL, F_BI_LEAVE
     rts
 
 ; ****** START of built-in functions defition ******
+
+F_BI_ABORT_QUOTE_LABEL:
+    #d "ABORT", 0x22, 0x00
+F_BI_ABORT_QUOTE:
+    jsr F_STACK_PULL
+    bcc .end 
+    lda F_TOKEN_VALUE
+    sta F_EXECUTION_ABORT_FLAG
+
+    lda F_TOKEN_COUNT
+    sec
+    adc F_TOKEN_START
+    tax
+    ldy F_TOKEN_COUNT
+    iny
+.loop:
+    lda F_INPUT_BUFFER_START,x
+    inx
+    iny
+    cmp 0x22
+    beq .abort_if_needed
+    ldd F_EXECUTION_ABORT_FLAG
+    beq .skip_send
+    jsr ACIA_SEND_CHAR
+.skip_send:    
+    cpx F_INPUT_BUFFER_COUNT
+    bne .loop
+.error:
+    lda .error_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .error_msg[7:0]
+    sta F_ERROR_MSG_LSB
+    lda 0x01
+    sta F_EXECUTION_ERROR_FLAG
+    lda 0x00
+    sta F_EXECUTION_ABORT_FLAG
+    rts
+.abort_if_needed:
+    sty F_TOKEN_COUNT
+    lda F_EXECUTION_ABORT_FLAG
+    beq .end
+    lda 0x00
+    sta F_STACK_COUNT
+    sta F_EXIT_INTERPRETER_FLAG
+    sta F_STATUS_COUNT
+    sta F_DO_LOOP_COUNT
+.end:
+    rts
+.error_msg:
+    #d "CLOSING QUOTE EXPECTED"
+    #d 0x00
 
 F_BI_DISPLAY_LABEL:
     #d ".", 0x00
@@ -330,6 +389,13 @@ F_BI_CR:
     jsr ACIA_SEND_NEWLINE
     rts
 
+F_BI_PAGE_LABEL:
+    #d "PAGE", 0x00
+F_BI_PAGE:
+    jsr VT100_ERASE_SCREEN
+    jsr VT100_CURSOR_HOME
+    rts
+
 F_BI_SPACE_LABEL:
     #d "SPACE", 0x00
 F_BI_SPACE:
@@ -366,23 +432,27 @@ F_BI_DOT_QUOTE:
     sec
     adc F_TOKEN_START
     tax
+    ldy F_TOKEN_COUNT
+    iny
 .loop:
     lda F_INPUT_BUFFER_START,x
     inx
+    iny
     cmp 0x22
     beq .end
     jsr ACIA_SEND_CHAR
     cpx F_INPUT_BUFFER_COUNT
     bne .loop
 .error:
-    ldd .error_msg[15:8]
-    lde .error_msg[7:0]
-    jsr ACIA_SEND_STRING
+    lda .error_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .error_msg[7:0]
+    sta F_ERROR_MSG_LSB
     lda #1
     sta F_EXECUTION_ERROR_FLAG
     rts
 .end:
-    stx F_TOKEN_COUNT
+    sty F_TOKEN_COUNT
     rts
 
 .error_msg:
@@ -440,9 +510,10 @@ F_BI_NEW_DEF:
     rts
 
 .error:
-    ldd .error_msg[15:8]
-    lde .error_msg[7:0]
-    jsr ACIA_SEND_STRING
+    lda .error_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .error_msg[7:0]
+    sta F_ERROR_MSG_LSB
     lda #1
     sta F_EXECUTION_ERROR_FLAG
     rts
@@ -553,9 +624,10 @@ F_BI_IF:
     jmp .end
 
 .then_not_found_error:
-    ldd .then_not_found_error_msg[15:8]
-    lde .then_not_found_error_msg[7:0]
-    jsr ACIA_SEND_STRING
+    lda .then_not_found_error_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .then_not_found_error_msg[7:0]
+    sta F_ERROR_MSG_LSB
     lda #1
     sta F_EXECUTION_ERROR_FLAG
 
