@@ -14,8 +14,24 @@ F_REGISTER_ALL_BUILT_IN_FUNCTIONS:
     _MACRO_REGISTER_BUILT_IN F_BI_BYE_LABEL, F_BI_BYE
     _MACRO_REGISTER_BUILT_IN F_BI_PAGE_LABEL, F_BI_PAGE
     _MACRO_REGISTER_BUILT_IN F_BI_DISPLAY_LABEL, F_BI_DISPLAY
+
     _MACRO_REGISTER_BUILT_IN F_BI_SUM_LABEL, F_BI_SUM
     _MACRO_REGISTER_BUILT_IN F_BI_SUB_LABEL, F_BI_SUB
+    _MACRO_REGISTER_BUILT_IN F_BI_MUL_LABEL, F_BI_MUL 
+    _MACRO_REGISTER_BUILT_IN F_BI_DIV_LABEL, F_BI_DIV   
+    _MACRO_REGISTER_BUILT_IN F_BI_MOD_LABEL, F_BI_MOD   
+    _MACRO_REGISTER_BUILT_IN F_BI_SLASH_MOD_LABEL, F_BI_SLASH_MOD 
+
+    _MACRO_REGISTER_BUILT_IN F_BI_MAX_LABEL, F_BI_MAX  
+    _MACRO_REGISTER_BUILT_IN F_BI_MIN_LABEL, F_BI_MIN
+
+    _MACRO_REGISTER_BUILT_IN F_BI_ONE_PLUS_LABEL, F_BI_ONE_PLUS
+    _MACRO_REGISTER_BUILT_IN F_BI_TWO_PLUS_LABEL, F_BI_TWO_PLUS
+    _MACRO_REGISTER_BUILT_IN F_BI_ONE_LESS_LABEL, F_BI_ONE_LESS
+    _MACRO_REGISTER_BUILT_IN F_BI_TWO_LESS_LABEL, F_BI_TWO_LESS
+    _MACRO_REGISTER_BUILT_IN F_BI_TWO_MUL_LABEL, F_BI_TWO_MUL    
+    _MACRO_REGISTER_BUILT_IN F_BI_TWO_DIV_LABEL, F_BI_TWO_DIV
+    
     _MACRO_REGISTER_BUILT_IN F_BI_CR_LABEL, F_BI_CR
     _MACRO_REGISTER_BUILT_IN F_BI_SPACE_LABEL, F_BI_SPACE
     _MACRO_REGISTER_BUILT_IN F_BI_SPACES_LABEL, F_BI_SPACES
@@ -30,8 +46,12 @@ F_REGISTER_ALL_BUILT_IN_FUNCTIONS:
     _MACRO_REGISTER_BUILT_IN F_BI_IS_MORE_THAN_ZERO_LABEL, F_BI_IS_MORE_THAN_ZERO
     _MACRO_REGISTER_BUILT_IN F_BI_IS_ZERO_LABEL, F_BI_IS_ZERO
 
+    _MACRO_REGISTER_BUILT_IN F_BI_AND_LABEL, F_BI_AND
+    _MACRO_REGISTER_BUILT_IN F_BI_OR_LABEL, F_BI_OR
+
     _MACRO_REGISTER_BUILT_IN F_BI_SWAP_LABEL, F_BI_SWAP
     _MACRO_REGISTER_BUILT_IN F_BI_DUP_LABEL, F_BI_DUP
+    _MACRO_REGISTER_BUILT_IN F_BI_IF_DUP_LABEL, F_BI_IF_DUP
     _MACRO_REGISTER_BUILT_IN F_BI_OVER_LABEL, F_BI_OVER
     _MACRO_REGISTER_BUILT_IN F_BI_ROT_LABEL, F_BI_ROT
     _MACRO_REGISTER_BUILT_IN F_BI_DROP_LABEL, F_BI_DROP
@@ -164,6 +184,19 @@ F_BI_DUP:
 .end:
     rts
 
+F_BI_IF_DUP_LABEL:
+    #d "?DUP", 0x00
+F_BI_IF_DUP:
+    jsr F_STACK_PULL
+    bcc .end
+    lda F_TOKEN_VALUE
+    beq .condition_false
+    jsr F_STACK_PUSH
+.condition_false:
+    jsr F_STACK_PUSH
+.end:
+    rts
+
 F_BI_2DUP_LABEL:
     #d "2DUP", 0x00
 F_BI_2DUP:
@@ -240,148 +273,6 @@ F_BI_DROP:
     jsr F_STACK_PULL
 .end:
     rts
-
-F_BI_SUM_LABEL:
-    #d "+", 0x00
-F_BI_SUM:
-    jsr F_STACK_PULL
-    bcc .end
-    lda F_TOKEN_VALUE
-    pha
-    jsr F_STACK_PULL
-    pla
-    bcc .end
-    clc
-    adc F_TOKEN_VALUE
-    sta F_TOKEN_VALUE
-    jsr F_STACK_PUSH
-.end:
-    rts
-
-F_BI_SUB_LABEL:
-    #d "-", 0x00
-F_BI_SUB:
-    jsr F_STACK_PULL
-    bcc .end
-    lda F_TOKEN_VALUE
-    pha
-    jsr F_STACK_PULL
-    pld
-    bcc .end
-    sec
-    lda F_TOKEN_VALUE
-    sbc d
-    sta F_TOKEN_VALUE
-    jsr F_STACK_PUSH
-.end:
-    rts
-
-F_BI_EQUAL_LABEL:
-    #d "=", 0x00
-F_BI_EQUAL:
-    jsr F_STACK_PULL
-    bcc .end
-    lda F_TOKEN_VALUE
-    pha
-    jsr F_STACK_PULL
-    pla
-    bcc .end
-    cmp F_TOKEN_VALUE
-    beq .push_true
-    jsr F_STACK_PUSH_FALSE 
-    rts
-.push_true:
-    jsr F_STACK_PUSH_TRUE 
-.end:
-    rts
-
-F_BI_DISEQUAL_LABEL:
-    #d "<>", 0x00
-F_BI_DISEQUAL:
-    jsr F_STACK_PULL
-    bcc .end
-    lda F_TOKEN_VALUE
-    pha
-    jsr F_STACK_PULL
-    pla
-    bcc .end
-    cmp F_TOKEN_VALUE
-    bne .push_true
-    jsr F_STACK_PUSH_FALSE 
-    rts
-.push_true:
-    jsr F_STACK_PUSH_TRUE 
-.end:
-    rts
-
-F_BI_GREATER_LABEL:
-    #d "<", 0x00
-F_BI_GREATER:
-    jsr F_STACK_PULL
-    bcc .end
-    lda F_TOKEN_VALUE
-    pha
-    jsr F_STACK_PULL
-    pla
-    bcc .end
-    cmp F_TOKEN_VALUE
-    beq .push_false
-    bcc .push_false
-    jsr F_STACK_PUSH_TRUE
-    rts
-.push_false:
-    jsr F_STACK_PUSH_FALSE 
-.end:
-    rts
-
-F_BI_SMALLER_LABEL:
-    #d ">", 0x00
-F_BI_SMALLER:
-    jsr F_STACK_PULL
-    bcc .end
-    lda F_TOKEN_VALUE
-    pha
-    jsr F_STACK_PULL
-    pla
-    bcc .end
-    cmp F_TOKEN_VALUE
-    beq .push_false
-    bcs .push_false
-    jsr F_STACK_PUSH_TRUE
-    rts
-.push_false:
-    jsr F_STACK_PUSH_FALSE 
-.end:
-    rts
-
-F_BI_IS_ZERO_LABEL:
-    #d "0=", 0x00
-F_BI_IS_ZERO:
-    jsr F_STACK_PULL
-    bcc .end
-    lda F_TOKEN_VALUE
-    beq .push_true
-    jsr F_STACK_PUSH_FALSE 
-    rts
-.push_true:
-    jsr F_STACK_PUSH_TRUE 
-.end:
-    rts
-
-F_BI_IS_MORE_THAN_ZERO_LABEL:
-    #d "0>", 0x00
-F_BI_IS_MORE_THAN_ZERO:
-    jsr F_STACK_PULL
-    bcc .end
-    lda F_TOKEN_VALUE
-    bne .push_true
-    jsr F_STACK_PUSH_FALSE 
-    rts
-.push_true:
-    jsr F_STACK_PUSH_TRUE 
-.end:
-    rts
-
 
 F_BI_CR_LABEL:
     #d "CR", 0x00

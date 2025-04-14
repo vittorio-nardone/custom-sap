@@ -38,6 +38,7 @@ FORTH_MAIN:
 #include "forth/status.asm"
 #include "forth/utils.asm"
 #include "forth/loops.asm"
+#include "forth/math.asm"
 
 ; **********************************************************
 ; Init vars
@@ -168,12 +169,13 @@ F_ELABORATE:
     jmp .next_token
 
 .token_error:
-    jsr ACIA_SEND_NEWLINE
+    ;jsr ACIA_SEND_NEWLINE
     jsr F_PRINT_TOKEN
-    ldd .token_error_msg[15:8]
-    lde .token_error_msg[7:0]
-    jsr ACIA_SEND_STRING
-    jmp .end
+    lda .token_error_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .token_error_msg[7:0]
+    sta F_ERROR_MSG_LSB
+    jmp .error
 
 .next_token:
     lda F_EXECUTION_ERROR_FLAG
