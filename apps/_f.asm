@@ -53,6 +53,7 @@ F_INIT:
     sta F_DICT_USER_COUNT
     sta F_STATUS_COUNT
     sta F_DO_LOOP_COUNT
+    sta F_BEGIN_UNTIL_COUNT
     ; init built-in dict
     jsr F_REGISTER_ALL_BUILT_IN_FUNCTIONS
     ; reset fonts
@@ -209,6 +210,7 @@ F_ELABORATE:
     sta F_EXECUTION_ABORT_FLAG
     sta F_STATUS_COUNT
     sta F_DO_LOOP_COUNT
+    sta F_BEGIN_UNTIL_COUNT
     rts
 
 .restore_status:

@@ -11,6 +11,8 @@
 #const F_MAX_DICT_SIZE = 0x1000 ; 4K
 ; THE MAX SIZE OF THE STATUS SAVE AREA
 #const F_MAX_STATUS_SIZE = 0x400 ; 1K
+; THE MAX SIZE OF THE DO-LOOP STACK AREA
+#const F_MAX_DO_LOOP_SIZE = 0x100 ; 256 byte
 ; **********************************************************
 
 ; **********************************************************
@@ -64,6 +66,9 @@
 ; DO .. LOOP 
 #const F_DO_LOOP_COUNT = F_MEMORY_START + 0x0135
 
+; BEGIN .. UNTIL 
+#const F_BEGIN_UNTIL_COUNT = F_MEMORY_START + 0x0136
+
 ; Placing the stack at the end of the variable area
 #const F_STACK_START = F_MEMORY_START + 0x0200
 
@@ -76,5 +81,8 @@
 
 ; Placing the do-loop stack area at the end of the status
 #const F_DO_LOOP_START = F_STATUS_START + F_MAX_STATUS_SIZE
+
+; Placing the begin-until stack area at the end of the do-loop stack area
+#const F_BEGIN_UNTIL_START = F_DO_LOOP_START + F_MAX_DO_LOOP_SIZE
 
 ; **********************************************************

@@ -221,3 +221,155 @@ F_BI_LEAVE:
 .not_found_error_msg:
     #d "LOOP/+LOOP not found" 
     #d 0x00
+
+
+
+; BEGIN UNTIL
+F_BEGIN_UNTIL_PUSH:
+    ; TODO: check max size
+    ldx F_BEGIN_UNTIL_COUNT    
+    lda F_TOKEN_START
+    sta F_BEGIN_UNTIL_START, x  ;begin token start
+    inx
+    stx F_BEGIN_UNTIL_COUNT 
+.end:
+    rts
+
+
+F_CHECK_BEGIN_UNTIL_STACK_EMPTY:
+    lda F_BEGIN_UNTIL_COUNT
+    beq .stack_is_empty
+    sec
+    rts
+.stack_is_empty:
+    lda .stack_is_empty_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .stack_is_empty_msg[7:0]
+    sta F_ERROR_MSG_LSB
+    lda #1
+    sta F_EXECUTION_ERROR_FLAG
+    clc
+    rts    
+
+.stack_is_empty_msg:
+    #d "BEGIN-UNTIL stack empty" 
+    #d 0x00
+
+F_BEGIN_UNTIL_CHECK:
+    jsr F_CHECK_BEGIN_UNTIL_STACK_EMPTY
+    bcc .end
+
+    jsr F_STACK_PULL
+    bcc .end   
+
+    lda F_TOKEN_VALUE
+    bne .check_true
+
+    ldx F_BEGIN_UNTIL_COUNT
+    dex
+    lda F_BEGIN_UNTIL_START, x  
+    sta F_TOKEN_START
+    sec
+    rts
+.check_true:
+    dec F_BEGIN_UNTIL_COUNT
+    clc
+.end:
+    rts
+
+F_BEGIN_WHILE_CHECK:
+    jsr F_CHECK_BEGIN_UNTIL_STACK_EMPTY
+    bcc .end
+    
+    jsr F_STACK_PULL
+    bcc .end  
+    
+    lda F_TOKEN_VALUE
+    bne .end
+
+    ; remove loop from stack
+    dec F_BEGIN_UNTIL_COUNT
+    
+    ; search for REPEAT
+    lda .repeat_msg[15:8]
+    sta F_FIND_TOKEN_MSB
+    lda .repeat_msg[7:0]
+    sta F_FIND_TOKEN_LSB
+    jsr F_FIND_TOKEN
+
+    lda F_FIND_TOKEN_COUNT
+    beq .repeat_not_found_error
+
+    lda F_FIND_TOKEN_START
+    sta F_TOKEN_START
+    lda F_FIND_TOKEN_COUNT
+    sta F_TOKEN_COUNT
+
+.end:
+    rts
+
+.repeat_not_found_error:
+    lda .repeat_not_found_error_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .repeat_not_found_error_msg[7:0]
+    sta F_ERROR_MSG_LSB
+    lda #1
+    sta F_EXECUTION_ERROR_FLAG
+    rts
+
+.repeat_msg:
+    #d "REPEAT", 0x00
+.repeat_not_found_error_msg:
+    #d "REPEAT EXPECTED"
+    #d 0x00
+
+F_BI_BEGIN_LABEL:
+    #d "BEGIN", 0x00
+F_BI_BEGIN:
+    jsr F_BEGIN_UNTIL_PUSH
+    rts
+
+F_BI_UNTIL_LABEL:
+    #d "UNTIL", 0x00
+F_BI_UNTIL:
+    jsr F_BEGIN_UNTIL_CHECK
+    bcs .back_to_begin
+    rts
+.back_to_begin:
+    lda 0x05
+    sta F_TOKEN_COUNT
+    rts
+
+F_BI_WHILE_LABEL:
+    #d "WHILE", 0x00
+F_BI_WHILE:
+    jsr F_BEGIN_WHILE_CHECK
+    rts
+
+F_BI_AGAIN_LABEL:
+    #d "AGAIN", 0x00
+F_BI_AGAIN:
+    jsr F_CHECK_BEGIN_UNTIL_STACK_EMPTY
+    bcc .end
+    ldx F_BEGIN_UNTIL_COUNT
+    dex
+    lda F_BEGIN_UNTIL_START, x  
+    sta F_TOKEN_START
+    lda 0x05
+    sta F_TOKEN_COUNT
+.end:
+    rts
+
+F_BI_REPEAT_LABEL:
+    #d "REPEAT", 0x00
+F_BI_REPEAT:
+    jsr F_CHECK_BEGIN_UNTIL_STACK_EMPTY
+    bcc .end
+    ldx F_BEGIN_UNTIL_COUNT
+    dex
+    lda F_BEGIN_UNTIL_START, x  
+    sta F_TOKEN_START
+    lda 0x05
+    sta F_TOKEN_COUNT
+.end:
+    rts
