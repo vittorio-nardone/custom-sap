@@ -369,6 +369,13 @@ F_BI_NEW_DEF:
     inx
     cmp 0x20
     beq .label_end
+    cmp "a" 
+    bcc .skip
+    cmp "z"+1      
+    bcs .skip
+    sec
+    sbc 0x20
+.skip:    
     sta F_DICT_ADD_BUFFER_START, y
     iny
     cpx F_INPUT_BUFFER_COUNT

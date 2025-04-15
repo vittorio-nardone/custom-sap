@@ -21,6 +21,14 @@ F_TOKENIZE:
     lda F_INPUT_BUFFER_START,x
     cmp 0x20
     beq .end
+    cmp "a" 
+    bcc .skip
+    cmp "z"+1      
+    bcs .skip
+    sec
+    sbc 0x20
+    sta F_INPUT_BUFFER_START,x
+.skip:
     inc F_TOKEN_COUNT
     inx
     cpx F_INPUT_BUFFER_COUNT
