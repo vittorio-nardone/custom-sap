@@ -117,7 +117,7 @@ DIVIDE_INT:
 ;   ; X = 0xDF      ; LSB of the result (0x02DF)
 ;
 ; AUTHOR: VN
-; LAST UPDATE: 13/09/2024
+; LAST UPDATE: 15/04/2025
 ; **********************************************************
 
 MULTIPLY_INT:
@@ -138,17 +138,14 @@ MULTIPLY_INT:
 	sbc SQTAB_LSB,y     ; 0xC9 - 0xC4 = 0x05
 	sta 0x80fe          ; 0x05 -> fe
 	lda SQTAB_MSB,x     ; acc = 0x04
-	sec                 ; C -> 1
 	sbc SQTAB_MSB,y     ; 0x04 - 0x00 = 0x04
 	sta 0x80ff          ; 0x04 -> ff
-	clc
 	ldx 0x80fd          ; x = 0x15
 	lda 0x80fe          ; a = 0x05
     clc
 	adc SQTAB_LSB,x     ; 0x05 + 0xb9 = 0xbe
 	sta 0x80fe          ; 0xbe -> fe
 	lda 0x80ff          ; a = 0x04
-    clc
 	adc SQTAB_MSB,x     ; 0x04 + 0x01 = 0x05
     clc
     ror a               ; 0x05 >> a = 0x02 + C
@@ -179,6 +176,15 @@ MATH_test:
     cmp 0x17
     bne .fail
     cpx 0xB8
+    bne .fail
+
+;    ldo 0xA3               ; Test #A3: Integer multiplication
+    lda 0x3c
+    ldx 0x02
+    jsr MULTIPLY_INT        ; 0x3C * 0x02 = 0x0078
+    cmp 0x00
+    bne .fail
+    cpx 0x78
     bne .fail
 
     rts

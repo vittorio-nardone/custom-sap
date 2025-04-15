@@ -3185,7 +3185,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Dump registers in the simulator logs", 
                 "sim": '\n'.join((
                     'self.PC += 1',
-                    'print(f"-> PC:{cpu.PC:06X} IR:{cpu.IR:02X} A:{cpu.A:02X} X:{cpu.X:02X} Y:{cpu.Y:02X} D:{cpu.D:02X} E:{cpu.E:02X} SP:{cpu.SP:04X} C:{cpu.C} Z:{cpu.Z} N:{cpu.N} O:{cpu.O}")',
+                    'print(f"-> PC:{cpu.PC:06X} IR:{cpu.IR:02X} A:{cpu.A:02X} X:{cpu.X:02X} Y:{cpu.Y:02X} D:{cpu.D:02X} E:{cpu.E:02X} OUT:{cpu.OUT:02X} SP:{cpu.SP:04X} C:{cpu.C} Z:{cpu.Z} N:{cpu.N} O:{cpu.O}")',
                 )),   
                 "m": [ ] },
 
