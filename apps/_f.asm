@@ -148,6 +148,8 @@ F_ELABORATE:
     lda F_TOKEN_COUNT
     beq .send_ok
 
+    jsr F_TOKEN_TO_UPPERCASE
+
 .check_number:
     jsr F_TOKEN_IS_NUMBER
     bcc .check_builtin  

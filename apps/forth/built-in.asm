@@ -430,37 +430,88 @@ F_BI_NEW_DEF:
 F_BI_IF_LABEL:
     #d "IF", 0x00 
 F_BI_IF:
-    ; search for THEN
-    lda .then_msg[15:8]
-    sta F_FIND_TOKEN_MSB
-    lda .then_msg[7:0]
-    sta F_FIND_TOKEN_LSB
-    jsr F_FIND_TOKEN
+    
+    ; save in stack 
+    lda F_TOKEN_START
+    pha
+    lda F_TOKEN_COUNT
+    pha
+    
+    ; search for THEN/ELSE
+    lda 0x00
+    sta F_BI_IF_DEPTH
+    sta F_BI_IF_ELSE_START
 
-    lda F_FIND_TOKEN_COUNT
+.next_token:
+    ; set new start
+    clc
+    lda F_TOKEN_COUNT
+    adc F_TOKEN_START
+    sta F_TOKEN_START
+    cmp F_INPUT_BUFFER_COUNT
     beq .then_not_found_error
 
-    clc
-    adc F_FIND_TOKEN_START
-    sta F_BI_IF_THEN_START
+    jsr F_TOKENIZE
 
-    ; search for ELSE
-    lda 0x00
-    sta F_BI_IF_ELSE_START
+    ;compare IF
+    lda F_BI_IF_LABEL[15:8]
+    sta F_CMP_TOKEN_MSB
+    lda F_BI_IF_LABEL[7:0]
+    sta F_CMP_TOKEN_LSB
+    jsr F_COMPARE_TOKEN
+    bcs .if_found
 
+    ;compare THEN
+    lda .then_msg[15:8]
+    sta F_CMP_TOKEN_MSB
+    lda .then_msg[7:0]
+    sta F_CMP_TOKEN_LSB
+    jsr F_COMPARE_TOKEN
+    bcs .then_found
+
+    ;compare ELSE
     lda .else_msg[15:8]
-    sta F_FIND_TOKEN_MSB
+    sta F_CMP_TOKEN_MSB
     lda .else_msg[7:0]
-    sta F_FIND_TOKEN_LSB
-    jsr F_FIND_TOKEN
+    sta F_CMP_TOKEN_LSB
+    jsr F_COMPARE_TOKEN
+    bcs .else_found
 
-    lda F_FIND_TOKEN_COUNT
-    beq .check_condition
+    jmp .next_token
 
+
+.if_found:
+    inc F_BI_IF_DEPTH
+    jmp .next_token
+
+.then_found:
+    lda F_BI_IF_DEPTH
+    beq .then_save
+    dec F_BI_IF_DEPTH
+    jmp .next_token
+
+.then_save:
+    lda F_TOKEN_COUNT
     clc
-    adc F_FIND_TOKEN_START
-    sta F_BI_IF_ELSE_START
+    adc F_TOKEN_START
+    sta F_BI_IF_THEN_START   
+    jmp .restore_current_token
 
+.else_found:
+    lda F_BI_IF_DEPTH
+    bne .next_token      
+    lda F_TOKEN_COUNT
+    clc
+    adc F_TOKEN_START
+    sta F_BI_IF_ELSE_START
+    jmp .next_token
+
+.restore_current_token:
+    ; restore from stack 
+    pla
+    sta F_TOKEN_COUNT
+    pla
+    sta F_TOKEN_START
 
 .check_condition:
     ; store the real end of the full token
@@ -528,6 +579,8 @@ F_BI_IF:
     jmp .end
 
 .then_not_found_error:
+    pla 
+    pla
     lda .then_not_found_error_msg[15:8]
     sta F_ERROR_MSG_MSB
     lda .then_not_found_error_msg[7:0]

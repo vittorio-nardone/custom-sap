@@ -21,14 +21,6 @@ F_TOKENIZE:
     lda F_INPUT_BUFFER_START,x
     cmp 0x20
     beq .end
-    cmp "a" 
-    bcc .skip
-    cmp "z"+1      
-    bcs .skip
-    sec
-    sbc 0x20
-    sta F_INPUT_BUFFER_START,x
-.skip:
     inc F_TOKEN_COUNT
     inx
     cpx F_INPUT_BUFFER_COUNT
@@ -37,8 +29,10 @@ F_TOKENIZE:
     rts
 
 F_FIND_TOKEN:
-    ldd F_FIND_TOKEN_MSB
-    lde F_FIND_TOKEN_LSB
+    lda F_FIND_TOKEN_MSB
+    sta F_CMP_TOKEN_MSB
+    lda F_FIND_TOKEN_LSB
+    sta F_CMP_TOKEN_MSB
 
     ; save in stack 
     lda F_TOKEN_START
@@ -58,21 +52,8 @@ F_FIND_TOKEN:
     jsr F_TOKENIZE
 
     ;compare
-    ldy F_TOKEN_START
-    ldx 0x00
-
-.cmp_loop:
-    lda de,x
-    beq .check_token_length 
-    cmp F_INPUT_BUFFER_START,y
-    bne .next_token
-    inx
-    iny
-    jmp .cmp_loop
-
-.check_token_length:
-    cpx F_TOKEN_COUNT
-    bne .next_token
+    jsr F_COMPARE_TOKEN
+    bcc .next_token
 
 .found:
     lda F_TOKEN_START
@@ -147,4 +128,58 @@ F_TOKEN_TO_NUMBER:
     inx
     dey
     bne .loop
+    rts
+
+F_TOKEN_TO_UPPERCASE:
+    ldy F_TOKEN_COUNT
+    ldx F_TOKEN_START
+.loop:
+    lda F_INPUT_BUFFER_START,x
+    cmp "a" 
+    bcc .skip
+    cmp "z"+1      
+    bcs .skip
+    sec
+    sbc 0x20
+    sta F_INPUT_BUFFER_START,x
+.skip:
+    inx
+    dey
+    bne .loop
+    rts
+
+; compare, case insensitive
+F_COMPARE_TOKEN:
+    ldd F_CMP_TOKEN_MSB
+    lde F_CMP_TOKEN_LSB    
+
+    ldy F_TOKEN_START
+    ldx 0x00
+
+.cmp_loop:
+    lda F_INPUT_BUFFER_START,y
+    cmp "a" 
+    bcc .skip
+    cmp "z"+1      
+    bcs .skip
+    sec
+    sbc 0x20
+.skip:
+    sta F_CMP_CURRENT_CHAR
+    lda de,x
+    beq .check_token_length 
+    cmp F_CMP_CURRENT_CHAR
+    bne .not_equal
+    inx
+    iny
+    jmp .cmp_loop
+
+.check_token_length:
+    cpx F_TOKEN_COUNT
+    bne .not_equal
+    sec
+    rts
+
+.not_equal:
+    clc
     rts
