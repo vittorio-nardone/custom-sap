@@ -37,7 +37,10 @@ F_REGISTER_ALL_BUILT_IN_FUNCTIONS:
     _MACRO_REGISTER_BUILT_IN F_BI_SPACES_LABEL, F_BI_SPACES
     _MACRO_REGISTER_BUILT_IN F_BI_DOT_QUOTE_LABEL, F_BI_DOT_QUOTE
     _MACRO_REGISTER_BUILT_IN F_BI_NEW_DEF_LABEL, F_BI_NEW_DEF
+
     _MACRO_REGISTER_BUILT_IN F_BI_IF_LABEL, F_BI_IF
+    _MACRO_REGISTER_BUILT_IN F_BI_THEN_LABEL, F_BI_THEN
+    _MACRO_REGISTER_BUILT_IN F_BI_ELSE_LABEL, F_BI_ELSE
 
     _MACRO_REGISTER_BUILT_IN F_BI_EQUAL_LABEL, F_BI_EQUAL
     _MACRO_REGISTER_BUILT_IN F_BI_DISEQUAL_LABEL, F_BI_DISEQUAL
@@ -470,9 +473,9 @@ F_BI_IF:
     bcs .then_found
 
     ;compare ELSE
-    lda .else_msg[15:8]
+    lda F_BI_ELSE_LABEL[15:8]
     sta F_CMP_TOKEN_MSB
-    lda .else_msg[7:0]
+    lda F_BI_ELSE_LABEL[7:0]
     sta F_CMP_TOKEN_LSB
     jsr F_COMPARE_TOKEN
     bcs .else_found
@@ -491,18 +494,14 @@ F_BI_IF:
     jmp .next_token
 
 .then_save:
-    lda F_TOKEN_COUNT
-    clc
-    adc F_TOKEN_START
+    lda F_TOKEN_START
     sta F_BI_IF_THEN_START   
     jmp .restore_current_token
 
 .else_found:
     lda F_BI_IF_DEPTH
     bne .next_token      
-    lda F_TOKEN_COUNT
-    clc
-    adc F_TOKEN_START
+    lda F_TOKEN_START
     sta F_BI_IF_ELSE_START
     jmp .next_token
 
@@ -514,69 +513,37 @@ F_BI_IF:
     sta F_TOKEN_START
 
 .check_condition:
-    ; store the real end of the full token
-    lda F_BI_IF_THEN_START
-    sec
-    sbc F_TOKEN_START
-    sta F_TOKEN_COUNT
-
     jsr F_STACK_PULL
     bcc .end 
 
     lda F_TOKEN_VALUE
     beq .condition_false
-
-    ;execute IF
-    jsr F_PUSH_STATUS
-
-    ldx F_TOKEN_START
-    inx
-    inx
-    ldy 0x00
-    sty F_INPUT_BUFFER_COUNT
-
-.if_copy_loop:   
-    lda F_INPUT_BUFFER_START, x
-    sta F_INPUT_BUFFER_START, y
-    inx
-    iny
-    inc F_INPUT_BUFFER_COUNT
-    cpx F_BI_IF_THEN_START
-    beq .copy_end
-    cpx F_BI_IF_ELSE_START
-    beq .copy_end
-    jmp .if_copy_loop
+    jsr .push_if_then_stack
+    jmp .end
 
 .condition_false:
     lda F_BI_IF_ELSE_START
-    beq .end
+    bne .go_to_else
 
-    ;execute ELSE
-    jsr F_PUSH_STATUS
-
-    ldx F_BI_IF_ELSE_START
-    ldy 0x00
-    sty F_INPUT_BUFFER_COUNT
-
-.else_copy_loop:   
-    lda F_INPUT_BUFFER_START, x
-    sta F_INPUT_BUFFER_START, y
-    inx
-    iny
-    inc F_INPUT_BUFFER_COUNT
-    cpx F_BI_IF_THEN_START
-    beq .copy_end
-    jmp .else_copy_loop
-
-.copy_end:
-    sec
-    lda F_INPUT_BUFFER_COUNT
-    sbc 0x04 ; remove THEN/ELSE
-    sta F_INPUT_BUFFER_COUNT
-    lda 0x00
+    lda F_BI_IF_THEN_START
     sta F_TOKEN_START
+    lda 0x04
+    sta F_TOKEN_COUNT
+    jmp .end    
+
+.go_to_else:
+    lda F_BI_IF_ELSE_START
+    sta F_TOKEN_START
+    lda 0x04
     sta F_TOKEN_COUNT
     jmp .end
+
+.push_if_then_stack:
+    ldx F_IF_THEN_COUNT
+    lda F_BI_IF_THEN_START
+    sta F_IF_THEN_START,x
+    inc F_IF_THEN_COUNT
+    rts
 
 .then_not_found_error:
     pla 
@@ -598,8 +565,44 @@ F_BI_IF:
 .then_msg:
     #d "THEN", 0x00
 
-.else_msg:
-    #d "ELSE", 0x00
+F_BI_ELSE_LABEL:
+    #d "ELSE", 0x00 
+F_BI_ELSE:
+    jsr F_CHECK_IF_THEN_STACK_EMPTY
+    bcc .end
+    dec F_IF_THEN_COUNT
+    ldx F_IF_THEN_COUNT
+    lda F_IF_THEN_START,x
+    sta F_TOKEN_START
+    lda 0x04
+    sta F_TOKEN_COUNT
+.end:
+    rts
+
+F_BI_THEN_LABEL:
+    #d "THEN", 0x00 
+F_BI_THEN:
+    rts
+
+F_CHECK_IF_THEN_STACK_EMPTY:
+    lda F_IF_THEN_COUNT
+    beq .if_then_stack_empty
+    sec
+    rts
+
+.if_then_stack_empty:
+    lda .if_then_stack_empty_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .if_then_stack_empty_msg[7:0]
+    sta F_ERROR_MSG_LSB
+    lda #1
+    sta F_EXECUTION_ERROR_FLAG
+    clc
+    rts
+
+.if_then_stack_empty_msg:
+    #d "IF-THEN stack empty"
+    #d 0x00
 
 F_BI_FORTH_LABEL:
     #d "FORTH", 0x00 

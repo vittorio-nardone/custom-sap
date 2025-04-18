@@ -13,6 +13,10 @@
 #const F_MAX_STATUS_SIZE = 0x400 ; 1K
 ; THE MAX SIZE OF THE DO-LOOP STACK AREA
 #const F_MAX_DO_LOOP_SIZE = 0x100 ; 256 byte
+; THE MAX SIZE OF THE BEGIN-UNTIL STACK AREA
+#const F_MAX_BEGIN_UNTIL_SIZE = 0x100 ; 256 byte
+; THE MAX SIZE OF THE IF-THEN STACK AREA
+#const F_MAX_IF_THEN_SIZE = 0x100 ; 256 byte
 ; **********************************************************
 
 ; **********************************************************
@@ -70,9 +74,12 @@
 ; BEGIN .. UNTIL 
 #const F_BEGIN_UNTIL_COUNT = F_MEMORY_START + 0x0137
 
-#const F_CMP_TOKEN_MSB = F_MEMORY_START + 0x0138
-#const F_CMP_TOKEN_LSB = F_MEMORY_START + 0x0139
-#const F_CMP_CURRENT_CHAR = F_MEMORY_START + 0x0140
+; IF .. THEN 
+#const F_IF_THEN_COUNT = F_MEMORY_START + 0x0138
+
+#const F_CMP_TOKEN_MSB = F_MEMORY_START + 0x0139
+#const F_CMP_TOKEN_LSB = F_MEMORY_START + 0x013A
+#const F_CMP_CURRENT_CHAR = F_MEMORY_START + 0x013B
 
 ; Placing the stack at the end of the variable area
 #const F_STACK_START = F_MEMORY_START + 0x0200
@@ -89,5 +96,8 @@
 
 ; Placing the begin-until stack area at the end of the do-loop stack area
 #const F_BEGIN_UNTIL_START = F_DO_LOOP_START + F_MAX_DO_LOOP_SIZE
+
+; Placing the if-then stack area at the end of the begin-until stack area
+#const F_IF_THEN_START = F_BEGIN_UNTIL_START + F_MAX_BEGIN_UNTIL_SIZE
 
 ; **********************************************************
