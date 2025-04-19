@@ -53,6 +53,8 @@
 ;
 ;
 
+#const KERNEL_VERSION = "v1.2.10"
+
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
 #include "tests.asm"
@@ -76,6 +78,8 @@ boot:
     jsr MATH_test
     jmp main
 
+
+#const FORTH_START = 0x4000
 
 #const MAIN_MENU_STATUS = 0x8000
 #const MAIN_MENU_INPUT_BUFFER_COUNT = 0x8001
@@ -155,6 +159,8 @@ main:
     beq .menu_help_command
     cmp "a"
     beq .menu_disassembler_command
+    cmp "f"
+    beq .menu_forth_command
 .menu_show_error:
     ldd .menu_error_msg[15:8]
     lde .menu_error_msg[7:0]
@@ -406,6 +412,10 @@ main:
 
     jmp .ready
 
+.menu_forth_command:    
+    jsr FORTH_START
+    jmp .ready
+
 .menu_disassembler_command:
     jsr .menu_read_address
     bcs .menu_show_error
@@ -565,12 +575,13 @@ main:
 
 .menu_help_msg:
     #d 0x0A, 0x0D, 0x0A, 0x0D
-    #d "Project OTTO - Kernel v1.2.5", 0x0A, 0x0D, 0x0A, 0x0D
+    #d "Project OTTO Kernel - ", KERNEL_VERSION, 0x0A, 0x0D, 0x0A, 0x0D
     #d "Valid commands (default address 0x8400):", 0x0A, 0x0D
     #d "   ayyxxxx  - disAssemble memory ", 0x0A, 0x0D
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
+    #d "   f        - Start Forth interpreter", 0x0A, 0x0D
     #d "   h        - Show help", 0x0A, 0x0D
     #d 0x00
 

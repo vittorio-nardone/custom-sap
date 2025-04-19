@@ -1,16 +1,18 @@
 ; Bank definition
-#bankdef ram
+#bankdef rom3
 {
-    #addr 0x8400
-    #size 0x2B00
+    #addr 0x4000
+    #size 0x2000
     #outp 0
 }
-#bank ram   
+#bank rom3   
+
+#const FORTH_VERSION = "v1.0.6"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
 #include "../kernel/symbols.asm"
-#include "forth/consts.asm"
+#include "consts.asm"
 
 ; **********************************************************
 ; MAIN ENTRY POINT
@@ -32,13 +34,13 @@ FORTH_MAIN:
 ; **********************************************************
 ; Include modules here
 ; **********************************************************
-#include "forth/built-in.asm"
-#include "forth/dict.asm"
-#include "forth/stack.asm"
-#include "forth/status.asm"
-#include "forth/utils.asm"
-#include "forth/loops.asm"
-#include "forth/math.asm"
+#include "built-in.asm"
+#include "dict.asm"
+#include "stack.asm"
+#include "status.asm"
+#include "utils.asm"
+#include "loops.asm"
+#include "math.asm"
 
 ; **********************************************************
 ; Init vars
@@ -76,7 +78,7 @@ F_WELCOME:
     rts
 
 .welcome_msg:
-    #d "Forth compiler for OTTO - v1.0.0", 0x0A, 0x0D, 0x00
+    #d "Forth Interpreter for OTTO - ", FORTH_VERSION, 0x0A, 0x0D, 0x00
 .exit_msg:
     #d "Use BYE to exit, FORTH to get info", 0x0A, 0x0D, 0x00
 

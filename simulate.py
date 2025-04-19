@@ -42,7 +42,8 @@ class OttoCPU:
         
         # Memory regions
         self.memory_regions = {
-            'rom': {'start': 0x0000, 'stop': 0x5FFF, 'read_only': True, 'io': False},
+            'rom': {'start': 0x0000, 'stop': 0x3FFF, 'read_only': True, 'io': False},
+            'forth': {'start': 0x4000, 'stop': 0x5FFF, 'read_only': True, 'io': False},
             'ram': {'start': 0x8000, 'stop': 0xFFFF, 'read_only': False, 'io': False},
             'ram_ext_1': {'start': 0x010000, 'stop': 0x01FFFF, 'read_only': False, 'io': False},
             'ram_ext_2': {'start': 0x020000, 'stop': 0x02FFFF, 'read_only': False, 'io': False},
@@ -439,10 +440,14 @@ if __name__ == "__main__":
     # Create a new OttoCPU instance
     cpu = OttoCPU()
 
-    print("-> loading kernel into rom memory")
     # Load the kernel into memory
+    print("-> loading kernel into rom memory")
     cpu.load_binary("roms/kernel-rom.bin", cpu.memory_regions['rom']['start'])
     
+    # Load the forth interpreter into memory
+    print("-> loading forth interpreter into rom memory")
+    cpu.load_binary("roms/forth.bin", cpu.memory_regions['forth']['start'])
+
      # Load a program into memory if provided
     if args.program:
         print(f"-> loading program {args.program} into memory")
