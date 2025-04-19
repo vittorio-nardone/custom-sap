@@ -36,7 +36,14 @@ F_REGISTER_ALL_BUILT_IN_FUNCTIONS:
     _MACRO_REGISTER_BUILT_IN F_BI_SPACE_LABEL, F_BI_SPACE
     _MACRO_REGISTER_BUILT_IN F_BI_SPACES_LABEL, F_BI_SPACES
     _MACRO_REGISTER_BUILT_IN F_BI_DOT_QUOTE_LABEL, F_BI_DOT_QUOTE
+
     _MACRO_REGISTER_BUILT_IN F_BI_NEW_DEF_LABEL, F_BI_NEW_DEF
+    _MACRO_REGISTER_BUILT_IN F_BI_VARIABLE_LABEL, F_BI_VARIABLE
+    _MACRO_REGISTER_BUILT_IN F_BI_CONSTANT_LABEL, F_BI_CONSTANT
+    _MACRO_REGISTER_BUILT_IN F_BI_EMARK_LABEL, F_BI_EMARK
+    _MACRO_REGISTER_BUILT_IN F_BI_AT_LABEL, F_BI_AT
+    _MACRO_REGISTER_BUILT_IN F_BI_QMARK_LABEL, F_BI_QMARK
+    _MACRO_REGISTER_BUILT_IN F_BI_PLUS_EMARK_LABEL, F_BI_PLUS_EMARK
 
     _MACRO_REGISTER_BUILT_IN F_BI_IF_LABEL, F_BI_IF
     _MACRO_REGISTER_BUILT_IN F_BI_THEN_LABEL, F_BI_THEN
@@ -357,76 +364,6 @@ F_BI_DOT_QUOTE:
 
 .error_msg:
     #d "CLOSING QUOTE EXPECTED"
-    #d 0x00
-
-F_BI_NEW_DEF_LABEL:
-    #d ":", 0x00 
-F_BI_NEW_DEF:
-    lda F_TOKEN_COUNT
-    sec
-    adc F_TOKEN_START
-    tax
-    ldy 0x00
-.label_loop:
-    lda F_INPUT_BUFFER_START,x
-    inx
-    cmp 0x20
-    beq .label_end
-    cmp "a" 
-    bcc .skip
-    cmp "z"+1      
-    bcs .skip
-    sec
-    sbc 0x20
-.skip:    
-    sta F_DICT_ADD_BUFFER_START, y
-    iny
-    cpx F_INPUT_BUFFER_COUNT
-    bcc .label_loop
-    jmp .error
-
-.label_end:
-    lda 0x00
-    sta F_DICT_ADD_BUFFER_START, y
-
-.find_cmd_loop:
-    lda F_INPUT_BUFFER_START,x
-    stx F_DICT_ADD_USER_START
-    inx
-    cmp 0x20 
-    bne .cmd_read  
-    cpx F_INPUT_BUFFER_COUNT
-    bcc .find_cmd_loop
-    jmp .error
-.cmd_read:
-    lda 0x00
-    sta F_DICT_ADD_USER_COUNT
-.cmd_loop:
-    lda F_INPUT_BUFFER_START,x
-    inc F_DICT_ADD_USER_COUNT
-    inx
-    cmp ";" 
-    beq .add  
-    cpx F_INPUT_BUFFER_COUNT
-    bne .cmd_loop
-    jmp .error
-
-.add:
-    stx F_TOKEN_COUNT
-    jsr F_DICTIONARY_USER_ADD
-    rts
-
-.error:
-    lda .error_msg[15:8]
-    sta F_ERROR_MSG_MSB
-    lda .error_msg[7:0]
-    sta F_ERROR_MSG_LSB
-    lda #1
-    sta F_EXECUTION_ERROR_FLAG
-    rts
-
-.error_msg:
-    #d "ERROR IN DEFINITION"
     #d 0x00
 
 

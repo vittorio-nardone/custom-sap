@@ -81,6 +81,9 @@
 #const F_CMP_TOKEN_LSB = F_MEMORY_START + 0x013A
 #const F_CMP_CURRENT_CHAR = F_MEMORY_START + 0x013B
 
+#const F_DICT_ADD_USER_DEF_TYPE = F_MEMORY_START + 0x013C  
+#const F_DICT_ADD_USER_DEF_VALUE = F_MEMORY_START + 0x013D
+
 ; Placing the stack at the end of the variable area
 #const F_STACK_START = F_MEMORY_START + 0x0200
 

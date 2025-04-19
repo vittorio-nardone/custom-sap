@@ -1,6 +1,6 @@
 
 ##################################################################
-## Generate square table
+## Generate Symbols file
 ##
 ## 
 def generateSymbolsFile():
