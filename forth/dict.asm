@@ -9,10 +9,8 @@
 #const F_DICT_USER_DEF_TYPE_CONSTANT = 0x02
 
 F_TOKEN_IS_DICTIONARY:
-    ldd F_DICT_USER_START_MSB
-    lde F_DICT_USER_START_LSB
-    lda 0x00
-    sta F_DICT_EXEC_USER_ITEM
+    ldd F_DICT_USER_START[15:8]
+    lde F_DICT_USER_START[7:0]
     ldy F_DICT_USER_COUNT
     beq .dictionary_end    
 
@@ -37,6 +35,8 @@ F_TOKEN_IS_DICTIONARY:
     ply
 
 .match:    
+    ste F_DICT_EXEC_USER_LSB
+    std F_DICT_EXEC_USER_MSB
     sec
     rts
 
@@ -53,7 +53,6 @@ F_TOKEN_IS_DICTIONARY:
     tda
     adc 0x00
     tad
-    inc F_DICT_EXEC_USER_ITEM
     jmp .check_if_match    
 
 .dictionary_end:
@@ -61,23 +60,8 @@ F_TOKEN_IS_DICTIONARY:
     rts
 
 F_EXECUTE_DICTIONARY:
-    ldd F_DICT_USER_START_MSB
-    lde F_DICT_USER_START_LSB
-
-.go_to_item_loop:
-    lda F_DICT_EXEC_USER_ITEM
-    beq .skip_label
-    dec F_DICT_EXEC_USER_ITEM
-
-    ldx 0x00
-    lda de, x
-    clc
-    adc e
-    tae
-    tda
-    adc 0x00
-    tad
-    jmp .go_to_item_loop
+    ldd F_DICT_EXEC_USER_MSB
+    lde F_DICT_EXEC_USER_LSB
 
 .skip_label:
     ldx 0x01
@@ -154,8 +138,8 @@ F_EXECUTE_DICTIONARY:
 ;   - type (0x00 -> cmd, 0x01 -> variable, 0x02 -> constant)
 ;   - cmd   (0x00 terminated) / variable & constant 1-byte value
 F_DICTIONARY_USER_CMD_ADD:
-    ldd F_DICT_USER_START_MSB
-    lde F_DICT_USER_START_LSB
+    ldd F_DICT_USER_START[15:8]
+    lde F_DICT_USER_START[7:0]
     ldy F_DICT_USER_COUNT
     beq .add
     ldx 0x00
@@ -204,8 +188,8 @@ F_DICTIONARY_USER_CMD_ADD:
     rts
 
 F_DICTIONARY_USER_VAR_ADD:
-    ldd F_DICT_USER_START_MSB
-    lde F_DICT_USER_START_LSB
+    ldd F_DICT_USER_START[15:8]
+    lde F_DICT_USER_START[7:0]
     ldy F_DICT_USER_COUNT
     beq .add
     ldx 0x00

@@ -6,7 +6,7 @@
 ; THE MAX SIZE OF A SINGLE INPUT (64 bytes -> up to 256)
 #const F_MAX_INPUT_SIZE = 0x40
 ; THE MAX SIZE OF THE STACK
-#const F_MAX_STACK_SIZE = 0xFF
+#const F_MAX_STACK_SIZE = 0x100
 ; THE MAX SIZE OF THE DICTIONARY (built-in + user)
 #const F_MAX_DICT_SIZE = 0x1000 ; 4K
 ; THE MAX SIZE OF THE STATUS SAVE AREA
@@ -48,7 +48,7 @@
 #const F_DICT_ADD_USER_START = F_MEMORY_START + 0x0125
 #const F_DICT_ADD_USER_COUNT = F_MEMORY_START + 0x0126
 
-#const F_DICT_EXEC_USER_ITEM = F_MEMORY_START + 0x0127
+; #const FREE = F_MEMORY_START + 0x0127
 #const F_STATUS_COUNT = F_MEMORY_START + 0x0128
 
 #const F_FIND_TOKEN_MSB = F_MEMORY_START + 0x0129
@@ -60,9 +60,9 @@
 #const F_BI_IF_ELSE_START = F_MEMORY_START + 0x012E
 #const F_BI_IF_DEPTH = F_MEMORY_START + 0x012F
 
-#const F_DICT_BUILT_IN_COUNT = F_MEMORY_START + 0x0130
-#const F_DICT_USER_START_LSB = F_MEMORY_START + 0x0131
-#const F_DICT_USER_START_MSB = F_MEMORY_START + 0x0132
+; #const FREE = F_MEMORY_START + 0x0130
+; #const FREE = F_MEMORY_START + 0x0131
+; #const FREE = F_MEMORY_START + 0x0132
 #const F_DICT_USER_COUNT = F_MEMORY_START + 0x0133
 
 #const F_ERROR_MSG_LSB = F_MEMORY_START + 0x0134
@@ -84,15 +84,17 @@
 #const F_DICT_ADD_USER_DEF_TYPE = F_MEMORY_START + 0x013C  
 #const F_DICT_ADD_USER_DEF_VALUE = F_MEMORY_START + 0x013D
 
+#const F_DICT_EXEC_USER_LSB = F_MEMORY_START + 0x013E
+#const F_DICT_EXEC_USER_MSB = F_MEMORY_START + 0x013F
+
 ; Placing the stack at the end of the variable area
 #const F_STACK_START = F_MEMORY_START + 0x0200
 
-; Placing the dictionary at the end of the stack area 
-; The user dictionary is placed at the end of the buil-in dictionary
-#const F_DICT_BUILT_IN_START = F_STACK_START + F_MAX_STACK_SIZE
+; Placing the user dictionary at the end of the stack area 
+#const F_DICT_USER_START = F_STACK_START + F_MAX_STACK_SIZE
 
 ; Placing the status saving area at the end of the dictionary 
-#const F_STATUS_START = F_DICT_BUILT_IN_START + F_MAX_DICT_SIZE 
+#const F_STATUS_START = F_DICT_USER_START + F_MAX_DICT_SIZE 
 
 ; Placing the do-loop stack area at the end of the status
 #const F_DO_LOOP_START = F_STATUS_START + F_MAX_STATUS_SIZE

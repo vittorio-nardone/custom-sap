@@ -7,7 +7,7 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.0.39"
+#const FORTH_VERSION = "v1.0.72"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
@@ -51,14 +51,11 @@ F_INIT:
     sta F_STACK_COUNT
     sta F_EXIT_INTERPRETER_FLAG
     sta F_EXECUTION_ABORT_FLAG
-    sta F_DICT_BUILT_IN_COUNT
     sta F_DICT_USER_COUNT
     sta F_STATUS_COUNT
     sta F_DO_LOOP_COUNT
     sta F_BEGIN_UNTIL_COUNT
     sta F_IF_THEN_COUNT
-    ; init built-in dict
-    jsr F_REGISTER_ALL_BUILT_IN_FUNCTIONS
     ; reset fonts
     jsr VT100_TEXT_RESET
     rts
