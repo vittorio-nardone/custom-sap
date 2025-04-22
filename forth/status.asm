@@ -8,6 +8,8 @@
 ;    - F_INPUT_BUFFER_COUNT 
 ;    - F_TOKEN_START 
 ;    - F_TOKEN_COUNT 
+;    - F_DICT_CACHE_START_LSB
+;    - F_DICT_CACHE_START_MSB
 ;    - INPUT_BUFFER 
 
 F_PUSH_STATUS:
@@ -37,6 +39,12 @@ F_PUSH_STATUS:
     sta de, x
     inx
     lda F_TOKEN_COUNT
+    sta de, x
+    inx
+    lda F_DICT_CACHE_START_LSB
+    sta de, x
+    inx
+    lda F_DICT_CACHE_START_MSB
     sta de, x
     inx
     ldy 0x00
@@ -80,6 +88,12 @@ F_PULL_STATUS:
     inx
     lda de, x
     sta F_TOKEN_COUNT
+    inx
+    lda de, x
+    sta F_DICT_CACHE_START_LSB
+    inx
+    lda de, x
+    sta F_DICT_CACHE_START_MSB
     inx
     ldy 0x00
 .pull_input_loop:

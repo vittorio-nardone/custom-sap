@@ -7,7 +7,7 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.0.72"
+#const FORTH_VERSION = "v1.0.116"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
@@ -36,6 +36,7 @@ FORTH_MAIN:
 ; **********************************************************
 #include "built-in.asm"
 #include "dict.asm"
+#include "dict-cache.asm"
 #include "stack.asm"
 #include "status.asm"
 #include "utils.asm"
@@ -55,7 +56,7 @@ F_INIT:
     sta F_STATUS_COUNT
     sta F_DO_LOOP_COUNT
     sta F_BEGIN_UNTIL_COUNT
-    sta F_IF_THEN_COUNT
+    sta F_IF_THEN_COUNT  
     ; reset fonts
     jsr VT100_TEXT_RESET
     rts
@@ -143,12 +144,44 @@ F_ELABORATE:
     sta F_EXECUTION_ERROR_FLAG
     sta F_EXECUTION_ABORT_FLAG
 
+    ; init cache area
+    lda F_DICT_CACHE_START[15:8]
+    sta F_DICT_CACHE_START_MSB
+    sta F_LAST_ALLOC_DICT_CACHE_START_MSB
+    lda F_DICT_CACHE_START[7:0]
+    sta F_DICT_CACHE_START_LSB  
+    sta F_LAST_ALLOC_DICT_CACHE_START_LSB
+    jsr F_INIT_DICT_CACHE
+
 .loop:
     jsr F_TOKENIZE
     lda F_TOKEN_COUNT
     beq .send_ok
 
     jsr F_TOKEN_TO_UPPERCASE
+
+.check_cached:
+    ;jmp .check_number ; skip cache
+
+
+    jsr F_IS_DICT_CACHED
+    bcc .check_number
+    lda F_DICT_CACHE_TYPE
+    cmp F_DICT_CACHE_TYPE_BUILT_IN
+    beq .cached_builtin
+    cmp F_DICT_CACHE_TYPE_USER_DICT_CMD
+    beq .cached_dictionary
+
+    jmp .check_number
+
+.cached_builtin:
+    jsr F_GET_CACHED_BUILT_IN
+    jmp .exec_builtin
+
+.cached_dictionary:
+    jsr F_GET_CACHED_USER_DICT_CMD
+    jsr F_EXECUTE_CACHED_USER_DICT_CMD
+    jmp .next_token
 
 .check_number:
     jsr F_TOKEN_IS_NUMBER
@@ -160,15 +193,16 @@ F_ELABORATE:
 .check_builtin:
     jsr F_TOKEN_IS_BUILTIN
     bcc .check_dictionary
-
+    jsr F_ADD_BUILT_IN_TO_DICT_CACHE
+.exec_builtin:
     ;jsr (F_DICT_EXEC_BUILT_IN_PTR_PAGE)
     #d 0x93, 0x00, F_DICT_EXEC_BUILT_IN_PTR_PAGE[15:8],  F_DICT_EXEC_BUILT_IN_PTR_PAGE[7:0]
     jmp .next_token
 
 .check_dictionary:
-    jsr F_TOKEN_IS_DICTIONARY
+    jsr F_TOKEN_IS_USER_DICTIONARY
     bcc .token_error
-    jsr F_EXECUTE_DICTIONARY
+    jsr F_EXECUTE_USER_DICTIONARY
     jmp .next_token
 
 .token_error:

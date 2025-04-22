@@ -87,6 +87,14 @@
 #const F_DICT_EXEC_USER_LSB = F_MEMORY_START + 0x013E
 #const F_DICT_EXEC_USER_MSB = F_MEMORY_START + 0x013F
 
+#const F_DICT_CACHE_START_LSB = F_MEMORY_START + 0x0140
+#const F_DICT_CACHE_START_MSB = F_MEMORY_START + 0x0141
+#const F_DICT_CACHE_TYPE = F_MEMORY_START + 0x0142
+#const F_LAST_ALLOC_DICT_CACHE_START_LSB = F_MEMORY_START + 0x0143
+#const F_LAST_ALLOC_DICT_CACHE_START_MSB = F_MEMORY_START + 0x0144
+#const F_DICT_EXEC_USER_CACHE_LSB = F_MEMORY_START + 0x0145
+#const F_DICT_EXEC_USER_CACHE_MSB = F_MEMORY_START + 0x0146
+
 ; Placing the stack at the end of the variable area
 #const F_STACK_START = F_MEMORY_START + 0x0200
 
@@ -104,5 +112,7 @@
 
 ; Placing the if-then stack area at the end of the begin-until stack area
 #const F_IF_THEN_START = F_BEGIN_UNTIL_START + F_MAX_BEGIN_UNTIL_SIZE
+
+#const F_DICT_CACHE_START = F_IF_THEN_START + F_MAX_IF_THEN_SIZE
 
 ; **********************************************************

@@ -8,7 +8,7 @@
 #const F_DICT_USER_DEF_TYPE_VARIABLE = 0x01
 #const F_DICT_USER_DEF_TYPE_CONSTANT = 0x02
 
-F_TOKEN_IS_DICTIONARY:
+F_TOKEN_IS_USER_DICTIONARY:
     ldd F_DICT_USER_START[15:8]
     lde F_DICT_USER_START[7:0]
     ldy F_DICT_USER_COUNT
@@ -59,7 +59,7 @@ F_TOKEN_IS_DICTIONARY:
     clc
     rts
 
-F_EXECUTE_DICTIONARY:
+F_EXECUTE_USER_DICTIONARY:
     ldd F_DICT_EXEC_USER_MSB
     lde F_DICT_EXEC_USER_LSB
 
@@ -127,6 +127,57 @@ F_EXECUTE_DICTIONARY:
     inc F_INPUT_BUFFER_COUNT
     jmp .copy_cmd_loop
 .copy_cmd_end:
+    jsr F_ADD_USER_TO_DICT_CACHE
+    jsr F_NEW_DICT_CACHE_AREA
+    jsr F_INIT_DICT_CACHE
+
+    lda 0x00
+    sta F_TOKEN_START
+    sta F_TOKEN_COUNT
+    rts
+
+
+
+F_EXECUTE_CACHED_USER_DICT_CMD:
+    ldd F_DICT_EXEC_USER_MSB
+    lde F_DICT_EXEC_USER_LSB
+
+.skip_label:
+    ldx 0x01
+.skip_label_loop:
+    lda de, x
+    beq .skip_type
+    inx
+    jmp .skip_label_loop
+
+.skip_type:
+    inx
+.is_a_cmd:
+    phx
+    phd
+    phe
+    jsr F_PUSH_STATUS
+    ple
+    pld
+    plx
+
+    inx
+    ldy 0x00
+    sty F_INPUT_BUFFER_COUNT
+.copy_cmd_loop:   
+    lda de,x
+    beq .copy_cmd_end
+    sta F_INPUT_BUFFER_START, y
+    inx
+    iny
+    inc F_INPUT_BUFFER_COUNT
+    jmp .copy_cmd_loop
+.copy_cmd_end:
+    lda F_DICT_EXEC_USER_CACHE_LSB
+    sta F_DICT_CACHE_START_LSB
+    lda F_DICT_EXEC_USER_CACHE_MSB
+    sta F_DICT_CACHE_START_MSB    
+
     lda 0x00
     sta F_TOKEN_START
     sta F_TOKEN_COUNT
