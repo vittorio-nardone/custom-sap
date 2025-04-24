@@ -218,6 +218,24 @@
 		0xC9 @ value
  	} 
 	CMP #{value: u8} => asm { CMP {value} }
+	; Compare Memory with Accumulator (indirect - zero page) [Z N C]
+	CMP ({value: u16}) => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xB9 @ value
+ 	} 
+	; Compare Memory with Accumulator (indirect - zero page - X index) [Z N C]
+	CMP ({value: u16}),x  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xC0 @ value
+ 	} 
+	; Compare Memory with Accumulator (indirect - zero page - Y index) [Z N C]
+	CMP ({value: u16}),y  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xC3 @ value
+ 	} 
 	; Compare Memory with Accumulator (zero page) [Z N C]
 	CMP {value: u16} => { 
 		assert(value >= 0x100)
@@ -504,6 +522,24 @@
 		0xA9 @ value
  	} 
 	LDA #{value: u8} => asm { LDA {value} }
+	; Load Accumulator with Memory (indirect - zero page) [Z N]
+	LDA ({value: u16}) => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xB1 @ value
+ 	} 
+	; Load Accumulator with Memory (indirect - zero page - X index) [Z N C]
+	LDA ({value: u16}),x  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xBC @ value
+ 	} 
+	; Load Accumulator with Memory (indirect - zero page - Y index) [Z N C]
+	LDA ({value: u16}),y  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xC1 @ value
+ 	} 
 	; Load Accumulator with Memory (zero page) [Z N]
 	LDA {value: u16} => { 
 		assert(value >= 0x100)
@@ -874,6 +910,24 @@
 	; Store Accumulator in Memory (DE pointer - zero page - X index) [O]
 	STA de,x  => { 
 		0xA1
+ 	} 
+	; Store Accumulator in Memory (indirect - zero page) 
+	STA ({value: u16}) => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xB8 @ value
+ 	} 
+	; Store Accumulator in Memory (indirect - zero page - X index) [C]
+	STA ({value: u16}),x  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xBF @ value
+ 	} 
+	; Store Accumulator in Memory (indirect - zero page - Y index) [C]
+	STA ({value: u16}),y  => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xC2 @ value
  	} 
 	; Store Accumulator in Memory (zero page) 
 	STA {value: u16} => { 

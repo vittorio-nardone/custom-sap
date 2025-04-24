@@ -10,28 +10,38 @@
 
 #bank ram   
     
-    ldo 0x02            ; Test #2: LDA & CMP & BEQ
-    lda 0x34            ; Load dummy value
-    cmp 0x34
+    ldo 0x34
+    
+    lda .value[7:0]
+    sta .ptr
+    lda .value[15:8]
+    sta .ptr +1
+    
+    lda 0x27
+    sta (.ptr)
+    
+    lda 0x10
+
+    lda (.ptr)
+    tao
+
+    cmp 0x27
     bne .fail
 
-    ldo 0x03            ; Test #3: CMP x,y indexed
-    ldx 0x34
-    ldy 0x05
-    lda 0x05
-    sta 0x8001
-    cmp 0x7fcd,x
-    bne .fail
-    cmp 0x7ffc,y
-    bne .fail
-    lda 0x20
-    cmp 0x7fcd,x
-    beq .fail
-    cmp 0x7ffc,y
-    beq .fail
+    ldx 0x02
+    lda (.ptr),x
+    tao
 
     rts
 
+.ptr:
+    #d 0x00, 0x00
+
+.value:
+    #d 0x00
+    #d 0x15
+    #d 0x17
+
 .fail:
     ldo 0xFA
-    hlt
+    rts

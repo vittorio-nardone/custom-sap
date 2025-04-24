@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 python3.11 microcode.py
 python3.11 lookup_tables.py
 python3.11 build-version.py --symbols symbols.txt kernel/kernel.asm roms/kernel-rom.bin

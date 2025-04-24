@@ -1,4 +1,3 @@
-
 from intelhex import IntelHex
 
 ##################################################################
@@ -204,6 +203,46 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },
 
+    "LDAindp": {   "c": 0xB1,  
+                "d": "Load Accumulator with Memory (indirect - zero page)", 
+                "f": ['Z','N'],
+                "v": "u16",
+                "sim": "self.A = self.load_from_memory(mem_operands_size=2, indirect=True)",
+                "m": [  
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LACC,    
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,     
+
+                        # set address and load value in ACC
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH'] + CC_notETMP,
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,  
+
+                        # set address and load value in ACC
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH'] + CC_notETMP,
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ] },
+
     "LDApx": {  "c": 0xBD,  # Cross page not supported
                 "d": "Load Accumulator with Memory (zero page - X index)", 
                 "f": ['Z','O','N'],
@@ -223,7 +262,50 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ] },      
+                    ] }, 
+
+    "LDAindpx": {   "c": 0xBC,  
+                "d": "Load Accumulator with Memory (indirect - zero page - X index)", 
+                "f": ['Z','N','C'], # the Carry is set according to LSB + X > 0xFF
+                "v": "u16",
+                "i": "x",
+                "sim": "self.A = self.load_from_memory(mem_operands_size=2, indirect=True, index=self.X)",
+                "m": [  
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB + X
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEX + CC_ALUCN,   
+                        ['ERALU-OUT'] + CC_LACC,
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,     
+
+                        # set address and load value in ACC
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,  
+
+                        # set address and load value in ACC
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ] },     
 
     "LDAdepx": {  "c": 0x94,  # Cross page not supported
                 "d": "Load Accumulator with Memory (DE pointer - zero page - X index)", 
@@ -306,6 +388,49 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notEACC,
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
+                    ] },     
+
+    "LDAindpy": {   "c": 0xC1,  
+                "d": "Load Accumulator with Memory (indirect - zero page - Y index)", 
+                "f": ['Z','N','C'], # the Carry is set according to LSB + Y > 0xFF
+                "v": "u16",
+                "i": "y",
+                "sim": "self.A = self.load_from_memory(mem_operands_size=2, indirect=True, index=self.Y)",
+                "m": [  
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB + Y
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEY + CC_ALUCN,   
+                        ['ERALU-OUT'] + CC_LACC,
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,     
+
+                        # set address and load value in ACC
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,  
+
+                        # set address and load value in ACC
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+                        ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },      
 
     "LDAay": {  "c": 0x32,  # Cross page not supported
@@ -584,6 +709,57 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC  
                     ] },  
 
+    "STAindp": {   "c": 0xB8,  
+                "d": "Store Accumulator in Memory (indirect - zero page)", 
+                "v": "u16",
+                "sim":  "self.store_in_memory(self.A, mem_operands_size=2, indirect=True)", 
+                "t0": [ 
+                        CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'] 
+                      ],                 
+                 "m": [  
+                        # store acc value in stack
+                        ['CPC', 'ESP', 'WRAM'] + CC_notEACC,
+
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LACC,    
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,     
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH'] + CC_notETMP,
+
+                        # restore ACC value and save it
+                        ['ESP', 'ERAM'] + CC_LACC,
+                        ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,  
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH'] + CC_notETMP,
+
+                        # restore ACC value and save it
+                        ['ESP', 'ERAM'] + CC_LACC,
+                        ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC
+                    ] },  
+
     "STApx": {  "c": 0x9D,  # Cross page not supported
                 "d": "Store Accumulator in Memory (zero page - X index)", 
                 "v": "u16",
@@ -604,6 +780,61 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
                     ] },   
+
+    "STAindpx": {   "c": 0xBF,  
+                "d": "Store Accumulator in Memory (indirect - zero page - X index)", 
+                "f": ['C'], # the Carry is set according to LSB + X > 0xFF
+                "v": "u16",
+                "i": "x",
+                "sim":  "self.store_in_memory(self.A, mem_operands_size=2, indirect=True, index=self.X)", 
+                "t0": [ 
+                        CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'] 
+                      ],                 
+                "m": [  
+                        # store acc value in stack
+                        ['CPC', 'ESP', 'WRAM'] + CC_notEACC,
+
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB + X
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEX + CC_ALUCN,   
+                        ['ERALU-OUT'] + CC_LACC,
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,   
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+
+                        # restore ACC value and save it
+                        ['ESP', 'ERAM'] + CC_LACC,
+                        ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,  
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+
+                        # restore ACC value and save it
+                        ['ESP', 'ERAM'] + CC_LACC,
+                        ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC
+                    ] },  
 
     "STAdepx": {  "c": 0xA1,  # Cross page not supported
                 "d": "Store Accumulator in Memory (DE pointer - zero page - X index)", 
@@ -687,6 +918,61 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
                     ] },   
+
+    "STAindpy": {   "c": 0xC2,  
+                "d": "Store Accumulator in Memory (indirect - zero page - Y index)", 
+                "f": ['C'], # the Carry is set according to LSB + Y > 0xFF
+                "v": "u16",
+                "i": "y",
+                "sim":  "self.store_in_memory(self.A, mem_operands_size=2, indirect=True, index=self.Y)", 
+                "t0": [ 
+                        CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'] 
+                      ],                 
+                "m": [  
+                        # store acc value in stack
+                        ['CPC', 'ESP', 'WRAM'] + CC_notEACC,
+
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB + X
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEY + CC_ALUCN,   
+                        ['ERALU-OUT'] + CC_LACC,
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,   
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+
+                        # restore ACC value and save it
+                        ['ESP', 'ERAM'] + CC_LACC,
+                        ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,  
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+
+                        # restore ACC value and save it
+                        ['ESP', 'ERAM'] + CC_LACC,
+                        ['CPC', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC
+                    ] }, 
 
     "STAay": {  "c": 0x70,  # Cross page not supported
                 "d": "Store Accumulator in Memory (absolute - Y index)", 
@@ -1578,8 +1864,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID'], 
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
-                    ] },                            
-
+                    ] },             
+                
     "INX": {   "c": 0xE8,  
                 "d": "Increment Register X by One",  
                 "f": ['Z', 'N'], 
@@ -2178,6 +2464,57 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
                     ] },   
 
+    "CMPindp": {"c": 0xB9,  
+                "d": "Compare Memory with Accumulator (indirect - zero page)", 
+                "f": ['Z', 'N', 'C'],
+                "v": "u16",
+                "sim": "self.math_operation('cmp', self.A, operator_mem_operands_size=2, indirect=True)",
+                "m": [  
+                        # store value in stack
+                        ['ESP', 'WRAM'] + CC_notEACC,
+
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LACC,    
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,     
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH'] + CC_notETMP,
+
+                        # restore ACC value and compare 
+                        ['CPC', 'LRALU-IN', 'ESP', 'ERAM'] + CC_LACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB
+                        ['EMAR', 'ERAM', 'MEMADDRVALID'] + CC_LTMP,  
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH'] + CC_notETMP,
+
+                        # restore ACC value and compare 
+                        ['CPC', 'LRALU-IN', 'ESP', 'ERAM'] + CC_LACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
+                    ]  },   
+
     "CMPpx": {  "c": 0xB4,  
                 "d": "Compare Memory with Accumulator (zero page - X index)", 
                 "f": ['Z', 'N', 'C', 'O'],
@@ -2205,6 +2542,63 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
                     ] },  
 
+    "CMPindpx": {"c": 0xC0,  
+                "d": "Compare Memory with Accumulator (indirect - zero page - X index)", 
+                "f": ['Z', 'N', 'C'],
+                "v": "u16",
+                "i": "x",
+                "sim": "self.math_operation('cmp', self.A, operator_mem_operands_size=2, indirect=True, operator_index=self.X)",
+                "t0": [ 
+                        CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'] 
+                      ],                 
+                "m": [  
+                        # store value in stack
+                        ['CPC', 'ESP', 'WRAM'] + CC_notEACC,
+
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB + X
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEX + CC_ALUCN,   
+                        ['ERALU-OUT'] + CC_LACC,    
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,       
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+
+                        # restore ACC value and compare 
+                        ['CPC', 'LRALU-IN', 'ESP', 'ERAM'] + CC_LACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,  
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+
+                        # restore ACC value and compare 
+                        ['CPC', 'LRALU-IN', 'ESP', 'ERAM'] + CC_LACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
+                    ]  },   
+
    "CMPpy": {  "c": 0xB5,  
                 "d": "Compare Memory with Accumulator (zero page - Y index)", 
                 "f": ['Z', 'N', 'C', 'O'],
@@ -2231,6 +2625,63 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
                         ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
                     ] }, 
+
+    "CMPindpy": {"c": 0xC3,  
+                "d": "Compare Memory with Accumulator (indirect - zero page - Y index)", 
+                "f": ['Z', 'N', 'C'],
+                "v": "u16",
+                "i": "y",
+                "sim": "self.math_operation('cmp', self.A, operator_mem_operands_size=2, indirect=True, operator_index=self.Y)",
+                "t0": [ 
+                        CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'] 
+                      ],                 
+                "m": [  
+                        # store value in stack
+                        ['CPC', 'ESP', 'WRAM'] + CC_notEACC,
+
+                        # load address in the MAR
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,   
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        
+                        # load LSB + X
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN'],
+                        ['ALUS0', 'ALUS3', 'LRALU-OUT', 'LC'] + CC_notEY + CC_ALUCN,   
+                        ['ERALU-OUT'] + CC_LACC,    
+
+                        # inc MAR-L
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT', 'LO'], 
+                        ['ERALU-OUT', 'LMARL'] + CC_CHKO, # carry?
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,       
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+
+                        # restore ACC value and compare 
+                        ['CPC', 'LRALU-IN', 'ESP', 'ERAM'] + CC_LACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO                          
+                    ],
+                "true": [
+                        # carry, inc MAR-H 
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP, 
+                        ['ERALU-OUT', 'LMARH'],
+
+                        # load MSB (+ carry)
+                        ['EMAR', 'ERAM', 'MEMADDRVALID', 'LRALU-IN', 'LRALU-OUT'] + CC_ALUCARRY,  
+
+                        # set address
+                        ['LMARL'] + CC_notEACC,
+                        ['LMARH', 'ERALU-OUT'],
+
+                        # restore ACC value and compare 
+                        ['CPC', 'LRALU-IN', 'ESP', 'ERAM'] + CC_LACC,
+                        ['EMAR', 'ERAM',  'ALUS1', 'ALUS2', 'LRALU-OUT', 'LC', 'MEMADDRVALID'],
+                        ['ERALU-OUT', 'LZN'] + CC_ALU_DETECT_ZERO  
+                    ]  },   
 
     "CMPax": {  "c": 0xB6,  
                 "d": "Compare Memory with Accumulator (absolute - X index)", 
@@ -3185,7 +3636,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Dump registers in the simulator logs", 
                 "sim": '\n'.join((
                     'self.PC += 1',
-                    'print(f"-> PC:{cpu.PC:06X} IR:{cpu.IR:02X} A:{cpu.A:02X} X:{cpu.X:02X} Y:{cpu.Y:02X} D:{cpu.D:02X} E:{cpu.E:02X} OUT:{cpu.OUT:02X} SP:{cpu.SP:04X} C:{cpu.C} Z:{cpu.Z} N:{cpu.N} O:{cpu.O}")',
+                    'print(f"-> PC:{cpu.PC:06X} MAR:{cpu.MAR:06X} IR:{cpu.IR:02X} A:{cpu.A:02X} X:{cpu.X:02X} Y:{cpu.Y:02X} D:{cpu.D:02X} E:{cpu.E:02X} OUT:{cpu.OUT:02X} SP:{cpu.SP:04X} C:{cpu.C} Z:{cpu.Z} N:{cpu.N} O:{cpu.O}")',
                 )),   
                 "m": [ ] },
 
@@ -3263,7 +3714,7 @@ def verifyInstructionSet():
     rev_dict = {}
     for key, value in INSTRUCTIONS_SET.items():
         rev_dict.setdefault(value['c'], set()).add(key)
-    result = [key for key, values in rev_dict.items() if len(values) > 1]
+    result = [hex(key) for key, values in rev_dict.items() if len(values) > 1]
     if len(result) > 0:
         raise Exception("Duplicated op code in INSTRUCTIONS_SET: " + str(result))
 
@@ -3274,6 +3725,21 @@ def verifyInstructionSet():
                     for b in w:
                         if not b in CONTROL_BITS.keys():
                             raise Exception("Unknown control bit '" + b + "' in instruction '" + inst + "'")
+                        
+    for inst in INSTRUCTIONS_SET.keys():
+        steps = len(INSTRUCTIONS_SET[inst].get('m',[]))
+        if 't0' in INSTRUCTIONS_SET[inst]:
+            steps += len(INSTRUCTIONS_SET[inst]['t0'])
+        else:
+            steps += len(DEFAULT_T0)    
+        if steps > 32:
+            raise Exception("Total steps greater than 32 in instruction '" + inst + "'")
+        
+        if 'true' in INSTRUCTIONS_SET[inst]:
+            if steps > 16:
+                raise Exception("Total steps greater than 16 in instruction '" + inst + "' and 'true' section defined")
+            if len(INSTRUCTIONS_SET[inst]['true']) > 16:
+                raise Exception("Total 'true' steps greater than 16 in instruction '" + inst + "'")
     return
 
 ##################################################################
@@ -3373,6 +3839,8 @@ def generateIstructionsCsv():
         'acc': 'accumulator',
         'indp': 'indirect - zero page',
         'inda': 'indirect - absolute',
+        'indpx': 'indirect - zero page - X index',
+        'indpy': 'indirect - zero page - Y index',
         'depx': 'DE pointer - zero page - X index',
         'ydeax': 'YDE pointer - absolute - X index',
 

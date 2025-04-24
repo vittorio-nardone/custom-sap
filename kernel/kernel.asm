@@ -53,7 +53,7 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.10"
+#const KERNEL_VERSION = "v1.2.29"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -581,8 +581,8 @@ main:
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
-    #d "   f        - Start Forth interpreter", 0x0A, 0x0D
-    #d "   h        - Show help", 0x0A, 0x0D
+    #d "   f        - start Forth interpreter", 0x0A, 0x0D
+    #d "   h        - show Help", 0x0A, 0x0D
     #d 0x00
 
 .menu_adv_help_msg:    

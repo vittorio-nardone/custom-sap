@@ -341,6 +341,8 @@ ISTRUCTIONS:
     #d  0x00, 0x00, "ASL", 0x00, " A", 0x00
 .OPCODE_0xB0: 
     #d  0x02, 0x02, "BCS", 0x00, "", 0x00
+.OPCODE_0xB1: 
+    #d  0x02, 0x02, "LDA (", 0x00, ")", 0x00
 .OPCODE_0xB2: 
     #d  0x00, 0x00, "LDA", 0x00, " YDE,X", 0x00
 .OPCODE_0xB3: 
@@ -353,14 +355,30 @@ ISTRUCTIONS:
     #d  0x03, 0x03, "CMP", 0x00, ",X", 0x00
 .OPCODE_0xB7: 
     #d  0x03, 0x03, "CMP", 0x00, ",Y", 0x00
+.OPCODE_0xB8: 
+    #d  0x02, 0x02, "STA (", 0x00, ")", 0x00
+.OPCODE_0xB9: 
+    #d  0x02, 0x02, "CMP (", 0x00, ")", 0x00
 .OPCODE_0xBA: 
     #d  0x00, 0x00, "TYA", 0x00, "", 0x00
 .OPCODE_0xBB: 
     #d  0x00, 0x00, "TAY", 0x00, "", 0x00
+.OPCODE_0xBC: 
+    #d  0x02, 0x02, "LDA (", 0x00, "),X", 0x00
 .OPCODE_0xBD: 
     #d  0x02, 0x02, "LDA", 0x00, ",X", 0x00
 .OPCODE_0xBE: 
     #d  0x03, 0x03, "LDA", 0x00, ",X", 0x00
+.OPCODE_0xBF: 
+    #d  0x02, 0x02, "STA (", 0x00, "),X", 0x00
+.OPCODE_0xC0: 
+    #d  0x02, 0x02, "CMP (", 0x00, "),X", 0x00
+.OPCODE_0xC1: 
+    #d  0x02, 0x02, "LDA (", 0x00, "),Y", 0x00
+.OPCODE_0xC2: 
+    #d  0x02, 0x02, "STA (", 0x00, "),Y", 0x00
+.OPCODE_0xC3: 
+    #d  0x02, 0x02, "CMP (", 0x00, "),Y", 0x00
 .OPCODE_0xC8: 
     #d  0x00, 0x00, "INY", 0x00, "", 0x00
 .OPCODE_0xC9: 
@@ -594,25 +612,25 @@ ISTRUCTIONS:
     #d .OPCODE_0xAE[15:8]
     #d .OPCODE_0xAF[15:8]
     #d .OPCODE_0xB0[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0xB1[15:8]
     #d .OPCODE_0xB2[15:8]
     #d .OPCODE_0xB3[15:8]
     #d .OPCODE_0xB4[15:8]
     #d .OPCODE_0xB5[15:8]
     #d .OPCODE_0xB6[15:8]
     #d .OPCODE_0xB7[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0xB8[15:8]
+    #d .OPCODE_0xB9[15:8]
     #d .OPCODE_0xBA[15:8]
     #d .OPCODE_0xBB[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0xBC[15:8]
     #d .OPCODE_0xBD[15:8]
     #d .OPCODE_0xBE[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0xBF[15:8]
+    #d .OPCODE_0xC0[15:8]
+    #d .OPCODE_0xC1[15:8]
+    #d .OPCODE_0xC2[15:8]
+    #d .OPCODE_0xC3[15:8]
     #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_NOTVALID[15:8]
@@ -856,25 +874,25 @@ ISTRUCTIONS:
     #d .OPCODE_0xAE[7:0]
     #d .OPCODE_0xAF[7:0]
     #d .OPCODE_0xB0[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0xB1[7:0]
     #d .OPCODE_0xB2[7:0]
     #d .OPCODE_0xB3[7:0]
     #d .OPCODE_0xB4[7:0]
     #d .OPCODE_0xB5[7:0]
     #d .OPCODE_0xB6[7:0]
     #d .OPCODE_0xB7[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0xB8[7:0]
+    #d .OPCODE_0xB9[7:0]
     #d .OPCODE_0xBA[7:0]
     #d .OPCODE_0xBB[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0xBC[7:0]
     #d .OPCODE_0xBD[7:0]
     #d .OPCODE_0xBE[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0xBF[7:0]
+    #d .OPCODE_0xC0[7:0]
+    #d .OPCODE_0xC1[7:0]
+    #d .OPCODE_0xC2[7:0]
+    #d .OPCODE_0xC3[7:0]
     #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_NOTVALID[7:0]

@@ -720,6 +720,69 @@ MICROCODE_test:
     cmp 0x42
     bne .fail
 
+.test34:                ; Test #34: Indirect
+    ldo 0x34
+    lda 0x25
+    sta (.test34ptr1)
+    lda 0x10
+    lda (.test34ptr1)
+    cmp 0x25
+    bne .fail
+
+    lda 0x2A
+    sta (.test34ptr2)
+    lda 0x10
+    lda (.test34ptr2)
+    cmp 0x2A
+    bne .fail
+
+    lda (.test34ptr1)
+    cmp (.test34ptr2)
+    beq .fail
+    sta (.test34ptr2)
+    cmp (.test34ptr2)
+    bne .fail
+
+    lda 0x50
+    ldx 0x02
+    sta (.test34ptr1),x
+    lda 0x12
+    ldy 0x02
+    lda (.test34ptr1),y
+    cmp 0x50
+    bne .fail
+
+    lda 0x34
+    ldx 0x05
+    ldy 0x05
+    sta (.test34ptr1),y
+    lda 0x12
+    lda (.test34ptr1),x
+    cmp 0x34
+    bne .fail
+
+    lda 0x35
+    ldy 0x02
+    ldx 0x07
+    sta (.test34ptr2),x
+    lda 0x20
+    ldy 0x07
+    cmp (.test34ptr2),y
+    beq .fail
+ 
+    lda 0x35
+    cmp (.test34ptr2),x
+    bne .fail
+
+
+    jmp .test99
+
+.test34ptr1:
+    #d 0xFF, 0x80       ; PTR to 0x80FF (to test carry case)
+
+.test34ptr2:
+    #d 0x15, 0x80       ; PTR to 0x8015(to test non-carry case)
+
 .test99:                 ; Test #99: Test Stack (> 256 values)
     ldo 0x99
     lda 0x07

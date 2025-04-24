@@ -150,10 +150,19 @@ class OttoCPU:
         self.update_zero_flag(getattr(self, source))
         self.update_negative_flag(getattr(self, source))
 
-    def load_from_memory(self, immediate=None, mem_operands_size=None, registry_operands=None, index=None):
+    def load_from_memory(self, immediate=None, mem_operands_size=None, registry_operands=None, index=None, indirect=None):
         if (immediate):
             result = self.read_byte(self.PC+1)
             self.PC += 2
+        elif (indirect) and (mem_operands_size == 2):
+            self.MAR = self.get_address_from_operands(mem_operands_size)
+            self.PC += mem_operands_size + 1
+
+            MARl = self.read_byte(self.MAR)
+            self.MAR += 1
+            self.MAR = self.read_byte(self.MAR) * 256 + MARl + (index if index != None else 0)
+
+            result = self.read_byte(self.MAR)            
         elif (mem_operands_size):
             self.MAR = self.get_address_from_operands(mem_operands_size, index)
             self.PC += mem_operands_size + 1
@@ -169,8 +178,14 @@ class OttoCPU:
         self.update_negative_flag(result)
         return result
 
-    def store_in_memory(self, value, mem_operands_size=None, registry_operands=None, index=None):
-        if (mem_operands_size):
+    def store_in_memory(self, value, mem_operands_size=None, registry_operands=None, index=None, indirect=None):
+        if (indirect) and (mem_operands_size == 2):
+            self.MAR = self.get_address_from_operands(mem_operands_size)
+            self.PC += mem_operands_size + 1
+            MARl = self.read_byte(self.MAR)
+            self.MAR += 1
+            self.MAR = self.read_byte(self.MAR) * 256 + MARl + (index if index != None else 0)
+        elif (mem_operands_size):
             self.MAR = self.get_address_from_operands(mem_operands_size, index)
             self.PC += mem_operands_size + 1
         elif (registry_operands):
@@ -211,12 +226,19 @@ class OttoCPU:
     def rts(self):
         self.PC = self.pop() + (self.pop() << 8) + (self.pop() << 16) + 4
 
-    def math_operation(self, operation, current_value=None, operator_immediate=None, operator_registry=None, operator_mem_operands_size=None, operator_index=None, extra_bytes=0):
+    def math_operation(self, operation, current_value=None, operator_immediate=None, operator_registry=None, operator_mem_operands_size=None, operator_index=None, extra_bytes=0, indirect=None):
 
         operator = None
         if (operator_immediate):
             operator = self.read_byte(self.PC+1)
             self.PC += 2 + extra_bytes
+        elif (indirect) and (operator_mem_operands_size == 2):
+            self.MAR = self.get_address_from_operands(operator_mem_operands_size)        
+            MARl = self.read_byte(self.MAR)
+            self.MAR += 1
+            self.MAR = self.read_byte(self.MAR) * 256 + MARl + (operator_index if operator_index != None else 0)    
+            operator = self.read_byte(self.MAR)
+            self.PC += operator_mem_operands_size + 1 + extra_bytes      
         elif (operator_mem_operands_size):
             self.MAR = self.get_address_from_operands(operator_mem_operands_size, operator_index)
             operator = self.read_byte(self.MAR)
@@ -436,7 +458,7 @@ if __name__ == "__main__":
     parser.add_argument("--simulate-serial", action="store_true", help="Simulate serial ports instead of using stdin/stdout")
     args = parser.parse_args()
 
-    print("\nProject OTTO - Simulator v1.1.0")
+    print("\nProject OTTO - Simulator v1.2.0")
     # Create a new OttoCPU instance
     cpu = OttoCPU()
 

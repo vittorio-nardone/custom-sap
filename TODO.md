@@ -40,6 +40,14 @@ INW 0x0112
 DEW      
 ```
 
+Note: probably not possible with current HW. A double check is required in microcode execution.
+It's possible to perform a word increment in this way:
+```6502
+INC 0x0112  ; inc LSB
+BNE .skip   ; is Zero? if yes, carry to add to MSB
+INC 0x0113  ; inc MSB
+```
+
 ## [assembly] JEQ / JNE  
 Jump on Result Zero to New Location Saving Return Address.
 * JEQ as a combination of BEQ and JSR istructions
@@ -64,3 +72,6 @@ Add a video card to Otto!
 
 ## [hardware] Keyboard interface board
 The keyboard interface board was tested quickly but is not working as expected.
+
+## [hardware] Add Commodore IEC interface
+Add a Commodore IEC interface to Otto and use it for storage on FDD/SD
