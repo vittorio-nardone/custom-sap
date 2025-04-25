@@ -3,14 +3,14 @@
 ; All status related stuff (save/restore status)
 ; **********************************************************
 
-; STATUS records
-; - TOTAL SIZE   
+; STATUS records (7 bytes)
 ;    - F_INPUT_BUFFER_COUNT 
 ;    - F_TOKEN_START 
 ;    - F_TOKEN_COUNT 
 ;    - F_DICT_CACHE_START_LSB
 ;    - F_DICT_CACHE_START_MSB
-;    - INPUT_BUFFER 
+;    - F_INPUT_BUFFER_START_LSB
+;    - F_INPUT_BUFFER_START_MSB
 
 F_PUSH_STATUS:
     ldd F_STATUS_START[15:8]
@@ -20,7 +20,7 @@ F_PUSH_STATUS:
     ldx 0x00
 
 .go_to_record_loop:
-    lda de,x
+    lda 0x07 ; record size
     clc
     adc e
     tae
@@ -31,7 +31,7 @@ F_PUSH_STATUS:
     bne .go_to_record_loop
 
 .push_vars:
-    ldx 0x01
+    ldx 0x00
     lda F_INPUT_BUFFER_COUNT
     sta de, x
     inx
@@ -47,18 +47,12 @@ F_PUSH_STATUS:
     lda F_DICT_CACHE_START_MSB
     sta de, x
     inx
-    ldy 0x00
-.push_input_loop:
-    lda F_INPUT_BUFFER_START, y
+    lda F_INPUT_BUFFER_START_LSB
     sta de, x
     inx
-    iny
-    cpy F_INPUT_BUFFER_COUNT
-    bne .push_input_loop
-    inc F_STATUS_COUNT
-    txa
-    ldx 0x00
+    lda F_INPUT_BUFFER_START_MSB
     sta de, x
+    inc F_STATUS_COUNT
     rts
 
 F_PULL_STATUS:
@@ -69,7 +63,7 @@ F_PULL_STATUS:
     beq .pull_vars
     ldx 0x00
 .go_to_record_loop:
-    lda de,x
+    lda 0x07 ; record size
     clc
     adc e
     tae
@@ -79,7 +73,7 @@ F_PULL_STATUS:
     dey
     bne .go_to_record_loop
 .pull_vars:
-    ldx 0x01
+    ldx 0x00
     lda de, x
     sta F_INPUT_BUFFER_COUNT
     inx
@@ -95,12 +89,9 @@ F_PULL_STATUS:
     lda de, x
     sta F_DICT_CACHE_START_MSB
     inx
-    ldy 0x00
-.pull_input_loop:
     lda de, x
-    sta F_INPUT_BUFFER_START, y
+    sta F_INPUT_BUFFER_START_LSB
     inx
-    iny
-    cpy F_INPUT_BUFFER_COUNT
-    bne .pull_input_loop
+    lda de, x
+    sta F_INPUT_BUFFER_START_MSB
     rts

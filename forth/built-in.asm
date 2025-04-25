@@ -88,7 +88,7 @@ F_BI_ABORT_QUOTE:
     ldy F_TOKEN_COUNT
     iny
 .loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     inx
     iny
     cmp 0x22
@@ -329,7 +329,7 @@ F_BI_DOT_QUOTE:
     ldy F_TOKEN_COUNT
     iny
 .loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     inx
     iny
     cmp 0x22
@@ -599,7 +599,7 @@ F_TOKEN_IS_BUILTIN:
 .check_char_match:
     lda de,x
     beq .end_of_dictionary_item
-    cmp F_INPUT_BUFFER_START,y
+    cmp (F_INPUT_BUFFER_START_LSB),y
     bne .check_next_dictionary_item 
     inx
     iny

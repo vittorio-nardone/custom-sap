@@ -9,7 +9,7 @@ F_TOKENIZE:
     sta F_TOKEN_COUNT
     ldx F_TOKEN_START
 .skip_spaces:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     cmp 0x20
     bne .loop
     inx
@@ -18,7 +18,7 @@ F_TOKENIZE:
     bne .skip_spaces
     jmp .end
 .loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     cmp 0x20
     beq .end
     inc F_TOKEN_COUNT
@@ -78,7 +78,7 @@ F_PRINT_TOKEN:
     ldy F_TOKEN_COUNT
     ldx F_TOKEN_START
 .loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     jsr ACIA_SEND_CHAR
     inx
     dey
@@ -89,7 +89,7 @@ F_TOKEN_IS_NUMBER:
     ldy F_TOKEN_COUNT
     ldx F_TOKEN_START
 .loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     cmp 0x30
     bcc .end
     cmp 0x3A
@@ -119,7 +119,7 @@ F_TOKEN_TO_NUMBER:
     adc D
     sta F_TOKEN_VALUE
 .add:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     sec 
     sbc #0x30   
     clc
@@ -134,14 +134,14 @@ F_TOKEN_TO_UPPERCASE:
     ldy F_TOKEN_COUNT
     ldx F_TOKEN_START
 .loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     cmp "a" 
     bcc .skip
     cmp "z"+1      
     bcs .skip
     sec
     sbc 0x20
-    sta F_INPUT_BUFFER_START,x
+    sta (F_INPUT_BUFFER_START_LSB),x
 .skip:
     inx
     dey
@@ -157,7 +157,7 @@ F_COMPARE_TOKEN:
     ldx 0x00
 
 .cmp_loop:
-    lda F_INPUT_BUFFER_START,y
+    lda (F_INPUT_BUFFER_START_LSB),y
     cmp "a" 
     bcc .skip
     cmp "z"+1      

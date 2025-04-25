@@ -22,7 +22,7 @@ F_TOKEN_IS_USER_DICTIONARY:
 .check_char_match:
     lda de,x
     beq .end_of_dictionary_item
-    cmp F_INPUT_BUFFER_START,y
+    cmp (F_INPUT_BUFFER_START_LSB),y
     bne .check_next_dictionary_item 
     inx
     iny
@@ -115,28 +115,35 @@ F_EXECUTE_USER_DICTIONARY:
     pld
     plx
 
+    ; set size of new input buffer
     inx
-    ldy 0x00
-    sty F_INPUT_BUFFER_COUNT
-.copy_cmd_loop:   
+    phx
+    stx F_INPUT_BUFFER_COUNT
+    ldx 0x00
     lda de,x
-    beq .copy_cmd_end
-    sta F_INPUT_BUFFER_START, y
-    inx
-    iny
-    inc F_INPUT_BUFFER_COUNT
-    jmp .copy_cmd_loop
-.copy_cmd_end:
+    clc ; -1
+    sbc F_INPUT_BUFFER_COUNT
+    sta F_INPUT_BUFFER_COUNT
+
+    ; calculate offset and change pointer
+    pla ; restore x
+    clc
+    adc e
+    sta F_INPUT_BUFFER_START_LSB
+    tda
+    adc 0x00
+    sta F_INPUT_BUFFER_START_MSB
+
+    ; allocate and init a new cache area
     jsr F_ADD_USER_TO_DICT_CACHE
     jsr F_NEW_DICT_CACHE_AREA
     jsr F_INIT_DICT_CACHE
 
+    ; init token vars
     lda 0x00
     sta F_TOKEN_START
     sta F_TOKEN_COUNT
     rts
-
-
 
 F_EXECUTE_CACHED_USER_DICT_CMD:
     ldd F_DICT_EXEC_USER_MSB
@@ -161,23 +168,32 @@ F_EXECUTE_CACHED_USER_DICT_CMD:
     pld
     plx
 
+    ; set size of new input buffer
     inx
-    ldy 0x00
-    sty F_INPUT_BUFFER_COUNT
-.copy_cmd_loop:   
+    phx
+    stx F_INPUT_BUFFER_COUNT
+    ldx 0x00
     lda de,x
-    beq .copy_cmd_end
-    sta F_INPUT_BUFFER_START, y
-    inx
-    iny
-    inc F_INPUT_BUFFER_COUNT
-    jmp .copy_cmd_loop
-.copy_cmd_end:
+    clc ; -1
+    sbc F_INPUT_BUFFER_COUNT
+    sta F_INPUT_BUFFER_COUNT
+
+    ; calculate offset and change pointer
+    pla ; restore x
+    clc
+    adc e
+    sta F_INPUT_BUFFER_START_LSB
+    tda
+    adc 0x00
+    sta F_INPUT_BUFFER_START_MSB
+
+    ; restore cache area
     lda F_DICT_EXEC_USER_CACHE_LSB
     sta F_DICT_CACHE_START_LSB
     lda F_DICT_EXEC_USER_CACHE_MSB
     sta F_DICT_CACHE_START_MSB    
 
+    ; init token vars
     lda 0x00
     sta F_TOKEN_START
     sta F_TOKEN_COUNT
@@ -221,7 +237,7 @@ F_DICTIONARY_USER_CMD_ADD:
     sta de, x
     inx
 .copy_cmd_loop:
-    lda F_INPUT_BUFFER_START, y
+    lda (F_INPUT_BUFFER_START_LSB), y
     sta de, x
     iny
     inx
@@ -288,7 +304,7 @@ F_BI_NEW_DEF:
     tax
     ldy 0x00
 .label_loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     inx
     cmp 0x20
     beq .label_end
@@ -310,7 +326,7 @@ F_BI_NEW_DEF:
     sta F_DICT_ADD_BUFFER_START, y
 
 .find_cmd_loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     stx F_DICT_ADD_USER_START
     inx
     cmp 0x20 
@@ -322,7 +338,7 @@ F_BI_NEW_DEF:
     lda 0x00
     sta F_DICT_ADD_USER_COUNT
 .cmd_loop:
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     inc F_DICT_ADD_USER_COUNT
     inx
     cmp ";" 
@@ -362,7 +378,7 @@ F_BI_VARIABLE:
     beq .label_end
     bcs .error
     
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     inx
     inc F_TOKEN_COUNT
     cmp 0x20
@@ -498,7 +514,7 @@ F_BI_CONSTANT:
     beq .label_end
     bcs .error
     
-    lda F_INPUT_BUFFER_START,x
+    lda (F_INPUT_BUFFER_START_LSB),x
     inx
     inc F_TOKEN_COUNT
     cmp 0x20

@@ -7,7 +7,7 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.0.124"
+#const FORTH_VERSION = "v1.0.135"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
@@ -103,7 +103,7 @@ F_INPUT:
     beq .backspace
     jsr ACIA_SEND_CHAR
     ldx F_INPUT_BUFFER_COUNT
-    sta F_INPUT_BUFFER_START,x
+    sta F_USER_INPUT_BUFFER_START,x
     inc F_INPUT_BUFFER_COUNT
     cpx F_MAX_INPUT_SIZE
     beq .show_too_long_error
@@ -144,7 +144,13 @@ F_ELABORATE:
     sta F_EXECUTION_ERROR_FLAG
     sta F_EXECUTION_ABORT_FLAG
 
-    ; init cache area
+    ; Init pointer to input buffer
+    lda F_USER_INPUT_BUFFER_START[15:8]
+    sta F_INPUT_BUFFER_START_MSB
+    lda F_USER_INPUT_BUFFER_START[7:0]
+    sta F_INPUT_BUFFER_START_LSB
+
+    ; Init cache area
     lda F_DICT_CACHE_START[15:8]
     sta F_DICT_CACHE_START_MSB
     sta F_LAST_ALLOC_DICT_CACHE_START_MSB
