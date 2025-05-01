@@ -140,7 +140,6 @@ FLOAT_TO_INT:
     ROL A
     SEC
     SBC 0x7F    ; Remove bias
-    dmp
     BMI .RETURN_ZERO  ; If exponent < 0, result is zero
 
     ; Check if exponent is too large for 16-bit integer

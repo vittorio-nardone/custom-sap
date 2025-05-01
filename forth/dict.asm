@@ -4,19 +4,44 @@
 ; All user dictionary related stuff
 ; **********************************************************
 
+; DICT user records
+;   - previous LSB
+;   - previous MSB
+;   - total size
+;   - type (0x00 -> cmd, 0x01 -> variable, 0x02 -> constant, 0x03 -> deleted)
+;   - label size
+;   - label (0x00 terminated)
+;   - cmd   (0x00 terminated) / variable & constant 1-byte value
+
 #const F_DICT_USER_DEF_TYPE_COMMAND  = 0x00
 #const F_DICT_USER_DEF_TYPE_VARIABLE = 0x01
 #const F_DICT_USER_DEF_TYPE_CONSTANT = 0x02
+#const F_DICT_USER_DEF_TYPE_DELETED = 0x03
 
 F_TOKEN_IS_USER_DICTIONARY:
-    ldd F_DICT_USER_START[15:8]
-    lde F_DICT_USER_START[7:0]
     ldy F_DICT_USER_COUNT
     beq .dictionary_end    
 
+    ldd F_DICT_USER_LAST_ADD_MSB
+    lde F_DICT_USER_LAST_ADD_LSB
 .check_if_match:   
-    ldx 0x01
+    ; store dict counter
     phy
+
+    ; check if deleted
+    ldx 0x03
+    lda de, x
+    cmp F_DICT_USER_DEF_TYPE_DELETED
+    beq .check_next_dictionary_item
+
+    ; check label size
+    inx
+    lda de, x
+    cmp F_TOKEN_COUNT
+    bne .check_next_dictionary_item
+
+    ; start label check
+    inx
     ldy F_TOKEN_START
 
 .check_char_match:
@@ -29,9 +54,6 @@ F_TOKEN_IS_USER_DICTIONARY:
     jmp .check_char_match
 
 .end_of_dictionary_item:
-    dex
-    cpx F_TOKEN_COUNT
-    bne .check_next_dictionary_item
     ply
 
 .match:    
@@ -46,13 +68,12 @@ F_TOKEN_IS_USER_DICTIONARY:
     beq .dictionary_end
 
     ldx 0x00
-    lda de, x
-    clc
-    adc e
-    tae
-    tda
-    adc 0x00
+    lda de, x ; LSB
+    pha
+    inx
+    lda de, x ; MSB
     tad
+    ple
     jmp .check_if_match    
 
 .dictionary_end:
@@ -64,16 +85,17 @@ F_EXECUTE_USER_DICTIONARY:
     lde F_DICT_EXEC_USER_LSB
 
 .skip_label:
-    ldx 0x01
-.skip_label_loop:
+    ; calculate offset
+    ldx 0x04
     lda de, x
-    beq .check_type
-    inx
-    jmp .skip_label_loop
+    clc
+    adc 0x05
+    pha
 
 .check_type:
-    inx
+    ldx 0x03
     lda de, x
+    plx ; restore offset
     cmp F_DICT_USER_DEF_TYPE_VARIABLE
     beq .is_a_var
     cmp F_DICT_USER_DEF_TYPE_COMMAND
@@ -84,14 +106,16 @@ F_EXECUTE_USER_DICTIONARY:
     
 .is_a_const:
     inx
+    ; push value in the stack
     lda de, x
-    sta F_TOKEN_VALUE
+    sta F_TOKEN_VALUE 
     jsr F_STACK_PUSH
 .const_end:
     rts
     
 .is_a_var:
     inx
+    ; calculate and push address in the stack
     txa
     clc
     adc e
@@ -119,7 +143,7 @@ F_EXECUTE_USER_DICTIONARY:
     inx
     phx
     stx F_INPUT_BUFFER_COUNT
-    ldx 0x00
+    ldx 0x02
     lda de,x
     clc ; -1
     sbc F_INPUT_BUFFER_COUNT
@@ -149,16 +173,14 @@ F_EXECUTE_CACHED_USER_DICT_CMD:
     ldd F_DICT_EXEC_USER_MSB
     lde F_DICT_EXEC_USER_LSB
 
-.skip_label:
-    ldx 0x01
-.skip_label_loop:
+.skip_label_type:
+    ; calculate offset
+    ldx 0x04
     lda de, x
-    beq .skip_type
-    inx
-    jmp .skip_label_loop
+    clc
+    adc 0x05
+    tax
 
-.skip_type:
-    inx
 .is_a_cmd:
     phx
     phd
@@ -172,7 +194,7 @@ F_EXECUTE_CACHED_USER_DICT_CMD:
     inx
     phx
     stx F_INPUT_BUFFER_COUNT
-    ldx 0x00
+    ldx 0x02
     lda de,x
     clc ; -1
     sbc F_INPUT_BUFFER_COUNT
@@ -199,18 +221,14 @@ F_EXECUTE_CACHED_USER_DICT_CMD:
     sta F_TOKEN_COUNT
     rts
 
-; DICT user records
-; - TOTAL SIZE
-;   - label (0x00 terminated)
-;   - type (0x00 -> cmd, 0x01 -> variable, 0x02 -> constant)
-;   - cmd   (0x00 terminated) / variable & constant 1-byte value
 F_DICTIONARY_USER_CMD_ADD:
-    ldd F_DICT_USER_START[15:8]
-    lde F_DICT_USER_START[7:0]
     ldy F_DICT_USER_COUNT
-    beq .add
-    ldx 0x00
-.go_to_record_loop:
+    beq .first
+
+    ; calculate new record ptr
+    ldd F_DICT_USER_LAST_ADD_MSB
+    lde F_DICT_USER_LAST_ADD_LSB
+    ldx 0x02
     lda de,x
     clc
     adc e
@@ -218,23 +236,34 @@ F_DICTIONARY_USER_CMD_ADD:
     tda
     adc 0x00
     tad
-    dey
-    bne .go_to_record_loop
+    jmp .add
+
+.first:
+    ldd F_DICT_USER_START[15:8]
+    lde F_DICT_USER_START[7:0]
+
 .add:
-    ldx 0x01
+    ldx 0x03
+    lda F_DICT_USER_DEF_TYPE_COMMAND ; set CMD flag
+    sta de, x
+    inx
+    inx ; skip label size
     ldy 0x00
 .add_loop:
     lda F_DICT_ADD_BUFFER_START, y
     sta de, x
-    beq .copy_cmd
+    beq .set_label_size
     inx
     iny
     jmp .add_loop
+.set_label_size:
+    phx
+    tya
+    ldx 0x04
+    sta de, x
+    plx
 .copy_cmd:
     ldy F_DICT_ADD_USER_START
-    inx
-    lda F_DICT_USER_DEF_TYPE_COMMAND ; set CMD flag
-    sta de, x
     inx
 .copy_cmd_loop:
     lda (F_INPUT_BUFFER_START_LSB), y
@@ -248,19 +277,29 @@ F_DICTIONARY_USER_CMD_ADD:
     ; set record size
     inx
     txa
-    ldx 0x00
-    sta de, x    
+    ldx 0x02
+    sta de, x  
+    ; se pointer to previous record
+    dex
+    lda F_DICT_USER_LAST_ADD_MSB
+    sta de, x  
+    dex
+    lda F_DICT_USER_LAST_ADD_LSB
+    sta de, x  
     ; inc # of user functions
     inc F_DICT_USER_COUNT 
+    std F_DICT_USER_LAST_ADD_MSB
+    ste F_DICT_USER_LAST_ADD_LSB
     rts
 
 F_DICTIONARY_USER_VAR_ADD:
-    ldd F_DICT_USER_START[15:8]
-    lde F_DICT_USER_START[7:0]
     ldy F_DICT_USER_COUNT
-    beq .add
-    ldx 0x00
-.go_to_record_loop:
+    beq .first
+
+    ; calculate new record ptr
+    ldd F_DICT_USER_LAST_ADD_MSB
+    lde F_DICT_USER_LAST_ADD_LSB
+    ldx 0x02
     lda de,x
     clc
     adc e
@@ -268,31 +307,118 @@ F_DICTIONARY_USER_VAR_ADD:
     tda
     adc 0x00
     tad
-    dey
-    bne .go_to_record_loop
+    jmp .add
+
+.first:
+    ldd F_DICT_USER_START[15:8]
+    lde F_DICT_USER_START[7:0]
+
 .add:
-    ldx 0x01
+    ; set flag (var/const)
+    ldx 0x03
+    lda F_DICT_ADD_USER_DEF_TYPE 
+    sta de, x
+    inx
+    inx ; skip label size
     ldy 0x00
 .add_loop:
     lda F_DICT_ADD_BUFFER_START, y
     sta de, x
-    beq .set_var
+    beq .set_label_size
     inx
     iny
     jmp .add_loop
+.set_label_size:
+    phx
+    tya
+    ldx 0x04
+    sta de, x
+    plx
 .set_var:
+    ; set default value
     inx
-    lda F_DICT_ADD_USER_DEF_TYPE ; set flag (var/const)
+    lda F_DICT_ADD_USER_DEF_VALUE
     sta de, x
+    ; set record size
     inx
-    lda F_DICT_ADD_USER_DEF_VALUE ; set default value
-    sta de, x
-    inx    
     txa
-    ldx 0x00
-    sta de, x    
+    ldx 0x02
+    sta de, x  
+    ; se pointer to previous record
+    dex
+    lda F_DICT_USER_LAST_ADD_MSB
+    sta de, x  
+    dex
+    lda F_DICT_USER_LAST_ADD_LSB
+    sta de, x   
     ; inc # of user functions
     inc F_DICT_USER_COUNT 
+    std F_DICT_USER_LAST_ADD_MSB
+    ste F_DICT_USER_LAST_ADD_LSB 
+    rts
+
+F_FORGET_TOKEN_IN_USER_DICTIONARY:
+    ldy F_DICT_USER_COUNT
+    beq .dictionary_end    
+
+    ldd F_DICT_USER_LAST_ADD_MSB
+    lde F_DICT_USER_LAST_ADD_LSB
+.check_if_match:   
+    ; store dict counter
+    phy
+
+    ; check if deleted
+    ldx 0x03
+    lda de, x
+    cmp F_DICT_USER_DEF_TYPE_DELETED
+    beq .check_next_dictionary_item
+
+    ; check label size
+    inx
+    lda de, x
+    cmp F_TOKEN_COUNT
+    bne .check_next_dictionary_item
+
+    ; start label check
+    inx
+    ldy F_TOKEN_START
+
+.check_char_match:
+    lda de,x
+    beq .end_of_dictionary_item
+    cmp (F_INPUT_BUFFER_START_LSB),y
+    bne .check_next_dictionary_item 
+    inx
+    iny
+    jmp .check_char_match
+
+.end_of_dictionary_item:
+    ply
+
+.match:
+    ; set as deleted    
+    ldx 0x03
+    lda F_DICT_USER_DEF_TYPE_DELETED
+    sta de, x
+    sec
+    rts
+
+.check_next_dictionary_item:
+    ply
+    dey
+    beq .dictionary_end
+
+    ldx 0x00
+    lda de, x ; LSB
+    pha
+    inx
+    lda de, x ; MSB
+    tad
+    ple
+    jmp .check_if_match    
+
+.dictionary_end:
+    clc
     rts
 
 F_BI_NEW_DEF_LABEL:
@@ -363,6 +489,40 @@ F_BI_NEW_DEF:
 
 .error_msg:
     #d "ERROR IN DEFINITION"
+    #d 0x00
+
+F_BI_FORGET_LABEL:
+    #d "FORGET", 0x00 
+F_BI_FORGET:
+    ; move to the end of the current token
+    lda F_TOKEN_COUNT
+    clc
+    adc F_TOKEN_START
+    sta F_TOKEN_START
+    cmp F_INPUT_BUFFER_COUNT
+    beq .error
+
+    ; find next token 
+    jsr F_TOKENIZE
+    lda F_TOKEN_COUNT
+    beq .error
+
+    jsr F_TOKEN_TO_UPPERCASE
+    jsr F_FORGET_TOKEN_IN_USER_DICTIONARY
+    bcc .error
+    rts
+
+.error:
+    lda .error_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .error_msg[7:0]
+    sta F_ERROR_MSG_LSB
+    lda #1
+    sta F_EXECUTION_ERROR_FLAG
+    rts
+
+.error_msg:
+    #d "NOT FOUND"
     #d 0x00
 
 F_BI_VARIABLE_LABEL:
@@ -562,3 +722,5 @@ F_BI_CONSTANT:
 .error_msg:
     #d "ERROR IN DEFINITION"
     #d 0x00
+
+
