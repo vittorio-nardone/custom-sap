@@ -13,6 +13,7 @@ F_DICT_BUILT_IN_START:
     #d F_BI_SUB_LABEL[7:0], F_BI_SUB_LABEL[15:8], F_BI_SUB[7:0], F_BI_SUB[15:8] ; "-"
     #d F_BI_MUL_LABEL[7:0], F_BI_MUL_LABEL[15:8], F_BI_MUL[7:0], F_BI_MUL[15:8] ; "*"
     #d F_BI_DIV_LABEL[7:0], F_BI_DIV_LABEL[15:8], F_BI_DIV[7:0], F_BI_DIV[15:8] ; "/"
+    #d F_BI_COMMENT_LABEL[7:0], F_BI_COMMENT_LABEL[15:8], F_BI_COMMENT[7:0], F_BI_COMMENT[15:8] ; "("
     #d F_BI_SLASH_MOD_LABEL[7:0], F_BI_SLASH_MOD_LABEL[15:8], F_BI_SLASH_MOD[7:0], F_BI_SLASH_MOD[15:8] ; "/MOD"
     #d F_BI_DISPLAY_LABEL[7:0], F_BI_DISPLAY_LABEL[15:8], F_BI_DISPLAY[7:0], F_BI_DISPLAY[15:8] ; "."
     #d F_BI_DOT_QUOTE_LABEL[7:0], F_BI_DOT_QUOTE_LABEL[15:8], F_BI_DOT_QUOTE[7:0], F_BI_DOT_QUOTE[15:8] ; ".""
@@ -354,6 +355,39 @@ F_BI_DOT_QUOTE:
     #d "CLOSING QUOTE EXPECTED"
     #d 0x00
 
+
+F_BI_COMMENT_LABEL:
+    #d "(", 0x00
+F_BI_COMMENT:
+    lda F_TOKEN_COUNT
+    sec
+    adc F_TOKEN_START
+    tax
+    ldy F_TOKEN_COUNT
+    iny
+.loop:
+    lda (F_INPUT_BUFFER_START_LSB),x
+    inx
+    iny
+    cmp ")"
+    beq .end
+    cpx F_INPUT_BUFFER_COUNT
+    bne .loop
+.error:
+    lda .error_msg[15:8]
+    sta F_ERROR_MSG_MSB
+    lda .error_msg[7:0]
+    sta F_ERROR_MSG_LSB
+    lda #1
+    sta F_EXECUTION_ERROR_FLAG
+    rts
+.end:
+    sty F_TOKEN_COUNT
+    rts
+
+.error_msg:
+    #d "CLOSED PARENTHESIS EXPECTED"
+    #d 0x00    
 
 F_BI_IF_LABEL:
     #d "IF", 0x00 

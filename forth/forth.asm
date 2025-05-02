@@ -7,7 +7,7 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.0.185"
+#const FORTH_VERSION = "v1.0.186"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
