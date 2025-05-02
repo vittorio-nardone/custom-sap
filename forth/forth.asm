@@ -7,7 +7,7 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.0.186"
+#const FORTH_VERSION = "v1.0.191"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
@@ -87,6 +87,7 @@ F_INPUT:
     jsr ACIA_SEND_NEWLINE
     lda 0x00    
     sta F_INPUT_BUFFER_COUNT
+    sta F_INPUT_COL_COUNT
     ldd .prompt_msg[15:8]
     lde .prompt_msg[7:0]
     jsr ACIA_SEND_STRING
@@ -102,6 +103,7 @@ F_INPUT:
     cmp 0x7F
     beq .backspace
     jsr ACIA_SEND_CHAR
+    inc F_INPUT_COL_COUNT
     ldx F_INPUT_BUFFER_COUNT
     sta F_USER_INPUT_BUFFER_START,x
     inc F_INPUT_BUFFER_COUNT
@@ -110,14 +112,32 @@ F_INPUT:
     jmp .loop
 
 .backspace:
+    lda F_INPUT_COL_COUNT
+    beq .loop
+    dec F_INPUT_COL_COUNT 
+    dec F_INPUT_BUFFER_COUNT
     jsr VT100_CURSOR_LEFT
     jsr VT100_CLEAR_LINE_END
-    lda  F_INPUT_BUFFER_COUNT
-    beq .loop
-    dec F_INPUT_BUFFER_COUNT
+    jmp .loop
+
+.newline:
+    jsr ACIA_SEND_NEWLINE
+    lda 0x00    
+    sta F_INPUT_COL_COUNT 
+    lda 0x20 
+    ldx F_INPUT_BUFFER_COUNT
+    sta F_USER_INPUT_BUFFER_START,x
+    inc F_INPUT_BUFFER_COUNT
+    cpx F_MAX_INPUT_SIZE
+    beq .show_too_long_error  
+    ldd .prompt2_msg[15:8]
+    lde .prompt2_msg[7:0]
+    jsr ACIA_SEND_STRING
     jmp .loop
 
 .cmd_entered:
+    lda F_INPUT_COL_COUNT
+    bne .newline
     rts
 
 .show_too_long_error:
@@ -133,6 +153,10 @@ F_INPUT:
 
 .prompt_msg:
     #d "F> " 
+    #d 0x00
+
+.prompt2_msg:
+    #d ".. " 
     #d 0x00
 
 ; **********************************************************

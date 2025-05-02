@@ -26,7 +26,7 @@ class OttoCPU:
         self.IR = 0  # Instruction Register (8-bit)
         
         # I/O simulation
-        self.KEY = None  # Keyboard input
+        self.KEY = []  # Keyboard input queue (FIFO)
         self.serial_io = None  # Serial port
 
         # Initialize flags
@@ -381,17 +381,15 @@ class OttoCPU:
                                 return self.serial_io.read(1)[0]
                             else:
                                 return 0x00
-                        elif self.KEY == None:
+                        elif len(self.KEY) == 0:
                             return 0x00
                         else:
-                            key = self.KEY
-                            self.KEY = None
-                            return key
+                            return self.KEY.pop(0)
                     elif address == 0x6020:
                         if self.serial_io != None:
                             return 0x03 if self.serial_io.in_waiting > 0 else 0x02
                         else:
-                            return 0x03 if self.KEY != None else 0x02
+                            return 0x03 if len(self.KEY) > 0 else 0x02
                     
         raise Exception(f"Invalid memory read at {hex(address)}")
     
@@ -422,7 +420,7 @@ class OttoCPU:
     def push_key(self, key):
         if key == 10:
             key = 13
-        self.KEY = key
+        self.KEY.append(key)
 
 
 # Helper function to load a program into memory
@@ -499,7 +497,7 @@ if __name__ == "__main__":
                     cpu.step()
         else:
             while cpu.HLT == False:    
-                if keyboard_hit():
+                while keyboard_hit():
                     key = ord(sys.stdin.read(1))
                     cpu.push_key(key)
                 cpu.step()
