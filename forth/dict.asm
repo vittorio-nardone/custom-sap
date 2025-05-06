@@ -105,8 +105,8 @@ F_EXECUTE_USER_DICTIONARY:
     ; jmp .unknown_type
     
 .is_a_const:
-    inx
     ; push value in the stack
+    inx
     lda de, x
     sta F_TOKEN_VALUE 
     jsr F_STACK_PUSH
@@ -114,8 +114,8 @@ F_EXECUTE_USER_DICTIONARY:
     rts
     
 .is_a_var:
-    inx
     ; calculate and push address in the stack
+    inx
     txa
     clc
     adc e
@@ -247,22 +247,24 @@ F_DICTIONARY_USER_CMD_ADD:
     lda F_DICT_USER_DEF_TYPE_COMMAND ; set CMD flag
     sta de, x
     inx
-    inx ; skip label size
-    ldy 0x00
-.add_loop:
-    lda F_DICT_ADD_BUFFER_START, y
+    lda F_DICT_ADD_USER_LABEL_COUNT ; set label size
     sta de, x
-    beq .set_label_size
+    inx 
+    ldy F_DICT_ADD_USER_LABEL_START
+.add_loop:
+    lda (F_INPUT_BUFFER_START_LSB), y
+    sta de, x
+    dec F_DICT_ADD_USER_LABEL_COUNT
+    beq .copy_cmd
     inx
     iny
     jmp .add_loop
-.set_label_size:
-    phx
-    tya
-    ldx 0x04
-    sta de, x
-    plx
 .copy_cmd:
+    ; null terminate label
+    lda 0x00 
+    inx
+    sta de, x
+
     ldy F_DICT_ADD_USER_START
     inx
 .copy_cmd_loop:
@@ -319,22 +321,23 @@ F_DICTIONARY_USER_VAR_ADD:
     lda F_DICT_ADD_USER_DEF_TYPE 
     sta de, x
     inx
-    inx ; skip label size
-    ldy 0x00
-.add_loop:
-    lda F_DICT_ADD_BUFFER_START, y
+    lda F_DICT_ADD_USER_LABEL_COUNT ; set label size
     sta de, x
-    beq .set_label_size
+    inx
+    ldy F_DICT_ADD_USER_LABEL_START
+.add_loop:
+    lda (F_INPUT_BUFFER_START_LSB), y
+    sta de, x
+    dec F_DICT_ADD_USER_LABEL_COUNT
+    beq .set_var
     inx
     iny
     jmp .add_loop
-.set_label_size:
-    phx
-    tya
-    ldx 0x04
-    sta de, x
-    plx
 .set_var:
+    ; null terminate label
+    lda 0x00 
+    inx
+    sta de, x
     ; set default value
     inx
     lda F_DICT_ADD_USER_DEF_VALUE
@@ -429,9 +432,17 @@ F_BI_NEW_DEF:
     adc F_TOKEN_START
     tax
     ldy 0x00
+.find_label_loop:
+    lda (F_INPUT_BUFFER_START_LSB),x
+    stx F_DICT_ADD_USER_LABEL_START
+    cmp 0x20 
+    bne .label_loop  
+    inx
+    cpx F_INPUT_BUFFER_COUNT
+    bcc .find_label_loop
+    jmp .error
 .label_loop:
     lda (F_INPUT_BUFFER_START_LSB),x
-    inx
     cmp 0x20
     beq .label_end
     cmp "a" 
@@ -441,15 +452,15 @@ F_BI_NEW_DEF:
     sec
     sbc 0x20
 .skip:    
-    sta F_DICT_ADD_BUFFER_START, y
+    sta (F_INPUT_BUFFER_START_LSB),x
+    inx
     iny
     cpx F_INPUT_BUFFER_COUNT
     bcc .label_loop
     jmp .error
 
 .label_end:
-    lda 0x00
-    sta F_DICT_ADD_BUFFER_START, y
+    sty F_DICT_ADD_USER_LABEL_COUNT
 
 .find_cmd_loop:
     lda (F_INPUT_BUFFER_START_LSB),x
@@ -533,14 +544,18 @@ F_BI_VARIABLE:
     adc F_TOKEN_START
     tax
     ldy 0x00
-.label_loop:
-    cpx F_INPUT_BUFFER_COUNT
-    beq .label_end
-    bcs .error
-    
+.find_label_loop:
     lda (F_INPUT_BUFFER_START_LSB),x
+    stx F_DICT_ADD_USER_LABEL_START
+    cmp 0x20 
+    bne .label_loop  
     inx
     inc F_TOKEN_COUNT
+    cpx F_INPUT_BUFFER_COUNT
+    bcc .find_label_loop
+    jmp .error
+.label_loop:
+    lda (F_INPUT_BUFFER_START_LSB),x
     cmp 0x20
     beq .label_end
     cmp "a" 
@@ -550,19 +565,21 @@ F_BI_VARIABLE:
     sec
     sbc 0x20
 .skip:    
-    sta F_DICT_ADD_BUFFER_START, y
+    sta (F_INPUT_BUFFER_START_LSB),x
+    inx
+    inc F_TOKEN_COUNT
     iny
-    jmp .label_loop
+    cpx F_INPUT_BUFFER_COUNT
+    bcc .label_loop
 
 .label_end:
-    lda 0x00
-    sta F_DICT_ADD_BUFFER_START, y
+    sty F_DICT_ADD_USER_LABEL_COUNT
 
     lda F_DICT_USER_DEF_TYPE_VARIABLE
     sta F_DICT_ADD_USER_DEF_TYPE
 
-    inc F_TOKEN_COUNT
     jsr F_DICTIONARY_USER_VAR_ADD
+    inc F_TOKEN_COUNT
     rts
 
 .error:
@@ -669,14 +686,18 @@ F_BI_CONSTANT:
     adc F_TOKEN_START
     tax
     ldy 0x00
-.label_loop:
-    cpx F_INPUT_BUFFER_COUNT
-    beq .label_end
-    bcs .error
-    
+.find_label_loop:
     lda (F_INPUT_BUFFER_START_LSB),x
+    stx F_DICT_ADD_USER_LABEL_START
+    cmp 0x20 
+    bne .label_loop  
     inx
     inc F_TOKEN_COUNT
+    cpx F_INPUT_BUFFER_COUNT
+    bcc .find_label_loop
+    jmp .error
+.label_loop:
+    lda (F_INPUT_BUFFER_START_LSB),x
     cmp 0x20
     beq .label_end
     cmp "a" 
@@ -686,15 +707,15 @@ F_BI_CONSTANT:
     sec
     sbc 0x20
 .skip:    
-    sta F_DICT_ADD_BUFFER_START, y
+    sta (F_INPUT_BUFFER_START_LSB),x
+    inx
+    inc F_TOKEN_COUNT
     iny
-    jmp .label_loop
+    cpx F_INPUT_BUFFER_COUNT
+    bcc .label_loop
 
 .label_end:
-    inc F_TOKEN_COUNT
-
-    lda 0x00
-    sta F_DICT_ADD_BUFFER_START, y
+    sty F_DICT_ADD_USER_LABEL_COUNT
 
     lda F_DICT_USER_DEF_TYPE_CONSTANT
     sta F_DICT_ADD_USER_DEF_TYPE
@@ -704,8 +725,8 @@ F_BI_CONSTANT:
 
     lda F_TOKEN_VALUE
     sta F_DICT_ADD_USER_DEF_VALUE
-
     jsr F_DICTIONARY_USER_VAR_ADD
+    inc F_TOKEN_COUNT
 
 .end:
     rts

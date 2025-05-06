@@ -567,6 +567,12 @@ F_BI_FORTH_LABEL:
     #d "FORTH", 0x00 
 F_BI_FORTH:
     jsr ACIA_SEND_NEWLINE
+
+    ldd .welcome_msg[15:8]
+    lde .welcome_msg[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_NEWLINE    
+
     ldd .memory_start_msg[15:8]
     lde .memory_start_msg[7:0]
     jsr ACIA_SEND_STRING
@@ -576,6 +582,24 @@ F_BI_FORTH:
     jsr ACIA_SEND_HEX
     jsr ACIA_SEND_NEWLINE
 
+    ldd .stack_start_msg[15:8]
+    lde .stack_start_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda F_STACK_START[15:8]
+    jsr ACIA_SEND_HEX
+    lda F_STACK_START[7:0]
+    jsr ACIA_SEND_HEX
+    jsr ACIA_SEND_NEWLINE
+
+    ldd .dictionary_start_msg[15:8]
+    lde .dictionary_start_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda F_DICT_USER_START[15:8]
+    jsr ACIA_SEND_HEX
+    lda F_DICT_USER_START[7:0]
+    jsr ACIA_SEND_HEX
+    jsr ACIA_SEND_NEWLINE
+    
     ldd .dictionary_msg[15:8]
     lde .dictionary_msg[7:0]
     jsr ACIA_SEND_STRING
@@ -594,10 +618,16 @@ F_BI_FORTH:
     jsr ACIA_SEND_NEWLINE
     rts
 
+.welcome_msg:
+    #d "Forth Interpreter for OTTO - ", FORTH_VERSION, 0x00
 .memory_start_msg:
-    #d "Memory start at address 0x", 0x00 
+    #d "Main memory starts at address:    0x", 0x00 
+.stack_start_msg:
+    #d "-> stack starts at address:       0x", 0x00 
+.dictionary_start_msg:
+    #d "-> dictionary starts at address:  0x", 0x00 
 .dictionary_msg:
-    #d "Dictionary definitions: ", 0x00 
+    #d "Dictionary definitions:           ", 0x00 
 .dictionary_separator:
     #d "/", 0x00 
 .dictionary_suffix:
