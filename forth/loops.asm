@@ -16,8 +16,11 @@ F_DO_LOOP_PUSH_FROM_STACK:
     lda F_TOKEN_VALUE
 
     ldx F_DO_LOOP_COUNT    
-    ldd F_TOKEN_START
-    std F_DO_LOOP_START, x  ;do token start
+    ldd F_TOKEN_START_LSB
+    std F_DO_LOOP_START, x  ;do token start LSB
+    inx
+    ldd F_TOKEN_START_MSB
+    std F_DO_LOOP_START, x  ;do token start MSB
     inx
     sta F_DO_LOOP_START, x  ;limit
     inx
@@ -42,11 +45,15 @@ F_DO_LOOP_INC_INDEX:
     bcs .do_end
     dex
     lda F_DO_LOOP_START, x 
-    sta F_TOKEN_START
+    sta F_TOKEN_START_MSB
+    dex
+    lda F_DO_LOOP_START, x 
+    sta F_TOKEN_START_LSB
     sec
     rts
 
 .do_end:
+    dex
     dex
     stx F_DO_LOOP_COUNT
     clc
@@ -74,11 +81,15 @@ F_DO_LOOP_INC_INDEX_FROM_STACK:
     bcs .do_end
     dex
     lda F_DO_LOOP_START, x 
-    sta F_TOKEN_START
+    sta F_TOKEN_START_MSB
+    dex
+    lda F_DO_LOOP_START, x 
+    sta F_TOKEN_START_LSB
     sec
     rts
 
 .do_end:
+    dex
     dex
     stx F_DO_LOOP_COUNT
     clc
@@ -119,7 +130,9 @@ F_BI_LOOP:
     rts
 .back_to_do:
     lda 0x02
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_LSB
+    lda 0x00
+    sta F_TOKEN_COUNT_MSB
     rts
 
 F_BI_PLUS_LOOP_LABEL:
@@ -130,7 +143,9 @@ F_BI_PLUS_LOOP:
     rts
 .back_to_do:
     lda 0x02
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_LSB
+    lda 0x00
+    sta F_TOKEN_COUNT_MSB
     rts
 
 F_BI_I_LABEL:
@@ -153,6 +168,10 @@ F_BI_LEAVE:
     bcc .end
 
 .search_loop:
+    lda 0x00
+    sta F_FIND_TOKEN_START_LIMIT_LSB
+    sta F_FIND_TOKEN_START_LIMIT_MSB
+
     ; search for LOOP
     lda F_BI_LOOP_LABEL[15:8]
     sta F_FIND_TOKEN_MSB
@@ -160,9 +179,15 @@ F_BI_LEAVE:
     sta F_FIND_TOKEN_LSB
     jsr F_FIND_TOKEN
 
-    lda F_FIND_TOKEN_COUNT
+    lda F_FIND_TOKEN_START_MSB
+    sta F_FIND_TOKEN_START_LIMIT_MSB
     pha
-    lda F_FIND_TOKEN_START
+    lda F_FIND_TOKEN_START_LSB
+    sta F_FIND_TOKEN_START_LIMIT_LSB
+    pha
+    lda F_FIND_TOKEN_COUNT_MSB
+    pha
+    lda F_FIND_TOKEN_COUNT_LSB
     pha
 
 .search_plusloop:
@@ -172,30 +197,38 @@ F_BI_LEAVE:
     lda F_BI_PLUS_LOOP_LABEL[7:0]
     sta F_FIND_TOKEN_LSB
     jsr F_FIND_TOKEN
-
-    lda F_FIND_TOKEN_COUNT
-    beq .use_loop
-    pla
-    cmp F_FIND_TOKEN_START
-    pha
     bcc .use_loop
+    
+.use_plusloop:
     pla
     pla
-    lda F_FIND_TOKEN_START
-    sta F_TOKEN_START
-    lda F_FIND_TOKEN_COUNT
-    sta F_TOKEN_COUNT
+    pla
+    pla
+
+    lda F_FIND_TOKEN_START_LSB
+    sta F_TOKEN_START_LSB
+    lda F_FIND_TOKEN_START_MSB
+    sta F_TOKEN_START_MSB
+    lda F_FIND_TOKEN_COUNT_LSB
+    sta F_TOKEN_COUNT_LSB
+    lda F_FIND_TOKEN_COUNT_MSB
+    sta F_TOKEN_COUNT_MSB
     jmp .exit_loop
 
 .use_loop:
-    plx
     pla
     beq .not_found
-    stx F_TOKEN_START
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_LSB
+    pla
+    sta F_TOKEN_COUNT_MSB
+    pla
+    sta F_TOKEN_START_LSB
+    pla
+    sta F_TOKEN_START_MSB
 
 .exit_loop:
     ldx F_DO_LOOP_COUNT
+    dex
     dex
     dex
     dex
@@ -228,8 +261,11 @@ F_BI_LEAVE:
 F_BEGIN_UNTIL_PUSH:
     ; TODO: check max size
     ldx F_BEGIN_UNTIL_COUNT    
-    lda F_TOKEN_START
+    lda F_TOKEN_START_LSB
     sta F_BEGIN_UNTIL_START, x  ;begin token start
+    inx
+    lda F_TOKEN_START_MSB
+    sta F_BEGIN_UNTIL_START, x  
     inx
     stx F_BEGIN_UNTIL_COUNT 
 .end:
@@ -268,10 +304,14 @@ F_BEGIN_UNTIL_CHECK:
     ldx F_BEGIN_UNTIL_COUNT
     dex
     lda F_BEGIN_UNTIL_START, x  
-    sta F_TOKEN_START
+    sta F_TOKEN_START_MSB
+    dex
+    lda F_BEGIN_UNTIL_START, x  
+    sta F_TOKEN_START_LSB
     sec
     rts
 .check_true:
+    dec F_BEGIN_UNTIL_COUNT
     dec F_BEGIN_UNTIL_COUNT
     clc
 .end:
@@ -289,6 +329,10 @@ F_BEGIN_WHILE_CHECK:
 
     ; remove loop from stack
     dec F_BEGIN_UNTIL_COUNT
+    dec F_BEGIN_UNTIL_COUNT
+    lda 0x00
+    sta F_FIND_TOKEN_START_LIMIT_LSB
+    sta F_FIND_TOKEN_START_LIMIT_MSB
     
     ; search for REPEAT
     lda .repeat_msg[15:8]
@@ -296,14 +340,16 @@ F_BEGIN_WHILE_CHECK:
     lda .repeat_msg[7:0]
     sta F_FIND_TOKEN_LSB
     jsr F_FIND_TOKEN
+    bcc .repeat_not_found_error
 
-    lda F_FIND_TOKEN_COUNT
-    beq .repeat_not_found_error
-
-    lda F_FIND_TOKEN_START
-    sta F_TOKEN_START
-    lda F_FIND_TOKEN_COUNT
-    sta F_TOKEN_COUNT
+    lda F_FIND_TOKEN_START_LSB
+    sta F_TOKEN_START_LSB
+    lda F_FIND_TOKEN_START_MSB
+    sta F_TOKEN_START_MSB
+    lda F_FIND_TOKEN_COUNT_LSB
+    sta F_TOKEN_COUNT_LSB
+    lda F_FIND_TOKEN_COUNT_MSB
+    sta F_TOKEN_COUNT_MSB
 
 .end:
     rts
@@ -337,7 +383,9 @@ F_BI_UNTIL:
     rts
 .back_to_begin:
     lda 0x05
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_LSB
+    lda 0x00
+    sta F_TOKEN_COUNT_MSB
     rts
 
 F_BI_WHILE_LABEL:
@@ -354,9 +402,14 @@ F_BI_AGAIN:
     ldx F_BEGIN_UNTIL_COUNT
     dex
     lda F_BEGIN_UNTIL_START, x  
-    sta F_TOKEN_START
+    sta F_TOKEN_START_MSB
+    dex
+    lda F_BEGIN_UNTIL_START, x  
+    sta F_TOKEN_START_LSB
     lda 0x05
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_LSB
+    lda 0x00
+    sta F_TOKEN_COUNT_MSB
 .end:
     rts
 
@@ -368,8 +421,13 @@ F_BI_REPEAT:
     ldx F_BEGIN_UNTIL_COUNT
     dex
     lda F_BEGIN_UNTIL_START, x  
-    sta F_TOKEN_START
+    sta F_TOKEN_START_MSB
+    dex
+    lda F_BEGIN_UNTIL_START, x  
+    sta F_TOKEN_START_LSB
     lda 0x05
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_LSB
+    lda 0x00
+    sta F_TOKEN_COUNT_MSB
 .end:
     rts

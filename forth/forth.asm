@@ -7,7 +7,7 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.0.216"
+#const FORTH_VERSION = "v1.1.89"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
@@ -22,8 +22,8 @@ FORTH_MAIN:
     jsr F_WELCOME
 .loop:
     jsr F_INPUT
-    lda F_INPUT_BUFFER_COUNT
-    beq .loop
+    jsr F_16_CHECK_INPUT_COUNT_IS_ZERO
+    bcs .loop
     jsr VT100_TEXT_REVERSE
     jsr F_ELABORATE
     jsr VT100_TEXT_RESET
@@ -36,12 +36,13 @@ FORTH_MAIN:
 ; **********************************************************
 #include "built-in.asm"
 #include "dict.asm"
-#include "dict-cache.asm"
+; #include "dict-cache.asm"
 #include "stack.asm"
 #include "status.asm"
 #include "utils.asm"
 #include "loops.asm"
 #include "math.asm"
+#include "input.asm"
 
 ; **********************************************************
 ; Init vars
@@ -57,6 +58,11 @@ F_INIT:
     sta F_DO_LOOP_COUNT
     sta F_BEGIN_UNTIL_COUNT
     sta F_IF_THEN_COUNT  
+    ; Init pointer to input buffer
+    lda F_USER_INPUT_BUFFER_START[15:8]
+    sta F_INPUT_BUFFER_START_MSB
+    lda F_USER_INPUT_BUFFER_START[7:0]
+    sta F_INPUT_BUFFER_START_LSB
     ; reset fonts
     jsr VT100_TEXT_RESET
     rts
@@ -86,8 +92,8 @@ F_WELCOME:
 F_INPUT:
     jsr ACIA_SEND_NEWLINE
     lda 0x00    
-    sta F_INPUT_BUFFER_COUNT
     sta F_INPUT_COL_COUNT
+    jsr F_16_RESET_INPUT
     ldd .prompt_msg[15:8]
     lde .prompt_msg[7:0]
     jsr ACIA_SEND_STRING
@@ -104,18 +110,16 @@ F_INPUT:
     beq .backspace
     jsr ACIA_SEND_CHAR
     inc F_INPUT_COL_COUNT
-    ldx F_INPUT_BUFFER_COUNT
-    sta F_USER_INPUT_BUFFER_START,x
-    inc F_INPUT_BUFFER_COUNT
-    cpx F_MAX_INPUT_SIZE
-    beq .show_too_long_error
+    jsr F_16_ADD_INPUT_BYTE
+    jsr F_16_CHECK_MAX_INPUT_SIZE
+    bcs .show_too_long_error
     jmp .loop
 
 .backspace:
     lda F_INPUT_COL_COUNT
     beq .loop
     dec F_INPUT_COL_COUNT 
-    dec F_INPUT_BUFFER_COUNT
+    jsr F_16_DEL_INPUT_BYTE
     jsr VT100_CURSOR_LEFT
     jsr VT100_CLEAR_LINE_END
     jmp .loop
@@ -124,12 +128,10 @@ F_INPUT:
     jsr ACIA_SEND_NEWLINE
     lda 0x00    
     sta F_INPUT_COL_COUNT 
-    lda 0x20 
-    ldx F_INPUT_BUFFER_COUNT
-    sta F_USER_INPUT_BUFFER_START,x
-    inc F_INPUT_BUFFER_COUNT
-    cpx F_MAX_INPUT_SIZE
-    beq .show_too_long_error  
+    lda 0x0D 
+    jsr F_16_ADD_INPUT_BYTE
+    jsr F_16_CHECK_MAX_INPUT_SIZE
+    bcs .show_too_long_error  
     ldd .prompt2_msg[15:8]
     lde .prompt2_msg[7:0]
     jsr ACIA_SEND_STRING
@@ -164,54 +166,46 @@ F_INPUT:
 ; **********************************************************
 F_ELABORATE:
     lda 0x00
-    sta F_TOKEN_START
     sta F_EXECUTION_ERROR_FLAG
     sta F_EXECUTION_ABORT_FLAG
+    jsr F_16_RESET_TOKEN_START
 
-    ; Init pointer to input buffer
-    lda F_USER_INPUT_BUFFER_START[15:8]
-    sta F_INPUT_BUFFER_START_MSB
-    lda F_USER_INPUT_BUFFER_START[7:0]
-    sta F_INPUT_BUFFER_START_LSB
-
-    ; Init cache area
-    lda F_DICT_CACHE_START[15:8]
-    sta F_DICT_CACHE_START_MSB
-    sta F_LAST_ALLOC_DICT_CACHE_START_MSB
-    lda F_DICT_CACHE_START[7:0]
-    sta F_DICT_CACHE_START_LSB  
-    sta F_LAST_ALLOC_DICT_CACHE_START_LSB
-    jsr F_INIT_DICT_CACHE
+    ; ; Init cache area
+    ; lda F_DICT_CACHE_START[15:8]
+    ; sta F_DICT_CACHE_START_MSB
+    ; sta F_LAST_ALLOC_DICT_CACHE_START_MSB
+    ; lda F_DICT_CACHE_START[7:0]
+    ; sta F_DICT_CACHE_START_LSB  
+    ; sta F_LAST_ALLOC_DICT_CACHE_START_LSB
+    ; jsr F_INIT_DICT_CACHE
 
 .loop:
     jsr F_TOKENIZE
-    lda F_TOKEN_COUNT
-    beq .send_ok
-
+    jsr F_16_CHECK_TOKEN_COUNT_IS_ZERO
+    bcs .send_ok
     jsr F_TOKEN_TO_UPPERCASE
 
-.check_cached:
-    ;jmp .check_number ; skip cache
+; .check_cached:
+;     ; jmp .check_number ; skip cache
 
+;     jsr F_IS_DICT_CACHED
+;     bcc .check_number
+;     lda F_DICT_CACHE_TYPE
+;     cmp F_DICT_CACHE_TYPE_BUILT_IN
+;     beq .cached_builtin
+;     cmp F_DICT_CACHE_TYPE_USER_DICT_CMD
+;     beq .cached_dictionary
 
-    jsr F_IS_DICT_CACHED
-    bcc .check_number
-    lda F_DICT_CACHE_TYPE
-    cmp F_DICT_CACHE_TYPE_BUILT_IN
-    beq .cached_builtin
-    cmp F_DICT_CACHE_TYPE_USER_DICT_CMD
-    beq .cached_dictionary
+;     jmp .check_number
 
-    jmp .check_number
+; .cached_builtin:
+;     jsr F_GET_CACHED_BUILT_IN
+;     jmp .exec_builtin
 
-.cached_builtin:
-    jsr F_GET_CACHED_BUILT_IN
-    jmp .exec_builtin
-
-.cached_dictionary:
-    jsr F_GET_CACHED_USER_DICT_CMD
-    jsr F_EXECUTE_CACHED_USER_DICT_CMD
-    jmp .next_token
+; .cached_dictionary:
+;     jsr F_GET_CACHED_USER_DICT_CMD
+;     jsr F_EXECUTE_CACHED_USER_DICT_CMD
+;     jmp .next_token
 
 .check_number:
     jsr F_TOKEN_IS_NUMBER
@@ -223,9 +217,8 @@ F_ELABORATE:
 .check_builtin:
     jsr F_TOKEN_IS_BUILTIN
     bcc .check_dictionary
-    jsr F_ADD_BUILT_IN_TO_DICT_CACHE
+    ; jsr F_ADD_BUILT_IN_TO_DICT_CACHE
 .exec_builtin:
-    ;jsr (F_DICT_EXEC_BUILT_IN_PTR_PAGE)
     #d 0x93, 0x00, F_DICT_EXEC_BUILT_IN_PTR_PAGE[15:8],  F_DICT_EXEC_BUILT_IN_PTR_PAGE[7:0]
     jmp .next_token
 
@@ -236,7 +229,6 @@ F_ELABORATE:
     jmp .next_token
 
 .token_error:
-    ;jsr ACIA_SEND_NEWLINE
     jsr F_PRINT_TOKEN
     lda .token_error_msg[15:8]
     sta F_ERROR_MSG_MSB
@@ -251,12 +243,9 @@ F_ELABORATE:
     lda F_EXECUTION_ABORT_FLAG
     bne .end
 
-    lda F_TOKEN_COUNT
-    clc
-    adc F_TOKEN_START
-    sta F_TOKEN_START
-    cmp F_INPUT_BUFFER_COUNT
-    bne .loop
+    jsr F_16_ADD_COUNT_TO_TOKEN_START
+    jsr F_16_CHECK_START_END_OF_FILE
+    bcc .loop
 .send_ok:
     lda F_STATUS_COUNT
     bne .restore_status

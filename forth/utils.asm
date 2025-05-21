@@ -5,26 +5,31 @@
 ; **********************************************************
 
 F_TOKENIZE:
-    lda 0x00
-    sta F_TOKEN_COUNT
-    ldx F_TOKEN_START
+    jsr F_16_RESET_TOKEN_COUNT
+    jsr F_16_SET_TOKEN_POS_TO_START
 .skip_spaces:
-    lda (F_INPUT_BUFFER_START_LSB),x
+    jsr F_16_GET_INPUT_BYTE
     cmp 0x20
-    bne .loop
-    inx
-    inc F_TOKEN_START
-    cpx F_INPUT_BUFFER_COUNT
-    bne .skip_spaces
+    beq .next_char
+    cmp 0x0D
+    beq .next_char
+    jmp .loop
+.next_char:
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_INC_TOKEN_START
+    jsr F_16_CHECK_POS_END_OF_FILE
+    bcc .skip_spaces
     jmp .end
 .loop:
-    lda (F_INPUT_BUFFER_START_LSB),x
+    jsr F_16_GET_INPUT_BYTE
     cmp 0x20
     beq .end
-    inc F_TOKEN_COUNT
-    inx
-    cpx F_INPUT_BUFFER_COUNT
-    bne .loop
+    cmp 0x0D
+    beq .end
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_INC_TOKEN_COUNT
+    jsr F_16_CHECK_POS_END_OF_FILE
+    bcc .loop
 .end:
     rts
 
@@ -32,71 +37,99 @@ F_FIND_TOKEN:
     lda F_FIND_TOKEN_MSB
     sta F_CMP_TOKEN_MSB
     lda F_FIND_TOKEN_LSB
-    sta F_CMP_TOKEN_MSB
+    sta F_CMP_TOKEN_LSB
 
     ; save in stack 
-    lda F_TOKEN_START
+    lda F_TOKEN_START_LSB
     pha
-    lda F_TOKEN_COUNT
+    lda F_TOKEN_START_MSB
+    pha
+    lda F_TOKEN_COUNT_LSB
+    pha
+    lda F_TOKEN_COUNT_MSB
     pha
 
 .next_token:
-    ; set new start
-    clc
-    lda F_TOKEN_COUNT
-    adc F_TOKEN_START
-    sta F_TOKEN_START
-    cmp F_INPUT_BUFFER_COUNT
-    beq .not_found
+    jsr F_16_ADD_COUNT_TO_TOKEN_START
+    jsr F_16_CHECK_START_END_OF_FILE
+    bcs .not_found
 
+    lda F_FIND_TOKEN_START_LIMIT_LSB
+    ora F_FIND_TOKEN_START_LIMIT_MSB
+    beq .tokenize
+
+    lda F_TOKEN_START_MSB
+    cmp F_FIND_TOKEN_START_LIMIT_MSB
+    beq .check_lsb_limit
+    bcs .not_found
+    jmp .tokenize
+
+.check_lsb_limit:
+    lda F_TOKEN_START_LSB
+    cmp F_FIND_TOKEN_START_LIMIT_LSB
+    bcs .not_found    
+  
+.tokenize:
     jsr F_TOKENIZE
+    jsr F_16_CHECK_START_END_OF_FILE
+    bcs .not_found
 
     ;compare
     jsr F_COMPARE_TOKEN
     bcc .next_token
 
 .found:
-    lda F_TOKEN_START
-    sta F_FIND_TOKEN_START
-    lda F_TOKEN_COUNT
-    sta F_FIND_TOKEN_COUNT    
+    lda F_TOKEN_START_LSB
+    sta F_FIND_TOKEN_START_LSB
+    lda F_TOKEN_START_MSB
+    sta F_FIND_TOKEN_START_MSB
+    lda F_TOKEN_COUNT_LSB
+    sta F_FIND_TOKEN_COUNT_LSB  
+    lda F_TOKEN_COUNT_MSB
+    sta F_FIND_TOKEN_COUNT_MSB  
+    sec
     jmp .done
 
 .not_found:
     lda 0x00
-    sta F_FIND_TOKEN_START
-    sta F_FIND_TOKEN_COUNT ; not found
+    sta F_FIND_TOKEN_START_LSB
+    sta F_FIND_TOKEN_START_MSB
+    sta F_FIND_TOKEN_COUNT_LSB ; not found
+    sta F_FIND_TOKEN_COUNT_MSB ; not found
+    clc
     
 .done:
     pla 
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_MSB
     pla 
-    sta F_TOKEN_START
+    sta F_TOKEN_COUNT_LSB
+    pla 
+    sta F_TOKEN_START_MSB
+    pla
+    sta F_TOKEN_START_LSB
     rts
 
 F_PRINT_TOKEN:
-    ldy F_TOKEN_COUNT
-    ldx F_TOKEN_START
+    jsr F_16_SET_TOKEN_POS_TO_START
 .loop:
-    lda (F_INPUT_BUFFER_START_LSB),x
+    jsr F_16_GET_INPUT_BYTE
     jsr ACIA_SEND_CHAR
-    inx
-    dey
-    bne .loop
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_CHECK_END_OF_TOKEN
+    bcc .loop
     rts
 
 F_TOKEN_IS_NUMBER:
-    ldy F_TOKEN_COUNT
-    ldx F_TOKEN_START
+    jsr F_16_SET_TOKEN_POS_TO_START
 .loop:
-    lda (F_INPUT_BUFFER_START_LSB),x
+    jsr F_16_GET_INPUT_BYTE
     cmp 0x30
     bcc .end
     cmp 0x3A
     bcs .end
-    inx
-    dey
-    bne .loop
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_CHECK_END_OF_TOKEN
+    bcc .loop
     sec
     rts
 .end:
@@ -104,8 +137,7 @@ F_TOKEN_IS_NUMBER:
     rts
 
 F_TOKEN_TO_NUMBER:
-    ldy F_TOKEN_COUNT
-    ldx F_TOKEN_START
+    jsr F_16_SET_TOKEN_POS_TO_START
     lda #0x00
     sta F_TOKEN_VALUE
 .loop:
@@ -119,33 +151,32 @@ F_TOKEN_TO_NUMBER:
     adc D
     sta F_TOKEN_VALUE
 .add:
-    lda (F_INPUT_BUFFER_START_LSB),x
+    jsr F_16_GET_INPUT_BYTE
     sec 
     sbc #0x30   
     clc
     adc F_TOKEN_VALUE
     sta F_TOKEN_VALUE
-    inx
-    dey
-    bne .loop
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_CHECK_END_OF_TOKEN
+    bcc .loop
     rts
 
 F_TOKEN_TO_UPPERCASE:
-    ldy F_TOKEN_COUNT
-    ldx F_TOKEN_START
+    jsr F_16_SET_TOKEN_POS_TO_START
 .loop:
-    lda (F_INPUT_BUFFER_START_LSB),x
+    jsr F_16_GET_INPUT_BYTE
     cmp "a" 
     bcc .skip
     cmp "z"+1      
     bcs .skip
     sec
     sbc 0x20
-    sta (F_INPUT_BUFFER_START_LSB),x
+    jsr F_16_SET_INPUT_BYTE
 .skip:
-    inx
-    dey
-    bne .loop
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_CHECK_END_OF_TOKEN
+    bcc .loop
     rts
 
 ; compare, case insensitive
@@ -153,11 +184,11 @@ F_COMPARE_TOKEN:
     ldd F_CMP_TOKEN_MSB
     lde F_CMP_TOKEN_LSB    
 
-    ldy F_TOKEN_START
+    jsr F_16_SET_TOKEN_POS_TO_START
     ldx 0x00
 
 .cmp_loop:
-    lda (F_INPUT_BUFFER_START_LSB),y
+    jsr F_16_GET_INPUT_BYTE
     cmp "a" 
     bcc .skip
     cmp "z"+1      
@@ -171,11 +202,10 @@ F_COMPARE_TOKEN:
     cmp F_CMP_CURRENT_CHAR
     bne .not_equal
     inx
-    iny
+    jsr F_16_INC_TOKEN_POS
     jmp .cmp_loop
-
 .check_token_length:
-    cpx F_TOKEN_COUNT
+    cpx F_TOKEN_COUNT_LSB
     bne .not_equal
     sec
     rts

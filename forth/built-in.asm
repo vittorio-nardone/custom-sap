@@ -14,6 +14,7 @@ F_DICT_BUILT_IN_START:
     #d F_BI_MUL_LABEL[7:0], F_BI_MUL_LABEL[15:8], F_BI_MUL[7:0], F_BI_MUL[15:8] ; "*"
     #d F_BI_DIV_LABEL[7:0], F_BI_DIV_LABEL[15:8], F_BI_DIV[7:0], F_BI_DIV[15:8] ; "/"
     #d F_BI_COMMENT_LABEL[7:0], F_BI_COMMENT_LABEL[15:8], F_BI_COMMENT[7:0], F_BI_COMMENT[15:8] ; "("
+    #d F_BI_COMMENT_BACKSLASH_LABEL[7:0], F_BI_COMMENT_BACKSLASH_LABEL[15:8], F_BI_COMMENT_BACKSLASH[7:0], F_BI_COMMENT_BACKSLASH[15:8] ; "\"
     #d F_BI_SLASH_MOD_LABEL[7:0], F_BI_SLASH_MOD_LABEL[15:8], F_BI_SLASH_MOD[7:0], F_BI_SLASH_MOD[15:8] ; "/MOD"
     #d F_BI_DISPLAY_LABEL[7:0], F_BI_DISPLAY_LABEL[15:8], F_BI_DISPLAY[7:0], F_BI_DISPLAY[15:8] ; "."
     #d F_BI_DOT_QUOTE_LABEL[7:0], F_BI_DOT_QUOTE_LABEL[15:8], F_BI_DOT_QUOTE[7:0], F_BI_DOT_QUOTE[15:8] ; ".""
@@ -55,6 +56,7 @@ F_DICT_BUILT_IN_START:
     #d F_BI_MAX_LABEL[7:0], F_BI_MAX_LABEL[15:8], F_BI_MAX[7:0], F_BI_MAX[15:8] ; "MAX"
     #d F_BI_MIN_LABEL[7:0], F_BI_MIN_LABEL[15:8], F_BI_MIN[7:0], F_BI_MIN[15:8] ; "MIN"
     #d F_BI_MOD_LABEL[7:0], F_BI_MOD_LABEL[15:8], F_BI_MOD[7:0], F_BI_MOD[15:8] ; "MOD"
+    #d F_BI_NIP_LABEL[7:0], F_BI_NIP_LABEL[15:8], F_BI_NIP[7:0], F_BI_NIP[15:8] ; "NIP"
     #d F_BI_NEW_DEF_LABEL[7:0], F_BI_NEW_DEF_LABEL[15:8], F_BI_NEW_DEF[7:0], F_BI_NEW_DEF[15:8] ; ":"
     #d F_BI_OR_LABEL[7:0], F_BI_OR_LABEL[15:8], F_BI_OR[7:0], F_BI_OR[15:8] ; "OR"
     #d F_BI_OVER_LABEL[7:0], F_BI_OVER_LABEL[15:8], F_BI_OVER[7:0], F_BI_OVER[15:8] ; "OVER"
@@ -83,24 +85,19 @@ F_BI_ABORT_QUOTE:
     lda F_TOKEN_VALUE
     sta F_EXECUTION_ABORT_FLAG
 
-    lda F_TOKEN_COUNT
-    sec
-    adc F_TOKEN_START
-    tax
-    ldy F_TOKEN_COUNT
-    iny
+    jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .loop:
-    lda (F_INPUT_BUFFER_START_LSB),x
-    inx
-    iny
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_INC_TOKEN_COUNT
+    jsr F_16_GET_INPUT_BYTE
     cmp 0x22
     beq .abort_if_needed
     ldd F_EXECUTION_ABORT_FLAG
     beq .skip_send
     jsr ACIA_SEND_CHAR
 .skip_send:    
-    cpx F_INPUT_BUFFER_COUNT
-    bne .loop
+    jsr F_16_CHECK_POS_END_OF_FILE
+    bcc .loop
 .error:
     lda .error_msg[15:8]
     sta F_ERROR_MSG_MSB
@@ -112,7 +109,7 @@ F_BI_ABORT_QUOTE:
     sta F_EXECUTION_ABORT_FLAG
     rts
 .abort_if_needed:
-    sty F_TOKEN_COUNT
+    jsr F_16_INC_TOKEN_COUNT
     lda F_EXECUTION_ABORT_FLAG
     beq .end
     lda 0x00
@@ -324,21 +321,16 @@ F_BI_BYE:
 F_BI_DOT_QUOTE_LABEL:
     #d ".", 0x22, 0x00 
 F_BI_DOT_QUOTE:
-    lda F_TOKEN_COUNT
-    sec
-    adc F_TOKEN_START
-    tax
-    ldy F_TOKEN_COUNT
-    iny
+    jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .loop:
-    lda (F_INPUT_BUFFER_START_LSB),x
-    inx
-    iny
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_INC_TOKEN_COUNT
+    jsr F_16_GET_INPUT_BYTE
     cmp 0x22
     beq .end
     jsr ACIA_SEND_CHAR
-    cpx F_INPUT_BUFFER_COUNT
-    bne .loop
+    jsr F_16_CHECK_POS_END_OF_FILE
+    bcc .loop
 .error:
     lda .error_msg[15:8]
     sta F_ERROR_MSG_MSB
@@ -348,7 +340,7 @@ F_BI_DOT_QUOTE:
     sta F_EXECUTION_ERROR_FLAG
     rts
 .end:
-    sty F_TOKEN_COUNT
+    jsr F_16_INC_TOKEN_COUNT
     rts
 
 .error_msg:
@@ -359,20 +351,15 @@ F_BI_DOT_QUOTE:
 F_BI_COMMENT_LABEL:
     #d "(", 0x00
 F_BI_COMMENT:
-    lda F_TOKEN_COUNT
-    sec
-    adc F_TOKEN_START
-    tax
-    ldy F_TOKEN_COUNT
-    iny
+    jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .loop:
-    lda (F_INPUT_BUFFER_START_LSB),x
-    inx
-    iny
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_INC_TOKEN_COUNT
+    jsr F_16_GET_INPUT_BYTE
     cmp ")"
     beq .end
-    cpx F_INPUT_BUFFER_COUNT
-    bne .loop
+    jsr F_16_CHECK_POS_END_OF_FILE
+    bcc .loop
 .error:
     lda .error_msg[15:8]
     sta F_ERROR_MSG_MSB
@@ -382,38 +369,59 @@ F_BI_COMMENT:
     sta F_EXECUTION_ERROR_FLAG
     rts
 .end:
-    sty F_TOKEN_COUNT
+    jsr F_16_INC_TOKEN_COUNT
     rts
 
 .error_msg:
     #d "CLOSED PARENTHESIS EXPECTED"
-    #d 0x00    
+    #d 0x00   
+
+F_BI_COMMENT_BACKSLASH_LABEL:
+    #d 0x5C, 0x00
+F_BI_COMMENT_BACKSLASH:
+    jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
+.loop:
+    jsr F_16_INC_TOKEN_POS
+    jsr F_16_INC_TOKEN_COUNT
+    jsr F_16_GET_INPUT_BYTE
+    cmp 0x0D
+    beq .end
+    jsr F_16_CHECK_POS_END_OF_FILE
+    bcc .loop
+    rts
+.end:
+    jsr F_16_INC_TOKEN_COUNT
+    rts
+
+.error_msg:
+    #d "CLOSED PARENTHESIS EXPECTED"
+    #d 0x00   
 
 F_BI_IF_LABEL:
     #d "IF", 0x00 
 F_BI_IF:
     
     ; save in stack 
-    lda F_TOKEN_START
+    lda F_TOKEN_START_LSB
     pha
-    lda F_TOKEN_COUNT
+    lda F_TOKEN_START_MSB
     pha
     
     ; search for THEN/ELSE
     lda 0x00
     sta F_BI_IF_DEPTH
-    sta F_BI_IF_ELSE_START
+    sta F_BI_IF_ELSE_START_LSB
+    sta F_BI_IF_ELSE_START_MSB
 
 .next_token:
     ; set new start
-    clc
-    lda F_TOKEN_COUNT
-    adc F_TOKEN_START
-    sta F_TOKEN_START
-    cmp F_INPUT_BUFFER_COUNT
-    beq .then_not_found_error
+    jsr F_16_ADD_COUNT_TO_TOKEN_START
+    jsr F_16_CHECK_START_END_OF_FILE
+    bcs .then_not_found_error
 
     jsr F_TOKENIZE
+    jsr F_16_CHECK_START_END_OF_FILE
+    bcs .then_not_found_error
 
     ;compare IF
     lda F_BI_IF_LABEL[15:8]
@@ -453,23 +461,31 @@ F_BI_IF:
     jmp .next_token
 
 .then_save:
-    lda F_TOKEN_START
-    sta F_BI_IF_THEN_START   
+    lda F_TOKEN_START_LSB
+    sta F_BI_IF_THEN_START_LSB   
+    lda F_TOKEN_START_MSB
+    sta F_BI_IF_THEN_START_MSB   
     jmp .restore_current_token
 
 .else_found:
     lda F_BI_IF_DEPTH
     bne .next_token      
-    lda F_TOKEN_START
-    sta F_BI_IF_ELSE_START
+    lda F_TOKEN_START_LSB
+    sta F_BI_IF_ELSE_START_LSB
+    lda F_TOKEN_START_MSB
+    sta F_BI_IF_ELSE_START_MSB
     jmp .next_token
 
 .restore_current_token:
     ; restore from stack 
     pla
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_START_MSB
     pla
-    sta F_TOKEN_START
+    sta F_TOKEN_START_LSB
+    lda 0x02
+    sta F_TOKEN_COUNT_LSB
+    lda 0x00
+    sta F_TOKEN_COUNT_MSB
 
 .check_condition:
     jsr F_STACK_PULL
@@ -481,26 +497,37 @@ F_BI_IF:
     jmp .end
 
 .condition_false:
-    lda F_BI_IF_ELSE_START
+    lda F_BI_IF_ELSE_START_LSB
+    ora F_BI_IF_ELSE_START_MSB
     bne .go_to_else
 
-    lda F_BI_IF_THEN_START
-    sta F_TOKEN_START
+    lda F_BI_IF_THEN_START_LSB
+    sta F_TOKEN_START_LSB
+    lda F_BI_IF_THEN_START_MSB
+    sta F_TOKEN_START_MSB
     lda 0x04
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_LSB
+    lda 0x00
+    sta F_TOKEN_COUNT_MSB
     jmp .end    
 
 .go_to_else:
-    lda F_BI_IF_ELSE_START
-    sta F_TOKEN_START
+    lda F_BI_IF_ELSE_START_LSB
+    sta F_TOKEN_START_LSB
+    lda F_BI_IF_ELSE_START_MSB
+    sta F_TOKEN_START_MSB
     lda 0x04
-    sta F_TOKEN_COUNT
+    sta F_TOKEN_COUNT_LSB
+    lda 0x00
+    sta F_TOKEN_COUNT_MSB
     jmp .end
 
 .push_if_then_stack:
     ldx F_IF_THEN_COUNT
-    lda F_BI_IF_THEN_START
-    sta F_IF_THEN_START,x
+    lda F_BI_IF_THEN_START_LSB
+    sta F_IF_THEN_START_LSB,x
+    lda F_BI_IF_THEN_START_MSB
+    sta F_IF_THEN_START_MSB,x
     inc F_IF_THEN_COUNT
     rts
 
@@ -531,10 +558,11 @@ F_BI_ELSE:
     bcc .end
     dec F_IF_THEN_COUNT
     ldx F_IF_THEN_COUNT
-    lda F_IF_THEN_START,x
-    sta F_TOKEN_START
-    lda 0x04
-    sta F_TOKEN_COUNT
+    lda F_IF_THEN_START_LSB,x
+    sta F_TOKEN_START_LSB
+    lda F_IF_THEN_START_MSB,x
+    sta F_TOKEN_START_MSB
+    ; token count is not set because it's already 4
 .end:
     rts
 
@@ -650,7 +678,7 @@ F_TOKEN_IS_BUILTIN:
     phd ; save record address
     phe
     phy
-    ldy F_TOKEN_START
+    jsr F_16_SET_TOKEN_POS_TO_START
 
     ldx 0x00 ; get label address
     lda de, x
@@ -664,14 +692,14 @@ F_TOKEN_IS_BUILTIN:
 .check_char_match:
     lda de,x
     beq .end_of_dictionary_item
-    cmp (F_INPUT_BUFFER_START_LSB),y
+    cmp (F_INPUT_BUFFER_PTR_LSB)
     bne .check_next_dictionary_item 
     inx
-    iny
+    jsr F_16_INC_TOKEN_POS
     jmp .check_char_match
 
 .end_of_dictionary_item:
-    cpx F_TOKEN_COUNT
+    cpx F_TOKEN_COUNT_LSB
     bne .check_next_dictionary_item
     ply 
     ple ; restore record address
@@ -708,3 +736,17 @@ F_TOKEN_IS_BUILTIN:
 .dictionary_end:
     clc
     rts
+
+F_BI_NIP_LABEL:
+    #d "NIP", 0x00
+F_BI_NIP:
+    jsr F_STACK_PULL
+    bcc .end
+    ldd F_TOKEN_VALUE
+    jsr F_STACK_PULL
+    bcc .end
+    std F_TOKEN_VALUE
+    jsr F_STACK_PUSH
+.end:
+    rts
+    
