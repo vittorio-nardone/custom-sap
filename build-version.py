@@ -6,6 +6,7 @@ import hashlib
 import sys
 import argparse
 import pathlib
+from datetime import datetime
 
 def parse_arguments():
     """Parse command line arguments"""
@@ -60,8 +61,49 @@ def get_version_constant_name(source_path):
     base_name = os.path.splitext(filename)[0].upper()
     return f"{base_name}_VERSION"
 
-def increment_version(source_path, constant_name):
-    """Increment the build number in the ASM file"""
+def get_builddate_constant_name(source_path):
+    """Generate the expected builddate constant name based on the file name"""
+    # Extract just the filename without extension or directory
+    filename = os.path.basename(source_path)
+    base_name = os.path.splitext(filename)[0].upper()
+    return f"{base_name}_BUILDDATE"
+
+def update_builddate(source_path, constant_name):
+    """Update the build date in the ASM file"""
+    if not os.path.exists(source_path):
+        print(f"Error: {source_path} not found")
+        return False
+    
+    with open(source_path, 'r') as f:
+        content = f.read()
+    
+    # Get current date in mm/dd/yyyy format
+    current_date = datetime.now().strftime("%m/%d/%Y")
+    
+    # Look for the builddate string pattern for this constant
+    builddate_pattern = fr'(#const {constant_name} = ")([^"]+)(")'
+    match = re.search(builddate_pattern, content)
+    
+    if not match:
+        print(f"Builddate constant '{constant_name}' not found in {source_path}")
+        return False
+    
+    # Replace the builddate string in the content
+    new_content = re.sub(
+        builddate_pattern,
+        f'#const {constant_name} = "{current_date}"',
+        content
+    )
+    
+    # Write the updated content back to the file
+    with open(source_path, 'w') as f:
+        f.write(new_content)
+    
+    print(f"Build date updated to {current_date}")
+    return True
+
+def increment_version(source_path, version_constant_name, builddate_constant_name):
+    """Increment the build number and update build date in the ASM file"""
     if not os.path.exists(source_path):
         print(f"Error: {source_path} not found")
         return False
@@ -70,11 +112,11 @@ def increment_version(source_path, constant_name):
         content = f.read()
     
     # Look for the version string pattern for this constant
-    version_pattern = fr'(#const {constant_name} = "v\d+\.\d+\.)(\d+)(")'
+    version_pattern = fr'(#const {version_constant_name} = "v\d+\.\d+\.)(\d+)(")'
     match = re.search(version_pattern, content)
     
     if not match:
-        print(f"Version constant '{constant_name}' not found in {source_path}")
+        print(f"Version constant '{version_constant_name}' not found in {source_path}")
         return False
     
     # Extract the current version parts
@@ -100,7 +142,9 @@ def increment_version(source_path, constant_name):
     current_version = f"v{version_prefix}{build_num}"
     new_version = f"v{version_prefix}{new_build_num}"
     print(f"Version incremented from {current_version} to {new_version}")
-    return True
+    
+    # Update the build date
+    return update_builddate(source_path, builddate_constant_name)
 
 def main():
     # Parse command line arguments
@@ -110,8 +154,9 @@ def main():
     output_path = pathlib.Path(args.output)
     hash_file_path = f"{output_path}.hash"
     
-    # Get the version constant name based on source file name
-    constant_name = get_version_constant_name(args.source)
+    # Get the version and builddate constant names based on source file name
+    version_constant_name = get_version_constant_name(args.source)
+    builddate_constant_name = get_builddate_constant_name(args.source)
     
     # Compile the ASM file
     compile_asm(args.source, args.output, args.symbols)
@@ -127,8 +172,8 @@ def main():
     
     # If the binary has changed or no previous hash exists
     if current_hash != last_hash:
-        print("Binary has changed. Incrementing version...")
-        if increment_version(args.source, constant_name):
+        print("Binary has changed. Incrementing version and updating build date...")
+        if increment_version(args.source, version_constant_name, builddate_constant_name):
             # Recompile with the new version
             compile_asm(args.source, args.output, args.symbols)
             
@@ -136,11 +181,11 @@ def main():
             new_hash = get_file_hash(args.output)
             save_current_hash(new_hash, hash_file_path)
             
-            print("Version incremented and code recompiled successfully")
+            print("Version incremented, build date updated and code recompiled successfully")
         else:
-            print("Failed to increment version")
+            print("Failed to increment version or update build date")
     else:
-        print("No change in binary output. Version not incremented.")
+        print("No change in binary output. Version and build date not updated.")
         # Still save the hash to ensure the file exists
         save_current_hash(current_hash, hash_file_path)
 

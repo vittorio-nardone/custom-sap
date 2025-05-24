@@ -164,65 +164,71 @@ F_EXECUTE_USER_DICTIONARY:
     sta F_INPUT_BUFFER_START_MSB
 
     ; ; allocate and init a new cache area
-    ; jsr F_ADD_USER_TO_DICT_CACHE
-    ; jsr F_NEW_DICT_CACHE_AREA
-    ; jsr F_INIT_DICT_CACHE
+    
+    jsr F_NEW_DICT_CACHE_AREA
+    bcc .skip_cache_because_full ; TODO if full, send error!
+    jsr F_ADD_USER_TO_DICT_CACHE
+    lda F_DICT_CACHE_LAST_ADDED_AREA
+    sta F_DICT_CACHE_SELECTED_AREA
+    jsr F_SELECT_DICT_CACHE_AREA
 
+.skip_cache_because_full:
     ; init token vars
     jsr F_16_RESET_TOKEN_ALL
     rts
 
-; F_EXECUTE_CACHED_USER_DICT_CMD:
-;     ldd F_DICT_EXEC_USER_MSB
-;     lde F_DICT_EXEC_USER_LSB
+F_EXECUTE_CACHED_USER_DICT_CMD:
+    ldd F_DICT_EXEC_USER_MSB
+    lde F_DICT_EXEC_USER_LSB
 
-; .skip_label_type:
-;     ; calculate offset
-;     ldx 0x04
-;     lda de, x
-;     clc
-;     adc 0x05
-;     tax
+.skip_label:
+    ; calculate offset
+    ldx 0x05
+    lda de, x
+    clc
+    adc 0x06
+    tax
 
-; .is_a_cmd:
-;     phx
-;     phd
-;     phe
-;     jsr F_PUSH_STATUS
-;     ple
-;     pld
-;     plx
+.is_a_cmd:
+    phx
+    phd
+    phe
+    jsr F_PUSH_STATUS
+    ple
+    pld
+    plx
 
-;     ; set size of new input buffer
-;     inx
-;     phx
-;     stx F_INPUT_BUFFER_COUNT
-;     ldx 0x02
-;     lda de,x
-;     clc ; -1
-;     sbc F_INPUT_BUFFER_COUNT
-;     sta F_INPUT_BUFFER_COUNT
+    ; set size of new input buffer
+    inx
+    phx
+    stx F_INPUT_BUFFER_COUNT_LSB
+    ldx 0x02
+    lda de,x
+    clc ; -1
+    sbc F_INPUT_BUFFER_COUNT_LSB
+    sta F_INPUT_BUFFER_COUNT_LSB
+    inx
+    lda de,x
+    sbc 0x00
+    sta F_INPUT_BUFFER_COUNT_MSB
 
-;     ; calculate offset and change pointer
-;     pla ; restore x
-;     clc
-;     adc e
-;     sta F_INPUT_BUFFER_START_LSB
-;     tda
-;     adc 0x00
-;     sta F_INPUT_BUFFER_START_MSB
+    ; calculate offset and change pointer
+    pla ; restore x
+    clc
+    adc e
+    sta F_INPUT_BUFFER_START_LSB
+    tda
+    adc 0x00
+    sta F_INPUT_BUFFER_START_MSB
 
-;     ; restore cache area
-;     lda F_DICT_EXEC_USER_CACHE_LSB
-;     sta F_DICT_CACHE_START_LSB
-;     lda F_DICT_EXEC_USER_CACHE_MSB
-;     sta F_DICT_CACHE_START_MSB    
+    ; restore cache area
+    lda F_DICT_EXEC_USER_CACHE_NUMBER
+    sta F_DICT_CACHE_SELECTED_AREA 
+    jsr F_SELECT_DICT_CACHE_AREA
 
-;     ; init token vars
-;     lda 0x00
-;     sta F_TOKEN_START
-;     sta F_TOKEN_COUNT
-;     rts
+    ; init token vars
+    jsr F_16_RESET_TOKEN_ALL
+    rts
 
 F_DICTIONARY_USER_CMD_ADD:
     ldy F_DICT_USER_COUNT

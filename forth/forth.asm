@@ -7,7 +7,8 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.1.89"
+#const FORTH_VERSION = "v1.1.144"
+#const FORTH_BUILDDATE = "05/24/2025"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
@@ -36,7 +37,7 @@ FORTH_MAIN:
 ; **********************************************************
 #include "built-in.asm"
 #include "dict.asm"
-; #include "dict-cache.asm"
+#include "dict-cache.asm"
 #include "stack.asm"
 #include "status.asm"
 #include "utils.asm"
@@ -82,7 +83,7 @@ F_WELCOME:
     rts
 
 .welcome_msg:
-    #d "Forth Interpreter for OTTO - ", FORTH_VERSION, 0x0A, 0x0D, 0x00
+    #d "Forth Interpreter for OTTO - ", FORTH_VERSION, " (", FORTH_BUILDDATE, ")", 0x0A, 0x0D, 0x00
 .exit_msg:
     #d "Use BYE to exit, FORTH to get info", 0x0A, 0x0D, 0x00
 
@@ -170,14 +171,8 @@ F_ELABORATE:
     sta F_EXECUTION_ABORT_FLAG
     jsr F_16_RESET_TOKEN_START
 
-    ; ; Init cache area
-    ; lda F_DICT_CACHE_START[15:8]
-    ; sta F_DICT_CACHE_START_MSB
-    ; sta F_LAST_ALLOC_DICT_CACHE_START_MSB
-    ; lda F_DICT_CACHE_START[7:0]
-    ; sta F_DICT_CACHE_START_LSB  
-    ; sta F_LAST_ALLOC_DICT_CACHE_START_LSB
-    ; jsr F_INIT_DICT_CACHE
+    ; Init cache area
+    jsr F_INIT_DICT_CACHE
 
 .loop:
     jsr F_TOKENIZE
@@ -185,28 +180,22 @@ F_ELABORATE:
     bcs .send_ok
     jsr F_TOKEN_TO_UPPERCASE
 
-; .check_cached:
-;     ; jmp .check_number ; skip cache
+.check_cached:
+    ; jmp .check_number ; skip cache
 
-;     jsr F_IS_DICT_CACHED
-;     bcc .check_number
-;     lda F_DICT_CACHE_TYPE
-;     cmp F_DICT_CACHE_TYPE_BUILT_IN
-;     beq .cached_builtin
-;     cmp F_DICT_CACHE_TYPE_USER_DICT_CMD
-;     beq .cached_dictionary
+    jsr F_IS_DICT_CACHED
+    bcc .check_number
+    lda F_DICT_CACHE_TYPE
+    cmp F_DICT_CACHE_RECORD_TYPE_BUILT_IN
+    beq .exec_builtin
+    cmp F_DICT_CACHE_RECORD_TYPE_USER_DICT_CMD
+    beq .cached_dictionary
+    jmp .check_number
 
-;     jmp .check_number
-
-; .cached_builtin:
-;     jsr F_GET_CACHED_BUILT_IN
-;     jmp .exec_builtin
-
-; .cached_dictionary:
-;     jsr F_GET_CACHED_USER_DICT_CMD
-;     jsr F_EXECUTE_CACHED_USER_DICT_CMD
-;     jmp .next_token
-
+.cached_dictionary:
+    jsr F_EXECUTE_CACHED_USER_DICT_CMD
+    jmp .next_token
+    
 .check_number:
     jsr F_TOKEN_IS_NUMBER
     bcc .check_builtin  
@@ -217,7 +206,7 @@ F_ELABORATE:
 .check_builtin:
     jsr F_TOKEN_IS_BUILTIN
     bcc .check_dictionary
-    ; jsr F_ADD_BUILT_IN_TO_DICT_CACHE
+    jsr F_ADD_BUILT_IN_TO_DICT_CACHE
 .exec_builtin:
     #d 0x93, 0x00, F_DICT_EXEC_BUILT_IN_PTR_PAGE[15:8],  F_DICT_EXEC_BUILT_IN_PTR_PAGE[7:0]
     jmp .next_token

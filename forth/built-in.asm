@@ -627,6 +627,15 @@ F_BI_FORTH:
     lda F_DICT_USER_START[7:0]
     jsr ACIA_SEND_HEX
     jsr ACIA_SEND_NEWLINE
+
+    ldd .cache_start_msg[15:8]
+    lde .cache_start_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda F_DICT_CACHE_START[15:8]
+    jsr ACIA_SEND_HEX
+    lda F_DICT_CACHE_START[7:0]
+    jsr ACIA_SEND_HEX
+    jsr ACIA_SEND_NEWLINE
     
     ldd .dictionary_msg[15:8]
     lde .dictionary_msg[7:0]
@@ -654,6 +663,8 @@ F_BI_FORTH:
     #d "-> stack starts at address:       0x", 0x00 
 .dictionary_start_msg:
     #d "-> dictionary starts at address:  0x", 0x00 
+.cache_start_msg:
+    #d "-> cache starts at address:       0x", 0x00 
 .dictionary_msg:
     #d "Dictionary definitions:           ", 0x00 
 .dictionary_separator:

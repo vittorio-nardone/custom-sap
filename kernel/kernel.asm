@@ -53,7 +53,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.29"
+#const KERNEL_VERSION = "v1.2.32"
+#const KERNEL_BUILDDATE = "05/24/2025"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -575,7 +576,7 @@ main:
 
 .menu_help_msg:
     #d 0x0A, 0x0D, 0x0A, 0x0D
-    #d "Project OTTO Kernel - ", KERNEL_VERSION, 0x0A, 0x0D, 0x0A, 0x0D
+    #d "Project OTTO Kernel - ", KERNEL_VERSION, " (", KERNEL_BUILDDATE, ")", 0x0A, 0x0D, 0x0A, 0x0D
     #d "Valid commands (default address 0x8400):", 0x0A, 0x0D
     #d "   ayyxxxx  - disAssemble memory ", 0x0A, 0x0D
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D

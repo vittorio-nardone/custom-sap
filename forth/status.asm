@@ -3,17 +3,18 @@
 ; All status related stuff (save/restore status)
 ; **********************************************************
 
-; STATUS records (10 bytes)
+; STATUS records (9 bytes)
 ;    - F_INPUT_BUFFER_COUNT_LSB
 ;    - F_INPUT_BUFFER_COUNT_MSB
 ;    - F_TOKEN_START_LSB
 ;    - F_TOKEN_START_MSB
 ;    - F_TOKEN_COUNT_LSB
 ;    - F_TOKEN_COUNT_MSB
-;    - F_DICT_CACHE_START_LSB
-;    - F_DICT_CACHE_START_MSB
+;    - F_DICT_CACHE_SELECTED_AREA
 ;    - F_INPUT_BUFFER_START_LSB
 ;    - F_INPUT_BUFFER_START_MSB
+
+#const F_STATUS_RECORD_SIZE = 0x09
 
 F_PUSH_STATUS:
     ldd F_STATUS_START[15:8]
@@ -23,7 +24,7 @@ F_PUSH_STATUS:
     ldx 0x00
 
 .go_to_record_loop:
-    lda 0x0A ; record size
+    lda F_STATUS_RECORD_SIZE ; record size
     clc
     adc e
     tae
@@ -53,10 +54,7 @@ F_PUSH_STATUS:
     lda F_TOKEN_COUNT_MSB
     sta de, x
     inx
-    lda F_DICT_CACHE_START_LSB
-    sta de, x
-    inx
-    lda F_DICT_CACHE_START_MSB
+    lda F_DICT_CACHE_SELECTED_AREA
     sta de, x
     inx
     lda F_INPUT_BUFFER_START_LSB
@@ -75,7 +73,7 @@ F_PULL_STATUS:
     beq .pull_vars
     ldx 0x00
 .go_to_record_loop:
-    lda 0x0A ; record size
+    lda F_STATUS_RECORD_SIZE ; record size
     clc
     adc e
     tae
@@ -105,14 +103,12 @@ F_PULL_STATUS:
     sta F_TOKEN_COUNT_MSB
     inx
     lda de, x
-    sta F_DICT_CACHE_START_LSB
-    inx
-    lda de, x
-    sta F_DICT_CACHE_START_MSB
+    sta F_DICT_CACHE_SELECTED_AREA
     inx
     lda de, x
     sta F_INPUT_BUFFER_START_LSB
     inx
     lda de, x
     sta F_INPUT_BUFFER_START_MSB
+    jsr F_SELECT_DICT_CACHE_AREA
     rts
