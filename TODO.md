@@ -37,15 +37,7 @@ INC and DEC for a 16bit integer in memory. The u16/u24 value is the address of t
 Example: INW meaning is "increment word" (unsigned 16bit integer)
 ```sh
 INW 0x0112 
-DEW      
-```
-
-Note: probably not possible with current HW. A double check is required in microcode execution.
-It's possible to perform a word increment in this way:
-```6502
-INC 0x0112  ; inc LSB
-BNE .skip   ; is Zero? if yes, carry to add to MSB
-INC 0x0113  ; inc MSB
+DEW 0x0112     
 ```
 
 ## [assembly] JEQ / JNE  

@@ -137,6 +137,7 @@ DEFAULT_T0 = [ CC_LOAD_PC_POINTED_RAM_INTO_IR + ['CHKI'], CC_PC_INCREMENT ]
     #             "b": [0x12, 0x34],                            <- add bytes after op code
     #             "f": ['Z'],                                   <- flags affected
     #             "v": "u8",                                    <- operand value definition (u8/u16)
+    #             "w": True,                                    <- boolean, True if operator is a 16bit Word (ptr to LSB provided, ptr to MSB calculated by assembler)
     #             "op": "a",                                    <- operand label (no real value) 
     #             "i": "x",                                     <- index registry (only when v defined)  
     #             "t0": [                                       <- fetch cycles (if not defined, the default one is used)
@@ -1851,6 +1852,29 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO  
                     ] },  
 
+    "INWp": {   "c": 0xF1,  
+                "d": "Increment Memory Word by One (zero page)",  
+                "f": ['C'],  
+                "v": "u16",
+                "w": True,
+                "sim": "self.math_operation('inc', operator_mem_operands_size=4, flags=['C'])",
+                "m": [  
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID', 'LC'], 
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_CHKC, #check carry, if not set save 3 clocks
+                        ['CPC'],
+                        ['CPC']
+                    ],
+                "true": [
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'MEMADDRVALID', 'LC'] + CC_ALUCARRY,
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'] 
+                    ] },  
+
     "INCa": {   "c": 0x52,  
                 "d": "Increment Memory by One (absolute)",  
                 "f": ['Z', 'N'],  
@@ -1914,6 +1938,29 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'MEMADDRVALID'] + CC_ALUCN, 
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'LZN', 'MEMADDRVALID'] + CC_ALU_DETECT_ZERO
                     ] },   
+
+    "DEWp": {   "c": 0xF2,  
+                "d": "Decrement Memory Word by One (zero page)",  
+                "f": ['C'],  
+                "v": "u16",
+                "w": True,
+                "sim": "self.math_operation('dec', operator_mem_operands_size=4, flags=['C'])",
+                "m": [  
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'LC', 'MEMADDRVALID'] + CC_ALUCN,
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_CHKC, #check carry, if not set save 3 clocks
+                        ['CPC'],
+                        ['CPC']
+                    ],
+                "true": [
+                        ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'LMARPAGEZERO'],
+                        ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'] 
+                    ] }, 
 
     "DECa": {   "c": 0x53,  
                 "d": "Decrement Memory by One (absolute)",  
@@ -3613,19 +3660,7 @@ INSTRUCTIONS_SET = dict(sorted({
                 "sim": "self.C = True\nself.PC += 1",
                 "m": [  
                         CC_SEC, 
-                     ] },              
-
-    # "NOC": {   "c": 0xB1,  
-    #             "d": "Not Carry Flag", 
-    #             "f": ['C'],
-    #             "sim": "self.C = True\nself.PC += 1",
-    #             "m": [  
-    #                     CC_CHKC,
-    #                     CC_SEC,
-    #                 ],
-    #             "true": [
-    #                     ['notCLC'],
-    #                 ] },                             
+                     ] },                                         
 
     "NOP": {    "c": 0xEA,  
                 "d": "No Operation",    
@@ -3813,6 +3848,7 @@ def generateRuldef():
                             ('\t\tassert(value >= 0x10000)\n\t\tassert(value <= 0xffffff)\n') if 'v' in INSTRUCTIONS_SET[i] and INSTRUCTIONS_SET[i]['v'] == 'u24' else '',
                             '\t\t0x', '{:02X}'.format(INSTRUCTIONS_SET[i]['c']), 
                             (' @ value') if 'v' in INSTRUCTIONS_SET[i] else '', 
+                            (' @ (value + 1)`16' ) if 'w' in INSTRUCTIONS_SET[i] else '',
                             ''.join([' @ ' + '0x' + '{:02X}'.format(x) for x in INSTRUCTIONS_SET[i]['b']]) if 'b' in INSTRUCTIONS_SET[i] else '',
                             '\n \t} \n'
                         ])
@@ -3911,7 +3947,7 @@ def generateIstructionsAsm():
                 if INSTRUCTIONS_SET[i]['c'] == x:
                     f.write(".OPCODE_0x{:02X}: \n    #d  0x{:02X}, 0x{:02X}, \"{}\", 0x00, \"{}\", 0x00\n".format(
                             INSTRUCTIONS_SET[i]['c'], 
-                            ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else 0) + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0),
+                            ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else 0) + ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'w' in INSTRUCTIONS_SET[i] else 0) + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0),
                             ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else 0),
                             i[:3]  + (' (' if i[3:6] == 'ind' else ''),
                             (' ' if (('op' in INSTRUCTIONS_SET[i]) and (i[3:6] != 'ind')) else '')    

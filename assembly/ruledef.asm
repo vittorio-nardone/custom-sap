@@ -374,6 +374,12 @@
 	DEE  => { 
 		0x2D
  	} 
+	; Decrement Memory Word by One (zero page) [C]
+	DEW {value: u16} => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xF2 @ value @ (value + 1)`16
+ 	} 
 	; Decrement Register X by One [Z N]
 	DEX  => { 
 		0xCA
@@ -436,6 +442,12 @@
 	; Increment Register E by One [Z N]
 	INE  => { 
 		0x2F
+ 	} 
+	; Increment Memory Word by One (zero page) [C]
+	INW {value: u16} => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xF1 @ value @ (value + 1)`16
  	} 
 	; Increment Register X by One [Z N]
 	INX  => { 

@@ -53,8 +53,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.32"
-#const KERNEL_BUILDDATE = "05/24/2025"
+#const KERNEL_VERSION = "v1.2.42"
+#const KERNEL_BUILDDATE = "05/25/2025"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -491,7 +491,7 @@ main:
     jmp .menu_disassembler_command_dump_value
 
 .menu_disassembler_command_dump_value_end:
-    ldx 0x03
+    ldx 0x04
 .menu_disassembler_command_dump_value_end_loop:
     cpx MAIN_MENU_OPCODE_LENGTH
     beq .menu_disassembler_command_print_prefix

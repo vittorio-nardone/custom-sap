@@ -8,39 +8,38 @@
     #outp 0
 }
 
+#const TEST_VALUE_LSB = 0x8080
+#const TEST_VALUE_MSB = 0x8081
+
 #bank ram   
-    
-    ldo 0x34
-    
-    lda .value[7:0]
-    sta .ptr
-    lda .value[15:8]
-    sta .ptr +1
-    
-    lda 0x27
-    sta (.ptr)
-    
-    lda 0x10
 
-    lda (.ptr)
-    tao
+    lda 0xFF
+    sta TEST_VALUE_LSB
+    lda 0x05
+    sta TEST_VALUE_MSB
 
-    cmp 0x27
+    inw TEST_VALUE_LSB
+
+    lda TEST_VALUE_LSB
+    cmp 0x00
     bne .fail
 
-    ldx 0x02
-    lda (.ptr),x
-    tao
+    lda TEST_VALUE_MSB
+    cmp 0x06
+    bne .fail
 
+    dew TEST_VALUE_LSB
+
+    lda TEST_VALUE_LSB
+    cmp 0xFF
+    bne .fail
+
+    lda TEST_VALUE_MSB
+    cmp 0x05
+    bne .fail
+    
+    ldo 0x00
     rts
-
-.ptr:
-    #d 0x00, 0x00
-
-.value:
-    #d 0x00
-    #d 0x15
-    #d 0x17
 
 .fail:
     ldo 0xFA

@@ -419,6 +419,10 @@ ISTRUCTIONS:
     #d  0x00, 0x00, "SBX", 0x00, " E", 0x00
 .OPCODE_0xF0: 
     #d  0x02, 0x02, "BEQ", 0x00, "", 0x00
+.OPCODE_0xF1: 
+    #d  0x04, 0x02, "INW", 0x00, "", 0x00
+.OPCODE_0xF2: 
+    #d  0x04, 0x02, "DEW", 0x00, "", 0x00
 .OPCODE_0xF7: 
     #d  0x00, 0x00, "DMP", 0x00, "", 0x00
 .OPCODE_0xFD: 
@@ -676,8 +680,8 @@ ISTRUCTIONS:
     #d .OPCODE_0xEE[15:8]
     #d .OPCODE_0xEF[15:8]
     #d .OPCODE_0xF0[15:8]
-    #d .OPCODE_NOTVALID[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0xF1[15:8]
+    #d .OPCODE_0xF2[15:8]
     #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_NOTVALID[15:8]
@@ -938,8 +942,8 @@ ISTRUCTIONS:
     #d .OPCODE_0xEE[7:0]
     #d .OPCODE_0xEF[7:0]
     #d .OPCODE_0xF0[7:0]
-    #d .OPCODE_NOTVALID[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0xF1[7:0]
+    #d .OPCODE_0xF2[7:0]
     #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_NOTVALID[7:0]

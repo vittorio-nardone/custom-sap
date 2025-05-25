@@ -297,7 +297,7 @@ F_DICTIONARY_USER_CMD_ADD:
     sta F_TOKEN_POS_MSB
     jsr F_16_SET_BUFFER_PTR_TO_TOKEN_POS
 .add_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     sta de, x
     dec F_DICT_ADD_USER_LABEL_COUNT
     beq .copy_cmd
@@ -316,7 +316,7 @@ F_DICTIONARY_USER_CMD_ADD:
     jsr F_16_SET_BUFFER_PTR_TO_TOKEN_POS
     jsr .incx
 .copy_cmd_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     sta de, x
     jsr F_16_INC_TOKEN_POS
     jsr .incx    
@@ -403,7 +403,7 @@ F_DICTIONARY_USER_VAR_ADD:
     sta F_TOKEN_POS_MSB
     jsr F_16_SET_BUFFER_PTR_TO_TOKEN_POS
 .add_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     sta de, x
     dec F_DICT_ADD_USER_LABEL_COUNT
     beq .set_var
@@ -496,7 +496,7 @@ F_BI_NEW_DEF:
 .find_label_loop:
     jsr F_16_INC_TOKEN_POS
     jsr F_16_INC_TOKEN_COUNT
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20 
     beq .next_char
     cmp 0x0D
@@ -513,7 +513,7 @@ F_BI_NEW_DEF:
     sta F_DICT_ADD_USER_LABEL_START_MSB
     ldy 0x00
 .label_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20
     beq .label_end
     cmp 0x0D
@@ -539,7 +539,7 @@ F_BI_NEW_DEF:
     jsr F_16_INC_TOKEN_COUNT
 
 .find_cmd_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20 
     beq .next_char2
     cmp 0x0D
@@ -560,7 +560,7 @@ F_BI_NEW_DEF:
     sta F_DICT_ADD_USER_COUNT_LSB
     sta F_DICT_ADD_USER_COUNT_MSB
 .cmd_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp ";" 
     beq .add  
     inc F_DICT_ADD_USER_COUNT_LSB
@@ -629,7 +629,7 @@ F_BI_VARIABLE:
 .find_label_loop:
     jsr F_16_INC_TOKEN_POS
     jsr F_16_INC_TOKEN_COUNT
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20 
     beq .next_char
     cmp 0x0D
@@ -646,7 +646,7 @@ F_BI_VARIABLE:
     sta F_DICT_ADD_USER_LABEL_START_MSB
     ldy 0x00
 .label_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20
     beq .label_end
     cmp 0x0D
@@ -780,7 +780,7 @@ F_BI_CONSTANT:
 .find_label_loop:
     jsr F_16_INC_TOKEN_POS
     jsr F_16_INC_TOKEN_COUNT
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20 
     beq .next_char
     cmp 0x0D
@@ -797,7 +797,7 @@ F_BI_CONSTANT:
     sta F_DICT_ADD_USER_LABEL_START_MSB
     ldy 0x00
 .label_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20
     beq .label_end
     cmp 0x0D

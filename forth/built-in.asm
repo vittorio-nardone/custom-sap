@@ -89,7 +89,7 @@ F_BI_ABORT_QUOTE:
 .loop:
     jsr F_16_INC_TOKEN_POS
     jsr F_16_INC_TOKEN_COUNT
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x22
     beq .abort_if_needed
     ldd F_EXECUTION_ABORT_FLAG
@@ -325,7 +325,7 @@ F_BI_DOT_QUOTE:
 .loop:
     jsr F_16_INC_TOKEN_POS
     jsr F_16_INC_TOKEN_COUNT
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x22
     beq .end
     jsr ACIA_SEND_CHAR
@@ -355,7 +355,7 @@ F_BI_COMMENT:
 .loop:
     jsr F_16_INC_TOKEN_POS
     jsr F_16_INC_TOKEN_COUNT
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp ")"
     beq .end
     jsr F_16_CHECK_POS_END_OF_FILE
@@ -383,7 +383,7 @@ F_BI_COMMENT_BACKSLASH:
 .loop:
     jsr F_16_INC_TOKEN_POS
     jsr F_16_INC_TOKEN_COUNT
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x0D
     beq .end
     jsr F_16_CHECK_POS_END_OF_FILE

@@ -51,9 +51,14 @@ F_16_CHECK_MAX_INPUT_SIZE:
     clc
     rts 
 
-F_16_GET_INPUT_BYTE:
-    lda (F_INPUT_BUFFER_PTR_LSB)
-    rts
+#ruledef
+{
+    F_MACRO_16_GET_INPUT_BYTE => asm 
+    {
+        lda (F_INPUT_BUFFER_PTR_LSB)
+    }
+}
+
 
 F_16_SET_INPUT_BYTE:
     sta (F_INPUT_BUFFER_PTR_LSB)

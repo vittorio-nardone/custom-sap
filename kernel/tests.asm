@@ -774,14 +774,96 @@ MICROCODE_test:
     cmp (.test34ptr2),x
     bne .fail
 
-
-    jmp .test99
+    jmp .test35
 
 .test34ptr1:
     #d 0xFF, 0x80       ; PTR to 0x80FF (to test carry case)
 
 .test34ptr2:
     #d 0x15, 0x80       ; PTR to 0x8015(to test non-carry case)
+
+
+
+.test35:                ; Test #35: INW
+    ldo 0x35
+    lda 0x10            ; simple increment
+    sta 0x8080
+    lda 0x00
+    sta 0x8081
+    inw 0x8080
+    bcs .fail
+
+    lda 0x8080
+    cmp 0x11
+    bne .fail
+    lda 0x8081
+    cmp 0x00
+    bne .fail
+    
+    lda 0xFF            ; inc MSB case
+    sta 0x8080
+    lda 0x04
+    sta 0x8081
+    inw 0x8080
+    bcs .fail
+
+    lda 0x8080
+    cmp 0x00
+    bne .fail
+    lda 0x8081
+    cmp 0x05
+    bne .fail
+
+    lda 0xFF            ; carry case
+    sta 0x8080
+    lda 0xFF
+    sta 0x8081
+    inw 0x8080
+    bcc .fail
+
+.test36:                ; Test #36: DEW
+    ldo 0x35
+    lda 0x10            ; simple decrement
+    sta 0x8080
+    lda 0x00
+    sta 0x8081
+    dew 0x8080
+    bcs .fail
+
+    lda 0x8080
+    cmp 0x0F
+    bne .fail
+    lda 0x8081
+    cmp 0x00
+    bne .fail
+    
+    lda 0x00            ; dec MSB case
+    sta 0x8080
+    lda 0x04
+    sta 0x8081
+    dew 0x8080
+    bcs .fail
+
+    lda 0x8080
+    cmp 0xFF
+    bne .fail
+    lda 0x8081
+    cmp 0x03
+    bne .fail
+
+    lda 0x00            ; carry case
+    sta 0x8080
+    lda 0x00
+    sta 0x8081
+    dew 0x8080
+    bcc .fail
+
+    lda 0x8080
+    cmp 0xFF
+    bne .fail
+    lda 0x8081
+    cmp 0xFF
+    bne .fail
 
 .test99:                 ; Test #99: Test Stack (> 256 values)
     ldo 0x99

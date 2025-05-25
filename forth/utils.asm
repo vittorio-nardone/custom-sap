@@ -8,7 +8,7 @@ F_TOKENIZE:
     jsr F_16_RESET_TOKEN_COUNT
     jsr F_16_SET_TOKEN_POS_TO_START
 .skip_spaces:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20
     beq .next_char
     cmp 0x0D
@@ -21,7 +21,7 @@ F_TOKENIZE:
     bcc .skip_spaces
     jmp .end
 .loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20
     beq .end
     cmp 0x0D
@@ -112,7 +112,7 @@ F_FIND_TOKEN:
 F_PRINT_TOKEN:
     jsr F_16_SET_TOKEN_POS_TO_START
 .loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     jsr ACIA_SEND_CHAR
     jsr F_16_INC_TOKEN_POS
     jsr F_16_CHECK_END_OF_TOKEN
@@ -122,7 +122,7 @@ F_PRINT_TOKEN:
 F_TOKEN_IS_NUMBER:
     jsr F_16_SET_TOKEN_POS_TO_START
 .loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp 0x30
     bcc .end
     cmp 0x3A
@@ -151,7 +151,7 @@ F_TOKEN_TO_NUMBER:
     adc D
     sta F_TOKEN_VALUE
 .add:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     sec 
     sbc #0x30   
     clc
@@ -165,7 +165,7 @@ F_TOKEN_TO_NUMBER:
 F_TOKEN_TO_UPPERCASE:
     jsr F_16_SET_TOKEN_POS_TO_START
 .loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp "a" 
     bcc .skip
     cmp "z"+1      
@@ -188,7 +188,7 @@ F_COMPARE_TOKEN:
     ldx 0x00
 
 .cmp_loop:
-    jsr F_16_GET_INPUT_BYTE
+    F_MACRO_16_GET_INPUT_BYTE
     cmp "a" 
     bcc .skip
     cmp "z"+1      

@@ -226,7 +226,9 @@ class OttoCPU:
     def rts(self):
         self.PC = self.pop() + (self.pop() << 8) + (self.pop() << 16) + 4
 
-    def math_operation(self, operation, current_value=None, operator_immediate=None, operator_registry=None, operator_mem_operands_size=None, operator_index=None, extra_bytes=0, indirect=None):
+    def math_operation(self, operation, current_value=None, 
+                       operator_immediate=None, operator_registry=None, operator_mem_operands_size=None, operator_index=None, 
+                       extra_bytes=0, indirect=None, flags=['Z', 'N']):
 
         operator = None
         if (operator_immediate):
@@ -238,7 +240,11 @@ class OttoCPU:
             self.MAR += 1
             self.MAR = self.read_byte(self.MAR) * 256 + MARl + (operator_index if operator_index != None else 0)    
             operator = self.read_byte(self.MAR)
-            self.PC += operator_mem_operands_size + 1 + extra_bytes      
+            self.PC += operator_mem_operands_size + 1 + extra_bytes  
+        elif (operator_mem_operands_size == 4):
+            self.MAR = self.get_address_from_operands(2)
+            operator = self.read_byte(self.MAR) + self.read_byte(self.MAR +1) * 256
+            self.PC += operator_mem_operands_size + 1 + extra_bytes
         elif (operator_mem_operands_size):
             self.MAR = self.get_address_from_operands(operator_mem_operands_size, operator_index)
             operator = self.read_byte(self.MAR)
@@ -319,7 +325,11 @@ class OttoCPU:
                 result = current_value | operator
             case 'inc':
                 result = operator + 1
-                if operator_mem_operands_size:
+                if operator_mem_operands_size == 4:
+                    self.C = result > 0xFFFF
+                    self.write_byte(self.MAR, result & 0xFF)
+                    self.write_byte(self.MAR + 1, result >> 8)
+                elif operator_mem_operands_size:
                     self.write_byte(self.MAR, result)
                 elif operator_registry:
                     setattr(self, operator_registry, result & 0xFF)
@@ -327,6 +337,10 @@ class OttoCPU:
                     raise ValueError("operator_immediate not supported for INC operation")
             case 'dec':
                 result = operator - 1
+                if operator_mem_operands_size == 4:
+                    self.C = result < 0
+                    self.write_byte(self.MAR, result & 0xFF)
+                    self.write_byte(self.MAR + 1, result >> 8)
                 if operator_mem_operands_size:
                     self.write_byte(self.MAR, result)
                 elif operator_registry:
@@ -337,8 +351,10 @@ class OttoCPU:
                 raise ValueError(f"Invalid operation: {operation}")
     
         result &= 0xFF
-        self.update_zero_flag(result)
-        self.update_negative_flag(result)
+        if 'Z' in flags:
+            self.update_zero_flag(result)
+        if 'N' in flags:
+            self.update_negative_flag(result)
         return result
 
     def get_address_from_operands(self, size, index=None):
@@ -480,6 +496,7 @@ if __name__ == "__main__":
         observer.start()
     
     # Run the simulator
+    print("-> system boot")
     old_settings = termios.tcgetattr(sys.stdin)
     try:
         tty.setcbreak(sys.stdin.fileno())
