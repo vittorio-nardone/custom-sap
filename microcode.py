@@ -1950,16 +1950,17 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'LC', 'MEMADDRVALID'] + CC_ALUCN,
-                        ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_CHKC, #check carry, if not set save 3 clocks
-                        ['CPC'],
-                        ['CPC']
-                    ],
-                "true": [
+                        ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'] + CC_CHKC, #check carry, if set save 3 clocks
+
                         ['ERAM', 'LMARH', 'EPCADDR', 'MEMADDRVALID'], 
                         ['CPC', 'LMARPAGEZERO'],
                         ['ERAM', 'LMARL', 'EPCADDR', 'MEMADDRVALID'], 
-                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'LC', 'MEMADDRVALID'] + CC_ALUCARRY,
+                        ['CPC', 'EMAR', 'ERAM', 'LRALU-IN', 'LRALU-OUT', 'ALUS0', 'ALUS1', 'ALUS2', 'ALUS3', 'LC', 'MEMADDRVALID'] + CC_ALUCN,
                         ['ERALU-OUT', 'EMAR', 'WRAM', 'MEMADDRVALID'] 
+                    ],
+                "true": [
+                        ['CPC'],
+                        ['CPC']
                     ] }, 
 
     "DECa": {   "c": 0x53,  
@@ -3912,7 +3913,7 @@ def generateIstructionsCsv():
                 '"' + modes[i[3:]] + '"', 
                 len(INSTRUCTIONS_SET[i]['m']) + (len(INSTRUCTIONS_SET[i]['t0']) if 't0' in INSTRUCTIONS_SET[i] else len(DEFAULT_T0)),
                 (len(INSTRUCTIONS_SET[i]['true']) + 1 + (len(INSTRUCTIONS_SET[i]['t0']) if 't0' in INSTRUCTIONS_SET[i] else len(DEFAULT_T0))) if 'true' in INSTRUCTIONS_SET[i] else '',
-                1 + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0) + (values_len[INSTRUCTIONS_SET[i]['v']] if 'v' in INSTRUCTIONS_SET[i] else 0),
+                1 + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0) + (values_len[INSTRUCTIONS_SET[i]['v']] if 'v' in INSTRUCTIONS_SET[i] else 0) + (values_len[INSTRUCTIONS_SET[i]['v']] if 'w' in INSTRUCTIONS_SET[i] else 0),
                 '"' + ' '.join(INSTRUCTIONS_SET[i]['f'] if 'f' in INSTRUCTIONS_SET[i] else []) + '"', 
                 '"' + INSTRUCTIONS_SET[i]['d'] + '"',   
                 '"' + i[:3] 

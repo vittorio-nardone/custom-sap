@@ -53,8 +53,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.42"
-#const KERNEL_BUILDDATE = "05/25/2025"
+#const KERNEL_VERSION = "v1.2.48"
+#const KERNEL_BUILDDATE = "05/26/2025"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"

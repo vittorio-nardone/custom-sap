@@ -338,7 +338,7 @@ class OttoCPU:
             case 'dec':
                 result = operator - 1
                 if operator_mem_operands_size == 4:
-                    self.C = result < 0
+                    self.C = result >= 0
                     self.write_byte(self.MAR, result & 0xFF)
                     self.write_byte(self.MAR + 1, result >> 8)
                 if operator_mem_operands_size:
@@ -524,7 +524,7 @@ if __name__ == "__main__":
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
     
-    print("\nSystem halted.")
+    print(f"\nSystem halted. OUT registry: 0x{cpu.OUT:02X}")
             
  
     

@@ -822,42 +822,37 @@ MICROCODE_test:
     bcc .fail
 
 .test36:                ; Test #36: DEW
-    ldo 0x35
+    ldo 0x36
     lda 0x10            ; simple decrement
     sta 0x8080
     lda 0x00
     sta 0x8081
     dew 0x8080
-    bcs .fail
-
+    bcc .fail
     lda 0x8080
     cmp 0x0F
     bne .fail
     lda 0x8081
     cmp 0x00
     bne .fail
-    
     lda 0x00            ; dec MSB case
     sta 0x8080
     lda 0x04
     sta 0x8081
     dew 0x8080
-    bcs .fail
-
+    bcc .fail
     lda 0x8080
     cmp 0xFF
     bne .fail
     lda 0x8081
     cmp 0x03
     bne .fail
-
     lda 0x00            ; carry case
     sta 0x8080
     lda 0x00
     sta 0x8081
     dew 0x8080
-    bcc .fail
-
+    bcs .fail
     lda 0x8080
     cmp 0xFF
     bne .fail
