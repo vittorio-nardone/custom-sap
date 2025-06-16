@@ -3776,7 +3776,35 @@ def verifyInstructionSet():
                 raise Exception("Total steps greater than 16 in instruction '" + inst + "' and 'true' section defined")
             if len(INSTRUCTIONS_SET[inst]['true']) > 16:
                 raise Exception("Total 'true' steps greater than 16 in instruction '" + inst + "'")
+            
+    for inst in INSTRUCTIONS_SET.keys():
+        cycles = countCycles(inst)
+        INSTRUCTIONS_SET[inst]['cycles'] = cycles[0]
+        INSTRUCTIONS_SET[inst]['cycles_true'] = cycles[1]
+
     return
+
+##################################################################
+## Count cycles of an instruction
+##
+##
+def countCycles(inst):
+    std_cycles = len(INSTRUCTIONS_SET[inst]['m']) + (len(INSTRUCTIONS_SET[inst]['t0']) if 't0' in INSTRUCTIONS_SET[inst] else len(DEFAULT_T0))
+    if 'true' in INSTRUCTIONS_SET[inst]:
+        branch_cycles = 0
+        branch_found = False
+        for t in INSTRUCTIONS_SET[inst]['m']:
+            branch_cycles += 1
+            if set(CC_CHKC).issubset(set(t)) or set(CC_CHKO).issubset(set(t)) or set(CC_CHKZ).issubset(set(t)) or set(CC_CHKN).issubset(set(t)):
+                branch_found = True
+                break
+        if not branch_found:
+            raise Exception("True defined but no condition check found in instruction '" + inst + "'")
+        branch_cycles += len(INSTRUCTIONS_SET[inst]['true']) + (len(INSTRUCTIONS_SET[inst]['t0']) if 't0' in INSTRUCTIONS_SET[inst] else len(DEFAULT_T0))
+    else:
+        branch_cycles = None
+
+    return std_cycles, branch_cycles
 
 ##################################################################
 ## Verify CONTROL_BITS
@@ -3905,14 +3933,14 @@ def generateIstructionsCsv():
     }
 
     with open('istructions.csv', 'w') as f:
-        f.write("Opcode,Instruction,Mode,Cycles,Cycles when condition is true (min),Len,Flags,Description,Example\n")
+        f.write("Opcode,Instruction,Mode,Cycles,Cycles (true condition),Len,Flags,Description,Example\n")
         for i in INSTRUCTIONS_SET:
             f.write("0x{:02X},{},{},{},{},{},{},{},{}\n".format(
                 INSTRUCTIONS_SET[i]['c'], 
                 '"' + i[:3] + '"',
                 '"' + modes[i[3:]] + '"', 
-                len(INSTRUCTIONS_SET[i]['m']) + (len(INSTRUCTIONS_SET[i]['t0']) if 't0' in INSTRUCTIONS_SET[i] else len(DEFAULT_T0)),
-                (len(INSTRUCTIONS_SET[i]['true']) + 1 + (len(INSTRUCTIONS_SET[i]['t0']) if 't0' in INSTRUCTIONS_SET[i] else len(DEFAULT_T0))) if 'true' in INSTRUCTIONS_SET[i] else '',
+                INSTRUCTIONS_SET[i]['cycles'],
+                INSTRUCTIONS_SET[i]['cycles_true'] if INSTRUCTIONS_SET[i]['cycles_true'] != None else 'N/A',
                 1 + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0) + (values_len[INSTRUCTIONS_SET[i]['v']] if 'v' in INSTRUCTIONS_SET[i] else 0) + (values_len[INSTRUCTIONS_SET[i]['v']] if 'w' in INSTRUCTIONS_SET[i] else 0),
                 '"' + ' '.join(INSTRUCTIONS_SET[i]['f'] if 'f' in INSTRUCTIONS_SET[i] else []) + '"', 
                 '"' + INSTRUCTIONS_SET[i]['d'] + '"',   
