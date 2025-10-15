@@ -1,4 +1,4 @@
-from microcode import INSTRUCTIONS_SET
+from microcode import INSTRUCTIONS_SET, verifyInstructionSet
 from serial import Serial
 from virtualserialports import VirtualSerialPorts
 import sys
@@ -53,12 +53,18 @@ class OttoCPU:
         # Initialize instruction set
         self.instructions = {}
         self._init_instructions()
+        self.cycles = 0
     
     def _init_instructions(self):
         """Initialize the instruction set"""
+        verifyInstructionSet()
         for key, value in INSTRUCTIONS_SET.items():
             if value.get('sim',None) is not None:
-                self.instructions[value['c']] = value['sim']
+                self.instructions[value['c']] = {
+                    'sim': value['sim'], 
+                    'cycles': value['cycles'], 
+                    'cycles_true': value['cycles_true']
+                }
             else:
                 print(f"-> warning: instruction 0x{value['c']:02X} - {key[:3]} not implemented")
     
@@ -120,10 +126,11 @@ class OttoCPU:
         # Fetch
         opcode = self.memory[self.PC]
         self.IR = opcode
-        
         # Decode and Execute
+        self.true_condition = False
         if opcode in self.instructions:
-            exec(self.instructions[opcode])
+            exec(self.instructions[opcode]['sim'])
+            self.cycles += self.instructions[opcode]['cycles_true'] if self.true_condition else self.instructions[opcode]['cycles']
         else:
             raise Exception(f"Unknown opcode: 0x{opcode:02X}")
     
@@ -154,8 +161,8 @@ class OttoCPU:
         if (immediate):
             result = self.read_byte(self.PC+1)
             self.PC += 2
-        elif (indirect) and (mem_operands_size == 2):
-            self.MAR = self.get_address_from_operands(mem_operands_size)
+        elif (indirect) and (mem_operands_size in [2,4]):
+            self.MAR = self.get_address_from_operands(2)
             self.PC += mem_operands_size + 1
 
             MARl = self.read_byte(self.MAR)

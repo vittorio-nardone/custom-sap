@@ -13,7 +13,11 @@
 
 #bank ram   
 
+    dmp ; reset cycles counter
+    ldx 0xFF
+.loop:    
     lda 0xFF
+
     sta TEST_VALUE_LSB
     lda 0x05
     sta TEST_VALUE_MSB
@@ -38,7 +42,11 @@
     cmp 0x05
     bne .fail
     
+    dex
+    bne .loop
+
     ldo 0x00
+    dmp ; print total cycles count
     rts
 
 .fail:

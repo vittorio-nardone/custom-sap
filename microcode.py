@@ -3340,7 +3340,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BEQp": {   "c": 0xF0,  
                 "d": "Branch on Result Zero (zero page)", 
                 "v": "u16",
-                "sim": "self.branch('beq', mem_operands_size=2)",
+                "sim": "self.branch('beq', mem_operands_size=2)\nself.true_condition = self.Z",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
@@ -3355,7 +3355,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BNEp": {   "c": 0xD0,  
                 "d": "Branch on Result not Zero (zero page)", 
                 "v": "u16",
-                "sim": "self.branch('bne', mem_operands_size=2)",
+                "sim": "self.branch('bne', mem_operands_size=2)\nself.true_condition = self.Z",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
@@ -3370,7 +3370,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BCSp": {   "c": 0xB0,  
                 "d": "Branch on Carry Set (zero page)", 
                 "v": "u16",
-                "sim": "self.branch('bcs', mem_operands_size=2)",
+                "sim": "self.branch('bcs', mem_operands_size=2)\nself.true_condition = self.C",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
@@ -3385,7 +3385,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BCCp": {   "c": 0x90,  
                 "d": "Branch on Carry Clear (zero page)", 
                 "v": "u16",
-                "sim": "self.branch('bcc', mem_operands_size=2)",
+                "sim": "self.branch('bcc', mem_operands_size=2)\nself.true_condition = self.C",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
@@ -3400,7 +3400,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BMIp": {   "c": 0x30,  
                 "d": "Branch on Result Minus (zero page)", 
                 "v": "u16",
-                "sim": "self.branch('bmi', mem_operands_size=2)",
+                "sim": "self.branch('bmi', mem_operands_size=2)\nself.true_condition = self.N",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
@@ -3415,7 +3415,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BPLp": {   "c": 0x10,  
                 "d": "Branch on Result Plus (zero page)", 
                 "v": "u16",
-                "sim": "self.branch('bpl', mem_operands_size=2)",
+                "sim": "self.branch('bpl', mem_operands_size=2)\nself.true_condition = self.N",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
@@ -3430,7 +3430,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BEQa": {   "c": 0x23,  
                 "d": "Branch on Result Zero (absolute)", 
                 "v": "u24",
-                "sim": "self.branch('beq', mem_operands_size=3)",
+                "sim": "self.branch('beq', mem_operands_size=3)\nself.true_condition = self.Z",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['CPC'], 
@@ -3450,7 +3450,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BNEa": {   "c": 0x25,  
                 "d": "Branch on Result not Zero (absolute)", 
                 "v": "u24",
-                "sim": "self.branch('bne', mem_operands_size=3)",
+                "sim": "self.branch('bne', mem_operands_size=3)\nself.true_condition = self.Z",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKZ,
                         ['ESP', 'WRAM'] + CC_notETMP,
@@ -3470,7 +3470,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BCSa": {   "c": 0x22,  
                 "d": "Branch on Carry Set (absolute)", 
                 "v": "u24",
-                "sim": "self.branch('bcs', mem_operands_size=3)",
+                "sim": "self.branch('bcs', mem_operands_size=3)\nself.true_condition = self.C",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKC,
                         ['CPC'], 
@@ -3490,7 +3490,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BCCa": {   "c": 0x19,  
                 "d": "Branch on Carry Clear (absolute)", 
                 "v": "u24",
-                "sim": "self.branch('bcc', mem_operands_size=3)",
+                "sim": "self.branch('bcc', mem_operands_size=3)\nself.true_condition = self.C",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKC,
                         ['ESP', 'WRAM'] + CC_notETMP,
@@ -3510,7 +3510,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BMIa": {   "c": 0x24,  
                 "d": "Branch on Result Minus (absolute)", 
                 "v": "u24",
-                "sim": "self.branch('bmi', mem_operands_size=3)",
+                "sim": "self.branch('bmi', mem_operands_size=3)\nself.true_condition = self.N",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKN,
                         ['CPC'], 
@@ -3530,7 +3530,7 @@ INSTRUCTIONS_SET = dict(sorted({
     "BPLa": {   "c": 0x27,  
                 "d": "Branch on Result Plus (absolute)", 
                 "v": "u24",
-                "sim": "self.branch('bpl', mem_operands_size=3)",
+                "sim": "self.branch('bpl', mem_operands_size=3)\nself.true_condition = self.N",
                 "m": [  
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKN,
                         ['ESP', 'WRAM'] + CC_notETMP,
@@ -3546,73 +3546,6 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'], 
                         ['CPC']
                     ] },            
-
-
-    # "BVCp": {   "c": 0x63,  
-    #             "d": "Branch on oVerflow Clear (zero page)", 
-    #             "v": "u16",
-    #             "m": [  
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKO,
-    #                     ['CPC'], 
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
-    #                     CC_notETMP  + CC_notLPCHP0
-    #                 ],
-    #             "true": [
-    #                     ['CPC'], 
-    #                     ['CPC'], 
-    #                 ] },         
-
-    # "BVSp": {   "c": 0x64,  
-    #             "d": "Branch on oVerflow Set (zero page)", 
-    #             "v": "u16",
-    #             "m": [  
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKO,
-    #                     ['CPC'], 
-    #                     ['CPC']
-    #                 ],
-    #             "true": [
-    #                     ['CPC'], 
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
-    #                     CC_notETMP  + CC_notLPCHP0 
-    #                 ] },    
-
-    # "BVCa": {   "c": 0x65,  
-    #             "d": "Branch on oVerflow Clear (absolute)", 
-    #             "v": "u24",
-    #             "m": [  
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKO,
-    #                     ['ESP', 'WRAM'] + CC_notETMP,
-    #                     ['CPC'], 
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
-    #                     ['CPC'], 
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
-    #                     CC_notETMP + CC_notLPCH,
-    #                     ['ESP', 'ERAM'] + CC_notLPCPAGE     
-    #                 ],
-    #             "true": [
-    #                     ['CPC'], 
-    #                     ['CPC'], 
-    #                     ['CPC']
-    #                 ] },    
-
-    # "BVSa": {   "c": 0x67,  
-    #             "d": "Branch on oVerflow Set (absolute)", 
-    #             "v": "u24",
-    #             "m": [  
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP + CC_CHKO,
-    #                     ['CPC'], 
-    #                     ['CPC'],
-    #                     ['CPC']
-    #                 ],
-    #             "true": [
-    #                     ['ESP', 'WRAM'] + CC_notETMP,
-    #                     ['CPC'], 
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
-    #                     ['CPC'], 
-    #                     ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL, 
-    #                     CC_notETMP + CC_notLPCH,
-    #                     ['ESP', 'ERAM'] + CC_notLPCPAGE     
-    #                 ] },    
 
     "LDOi": {   "c": 0xFE,  
                 "d": "Load Output with Memory (immediate)", 
@@ -3672,7 +3605,8 @@ INSTRUCTIONS_SET = dict(sorted({
                 "d": "Dump registers in the simulator logs", 
                 "sim": '\n'.join((
                     'self.PC += 1',
-                    'print(f"-> PC:{cpu.PC:06X} MAR:{cpu.MAR:06X} IR:{cpu.IR:02X} A:{cpu.A:02X} X:{cpu.X:02X} Y:{cpu.Y:02X} D:{cpu.D:02X} E:{cpu.E:02X} OUT:{cpu.OUT:02X} SP:{cpu.SP:04X} C:{cpu.C} Z:{cpu.Z} N:{cpu.N} O:{cpu.O}")',
+                    'print(f"-> CY:{cpu.cycles:06X}/{cpu.cycles/1000:09.2f} PC:{cpu.PC:06X} MAR:{cpu.MAR:06X} IR:{cpu.IR:02X} A:{cpu.A:02X} X:{cpu.X:02X} Y:{cpu.Y:02X} D:{cpu.D:02X} E:{cpu.E:02X} OUT:{cpu.OUT:02X} SP:{cpu.SP:04X} C:{cpu.C} Z:{cpu.Z} N:{cpu.N} O:{cpu.O}")',
+                    'self.cycles = 0'
                 )),   
                 "m": [ ] },
 
@@ -3789,18 +3723,20 @@ def verifyInstructionSet():
 ##
 ##
 def countCycles(inst):
+    if 'cycles' in INSTRUCTIONS_SET[inst]:
+        return INSTRUCTIONS_SET[inst]['cycles'], INSTRUCTIONS_SET[inst]['cycles_true'] if 'cycles_true' in INSTRUCTIONS_SET[inst] else None
     std_cycles = len(INSTRUCTIONS_SET[inst]['m']) + (len(INSTRUCTIONS_SET[inst]['t0']) if 't0' in INSTRUCTIONS_SET[inst] else len(DEFAULT_T0))
     if 'true' in INSTRUCTIONS_SET[inst]:
         branch_cycles = 0
         branch_found = False
-        for t in INSTRUCTIONS_SET[inst]['m']:
+        for t in (INSTRUCTIONS_SET[inst]['t0'] if 't0' in INSTRUCTIONS_SET[inst] else []) + INSTRUCTIONS_SET[inst]['m']:
             branch_cycles += 1
             if set(CC_CHKC).issubset(set(t)) or set(CC_CHKO).issubset(set(t)) or set(CC_CHKZ).issubset(set(t)) or set(CC_CHKN).issubset(set(t)):
                 branch_found = True
                 break
         if not branch_found:
             raise Exception("True defined but no condition check found in instruction '" + inst + "'")
-        branch_cycles += len(INSTRUCTIONS_SET[inst]['true']) + (len(INSTRUCTIONS_SET[inst]['t0']) if 't0' in INSTRUCTIONS_SET[inst] else len(DEFAULT_T0))
+        branch_cycles += len(INSTRUCTIONS_SET[inst]['true']) + (0 if 't0' in INSTRUCTIONS_SET[inst] else len(DEFAULT_T0))
     else:
         branch_cycles = None
 
