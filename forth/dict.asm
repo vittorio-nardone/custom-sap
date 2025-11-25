@@ -51,7 +51,8 @@ F_TOKEN_IS_USER_DICTIONARY:
     cmp (F_INPUT_BUFFER_PTR_LSB)
     bne .check_next_dictionary_item 
     inx
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jmp .check_char_match
 
 .end_of_dictionary_item:
@@ -180,7 +181,6 @@ F_EXECUTE_USER_DICTIONARY:
 F_EXECUTE_CACHED_USER_DICT_CMD:
     ldd F_DICT_EXEC_USER_MSB
     lde F_DICT_EXEC_USER_LSB
-
 .skip_label:
     ; calculate offset
     ldx 0x05
@@ -302,7 +302,8 @@ F_DICTIONARY_USER_CMD_ADD:
     dec F_DICT_ADD_USER_LABEL_COUNT
     beq .copy_cmd
     jsr .incx
-    jsr F_16_INC_TOKEN_POS
+inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jmp .add_loop
 .copy_cmd:
     ; null terminate label
@@ -318,7 +319,8 @@ F_DICTIONARY_USER_CMD_ADD:
 .copy_cmd_loop:
     F_MACRO_16_GET_INPUT_BYTE
     sta de, x
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jsr .incx    
     dec F_DICT_ADD_USER_COUNT_LSB
     bne .copy_cmd_loop   
@@ -408,7 +410,8 @@ F_DICTIONARY_USER_VAR_ADD:
     dec F_DICT_ADD_USER_LABEL_COUNT
     beq .set_var
     inx
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jmp .add_loop
 .set_var:
     ; null terminate label
@@ -457,7 +460,8 @@ F_FORGET_TOKEN_IN_USER_DICTIONARY:
     cmp (F_INPUT_BUFFER_PTR_LSB)
     bne .check_next_dictionary_item 
     inx
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jmp .check_char_match
 
 .end_of_dictionary_item:
@@ -494,8 +498,9 @@ F_BI_NEW_DEF_LABEL:
 F_BI_NEW_DEF:
     jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .find_label_loop:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20 
     beq .next_char
@@ -527,16 +532,18 @@ F_BI_NEW_DEF:
     jsr F_16_SET_INPUT_BYTE
 .skip:    
     iny
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     jsr F_16_CHECK_POS_END_OF_FILE
     bcc .label_loop
     jmp .error
 
 .label_end:
     sty F_DICT_ADD_USER_LABEL_COUNT
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
 
 .find_cmd_loop:
     F_MACRO_16_GET_INPUT_BYTE
@@ -546,8 +553,9 @@ F_BI_NEW_DEF:
     beq .next_char2
     jmp .cmd_read  
 .next_char2:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     jsr F_16_CHECK_POS_END_OF_FILE
     bcc .find_cmd_loop
     jmp .error
@@ -567,14 +575,15 @@ F_BI_NEW_DEF:
     bne .skip_count_msb_inc
     inc F_DICT_ADD_USER_COUNT_MSB
 .skip_count_msb_inc:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     jsr F_16_CHECK_POS_END_OF_FILE
     bcc .cmd_loop
     jmp .error
 
 .add:
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_COUNT_LSB
     jsr F_DICTIONARY_USER_CMD_ADD
     rts
 
@@ -627,8 +636,9 @@ F_BI_VARIABLE_LABEL:
 F_BI_VARIABLE:
     jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .find_label_loop:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20 
     beq .next_char
@@ -660,16 +670,18 @@ F_BI_VARIABLE:
     jsr F_16_SET_INPUT_BYTE
 .skip:    
     iny
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     jsr F_16_CHECK_POS_END_OF_FILE
     bcc .label_loop
     jmp .error
 
 .label_end:
     sty F_DICT_ADD_USER_LABEL_COUNT
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
 
     lda F_DICT_USER_DEF_TYPE_VARIABLE
     sta F_DICT_ADD_USER_DEF_TYPE
@@ -778,8 +790,9 @@ F_BI_CONSTANT_LABEL:
 F_BI_CONSTANT:
     jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .find_label_loop:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     F_MACRO_16_GET_INPUT_BYTE
     cmp 0x20 
     beq .next_char
@@ -811,16 +824,18 @@ F_BI_CONSTANT:
     jsr F_16_SET_INPUT_BYTE
 .skip:    
     iny
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     jsr F_16_CHECK_POS_END_OF_FILE
     bcc .label_loop
     jmp .error
 
 .label_end:
     sty F_DICT_ADD_USER_LABEL_COUNT
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
 
     lda F_DICT_USER_DEF_TYPE_CONSTANT
     sta F_DICT_ADD_USER_DEF_TYPE

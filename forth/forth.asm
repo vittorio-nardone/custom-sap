@@ -7,8 +7,8 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.1.157"
-#const FORTH_BUILDDATE = "10/15/2025"
+#const FORTH_VERSION = "v1.2.13"
+#const FORTH_BUILDDATE = "10/16/2025"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"
@@ -59,12 +59,15 @@ F_INIT:
     sta F_DO_LOOP_COUNT
     sta F_BEGIN_UNTIL_COUNT
     sta F_IF_THEN_COUNT  
+    sta F_MEMORY_INPUT_TOGGLE
     ; Init pointer to input buffer
     lda F_USER_INPUT_BUFFER_START[15:8]
     sta F_INPUT_BUFFER_START_MSB
     lda F_USER_INPUT_BUFFER_START[7:0]
     sta F_INPUT_BUFFER_START_LSB
-    ; reset fonts
+    ; Init pointer to memory input 
+    jsr F_MEMORY_INPUT_INIT
+    ; Reset fonts
     jsr VT100_TEXT_RESET
     rts
 
@@ -85,7 +88,7 @@ F_WELCOME:
 .welcome_msg:
     #d "Forth Interpreter for OTTO - ", FORTH_VERSION, " (", FORTH_BUILDDATE, ")", 0x0A, 0x0D, 0x00
 .exit_msg:
-    #d "Use BYE to exit, FORTH to get info", 0x0A, 0x0D, 0x00
+    #d "Use BYE to exit, FORTH to get info, ", 0xA7 ," to input from memory (0x8400)", 0x0A, 0x0D, 0x00
 
 ; **********************************************************
 ; Input
@@ -100,11 +103,16 @@ F_INPUT:
     jsr ACIA_SEND_STRING
 
 .loop:
+    lda F_MEMORY_INPUT_TOGGLE
+    bne .input_memory
     lda ACIA_CONTROL_STATUS_ADDR  ; read serial 1 status
     bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL ; check if Receive Data Register is full
     beq .loop
     lda ACIA_RW_DATA_ADDR  ; read serial 1 data
+.loop_data:
     tao
+    cmp 0xA7
+    beq .input_memory_start
     cmp 0x0D
     beq .cmd_entered
     cmp 0x7F
@@ -114,6 +122,22 @@ F_INPUT:
     jsr F_16_ADD_INPUT_BYTE
     jsr F_16_CHECK_MAX_INPUT_SIZE
     bcs .show_too_long_error
+    jmp .loop
+
+.input_memory:
+    lda (F_INPUT_TEST_PTR_LSB)
+    beq .input_memory_end
+    inw F_INPUT_TEST_PTR_LSB
+    jmp .loop_data
+
+.input_memory_end:
+    lda 0x00
+    sta F_MEMORY_INPUT_TOGGLE 
+    jmp .cmd_entered 
+
+.input_memory_start:
+    lda 0xFF    
+    sta F_MEMORY_INPUT_TOGGLE 
     jmp .loop
 
 .backspace:
@@ -161,6 +185,13 @@ F_INPUT:
 .prompt2_msg:
     #d ".. " 
     #d 0x00
+
+F_MEMORY_INPUT_INIT:
+    lda 0x84
+    sta F_INPUT_TEST_PTR_MSB
+    lda 0x00
+    sta F_INPUT_TEST_PTR_LSB
+    rts
 
 ; **********************************************************
 ; Execution
@@ -256,6 +287,12 @@ F_ELABORATE:
     sta F_DO_LOOP_COUNT
     sta F_BEGIN_UNTIL_COUNT
     sta F_IF_THEN_COUNT
+    sta F_MEMORY_INPUT_TOGGLE
+    ; Init pointer to input buffer
+    lda F_USER_INPUT_BUFFER_START[15:8]
+    sta F_INPUT_BUFFER_START_MSB
+    lda F_USER_INPUT_BUFFER_START[7:0]
+    sta F_INPUT_BUFFER_START_LSB
     rts
 
 .restore_status:

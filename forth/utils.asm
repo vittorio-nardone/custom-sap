@@ -15,8 +15,9 @@ F_TOKENIZE:
     beq .next_char
     jmp .loop
 .next_char:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_START
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_START_LSB
     jsr F_16_CHECK_POS_END_OF_FILE
     bcc .skip_spaces
     jmp .end
@@ -26,8 +27,9 @@ F_TOKENIZE:
     beq .end
     cmp 0x0D
     beq .end
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     jsr F_16_CHECK_POS_END_OF_FILE
     bcc .loop
 .end:
@@ -114,7 +116,8 @@ F_PRINT_TOKEN:
 .loop:
     F_MACRO_16_GET_INPUT_BYTE
     jsr ACIA_SEND_CHAR
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jsr F_16_CHECK_END_OF_TOKEN
     bcc .loop
     rts
@@ -127,7 +130,8 @@ F_TOKEN_IS_NUMBER:
     bcc .end
     cmp 0x3A
     bcs .end
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jsr F_16_CHECK_END_OF_TOKEN
     bcc .loop
     sec
@@ -157,7 +161,8 @@ F_TOKEN_TO_NUMBER:
     clc
     adc F_TOKEN_VALUE
     sta F_TOKEN_VALUE
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jsr F_16_CHECK_END_OF_TOKEN
     bcc .loop
     rts
@@ -174,7 +179,8 @@ F_TOKEN_TO_UPPERCASE:
     sbc 0x20
     jsr F_16_SET_INPUT_BYTE
 .skip:
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jsr F_16_CHECK_END_OF_TOKEN
     bcc .loop
     rts
@@ -202,7 +208,8 @@ F_COMPARE_TOKEN:
     cmp F_CMP_CURRENT_CHAR
     bne .not_equal
     inx
-    jsr F_16_INC_TOKEN_POS
+    inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jmp .cmp_loop
 .check_token_length:
     cpx F_TOKEN_COUNT_LSB

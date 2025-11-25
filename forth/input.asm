@@ -11,13 +11,6 @@ F_16_RESET_INPUT:
     jsr F_16_RESET_BUFFER_PTR
     rts
 
-F_16_INC_INPUT_COUNT:
-    inc F_INPUT_BUFFER_COUNT_LSB
-    bne .end
-    inc F_INPUT_BUFFER_COUNT_MSB
-.end:
-    rts
-
 F_16_DEC_INPUT_COUNT:
     dec F_INPUT_BUFFER_COUNT_LSB
     lda F_INPUT_BUFFER_COUNT_LSB
@@ -66,13 +59,13 @@ F_16_SET_INPUT_BYTE:
 
 F_16_ADD_INPUT_BYTE:
     sta (F_INPUT_BUFFER_PTR_LSB)
-    jsr F_16_INC_BUFFER_PTR
-    jsr F_16_INC_INPUT_COUNT
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_INPUT_BUFFER_COUNT_LSB
     rts
 
 F_16_DEL_INPUT_BYTE:
-    jsr F_16_DEC_BUFFER_PTR
-    jsr F_16_DEC_INPUT_COUNT
+    dew F_INPUT_BUFFER_PTR_LSB
+    dew F_INPUT_BUFFER_COUNT_LSB
     rts
 
 ; **********************************************************
@@ -88,13 +81,6 @@ F_16_RESET_TOKEN_COUNT:
     lda 0x00
     sta F_TOKEN_COUNT_LSB
     sta F_TOKEN_COUNT_MSB
-    rts
-
-F_16_INC_TOKEN_COUNT:
-    inc F_TOKEN_COUNT_LSB
-    bne .end
-    inc F_TOKEN_COUNT_MSB
-.end:
     rts
 
 F_16_CHECK_TOKEN_COUNT_IS_ZERO:
@@ -113,13 +99,6 @@ F_16_RESET_TOKEN_START:
     sta F_TOKEN_START_MSB
     rts
 
-F_16_INC_TOKEN_START:
-    inc F_TOKEN_START_LSB
-    bne .end
-    inc F_TOKEN_START_MSB
-.end:
-    rts
-
 F_16_ADD_COUNT_TO_TOKEN_START:
     clc
     lda F_TOKEN_START_LSB
@@ -135,14 +114,6 @@ F_16_RESET_TOKEN_POS:
     sta F_TOKEN_POS_LSB
     sta F_TOKEN_POS_MSB
     jsr F_16_RESET_BUFFER_PTR
-    rts
-
-F_16_INC_TOKEN_POS:
-    inc F_TOKEN_POS_LSB
-    bne .end
-    inc F_TOKEN_POS_MSB
-.end:
-    jsr F_16_INC_BUFFER_PTR
     rts
 
 F_16_SET_TOKEN_POS_TO_START:
@@ -207,22 +178,6 @@ F_16_CHECK_START_END_OF_FILE:
     rts
 
 ; .. token PTR is internally managed by other routines
-
-F_16_INC_BUFFER_PTR:
-    inc F_INPUT_BUFFER_PTR_LSB
-    bne .end
-    inc F_INPUT_BUFFER_PTR_MSB
-.end:
-    rts
-
-F_16_DEC_BUFFER_PTR:
-    dec F_INPUT_BUFFER_PTR_LSB
-    lda F_INPUT_BUFFER_PTR_LSB
-    cmp 0xFF
-    bne .end
-    dec F_INPUT_BUFFER_PTR_MSB
-.end:
-    rts
 
 F_16_RESET_BUFFER_PTR:
     lda F_INPUT_BUFFER_START_LSB

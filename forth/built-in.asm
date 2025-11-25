@@ -87,8 +87,9 @@ F_BI_ABORT_QUOTE:
 
     jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .loop:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     F_MACRO_16_GET_INPUT_BYTE
     cmp 0x22
     beq .abort_if_needed
@@ -109,7 +110,7 @@ F_BI_ABORT_QUOTE:
     sta F_EXECUTION_ABORT_FLAG
     rts
 .abort_if_needed:
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_COUNT_LSB
     lda F_EXECUTION_ABORT_FLAG
     beq .end
     lda 0x00
@@ -323,8 +324,9 @@ F_BI_DOT_QUOTE_LABEL:
 F_BI_DOT_QUOTE:
     jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .loop:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     F_MACRO_16_GET_INPUT_BYTE
     cmp 0x22
     beq .end
@@ -340,7 +342,7 @@ F_BI_DOT_QUOTE:
     sta F_EXECUTION_ERROR_FLAG
     rts
 .end:
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_COUNT_LSB
     rts
 
 .error_msg:
@@ -353,8 +355,9 @@ F_BI_COMMENT_LABEL:
 F_BI_COMMENT:
     jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .loop:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     F_MACRO_16_GET_INPUT_BYTE
     cmp ")"
     beq .end
@@ -369,7 +372,7 @@ F_BI_COMMENT:
     sta F_EXECUTION_ERROR_FLAG
     rts
 .end:
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_COUNT_LSB
     rts
 
 .error_msg:
@@ -381,8 +384,9 @@ F_BI_COMMENT_BACKSLASH_LABEL:
 F_BI_COMMENT_BACKSLASH:
     jsr F_16_SET_TOKEN_POS_TO_START_PLUS_COUNT
 .loop:
-    jsr F_16_INC_TOKEN_POS
-    jsr F_16_INC_TOKEN_COUNT
+inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
+    inw F_TOKEN_COUNT_LSB
     F_MACRO_16_GET_INPUT_BYTE
     cmp 0x0D
     beq .end
@@ -390,7 +394,7 @@ F_BI_COMMENT_BACKSLASH:
     bcc .loop
     rts
 .end:
-    jsr F_16_INC_TOKEN_COUNT
+    inw F_TOKEN_COUNT_LSB
     rts
 
 .error_msg:
@@ -706,7 +710,8 @@ F_TOKEN_IS_BUILTIN:
     cmp (F_INPUT_BUFFER_PTR_LSB)
     bne .check_next_dictionary_item 
     inx
-    jsr F_16_INC_TOKEN_POS
+inw F_TOKEN_POS_LSB
+    inw F_INPUT_BUFFER_PTR_LSB
     jmp .check_char_match
 
 .end_of_dictionary_item:
