@@ -482,6 +482,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-cycles", type=int, default=0, help="Maximum CPU cycles before forced exit (0 = unlimited)")
     parser.add_argument("--quiet", action="store_true", help="Suppress kernel output, show only application output (address >= 0x8400)")
     parser.add_argument("--dump-regs", type=str, default=None, help="Dump CPU registers to a file on exit (JSON format)")
+    parser.add_argument("--input", type=str, default=None, help="Pre-load keyboard buffer with this string (use \\r for CR)")
     args = parser.parse_args()
 
     # --autorun implies --headless
@@ -545,6 +546,11 @@ if __name__ == "__main__":
     # In autorun mode, pre-load keyboard buffer with 'r' + CR to trigger program execution
     if args.autorun:
         cpu.KEY = [ord('r'), 0x0D]
+
+    # Pre-load additional keyboard input if provided
+    if args.input:
+        input_bytes = args.input.encode().decode('unicode_escape')
+        cpu.KEY.extend([ord(c) for c in input_bytes])
 
     # Run the simulator
     print("-> system boot")

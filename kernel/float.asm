@@ -251,6 +251,1714 @@ FLOAT_TO_INT:
     RTS
 
 ; **********************************************************
+; 32-bit integer / float conversion memory location
+; **********************************************************
+#const FLOAT_INT32_B0 = 0x80F5
+#const FLOAT_INT32_B1 = 0x80F6
+#const FLOAT_INT32_B2 = 0x80F7
+#const FLOAT_INT32_B3 = 0x80F8
+
+; **********************************************************
+; SUBROUTINE: INT32_TO_FLOAT
+;
+; DESCRIPTION:
+;   Converts a signed 32-bit integer (2's complement) to
+;   IEEE 754 single precision float (32-bit).
+;
+; INPUTS:
+;   FLOAT_INT32_B0 (0x80F5) : byte 0 (LSB)
+;   FLOAT_INT32_B1 (0x80F6) : byte 1
+;   FLOAT_INT32_B2 (0x80F7) : byte 2
+;   FLOAT_INT32_B3 (0x80F8) : byte 3 (MSB, sign bit)
+;
+; OUTPUTS:
+;   0x80FB-0x80FE : Result float (standard float location)
+;
+; DESTROY:
+;   A, X, Y
+;
+; EXAMPLE:
+;   lda 0xA0          ; 100000 = 0x000186A0
+;   sta FLOAT_INT32_B0
+;   lda 0x86
+;   sta FLOAT_INT32_B1
+;   lda 0x01
+;   sta FLOAT_INT32_B2
+;   lda 0x00
+;   sta FLOAT_INT32_B3
+;   jsr INT32_TO_FLOAT ; float = 100000.0
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
+INT32_TO_FLOAT:
+    ; Check for zero
+    LDA FLOAT_INT32_B0
+    ORA FLOAT_INT32_B1
+    ORA FLOAT_INT32_B2
+    ORA FLOAT_INT32_B3
+    BNE .i32_nonzero
+
+    ; Zero: return IEEE 754 zero
+    STA 0x80FB
+    STA 0x80FC
+    STA 0x80FD
+    STA 0x80FE
+    RTS
+
+.i32_nonzero:
+    ; Extract and save sign
+    LDA FLOAT_INT32_B3
+    AND 0x80
+    STA 0x80FF              ; sign storage
+
+    ; If negative, take absolute value (two's complement on 4 bytes)
+    BEQ .i32_positive
+    LDA FLOAT_INT32_B0
+    EOR 0xFF
+    CLC
+    ADC 0x01
+    STA FLOAT_INT32_B0
+    LDA FLOAT_INT32_B1
+    EOR 0xFF
+    ADC 0x00
+    STA FLOAT_INT32_B1
+    LDA FLOAT_INT32_B2
+    EOR 0xFF
+    ADC 0x00
+    STA FLOAT_INT32_B2
+    LDA FLOAT_INT32_B3
+    EOR 0xFF
+    ADC 0x00
+    STA FLOAT_INT32_B3
+
+.i32_positive:
+    ; Normalize: shift left until bit 7 of FLOAT_INT32_B3 is set
+    LDY 0x1F               ; max shifts = 31
+    LDX 0x00               ; shift counter
+
+.i32_norm_loop:
+    LDA FLOAT_INT32_B3
+    BMI .i32_normalized     ; bit 7 set = leading 1 found
+    ASL FLOAT_INT32_B0
+    ROL FLOAT_INT32_B1
+    ROL FLOAT_INT32_B2
+    ROL FLOAT_INT32_B3
+    INX
+    DEY
+    BPL .i32_norm_loop
+
+.i32_normalized:
+    ; Exponent = (31 XOR shift_count) + 127
+    TXA
+    EOR 0x1F
+    CLC
+    ADC 0x7F
+    STA 0x80FE              ; biased exponent
+
+    ; Shift out implicit leading 1, get top 23 mantissa bits
+    ASL FLOAT_INT32_B0
+    ROL FLOAT_INT32_B1
+    ROL FLOAT_INT32_B2
+    ROL FLOAT_INT32_B3
+
+    ; Pack: B3=mantissa high, B2=mantissa mid, B1=mantissa low (B0 discarded)
+    LDA FLOAT_INT32_B3
+    STA 0x80FD
+    LDA FLOAT_INT32_B2
+    STA 0x80FC
+    LDA FLOAT_INT32_B1
+    STA 0x80FB
+
+    ; Right-shift chain to merge exponent LSB into mantissa
+    LSR 0x80FE
+    ROR 0x80FD
+    ROR 0x80FC
+    ROR 0x80FB
+
+    ; Apply sign
+    LDA 0x80FF
+    BEQ .i32_done
+    LDA 0x80FE
+    ORA 0x80
+    STA 0x80FE
+
+.i32_done:
+    RTS
+
+; **********************************************************
+; SUBROUTINE: FLOAT_TO_INT32
+;
+; DESCRIPTION:
+;   Converts an IEEE 754 single precision float (32-bit)
+;   to a signed 32-bit integer. Truncates toward zero.
+;   Returns zero if exponent is negative.
+;   Saturates to 0x7FFFFFFF / 0x80000000 on overflow.
+;
+; INPUTS:
+;   0x80FB-0x80FE : Float (standard float location)
+;
+; OUTPUTS:
+;   FLOAT_INT32_B0 (0x80F5) : byte 0 (LSB)
+;   FLOAT_INT32_B1 (0x80F6) : byte 1
+;   FLOAT_INT32_B2 (0x80F7) : byte 2
+;   FLOAT_INT32_B3 (0x80F8) : byte 3 (MSB, sign bit)
+;
+; DESTROY:
+;   A, X, Y
+;
+; EXAMPLE:
+;   ; Assuming float = 100000.0 at 0x80FB-0x80FE
+;   jsr FLOAT_TO_INT32
+;   ; FLOAT_INT32_B0-B3 = 0x000186A0 (100000)
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
+FLOAT_TO_INT32:
+    ; Check for zero
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BEQ .fi32_return_zero
+
+    ; Extract exponent
+    LDA 0x80FD
+    ASL A                   ; carry = exponent bit 0
+    LDA 0x80FE
+    ROL A                   ; A = full 8-bit biased exponent, carry = sign
+    SEC
+    SBC 0x7F                ; A = unbiased exponent (0-30 for valid range)
+    BMI .fi32_return_zero   ; exponent < 0: value < 1.0
+
+    ; Check overflow: exponent >= 31 can't fit in 32-bit signed
+    CMP 0x1F
+    BPL .fi32_overflow
+
+    ; Save exponent to Y and sign to 0x80FF
+    TAY                     ; Y = unbiased exponent
+    LDA 0x80FE
+    AND 0x80
+    STA 0x80FF              ; sign
+
+    ; Reconstruct 24-bit significand with implicit leading 1
+    ; Place it at bits 31:8 of the 32-bit result (B3:B2:B1, B0=0)
+    LDA 0x80FD
+    AND 0x7F
+    ORA 0x80
+    STA FLOAT_INT32_B3      ; high byte with implicit 1
+    LDA 0x80FC
+    STA FLOAT_INT32_B2
+    LDA 0x80FB
+    STA FLOAT_INT32_B1
+    LDA 0x00
+    STA FLOAT_INT32_B0
+
+    ; The significand occupies bits 31:8 (implicit 1 at bit 31)
+    ; For exponent E, we need to shift right by (31 - E) to get the integer value
+    ; shift_count = 31 - E
+    LDA 0x1F                ; 31
+    STY FLOAT_INT32_B0      ; temp store Y (exponent) - will be overwritten by shift
+    SEC
+    SBC FLOAT_INT32_B0      ; A = 31 - exponent
+    TAX                     ; X = shift count
+
+    ; Clear B0 again (was used as temp)
+    LDA 0x00
+    STA FLOAT_INT32_B0
+
+    ; If shift count is 0, no shifting needed
+    CPX 0x00
+    BEQ .fi32_check_sign
+
+    ; Shift right X times
+.fi32_shift:
+    LSR FLOAT_INT32_B3
+    ROR FLOAT_INT32_B2
+    ROR FLOAT_INT32_B1
+    ROR FLOAT_INT32_B0
+    DEX
+    BNE .fi32_shift
+
+.fi32_check_sign:
+    ; Apply sign (two's complement if negative)
+    LDA 0x80FF
+    BEQ .fi32_done
+
+    ; Negate 32-bit value
+    LDA FLOAT_INT32_B0
+    EOR 0xFF
+    CLC
+    ADC 0x01
+    STA FLOAT_INT32_B0
+    LDA FLOAT_INT32_B1
+    EOR 0xFF
+    ADC 0x00
+    STA FLOAT_INT32_B1
+    LDA FLOAT_INT32_B2
+    EOR 0xFF
+    ADC 0x00
+    STA FLOAT_INT32_B2
+    LDA FLOAT_INT32_B3
+    EOR 0xFF
+    ADC 0x00
+    STA FLOAT_INT32_B3
+
+.fi32_done:
+    RTS
+
+.fi32_return_zero:
+    LDA 0x00
+    STA FLOAT_INT32_B0
+    STA FLOAT_INT32_B1
+    STA FLOAT_INT32_B2
+    STA FLOAT_INT32_B3
+    RTS
+
+.fi32_overflow:
+    ; Check sign for saturation direction
+    LDA 0x80FE
+    AND 0x80
+    BNE .fi32_neg_overflow
+    ; Positive overflow: 0x7FFFFFFF
+    LDA 0xFF
+    STA FLOAT_INT32_B0
+    STA FLOAT_INT32_B1
+    STA FLOAT_INT32_B2
+    LDA 0x7F
+    STA FLOAT_INT32_B3
+    RTS
+.fi32_neg_overflow:
+    ; Negative overflow: 0x80000000
+    LDA 0x00
+    STA FLOAT_INT32_B0
+    STA FLOAT_INT32_B1
+    STA FLOAT_INT32_B2
+    LDA 0x80
+    STA FLOAT_INT32_B3
+    RTS
+
+; **********************************************************
+; Float operand 2 memory locations
+; **********************************************************
+#const FLOAT2_B0 = 0x80F0
+#const FLOAT2_B1 = 0x80F1
+#const FLOAT2_B2 = 0x80F2
+#const FLOAT2_B3 = 0x80F3
+
+; **********************************************************
+; SUBROUTINE: FLOAT_COPY_TO_F2
+;
+; DESCRIPTION:
+;   Copy float from 0x80FB-0x80FE to FLOAT2 (0x80F0-0x80F3)
+;   for use as second operand in FLOAT_MUL etc.
+;
+; DESTROY:
+;   A
+; **********************************************************
+FLOAT_COPY_TO_F2:
+    LDA 0x80FB
+    STA FLOAT2_B0
+    LDA 0x80FC
+    STA FLOAT2_B1
+    LDA 0x80FD
+    STA FLOAT2_B2
+    LDA 0x80FE
+    STA FLOAT2_B3
+    RTS
+
+; **********************************************************
+; SUBROUTINE: FLOAT_MUL
+;
+; DESCRIPTION:
+;   Multiplies two IEEE 754 single precision floats.
+;   Result = Float1 * Float2
+;
+; INPUTS:
+;   0x80FB-0x80FE : Float 1 (standard float location)
+;   0x80F0-0x80F3 : Float 2 (second operand)
+;
+; OUTPUTS:
+;   0x80FB-0x80FE : Result (overwrites Float 1)
+;
+; DESTROY:
+;   A, X, Y
+;
+; EXAMPLE:
+;   lda 0x64          ; 100
+;   ldx 0x00
+;   jsr INT_TO_FLOAT  ; float1 = 100.0
+;   jsr FLOAT_COPY_TO_F2  ; copy to float2
+;   lda 0x0A          ; 10
+;   ldx 0x00
+;   jsr INT_TO_FLOAT  ; float1 = 10.0
+;   jsr FLOAT_MUL     ; float1 = 10.0 * 100.0 = 1000.0
+;   jsr FLOAT_TO_INT  ; A=0xE8, X=0x03 (1000)
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
+
+; Temporary storage for FLOAT_MUL
+#const FML_SIGN  = 0x80E0
+#const FML_EXP_L = 0x80E1
+#const FML_EXP_H = 0x80E2
+#const FML_M1H   = 0x80E3
+#const FML_M1M   = 0x80E4
+#const FML_M1L   = 0x80E5
+#const FML_M2H   = 0x80E6
+#const FML_M2M   = 0x80E7
+#const FML_M2L   = 0x80E8
+#const FML_R5    = 0x80E9
+#const FML_R4    = 0x80EA
+#const FML_R3    = 0x80EB
+#const FML_R2    = 0x80EC
+
+FLOAT_MUL:
+    ; --- Check for zero inputs ---
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BEQ .fmul_return_zero       ; float1 == 0
+
+    LDA FLOAT2_B0
+    ORA FLOAT2_B1
+    ORA FLOAT2_B2
+    ORA FLOAT2_B3
+    BEQ .fmul_return_zero       ; float2 == 0
+
+    ; --- Compute result sign (XOR of sign bits) ---
+    LDA 0x80FE
+    EOR FLOAT2_B3
+    AND 0x80
+    STA FML_SIGN
+
+    ; --- Extract exponent 1 ---
+    LDA 0x80FD
+    ASL A                       ; carry = exponent bit 0
+    LDA 0x80FE
+    ROL A                       ; A = full 8-bit exponent, carry = sign
+    STA FML_EXP_L
+
+    ; --- Extract exponent 2 and add ---
+    LDA FLOAT2_B2
+    ASL A                       ; carry = exponent bit 0
+    LDA FLOAT2_B3
+    ROL A                       ; A = full 8-bit exponent
+
+    ; result_exp = exp1 + exp2 (16-bit)
+    CLC
+    ADC FML_EXP_L
+    STA FML_EXP_L
+    LDA 0x00
+    ADC 0x00
+    STA FML_EXP_H              ; high byte of sum (0 or 1)
+
+    ; Subtract bias (127)
+    LDA FML_EXP_L
+    SEC
+    SBC 0x7F
+    STA FML_EXP_L
+    LDA FML_EXP_H
+    SBC 0x00
+    STA FML_EXP_H
+
+    ; Check underflow (result_exp negative → high byte has bit 7 set)
+    BMI .fmul_return_zero
+
+    ; Check overflow (high byte > 0 means exp > 255)
+    BNE .fmul_overflow
+
+    ; Check if exponent >= 255
+    LDA FML_EXP_L
+    CMP 0xFF
+    BCS .fmul_overflow
+
+    ; --- Extract mantissa 1 with implicit leading 1 ---
+    LDA 0x80FD
+    AND 0x7F
+    ORA 0x80
+    STA FML_M1H
+    LDA 0x80FC
+    STA FML_M1M
+    LDA 0x80FB
+    STA FML_M1L
+
+    ; --- Extract mantissa 2 with implicit leading 1 ---
+    LDA FLOAT2_B2
+    AND 0x7F
+    ORA 0x80
+    STA FML_M2H
+    LDA FLOAT2_B1
+    STA FML_M2M
+    LDA FLOAT2_B0
+    STA FML_M2L
+
+    ; --- Clear product accumulator R5:R4:R3:R2 ---
+    LDA 0x00
+    STA FML_R5
+    STA FML_R4
+    STA FML_R3
+    STA FML_R2
+
+    ; --- 24x24 bit multiplication using 8 calls to MULTIPLY_INT ---
+    ; Each MULTIPLY_INT: A(factor1) * X(factor2) → A(MSB):X(LSB)
+    ; MULTIPLY_INT clobbers 0x80FD-0x80FF but our mantissas are safe at 0x80E3-0x80E8
+
+    ; Product 1: M1L * M2M → MSB to R2
+    LDA FML_M1L
+    LDX FML_M2M
+    JSR MULTIPLY_INT            ; A=MSB, X=LSB
+    STA FML_R2                  ; R2 = MSB (LSB goes to R1, ignored)
+
+    ; Product 2: M1M * M2L → MSB adds to R2 with carry to R3
+    LDA FML_M1M
+    LDX FML_M2L
+    JSR MULTIPLY_INT
+    CLC
+    ADC FML_R2
+    STA FML_R2
+    LDA 0x00
+    ADC FML_R3
+    STA FML_R3
+
+    ; Product 3: M1L * M2H → X(LSB) adds to R2, A(MSB) adds to R3
+    LDA FML_M1L
+    LDX FML_M2H
+    JSR MULTIPLY_INT            ; A=MSB, X=LSB
+    PHA                         ; save MSB
+    TXA                         ; A=LSB
+    CLC
+    ADC FML_R2
+    STA FML_R2
+    PLA                         ; A=MSB
+    ADC FML_R3
+    STA FML_R3
+    LDA 0x00
+    ADC FML_R4
+    STA FML_R4
+
+    ; Product 4: M1M * M2M → X(LSB) adds to R2, A(MSB) adds to R3
+    LDA FML_M1M
+    LDX FML_M2M
+    JSR MULTIPLY_INT
+    PHA
+    TXA
+    CLC
+    ADC FML_R2
+    STA FML_R2
+    PLA
+    ADC FML_R3
+    STA FML_R3
+    LDA 0x00
+    ADC FML_R4
+    STA FML_R4
+
+    ; Product 5: M1H * M2L → X(LSB) adds to R2, A(MSB) adds to R3
+    LDA FML_M1H
+    LDX FML_M2L
+    JSR MULTIPLY_INT
+    PHA
+    TXA
+    CLC
+    ADC FML_R2
+    STA FML_R2
+    PLA
+    ADC FML_R3
+    STA FML_R3
+    LDA 0x00
+    ADC FML_R4
+    STA FML_R4
+
+    ; Product 6: M1M * M2H → X(LSB) adds to R3, A(MSB) adds to R4
+    LDA FML_M1M
+    LDX FML_M2H
+    JSR MULTIPLY_INT
+    PHA
+    TXA
+    CLC
+    ADC FML_R3
+    STA FML_R3
+    PLA
+    ADC FML_R4
+    STA FML_R4
+    LDA 0x00
+    ADC FML_R5
+    STA FML_R5
+
+    ; Product 7: M1H * M2M → X(LSB) adds to R3, A(MSB) adds to R4
+    LDA FML_M1H
+    LDX FML_M2M
+    JSR MULTIPLY_INT
+    PHA
+    TXA
+    CLC
+    ADC FML_R3
+    STA FML_R3
+    PLA
+    ADC FML_R4
+    STA FML_R4
+    LDA 0x00
+    ADC FML_R5
+    STA FML_R5
+
+    ; Product 8: M1H * M2H → X(LSB) adds to R4, A(MSB) adds to R5
+    LDA FML_M1H
+    LDX FML_M2H
+    JSR MULTIPLY_INT
+    PHA
+    TXA
+    CLC
+    ADC FML_R4
+    STA FML_R4
+    PLA
+    ADC FML_R5
+    STA FML_R5
+
+    ; --- Normalize ---
+    ; Check if bit 47 (R5 bit 7) is set
+    LDA FML_R5
+    BMI .fmul_no_shift          ; bit 7 set → already normalized, exp += 1
+
+    ; Bit 47 = 0: shift left to normalize (bit 46 must be set)
+    ASL FML_R2
+    ROL FML_R3
+    ROL FML_R4
+    ROL FML_R5
+    JMP .fmul_pack
+
+.fmul_no_shift:
+    ; Product overflowed to bit 47, increment exponent
+    INC FML_EXP_L
+    ; Check for exponent overflow after increment
+    LDA FML_EXP_L
+    CMP 0xFF
+    BCS .fmul_overflow
+
+.fmul_pack:
+    ; --- Remove implicit leading 1 and pack into IEEE 754 ---
+    ; Shift left to remove implicit 1 from R5 bit 7
+    ASL FML_R3
+    ROL FML_R4
+    ROL FML_R5
+    ; R5 = fraction[22:16], R4 = fraction[15:8], R3 = fraction[7:0]
+
+    ; Pack: same method as INT_TO_FLOAT
+    LDA FML_EXP_L
+    STA 0x80FE                  ; exponent
+    LDA FML_R5
+    STA 0x80FD                  ; fraction high
+    LDA FML_R4
+    STA 0x80FC                  ; fraction mid
+    LDA FML_R3
+    STA 0x80FB                  ; fraction low
+
+    ; Right-shift chain to merge exponent LSB into fraction
+    LSR 0x80FE
+    ROR 0x80FD
+    ROR 0x80FC
+    ROR 0x80FB
+
+    ; Apply sign
+    LDA FML_SIGN
+    BEQ .fmul_done
+    LDA 0x80FE
+    ORA 0x80
+    STA 0x80FE
+
+.fmul_done:
+    RTS
+
+.fmul_return_zero:
+    LDA 0x00
+    STA 0x80FB
+    STA 0x80FC
+    STA 0x80FD
+    STA 0x80FE
+    RTS
+
+.fmul_overflow:
+    ; Return infinity (exponent = 0xFF, mantissa = 0, preserve sign)
+    LDA FML_SIGN
+    ORA 0x7F                    ; sign + exponent high bits = 0xFF or 0x7F
+    STA 0x80FE
+    LDA 0x80                    ; exponent LSB = 1 (0xFF exponent) + mantissa = 0
+    STA 0x80FD
+    LDA 0x00
+    STA 0x80FC
+    STA 0x80FB
+    RTS
+
+; **********************************************************
+; SUBROUTINE: FLOAT_ADD
+;
+; DESCRIPTION:
+;   Adds two IEEE 754 single precision floats.
+;   Result = Float1 + Float2
+;
+; INPUTS:
+;   0x80FB-0x80FE : Float 1 (standard float location)
+;   0x80F0-0x80F3 : Float 2 (second operand)
+;
+; OUTPUTS:
+;   0x80FB-0x80FE : Result (overwrites Float 1)
+;
+; DESTROY:
+;   A, X, Y
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
+
+; Temporary storage for FLOAT_ADD (reuses FLOAT_MUL range - never called together)
+#const FAD_SIGN1 = 0x80E0
+#const FAD_SIGN2 = 0x80E1
+#const FAD_EXP1  = 0x80E2
+#const FAD_EXP2  = 0x80E3
+#const FAD_M1H   = 0x80E4
+#const FAD_M1M   = 0x80E5
+#const FAD_M1L   = 0x80E6
+#const FAD_M2H   = 0x80E7
+#const FAD_M2M   = 0x80E8
+#const FAD_M2L   = 0x80E9
+#const FAD_CARRY  = 0x80EA
+
+FLOAT_ADD:
+    ; Check if float1 is zero → result = float2
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BNE .fadd_check_f2
+    ; Copy float2 to float1
+    LDA FLOAT2_B0
+    STA 0x80FB
+    LDA FLOAT2_B1
+    STA 0x80FC
+    LDA FLOAT2_B2
+    STA 0x80FD
+    LDA FLOAT2_B3
+    STA 0x80FE
+    RTS
+
+.fadd_check_f2:
+    ; Check if float2 is zero → result = float1 (unchanged)
+    LDA FLOAT2_B0
+    ORA FLOAT2_B1
+    ORA FLOAT2_B2
+    ORA FLOAT2_B3
+    BNE .fadd_extract
+    RTS
+
+.fadd_extract:
+    ; Extract float1: sign, exponent, mantissa
+    LDA 0x80FE
+    AND 0x80
+    STA FAD_SIGN1
+
+    LDA 0x80FD
+    ASL A
+    LDA 0x80FE
+    ROL A
+    STA FAD_EXP1            ; biased exponent 1
+
+    LDA 0x80FD
+    AND 0x7F
+    ORA 0x80
+    STA FAD_M1H
+    LDA 0x80FC
+    STA FAD_M1M
+    LDA 0x80FB
+    STA FAD_M1L
+
+    ; Extract float2: sign, exponent, mantissa
+    LDA FLOAT2_B3
+    AND 0x80
+    STA FAD_SIGN2
+
+    LDA FLOAT2_B2
+    ASL A
+    LDA FLOAT2_B3
+    ROL A
+    STA FAD_EXP2            ; biased exponent 2
+
+    LDA FLOAT2_B2
+    AND 0x7F
+    ORA 0x80
+    STA FAD_M2H
+    LDA FLOAT2_B1
+    STA FAD_M2M
+    LDA FLOAT2_B0
+    STA FAD_M2L
+
+    ; Ensure exp1 >= exp2 (swap if needed)
+    LDA FAD_EXP1
+    CMP FAD_EXP2
+    BCS .fadd_no_swap       ; exp1 >= exp2, no swap needed
+    BCC .fadd_swap
+
+.fadd_swap:
+    ; Swap exponents
+    LDA FAD_EXP1
+    LDX FAD_EXP2
+    STA FAD_EXP2
+    STX FAD_EXP1
+    ; Swap signs
+    LDA FAD_SIGN1
+    LDX FAD_SIGN2
+    STA FAD_SIGN2
+    STX FAD_SIGN1
+    ; Swap mantissas
+    LDA FAD_M1H
+    LDX FAD_M2H
+    STA FAD_M2H
+    STX FAD_M1H
+    LDA FAD_M1M
+    LDX FAD_M2M
+    STA FAD_M2M
+    STX FAD_M1M
+    LDA FAD_M1L
+    LDX FAD_M2L
+    STA FAD_M2L
+    STX FAD_M1L
+
+.fadd_no_swap:
+    ; Now exp1 >= exp2. Shift mantissa2 right by (exp1 - exp2)
+    LDA FAD_EXP1
+    SEC
+    SBC FAD_EXP2
+    BEQ .fadd_aligned       ; same exponent, no shift needed
+    CMP 0x18                ; if diff >= 24, mantissa2 shifts to 0
+    BCS .fadd_m2_zero
+
+    TAX                     ; X = shift count
+.fadd_align_loop:
+    LSR FAD_M2H
+    ROR FAD_M2M
+    ROR FAD_M2L
+    DEX
+    BNE .fadd_align_loop
+    JMP .fadd_aligned
+
+.fadd_m2_zero:
+    ; Mantissa2 is negligible, result = float1 (which is the larger one)
+    ; Since we may have swapped, rebuild from current FAD state
+    JMP .fadd_pack_m1
+
+.fadd_aligned:
+    ; Check if same sign or different sign
+    LDA FAD_SIGN1
+    EOR FAD_SIGN2
+    BNE .fadd_subtract      ; different signs → subtract
+
+    ; --- Same sign: ADD mantissas ---
+    LDA FAD_M1L
+    CLC
+    ADC FAD_M2L
+    STA FAD_M1L
+    LDA FAD_M1M
+    ADC FAD_M2M
+    STA FAD_M1M
+    LDA FAD_M1H
+    ADC FAD_M2H
+    STA FAD_M1H
+    LDA 0x00
+    ADC 0x00
+    STA FAD_CARRY           ; carry from bit 24
+
+    ; If carry (bit 24 overflow), shift right and increment exponent
+    LDA FAD_CARRY
+    BEQ .fadd_pack_m1
+    LSR FAD_M1H
+    ROR FAD_M1M
+    ROR FAD_M1L
+    ; Set bit 23 (the carry becomes the new implicit 1)
+    LDA FAD_M1H
+    ORA 0x80
+    STA FAD_M1H
+    INC FAD_EXP1
+    JMP .fadd_pack_m1
+
+.fadd_subtract:
+    ; --- Different signs: SUBTRACT mantissa2 from mantissa1 ---
+    ; Since exp1 >= exp2, and if exp1 > exp2 then m1 > m2 (after alignment)
+    ; If exp1 == exp2, m1 might be < m2 → check and swap
+    LDA FAD_EXP1
+    CMP FAD_EXP2
+    BNE .fadd_do_sub        ; exp1 > exp2 → m1 > m2 guaranteed
+
+    ; exp1 == exp2: compare mantissas
+    LDA FAD_M1H
+    CMP FAD_M2H
+    BCC .fadd_sub_swap      ; m1 < m2
+    BNE .fadd_do_sub        ; m1 > m2
+    LDA FAD_M1M
+    CMP FAD_M2M
+    BCC .fadd_sub_swap
+    BNE .fadd_do_sub
+    LDA FAD_M1L
+    CMP FAD_M2L
+    BCC .fadd_sub_swap
+    BNE .fadd_do_sub
+
+    ; m1 == m2 and different signs → result is zero
+    JMP .fadd_return_zero
+
+.fadd_sub_swap:
+    ; m2 > m1 (same exponent): swap mantissas and use sign2 as result sign
+    LDA FAD_M1H
+    LDX FAD_M2H
+    STA FAD_M2H
+    STX FAD_M1H
+    LDA FAD_M1M
+    LDX FAD_M2M
+    STA FAD_M2M
+    STX FAD_M1M
+    LDA FAD_M1L
+    LDX FAD_M2L
+    STA FAD_M2L
+    STX FAD_M1L
+    ; Result sign = sign2 (the larger mantissa)
+    LDA FAD_SIGN2
+    STA FAD_SIGN1
+
+.fadd_do_sub:
+    ; m1 >= m2: compute m1 - m2
+    LDA FAD_M1L
+    SEC
+    SBC FAD_M2L
+    STA FAD_M1L
+    LDA FAD_M1M
+    SBC FAD_M2M
+    STA FAD_M1M
+    LDA FAD_M1H
+    SBC FAD_M2H
+    STA FAD_M1H
+
+    ; Check for zero result
+    LDA FAD_M1H
+    ORA FAD_M1M
+    ORA FAD_M1L
+    BEQ .fadd_return_zero
+
+    ; Normalize: shift left until bit 7 of M1H is set
+.fadd_norm_loop:
+    LDA FAD_M1H
+    BMI .fadd_pack_m1       ; bit 7 set → normalized
+    ASL FAD_M1L
+    ROL FAD_M1M
+    ROL FAD_M1H
+    DEC FAD_EXP1
+    ; Check for exponent underflow
+    LDA FAD_EXP1
+    BEQ .fadd_return_zero   ; exponent hit 0 → underflow
+    JMP .fadd_norm_loop
+
+.fadd_pack_m1:
+    ; Pack mantissa1 with exp1 and sign1 into IEEE 754
+    ; Remove implicit 1
+    ASL FAD_M1L
+    ROL FAD_M1M
+    ROL FAD_M1H
+
+    LDA FAD_EXP1
+    STA 0x80FE
+    LDA FAD_M1H
+    STA 0x80FD
+    LDA FAD_M1M
+    STA 0x80FC
+    LDA FAD_M1L
+    STA 0x80FB
+
+    ; Right-shift chain to merge exponent LSB
+    LSR 0x80FE
+    ROR 0x80FD
+    ROR 0x80FC
+    ROR 0x80FB
+
+    ; Apply sign
+    LDA FAD_SIGN1
+    BEQ .fadd_done
+    LDA 0x80FE
+    ORA 0x80
+    STA 0x80FE
+
+.fadd_done:
+    RTS
+
+.fadd_return_zero:
+    LDA 0x00
+    STA 0x80FB
+    STA 0x80FC
+    STA 0x80FD
+    STA 0x80FE
+    RTS
+
+; **********************************************************
+; SUBROUTINE: FLOAT_SUB
+;
+; DESCRIPTION:
+;   Subtracts Float2 from Float1.
+;   Result = Float1 - Float2
+;   Implemented by flipping Float2 sign and calling FLOAT_ADD.
+;
+; INPUTS:
+;   0x80FB-0x80FE : Float 1
+;   0x80F0-0x80F3 : Float 2
+;
+; OUTPUTS:
+;   0x80FB-0x80FE : Result
+;
+; DESTROY:
+;   A, X, Y
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
+FLOAT_SUB:
+    ; Flip sign bit of float2
+    LDA FLOAT2_B3
+    EOR 0x80
+    STA FLOAT2_B3
+    ; Call FLOAT_ADD
+    JSR FLOAT_ADD
+    ; Restore float2 sign (in case caller needs it unchanged)
+    LDA FLOAT2_B3
+    EOR 0x80
+    STA FLOAT2_B3
+    RTS
+
+; **********************************************************
+; SUBROUTINE: FLOAT_DIV
+;
+; DESCRIPTION:
+;   Divides Float1 by Float2.
+;   Result = Float1 / Float2
+;   Uses long division on 24-bit mantissas.
+;
+; INPUTS:
+;   0x80FB-0x80FE : Float 1 (dividend)
+;   0x80F0-0x80F3 : Float 2 (divisor)
+;
+; OUTPUTS:
+;   0x80FB-0x80FE : Result (overwrites Float 1)
+;
+; DESTROY:
+;   A, X, Y
+;
+; EXAMPLE:
+;   lda 0x0A
+;   ldx 0x00
+;   jsr INT_TO_FLOAT        ; float1 = 10.0
+;   jsr FLOAT_COPY_TO_F2    ; float2 = 10.0
+;   lda 0x64
+;   ldx 0x00
+;   jsr INT_TO_FLOAT        ; float1 = 100.0
+;   jsr FLOAT_DIV            ; float1 = 100.0 / 10.0 = 10.0
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
+
+; Temporary storage for FLOAT_DIV (reuses FLOAT_MUL/ADD range)
+#const FDV_SIGN  = 0x80E0
+#const FDV_EXP_L = 0x80E1
+#const FDV_EXP_H = 0x80E2
+#const FDV_M1H   = 0x80E3
+#const FDV_M1M   = 0x80E4
+#const FDV_M1L   = 0x80E5
+#const FDV_M2H   = 0x80E6
+#const FDV_M2M   = 0x80E7
+#const FDV_M2L   = 0x80E8
+#const FDV_QH    = 0x80E9
+#const FDV_QM    = 0x80EA
+#const FDV_QL    = 0x80EB
+#const FDV_RH    = 0x80EC
+#const FDV_RM    = 0x80ED
+#const FDV_RL    = 0x80EE
+#const FDV_CARRY = 0x80EF
+
+FLOAT_DIV:
+    ; Check for zero dividend → result = 0
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BEQ .fdiv_return_zero
+
+    ; Check for zero divisor → return infinity (or just max value)
+    LDA FLOAT2_B0
+    ORA FLOAT2_B1
+    ORA FLOAT2_B2
+    ORA FLOAT2_B3
+    BEQ .fdiv_overflow
+
+    ; --- Compute result sign (XOR of sign bits) ---
+    LDA 0x80FE
+    EOR FLOAT2_B3
+    AND 0x80
+    STA FDV_SIGN
+
+    ; --- Extract exponent 1 ---
+    LDA 0x80FD
+    ASL A
+    LDA 0x80FE
+    ROL A
+    STA FDV_EXP_L
+
+    ; --- Extract exponent 2 and subtract ---
+    LDA FLOAT2_B2
+    ASL A
+    LDA FLOAT2_B3
+    ROL A
+    ; result_exp = exp1 - exp2 + 127 (bias)
+    STA FDV_EXP_H              ; temp: exp2
+    LDA FDV_EXP_L
+    SEC
+    SBC FDV_EXP_H              ; A = exp1 - exp2 (may be negative)
+    CLC
+    ADC 0x7F                   ; A = exp1 - exp2 + 127
+    STA FDV_EXP_L
+    ; Check for underflow/overflow (simplified: if result is 0 or >= 255)
+    BEQ .fdiv_return_zero
+    CMP 0xFF
+    BCS .fdiv_overflow
+
+    ; --- Extract mantissa 1 with implicit leading 1 ---
+    LDA 0x80FD
+    AND 0x7F
+    ORA 0x80
+    STA FDV_M1H
+    LDA 0x80FC
+    STA FDV_M1M
+    LDA 0x80FB
+    STA FDV_M1L
+
+    ; --- Extract mantissa 2 with implicit leading 1 ---
+    LDA FLOAT2_B2
+    AND 0x7F
+    ORA 0x80
+    STA FDV_M2H
+    LDA FLOAT2_B1
+    STA FDV_M2M
+    LDA FLOAT2_B0
+    STA FDV_M2L
+
+    ; --- 24-bit mantissa division: M1 / M2 → quotient in QH:QM:QL ---
+    ; Remainder starts as M1. Each iteration: shift R left (25-bit),
+    ; compare with M2, subtract if R >= M2 (set Q bit).
+    ; Uses FDV_CARRY as bit 24 of the remainder for the shift overflow.
+
+    ; Initialize: remainder = M1, quotient = 0, carry = 0
+    LDA FDV_M1H
+    STA FDV_RH
+    LDA FDV_M1M
+    STA FDV_RM
+    LDA FDV_M1L
+    STA FDV_RL
+    LDA 0x00
+    STA FDV_QH
+    STA FDV_QM
+    STA FDV_QL
+    STA FDV_CARRY               ; no overflow initially
+
+    LDY 0x18                    ; 24 quotient bits
+
+.fdiv_div_loop:
+    ; Shift quotient left (make room for next bit)
+    ASL FDV_QL
+    ROL FDV_QM
+    ROL FDV_QH
+
+    ; Compare: if carry bit (25th) is set, R > M2 definitely
+    LDA FDV_CARRY
+    BNE .fdiv_do_sub
+
+    ; 24-bit compare: R vs M2
+    LDA FDV_RH
+    CMP FDV_M2H
+    BCC .fdiv_no_sub
+    BNE .fdiv_do_sub
+    LDA FDV_RM
+    CMP FDV_M2M
+    BCC .fdiv_no_sub
+    BNE .fdiv_do_sub
+    LDA FDV_RL
+    CMP FDV_M2L
+    BCC .fdiv_no_sub
+
+.fdiv_do_sub:
+    ; R >= M2: subtract and set quotient bit
+    LDA FDV_RL
+    SEC
+    SBC FDV_M2L
+    STA FDV_RL
+    LDA FDV_RM
+    SBC FDV_M2M
+    STA FDV_RM
+    LDA FDV_RH
+    SBC FDV_M2H
+    STA FDV_RH
+    INC FDV_QL
+
+.fdiv_no_sub:
+    ; Shift remainder left by 1 (25-bit: capture overflow in FAD_CARRY)
+    ASL FDV_RL
+    ROL FDV_RM
+    ROL FDV_RH
+    LDA 0x00
+    ROL A
+    STA FDV_CARRY
+
+    DEY
+    BNE .fdiv_div_loop
+
+    ; --- Check if quotient needs normalization ---
+    ; If Q bit 23 is set → normalized. If not → shift left, decrement exp
+    LDA FDV_QH
+    BMI .fdiv_q_normalized
+
+    ASL FDV_QL
+    ROL FDV_QM
+    ROL FDV_QH
+    DEC FDV_EXP_L
+
+.fdiv_q_normalized:
+    ; --- Quotient is in QH:QM:QL with implicit 1 at bit 23 ---
+    ; Pack into IEEE 754
+
+    ; Remove implicit 1
+    ASL FDV_QL
+    ROL FDV_QM
+    ROL FDV_QH
+
+    LDA FDV_EXP_L
+    STA 0x80FE
+    LDA FDV_QH
+    STA 0x80FD
+    LDA FDV_QM
+    STA 0x80FC
+    LDA FDV_QL
+    STA 0x80FB
+
+    ; Right-shift chain to merge exponent LSB
+    LSR 0x80FE
+    ROR 0x80FD
+    ROR 0x80FC
+    ROR 0x80FB
+
+    ; Apply sign
+    LDA FDV_SIGN
+    BEQ .fdiv_done
+    LDA 0x80FE
+    ORA 0x80
+    STA 0x80FE
+
+.fdiv_done:
+    RTS
+
+.fdiv_return_zero:
+    LDA 0x00
+    STA 0x80FB
+    STA 0x80FC
+    STA 0x80FD
+    STA 0x80FE
+    RTS
+
+.fdiv_overflow:
+    ; Return infinity (preserve sign)
+    LDA FDV_SIGN
+    ORA 0x7F
+    STA 0x80FE
+    LDA 0x80
+    STA 0x80FD
+    LDA 0x00
+    STA 0x80FC
+    STA 0x80FB
+    RTS
+
+; **********************************************************
+; SUBROUTINE: FLOAT_READ
+;
+; DESCRIPTION:
+;   Reads a decimal number from serial input and converts
+;   it to IEEE 754 single precision float.
+;   Input format: [-][digits][.digits] terminated by CR (0x0D).
+;   Characters are echoed back to serial as they are typed.
+;   Max ~5 total significant digits (16-bit accumulator).
+;
+; INPUTS:
+;   Characters from serial via ACIA_READ_CHAR
+;
+; OUTPUTS:
+;   0x80FB-0x80FE : Parsed float (standard float location)
+;
+; DESTROY:
+;   A, X, Y, D, E
+;
+; EXAMPLE:
+;   jsr FLOAT_READ   ; user types "3.14" + CR
+;   ; 0x80FB-0x80FE now contains ~3.14 in IEEE 754
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
+
+; Temporary storage for FLOAT_READ (32-bit accumulator)
+#const FR_VALUE_B0 = 0x80C0
+#const FR_VALUE_B1 = 0x80C1
+#const FR_VALUE_B2 = 0x80C2
+#const FR_VALUE_B3 = 0x80C3
+#const FR_FRAC_CNT = 0x80C4
+#const FR_SIGN     = 0x80C5
+#const FR_HAS_DOT  = 0x80C6
+#const FR_DIGIT    = 0x80C7
+#const FR_TMP_B0   = 0x80C8
+#const FR_TMP_B1   = 0x80C9
+#const FR_TMP_B2   = 0x80CA
+#const FR_TMP_B3   = 0x80CB
+
+FLOAT_READ:
+    ; Initialize
+    LDA 0x00
+    STA FR_VALUE_B0
+    STA FR_VALUE_B1
+    STA FR_VALUE_B2
+    STA FR_VALUE_B3
+    STA FR_FRAC_CNT
+    STA FR_SIGN
+    STA FR_HAS_DOT
+
+    ; Read first character
+    JSR ACIA_READ_CHAR
+    JSR ACIA_SEND_CHAR          ; echo
+
+    ; Check for '-'
+    CMP 0x2D
+    BNE .fr_check_char
+    LDA 0x80
+    STA FR_SIGN
+    JSR ACIA_READ_CHAR
+    JSR ACIA_SEND_CHAR          ; echo
+
+.fr_check_char:
+    ; CR? done
+    CMP 0x0D
+    BEQ .fr_parse_done
+
+    ; '.'?
+    CMP 0x2E
+    BNE .fr_check_digit
+    LDA 0x01
+    STA FR_HAS_DOT
+    JMP .fr_read_next
+
+.fr_check_digit:
+    ; Must be '0'-'9'
+    CMP 0x30
+    BCC .fr_read_next           ; < '0', ignore
+    CMP 0x3A
+    BCS .fr_read_next           ; > '9', ignore
+
+    ; Convert ASCII to digit value
+    SEC
+    SBC 0x30
+    STA FR_DIGIT
+
+    ; Overflow protection: skip digit if value * 10 + 9 > 2147483647
+    ; Safe limit: MSB (B3) >= 0x0D means value >= 218103808, * 10 overflows
+    ; Simplified: if B3 >= 0x0D, skip
+    LDA FR_VALUE_B3
+    CMP 0x0D
+    BCS .fr_read_next
+
+.fr_accumulate:
+    ; Multiply current value by 10 (32-bit)
+    JSR .fr_mul10_32
+
+    ; Add digit to value (32-bit)
+    LDA FR_VALUE_B0
+    CLC
+    ADC FR_DIGIT
+    STA FR_VALUE_B0
+    LDA FR_VALUE_B1
+    ADC 0x00
+    STA FR_VALUE_B1
+    LDA FR_VALUE_B2
+    ADC 0x00
+    STA FR_VALUE_B2
+    LDA FR_VALUE_B3
+    ADC 0x00
+    STA FR_VALUE_B3
+
+    ; If past decimal point, increment fractional digit count
+    LDA FR_HAS_DOT
+    BEQ .fr_read_next
+    INC FR_FRAC_CNT
+
+.fr_read_next:
+    JSR ACIA_READ_CHAR
+    JSR ACIA_SEND_CHAR          ; echo
+    JMP .fr_check_char
+
+.fr_parse_done:
+    ; Convert accumulated 32-bit integer to float
+    LDA FR_VALUE_B0
+    STA FLOAT_INT32_B0
+    LDA FR_VALUE_B1
+    STA FLOAT_INT32_B1
+    LDA FR_VALUE_B2
+    STA FLOAT_INT32_B2
+    LDA FR_VALUE_B3
+    STA FLOAT_INT32_B3
+    JSR INT32_TO_FLOAT
+
+    ; Apply sign
+    LDA FR_SIGN
+    BEQ .fr_no_sign
+    LDA 0x80FE
+    ORA 0x80
+    STA 0x80FE
+.fr_no_sign:
+
+    ; Divide by 10^frac_cnt using repeated FLOAT_MUL with 0.1
+    LDA FR_FRAC_CNT
+    BEQ .fr_read_done
+
+    ; Setup 0.1 in FLOAT2 (IEEE 754: 0x3DCCCCCD)
+    LDA 0xCD
+    STA FLOAT2_B0
+    LDA 0xCC
+    STA FLOAT2_B1
+    LDA 0xCC
+    STA FLOAT2_B2
+    LDA 0x3D
+    STA FLOAT2_B3
+
+.fr_div_loop:
+    JSR FLOAT_MUL
+    DEC FR_FRAC_CNT
+    BNE .fr_div_loop
+
+.fr_read_done:
+    RTS
+
+; Helper: multiply FR_VALUE (32-bit) by 10
+; value * 10 = (value * 4 + value) * 2 = value * 5 * 2
+.fr_mul10_32:
+    ; Save original value
+    LDA FR_VALUE_B0
+    STA FR_TMP_B0
+    LDA FR_VALUE_B1
+    STA FR_TMP_B1
+    LDA FR_VALUE_B2
+    STA FR_TMP_B2
+    LDA FR_VALUE_B3
+    STA FR_TMP_B3
+
+    ; value << 2 (multiply by 4)
+    ASL FR_VALUE_B0
+    ROL FR_VALUE_B1
+    ROL FR_VALUE_B2
+    ROL FR_VALUE_B3
+    ASL FR_VALUE_B0
+    ROL FR_VALUE_B1
+    ROL FR_VALUE_B2
+    ROL FR_VALUE_B3
+
+    ; Add original (value*4 + value = value*5)
+    LDA FR_VALUE_B0
+    CLC
+    ADC FR_TMP_B0
+    STA FR_VALUE_B0
+    LDA FR_VALUE_B1
+    ADC FR_TMP_B1
+    STA FR_VALUE_B1
+    LDA FR_VALUE_B2
+    ADC FR_TMP_B2
+    STA FR_VALUE_B2
+    LDA FR_VALUE_B3
+    ADC FR_TMP_B3
+    STA FR_VALUE_B3
+
+    ; Shift left 1 (value*5 * 2 = value*10)
+    ASL FR_VALUE_B0
+    ROL FR_VALUE_B1
+    ROL FR_VALUE_B2
+    ROL FR_VALUE_B3
+
+    RTS
+
+; **********************************************************
+; SUBROUTINE: FLOAT_PRINT
+;
+; DESCRIPTION:
+;   Prints an IEEE 754 float as a decimal string to serial.
+;   Format: [-]integer.fraction
+;   Limited to values that fit in a signed 16-bit integer part
+;   (approx -32768 to 32767).
+;
+; INPUTS:
+;   0x80FB-0x80FE : Float to print (standard float location)
+;   Y : Number of decimal places (0-6)
+;
+; OUTPUTS:
+;   Decimal string sent to serial via ACIA
+;
+; DESTROY:
+;   A, X, Y, D, E
+;
+; EXAMPLE:
+;   lda 0x64
+;   ldx 0x00
+;   jsr INT_TO_FLOAT    ; float = 100.0
+;   ldy 0x02
+;   jsr FLOAT_PRINT     ; prints "100.00"
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
+
+; Temporary storage for FLOAT_PRINT
+#const FP_DECIMALS = 0x80D0
+#const FP_SAVE_B0  = 0x80D1
+#const FP_SAVE_B1  = 0x80D2
+#const FP_SAVE_B2  = 0x80D3
+#const FP_SAVE_B3  = 0x80D4
+#const FP_TEMP     = 0x80D5
+
+FLOAT_PRINT:
+    STY FP_DECIMALS
+
+    ; Check zero
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BNE .fpr_not_zero
+
+    ; Print "0" and decimal zeros
+    LDA 0x30
+    JSR ACIA_SEND_CHAR
+    LDA FP_DECIMALS
+    BEQ .fpr_done
+    LDA 0x2E
+    JSR ACIA_SEND_CHAR
+.fpr_zero_dec:
+    LDA 0x30
+    JSR ACIA_SEND_CHAR
+    DEC FP_DECIMALS
+    BNE .fpr_zero_dec
+    JMP .fpr_done
+
+.fpr_not_zero:
+    ; Check sign
+    LDA 0x80FE
+    BPL .fpr_positive
+    ; Print "-"
+    LDA 0x2D
+    JSR ACIA_SEND_CHAR
+    ; Clear sign bit (make positive)
+    LDA 0x80FE
+    AND 0x7F
+    STA 0x80FE
+
+.fpr_positive:
+    ; Save positive float
+    LDA 0x80FB
+    STA FP_SAVE_B0
+    LDA 0x80FC
+    STA FP_SAVE_B1
+    LDA 0x80FD
+    STA FP_SAVE_B2
+    LDA 0x80FE
+    STA FP_SAVE_B3
+
+    ; Get integer part (32-bit)
+    JSR FLOAT_TO_INT32
+
+    ; Print integer part using ACIA_SEND_DECIMAL32
+    LDA FLOAT_INT32_B0
+    STA BINDEC32_VALUE
+    LDA FLOAT_INT32_B1
+    STA BINDEC32_VALUE + 1
+    LDA FLOAT_INT32_B2
+    STA BINDEC32_VALUE + 2
+    LDA FLOAT_INT32_B3
+    STA BINDEC32_VALUE + 3
+    JSR ACIA_SEND_DECIMAL32
+
+    ; Check if decimals needed
+    LDA FP_DECIMALS
+    BEQ .fpr_done
+
+    ; Print "."
+    LDA 0x2E
+    JSR ACIA_SEND_CHAR
+
+    ; Restore float
+    LDA FP_SAVE_B0
+    STA 0x80FB
+    LDA FP_SAVE_B1
+    STA 0x80FC
+    LDA FP_SAVE_B2
+    STA 0x80FD
+    LDA FP_SAVE_B3
+    STA 0x80FE
+
+    ; Extract fractional part: zero the integer bits from the float
+    ; so we only have 0.xxxx remaining
+    JSR .fpr_float_frac
+
+    ; Setup 10.0 in FLOAT2 (IEEE 754: 0x41200000)
+    LDA 0x00
+    STA FLOAT2_B0
+    STA FLOAT2_B1
+    LDA 0x20
+    STA FLOAT2_B2
+    LDA 0x41
+    STA FLOAT2_B3
+
+    ; Extract fractional digits by repeated multiply-by-10
+    ; After FLOAT_FRAC, float is 0 <= f < 1.0
+    ; After *10, float is 0 <= f < 10.0
+    ; FLOAT_TO_INT gives digit 0-9 (always fits in 8-bit)
+.fpr_digit_loop:
+    JSR FLOAT_MUL               ; float *= 10.0 (result is 0..9.xxx)
+
+    ; Save float (FLOAT_TO_INT modifies 0x80FB/FC)
+    LDA 0x80FB
+    STA FP_SAVE_B0
+    LDA 0x80FC
+    STA FP_SAVE_B1
+    LDA 0x80FD
+    STA FP_SAVE_B2
+    LDA 0x80FE
+    STA FP_SAVE_B3
+
+    ; Get integer of scaled value (always 0-9)
+    JSR FLOAT_TO_INT            ; A=digit (0-9), X=0
+
+    ; Print digit
+    CLC
+    ADC 0x30
+    JSR ACIA_SEND_CHAR
+
+    ; Restore float and remove integer part for next iteration
+    LDA FP_SAVE_B0
+    STA 0x80FB
+    LDA FP_SAVE_B1
+    STA 0x80FC
+    LDA FP_SAVE_B2
+    STA 0x80FD
+    LDA FP_SAVE_B3
+    STA 0x80FE
+    JSR .fpr_float_frac         ; keep only fractional part
+
+    DEC FP_DECIMALS
+    BNE .fpr_digit_loop
+
+.fpr_done:
+    RTS
+
+; Helper: extract fractional part of float (remove integer part)
+; Input/Output: 0x80FB-0x80FE
+; After call, 0 <= float < 1.0
+; Destroys: A, X, Y
+.fpr_float_frac:
+    ; Extract unbiased exponent
+    LDA 0x80FD
+    ASL A
+    LDA 0x80FE
+    ROL A                       ; A = biased exponent
+    SEC
+    SBC 0x7F                    ; A = unbiased exponent
+    BMI .frac_keep              ; E < 0: entire number is fraction, keep as-is
+    CMP 0x17                    ; 23
+    BCS .frac_set_zero          ; E >= 23: no fractional part
+
+    ; Save sign and exponent
+    TAX                         ; X = unbiased exponent (0-22)
+    LDA 0x80FE
+    AND 0x80
+    STA FP_TEMP                 ; save sign bit
+
+    ; Reconstruct significand with implicit 1
+    LDA 0x80FD
+    AND 0x7F
+    ORA 0x80
+    STA 0x80FD                  ; high byte with implicit 1
+    ; 0x80FC, 0x80FB already have mid/low bytes
+
+    ; Shift left by (E+1) to discard integer bits
+    INX                         ; X = E+1
+.frac_shift_out:
+    ASL 0x80FB
+    ROL 0x80FC
+    ROL 0x80FD
+    DEX
+    BNE .frac_shift_out
+
+    ; Check if anything remains
+    LDA 0x80FD
+    ORA 0x80FC
+    ORA 0x80FB
+    BEQ .frac_set_zero          ; all fraction bits were 0
+
+    ; Renormalize: shift left until bit 7 of 0x80FD is set
+    LDY 0x00                    ; normalize shift counter
+.frac_normalize:
+    LDA 0x80FD
+    BMI .frac_norm_done         ; leading 1 found at bit 7
+    ASL 0x80FB
+    ROL 0x80FC
+    ROL 0x80FD
+    INY
+    CPY 0x18                    ; safety: max 24 shifts
+    BEQ .frac_set_zero
+    JMP .frac_normalize
+
+.frac_norm_done:
+    ; New biased exponent = 126 - Y
+    ; (original frac starts at 2^(-1), each normalize shift decreases by 1)
+    LDA 0x7E                    ; 126
+    STY FP_SAVE_B0              ; temp store Y
+    SEC
+    SBC FP_SAVE_B0              ; A = 126 - Y = new biased exponent
+    STA 0x80FE                  ; store exponent
+
+    ; Remove implicit 1 and pack
+    ASL 0x80FB
+    ROL 0x80FC
+    ROL 0x80FD                  ; shift out implicit 1
+
+    ; Right-shift to merge exponent LSB into mantissa
+    LSR 0x80FE
+    ROR 0x80FD
+    ROR 0x80FC
+    ROR 0x80FB
+
+    ; Restore sign
+    LDA FP_TEMP
+    BEQ .frac_keep
+    LDA 0x80FE
+    ORA 0x80
+    STA 0x80FE
+
+.frac_keep:
+    RTS
+
+.frac_set_zero:
+    LDA 0x00
+    STA 0x80FB
+    STA 0x80FC
+    STA 0x80FD
+    STA 0x80FE
+    RTS
+
+; **********************************************************
 ; TESTS START HERE
 ;
 
@@ -317,6 +2025,375 @@ FLOAT_test:
     BNE .fail
     CPX 0x03
     BNE .fail
+
+    ; --- FLOAT_MUL tests ---
+
+;   Test #FM1: 1.0 * 1.0 = 1.0 → roundtrip = 1
+    LDA 0x01
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    JSR FLOAT_MUL
+    JSR FLOAT_TO_INT
+    CMP 0x01
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+;   Test #FM2: 2.0 * 3.0 = 6.0 → roundtrip = 6
+    LDA 0x02
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    LDA 0x03
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_MUL
+    JSR FLOAT_TO_INT
+    CMP 0x06
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+;   Test #FM3: 100.0 * 10.0 = 1000.0 → roundtrip = 0x03E8
+    LDA 0x64
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    LDA 0x0A
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_MUL
+    JSR FLOAT_TO_INT
+    CMP 0xE8
+    BNE .fail
+    CPX 0x03
+    BNE .fail
+
+;   Test #FM4: -5.0 * 4.0 = -20.0 → roundtrip = -20 (0xFFEC)
+    LDA 0xFB
+    LDX 0xFF
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    LDA 0x04
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_MUL
+    JSR FLOAT_TO_INT
+    CMP 0xEC
+    BNE .fail
+    CPX 0xFF
+    BNE .fail
+
+;   Test #FM5: 0 * 42.0 = 0
+    LDA 0x2A
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    LDA 0x00
+    STA 0x80FB
+    STA 0x80FC
+    STA 0x80FD
+    STA 0x80FE
+    JSR FLOAT_MUL
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BNE .fail
+
+    ; --- INT32_TO_FLOAT / FLOAT_TO_INT32 tests ---
+
+;   Test #FI32_1: INT32_TO_FLOAT(100000) → FLOAT_TO_INT32 roundtrip
+;   100000 = 0x000186A0
+    LDA 0xA0
+    STA FLOAT_INT32_B0
+    LDA 0x86
+    STA FLOAT_INT32_B1
+    LDA 0x01
+    STA FLOAT_INT32_B2
+    LDA 0x00
+    STA FLOAT_INT32_B3
+    JSR INT32_TO_FLOAT
+    JSR FLOAT_TO_INT32
+    LDA FLOAT_INT32_B0
+    CMP 0xA0
+    BNE .fail
+    LDA FLOAT_INT32_B1
+    CMP 0x86
+    BNE .fail
+    LDA FLOAT_INT32_B2
+    CMP 0x01
+    BNE .fail
+    LDA FLOAT_INT32_B3
+    CMP 0x00
+    BNE .fail
+
+;   Test #FI32_2: INT32_TO_FLOAT(1000000) → roundtrip
+;   1000000 = 0x000F4240
+    LDA 0x40
+    STA FLOAT_INT32_B0
+    LDA 0x42
+    STA FLOAT_INT32_B1
+    LDA 0x0F
+    STA FLOAT_INT32_B2
+    LDA 0x00
+    STA FLOAT_INT32_B3
+    JSR INT32_TO_FLOAT
+    JSR FLOAT_TO_INT32
+    LDA FLOAT_INT32_B0
+    CMP 0x40
+    BNE .fail
+    LDA FLOAT_INT32_B1
+    CMP 0x42
+    BNE .fail
+    LDA FLOAT_INT32_B2
+    CMP 0x0F
+    BNE .fail
+    LDA FLOAT_INT32_B3
+    CMP 0x00
+    BNE .fail
+
+;   Test #FI32_3: INT32_TO_FLOAT(-50000) → roundtrip
+;   -50000 = 0xFFFF3CB0
+    LDA 0xB0
+    STA FLOAT_INT32_B0
+    LDA 0x3C
+    STA FLOAT_INT32_B1
+    LDA 0xFF
+    STA FLOAT_INT32_B2
+    STA FLOAT_INT32_B3
+    JSR INT32_TO_FLOAT
+    JSR FLOAT_TO_INT32
+    LDA FLOAT_INT32_B0
+    CMP 0xB0
+    BNE .fail
+    LDA FLOAT_INT32_B1
+    CMP 0x3C
+    BNE .fail
+    LDA FLOAT_INT32_B2
+    CMP 0xFF
+    BNE .fail
+    LDA FLOAT_INT32_B3
+    CMP 0xFF
+    BNE .fail
+
+;   Test #FI32_4: INT32_TO_FLOAT(0) → should give zero float
+    LDA 0x00
+    STA FLOAT_INT32_B0
+    STA FLOAT_INT32_B1
+    STA FLOAT_INT32_B2
+    STA FLOAT_INT32_B3
+    JSR INT32_TO_FLOAT
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BNE .fail
+
+    ; --- FLOAT_ADD tests ---
+
+;   Test #FA1: 1.0 + 2.0 = 3.0 → roundtrip = 3
+    LDA 0x02
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2        ; float2 = 2.0
+    LDA 0x01
+    LDX 0x00
+    JSR INT_TO_FLOAT            ; float1 = 1.0
+    JSR FLOAT_ADD               ; 1.0 + 2.0 = 3.0
+    JSR FLOAT_TO_INT
+    CMP 0x03
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+;   Test #FA2: 100.0 + 200.0 = 300.0
+    LDA 0xC8
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2        ; float2 = 200.0
+    LDA 0x64
+    LDX 0x00
+    JSR INT_TO_FLOAT            ; float1 = 100.0
+    JSR FLOAT_ADD               ; 100.0 + 200.0 = 300.0
+    JSR FLOAT_TO_INT
+    CMP 0x2C                    ; 300 = 0x012C
+    BNE .fail
+    CPX 0x01
+    BNE .fail
+
+;   Test #FA3: 5.0 + (-3.0) = 2.0 (different signs)
+    LDA 0xFD                    ; -3
+    LDX 0xFF
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2        ; float2 = -3.0
+    LDA 0x05
+    LDX 0x00
+    JSR INT_TO_FLOAT            ; float1 = 5.0
+    JSR FLOAT_ADD               ; 5.0 + (-3.0) = 2.0
+    JSR FLOAT_TO_INT
+    CMP 0x02
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+;   Test #FA4: -10.0 + 10.0 = 0.0
+    LDA 0x0A
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2        ; float2 = 10.0
+    LDA 0xF6                    ; -10
+    LDX 0xFF
+    JSR INT_TO_FLOAT            ; float1 = -10.0
+    JSR FLOAT_ADD               ; -10.0 + 10.0 = 0.0
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BNE .fail
+
+;   Test #FA5: 0.0 + 42.0 = 42.0
+    LDA 0x2A
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2        ; float2 = 42.0
+    LDA 0x00
+    STA 0x80FB
+    STA 0x80FC
+    STA 0x80FD
+    STA 0x80FE                  ; float1 = 0.0
+    JSR FLOAT_ADD               ; 0.0 + 42.0 = 42.0
+    JSR FLOAT_TO_INT
+    CMP 0x2A
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+    ; --- FLOAT_SUB tests ---
+
+;   Test #FS1: 10.0 - 3.0 = 7.0
+    LDA 0x03
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2        ; float2 = 3.0
+    LDA 0x0A
+    LDX 0x00
+    JSR INT_TO_FLOAT            ; float1 = 10.0
+    JSR FLOAT_SUB               ; 10.0 - 3.0 = 7.0
+    JSR FLOAT_TO_INT
+    CMP 0x07
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+;   Test #FS2: 3.0 - 10.0 = -7.0
+    LDA 0x0A
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2        ; float2 = 10.0
+    LDA 0x03
+    LDX 0x00
+    JSR INT_TO_FLOAT            ; float1 = 3.0
+    JSR FLOAT_SUB               ; 3.0 - 10.0 = -7.0
+    JSR FLOAT_TO_INT
+    CMP 0xF9                    ; -7 low byte
+    BNE .fail
+    CPX 0xFF                    ; -7 high byte
+    BNE .fail
+
+;   Test #FS3: 100.0 - 100.0 = 0.0
+    LDA 0x64
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    JSR FLOAT_SUB
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BNE .fail
+
+    ; --- FLOAT_DIV tests ---
+
+;   Test #FD1: 100.0 / 10.0 = 10.0
+    LDA 0x0A
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    LDA 0x64
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_DIV
+    JSR FLOAT_TO_INT
+    CMP 0x0A
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+;   Test #FD2: 1.0 / 2.0 = 0.5 (0x3F000000)
+    LDA 0x02
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    LDA 0x01
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_DIV
+    LDA 0x80FE
+    CMP 0x3F
+    BNE .fail
+    LDA 0x80FD
+    BNE .fail
+    LDA 0x80FC
+    BNE .fail
+    LDA 0x80FB
+    BNE .fail
+
+;   Test #FD3: -20.0 / 4.0 = -5.0
+    LDA 0x04
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    LDA 0xEC
+    LDX 0xFF
+    JSR INT_TO_FLOAT
+    JSR FLOAT_DIV
+    JSR FLOAT_TO_INT
+    CMP 0xFB
+    BNE .fail
+    CPX 0xFF
+    BNE .fail
+
+;   Test #FD4: 7.0 / 7.0 = 1.0
+    LDA 0x07
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    JSR FLOAT_DIV
+    JSR FLOAT_TO_INT
+    CMP 0x01
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+;   Test #FD5: 0.0 / 42.0 = 0.0
+    LDA 0x2A
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_COPY_TO_F2
+    LDA 0x00
+    STA 0x80FB
+    STA 0x80FC
+    STA 0x80FD
+    STA 0x80FE
+    JSR FLOAT_DIV
+    LDA 0x80FB
+    ORA 0x80FC
+    ORA 0x80FD
+    ORA 0x80FE
+    BNE .fail
+
 
     RTS
 
