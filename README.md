@@ -105,6 +105,23 @@ The simulator can also load a specific binary file in the memory and monitor it 
 python ./simulate.py --program roms/_test_.bin
 ```
 
+### Headless mode
+
+The simulator supports a headless mode for automated testing and CI/CD pipelines. In this mode, no interactive terminal is required: the kernel boots, automatically executes the loaded program, and exits when the program completes (either via `RTS` or `HLT`).
+
+```bash
+python ./simulate.py --autorun --program roms/helloworld.bin --max-cycles 1000000 --quiet
+```
+
+Available flags:
+* `--headless` - Run without TTY (no stdin, no termios)
+* `--autorun` - Automatically execute the loaded program after kernel boot (implies `--headless`)
+* `--max-cycles N` - Safety limit on CPU cycles to prevent infinite loops
+* `--quiet` - Suppress kernel output, show only application output
+* `--dump-regs <file>` - Save CPU registers, flags, cycle count and stop reason to a JSON file on exit
+
+Exit codes: `0` = program completed, `1` = timeout, `2` = execution error. Use `--dump-regs` to inspect the full CPU state (including `OUT` register value) after execution.
+
 <img src="media/otto-kernel.png" width="600">
 
 ## Control words ROM generation

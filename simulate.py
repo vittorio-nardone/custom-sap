@@ -477,61 +477,149 @@ if __name__ == "__main__":
     parser.add_argument("--program", type=str, help="Path to the binary program file to load")
     parser.add_argument("--address", type=lambda x: int(x, 0), default=0x8400, help="Memory address to load the program (default: 0x8400)")
     parser.add_argument("--simulate-serial", action="store_true", help="Simulate serial ports instead of using stdin/stdout")
+    parser.add_argument("--headless", action="store_true", help="Run without TTY (no stdin, no termios). Compatible with batch/CI usage")
+    parser.add_argument("--autorun", action="store_true", help="Automatically run the loaded program after kernel boot (implies --headless)")
+    parser.add_argument("--max-cycles", type=int, default=0, help="Maximum CPU cycles before forced exit (0 = unlimited)")
+    parser.add_argument("--quiet", action="store_true", help="Suppress kernel output, show only application output (address >= 0x8400)")
+    parser.add_argument("--dump-regs", type=str, default=None, help="Dump CPU registers to a file on exit (JSON format)")
     args = parser.parse_args()
 
-    print("\nProject OTTO - Simulator v1.2.0")
+    # --autorun implies --headless
+    if args.autorun:
+        args.headless = True
+
+    print("\nProject OTTO - Simulator v1.3.0")
     # Create a new OttoCPU instance
     cpu = OttoCPU()
+
+    # App execution tracking: detect when the program starts (PC enters app space)
+    # and when it returns (PC back in kernel AND SP restored above JSR level).
+    # Used by --autorun (to exit cleanly on RTS) and --quiet (to suppress kernel output).
+    if args.autorun or args.quiet:
+        cpu._app_running = False
+        cpu._app_started = False
+        cpu._app_sp = 0
+        _original_step = cpu.step
+        def _tracking_step():
+            if not cpu._app_running and not cpu._app_started \
+                    and cpu.PC >= args.address and len(cpu.KEY) == 0:
+                # App started: PC entered app space and autorun input was consumed
+                cpu._app_running = True
+                cpu._app_started = True
+                cpu._app_sp = cpu.SP  # SP right after kernel's JSR to app
+            elif cpu._app_running and cpu.PC < 0x8400 and cpu.SP > cpu._app_sp:
+                # SP restored above the app call level = app did RTS
+                cpu._app_running = False
+            _original_step()
+        cpu.step = _tracking_step
+
+    # In quiet mode, suppress serial output when app is not running
+    if args.quiet:
+        _original_write_byte = cpu.write_byte
+        def _quiet_write_byte(address, value):
+            if address == 0x6021 and not cpu._app_running:
+                return
+            _original_write_byte(address, value)
+        cpu.write_byte = _quiet_write_byte
 
     # Load the kernel into memory
     print("-> loading kernel into rom memory")
     cpu.load_binary("roms/kernel-rom.bin", cpu.memory_regions['rom']['start'])
-    
+
     # Load the forth interpreter into memory
     print("-> loading forth interpreter into rom memory")
     cpu.load_binary("roms/forth.bin", cpu.memory_regions['forth']['start'])
 
-     # Load a program into memory if provided
+    # Load a program into memory if provided
     if args.program:
         print(f"-> loading program {args.program} into memory")
         cpu.load_binary(args.program, args.address)
 
-        # Set up file change handler
-        event_handler = FileChangeHandler(cpu, args.program, args.address)
-        observer = Observer()
-        observer.schedule(event_handler, path=os.path.dirname(args.program), recursive=False)
-        observer.start()
-    
+        # Set up file change handler (not needed in headless mode)
+        if not args.headless:
+            event_handler = FileChangeHandler(cpu, args.program, args.address)
+            observer = Observer()
+            observer.schedule(event_handler, path=os.path.dirname(args.program), recursive=False)
+            observer.start()
+
+    # In autorun mode, pre-load keyboard buffer with 'r' + CR to trigger program execution
+    if args.autorun:
+        cpu.KEY = [ord('r'), 0x0D]
+
     # Run the simulator
     print("-> system boot")
-    old_settings = termios.tcgetattr(sys.stdin)
-    try:
-        tty.setcbreak(sys.stdin.fileno())
+    exit_code = 0
 
-        if args.simulate_serial:
-            with VirtualSerialPorts(2, False, False) as ports:
-                cpu.set_serial_port(ports[0])
-                print(f"-> use serial port {ports[1]} to communicate with the CPU")
-
-                # Flush stdout, in case the ports are being read in a pipe. Else
-                # Python will buffer it and block.
-                sys.stdout.flush()
-
-                while cpu.HLT == False: 
-                    cpu.step()
-        else:
-            while cpu.HLT == False:    
-                while keyboard_hit():
-                    key = ord(sys.stdin.read(1))
-                    cpu.push_key(key)
+    if args.headless:
+        # Headless mode: no TTY, no stdin reading
+        stop_reason = "completed"
+        try:
+            while cpu.HLT == False:
                 cpu.step()
-    except Exception as e:
-        print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
+                # In autorun mode, exit cleanly when the app returns via RTS
+                if args.autorun and cpu._app_started and not cpu._app_running:
+                    break
+                if args.max_cycles > 0 and cpu.cycles >= args.max_cycles:
+                    print(f"\n-> max cycles reached ({args.max_cycles}), stopping simulator")
+                    stop_reason = "timeout"
+                    exit_code = 1
+                    break
+        except Exception as e:
+            print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
+            stop_reason = "error"
+            exit_code = 2
 
-    finally:
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-    
-    print(f"\nSystem halted. OUT registry: 0x{cpu.OUT:02X}")
+        if cpu.HLT:
+            stop_reason = "halted"
+
+        print(f"\nSystem halted. OUT registry: 0x{cpu.OUT:02X} (cycles: {cpu.cycles})")
+
+        # Dump registers to file if requested
+        if args.dump_regs:
+            import json
+            regs = {
+                "A": cpu.A, "X": cpu.X, "Y": cpu.Y,
+                "D": cpu.D, "E": cpu.E, "OUT": cpu.OUT,
+                "PC": cpu.PC, "SP": cpu.SP,
+                "flags": {"Z": cpu.Z, "N": cpu.N, "C": cpu.C, "I": cpu.I, "O": cpu.O},
+                "cycles": cpu.cycles,
+                "stop_reason": stop_reason
+            }
+            with open(args.dump_regs, 'w') as f:
+                json.dump(regs, f, indent=2)
+            print(f"-> registers dumped to {args.dump_regs}")
+
+        sys.exit(exit_code)
+    else:
+        # Interactive mode: original behavior with TTY
+        old_settings = termios.tcgetattr(sys.stdin)
+        try:
+            tty.setcbreak(sys.stdin.fileno())
+
+            if args.simulate_serial:
+                with VirtualSerialPorts(2, False, False) as ports:
+                    cpu.set_serial_port(ports[0])
+                    print(f"-> use serial port {ports[1]} to communicate with the CPU")
+
+                    # Flush stdout, in case the ports are being read in a pipe. Else
+                    # Python will buffer it and block.
+                    sys.stdout.flush()
+
+                    while cpu.HLT == False:
+                        cpu.step()
+            else:
+                while cpu.HLT == False:
+                    while keyboard_hit():
+                        key = ord(sys.stdin.read(1))
+                        cpu.push_key(key)
+                    cpu.step()
+        except Exception as e:
+            print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
+
+        finally:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+
+        print(f"\nSystem halted. OUT registry: 0x{cpu.OUT:02X}")
             
  
     
