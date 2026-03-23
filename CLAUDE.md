@@ -5,9 +5,11 @@ The CPU is built from 7400-series TTL ICs, not a commercial microprocessor.
 
 ## Build & Tools
 
-- **Python venv**: `source .venv/bin/activate` (Python 3.11, required for simulator)
+- **Python venv**: `source .venv/bin/activate` (Python 3.11, required for simulator and build scripts)
 - **Assembler**: [CustomASM](https://github.com/hlorenzi/customasm) (`cargo install customasm`)
-- **Build all**: `./generate-all.sh`
+- **Build all** (kernel, microcode, symbols, apps): `source .venv/bin/activate && ./generate-all.sh`
+  - Regenerates microcode ROMs, lookup tables, kernel binary, symbols, and all apps in `apps/`
+  - **Always run this after modifying kernel files** to ensure symbols.asm stays in sync with kernel addresses
 - **Compile single app**: `customasm apps/myapp.asm -f binary -o roms/myapp.bin`
 - **Simulator (interactive)**: `python simulate.py --program roms/myapp.bin`
 - **Simulator (headless/test)**: `python simulate.py --autorun --program roms/myapp.bin --max-cycles 1000000 --quiet`

@@ -7,8 +7,8 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.2.13"
-#const FORTH_BUILDDATE = "10/16/2025"
+#const FORTH_VERSION = "v1.2.14"
+#const FORTH_BUILDDATE = "03/23/2026"
 
 ; Include definitions, kernel symbols and Forth consts
 #include "../assembly/ruledef.asm"

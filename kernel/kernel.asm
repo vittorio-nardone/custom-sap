@@ -53,14 +53,14 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.50"
-#const KERNEL_BUILDDATE = "10/15/2025"
+#const KERNEL_VERSION = "v1.2.51"
+#const KERNEL_BUILDDATE = "03/23/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
 #include "tests.asm"
 #include "math.asm"
-; #include "float.asm" - Work in progress
+#include "float.asm"
 #include "memory.asm"
 #include "utils.asm"
 #include "serial.asm"
@@ -77,6 +77,7 @@ boot:
     ldo 0x00
     jsr MICROCODE_test
     jsr MATH_test
+    jsr FLOAT_test
     jmp main
 
 

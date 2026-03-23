@@ -5,33 +5,35 @@
 ; SUBROUTINE: INT_TO_FLOAT
 ;
 ; DESCRIPTION:
-;   This subroutine performs signed integer (two bytes) to IEEE 754 float conversion 
-;   using the IEEE 754 standard.
+;   Converts a signed 16-bit integer (2's complement) to
+;   IEEE 754 single precision float (32-bit).
+;
 ; INPUTS:
-;   Input is stored in the X and Y registers as a signed integer (2's complement for negative numbers)
-;   X : low byte of input.
-;   Y : high byte of input.
+;   A : low byte of signed 16-bit integer.
+;   X : high byte of signed 16-bit integer.
 ;
 ; OUTPUTS:
-;   0x80FB    ; Mantissa low
-;   0x80FC    ; Mantissa mid
-;   0x80FD    ; Mantissa high
-;   0x80FE    ; Sign and exponent
+;   0x80FB    ; Float byte 0 (mantissa low)
+;   0x80FC    ; Float byte 1 (mantissa mid)
+;   0x80FD    ; Float byte 2 (mantissa high + exponent LSB)
+;   0x80FE    ; Float byte 3 (sign + exponent)
 ;
 ; DESTROY:
-;   A, X, Y 
+;   A, X, Y
 ;
 ; FLAGS AFFECTED:
-;   (Z) - unpredictable value 
+;   (Z) - unpredictable value
 ;   (N) - unpredictable value
 ;   (C) - unpredictable value
 ;
-; USAGE:
-;
 ; EXAMPLE:
+;   lda 0x64        ; Low byte = 100
+;   ldx 0x00        ; High byte = 0
+;   jsr INT_TO_FLOAT
+;   ; Result at 0x80FB-0x80FE: 42C80000 (IEEE 754 for 100.0)
 ;
 ; AUTHOR: VN
-; LAST UPDATE: 15/03/2025
+; LAST UPDATE: 23/03/2026
 ; **********************************************************
 INT_TO_FLOAT:
     ; Save input registers
@@ -121,9 +123,41 @@ INT_TO_FLOAT:
 
 
 
-; IEEE 754 Float to Integer Conversion
-; Input: IEEE 754 float stored in 0x80FB, 0x80FC, 0x80FD, 0x80FE (4 bytes, little-endian)
-; Output: 16-bit signed integer in A (low byte) and X (high byte)
+; **********************************************************
+; SUBROUTINE: FLOAT_TO_INT
+;
+; DESCRIPTION:
+;   Converts an IEEE 754 single precision float (32-bit)
+;   to a signed 16-bit integer. Truncates toward zero.
+;   Returns zero if exponent is negative.
+;   Saturates to 0x7FFF / 0x8000 on overflow.
+;
+; INPUTS:
+;   0x80FB    ; Float byte 0 (mantissa low)
+;   0x80FC    ; Float byte 1 (mantissa mid)
+;   0x80FD    ; Float byte 2 (mantissa high + exponent LSB)
+;   0x80FE    ; Float byte 3 (sign + exponent)
+;
+; OUTPUTS:
+;   A : low byte of signed 16-bit integer.
+;   X : high byte of signed 16-bit integer.
+;
+; DESTROY:
+;   A, X, Y
+;
+; FLAGS AFFECTED:
+;   (Z) - unpredictable value
+;   (N) - unpredictable value
+;   (C) - unpredictable value
+;
+; EXAMPLE:
+;   ; Assuming 0x80FB-0x80FE contains 42C80000 (100.0)
+;   jsr FLOAT_TO_INT
+;   ; Result: A = 0x64 (low byte), X = 0x00 (high byte) -> 100
+;
+; AUTHOR: VN
+; LAST UPDATE: 23/03/2026
+; **********************************************************
 
 FLOAT_TO_INT:
     ; Check if float is zero
@@ -146,20 +180,27 @@ FLOAT_TO_INT:
     CMP 0x0F    ; Max shift for 16-bit number
     BPL .OVERFLOW
 
-    ; Prepare for conversion
-    TAY         ; Y = shift count
-    
-    ; Reconstruct mantissa with implicit leading 1
-    LDA 0x80    ; Set implicit leading 1
-    STA 0x80FF     ; Temporary storage for high byte of mantissa
+    ; Calculate shift count = 23 - exponent
+    STA 0x80F9      ; Save exponent temporarily
+    LDA 0x17        ; 23
+    SEC
+    SBC 0x80F9      ; 23 - exponent = number of right shifts needed
+    TAY             ; Y = shift count
 
-    ; Shift mantissa to correct position
+    ; Reconstruct significand: implicit leading 1 + mantissa bits from 0x80FD
+    LDA 0x80FD
+    AND 0x7F        ; Mask off exponent LSB, keep mantissa bits 22:16
+    ORA 0x80        ; Set implicit leading 1 (bit 23)
+    STA 0x80FF      ; High byte of 24-bit significand
+    ; 0x80FC and 0x80FB already contain mantissa bits 15:0
+
+    ; Shift significand right by Y positions to get integer value
 .SHIFT_MANTISSA:
     CPY 0x00
     BEQ .CHECK_SIGN
-    LSR 0x80FF     ; Shift high byte
-    ROR 0x80FC     ; Shift mid byte
-    ROR 0x80FB     ; Shift low byte
+    LSR 0x80FF      ; Shift high byte
+    ROR 0x80FC      ; Shift mid byte
+    ROR 0x80FB      ; Shift low byte
     DEY
     JMP .SHIFT_MANTISSA
 
@@ -208,3 +249,77 @@ FLOAT_TO_INT:
     LDA 0x00
     LDX 0x80
     RTS
+
+; **********************************************************
+; TESTS START HERE
+;
+
+FLOAT_test:
+;   Test #F1: INT_TO_FLOAT(1) = 0x3F800000
+    LDA 0x01
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    LDA 0x80FE
+    CMP 0x3F
+    BNE .fail
+    LDA 0x80FD
+    CMP 0x80
+    BNE .fail
+    LDA 0x80FC
+    BNE .fail
+    LDA 0x80FB
+    BNE .fail
+
+;   Test #F2: INT_TO_FLOAT(0) = 0x00000000
+    LDA 0x00
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    LDA 0x80FE
+    BNE .fail
+    LDA 0x80FD
+    BNE .fail
+    LDA 0x80FC
+    BNE .fail
+    LDA 0x80FB
+    BNE .fail
+
+;   Test #F3: INT_TO_FLOAT(-1) = 0xBF800000
+    LDA 0xFF
+    LDX 0xFF
+    JSR INT_TO_FLOAT
+    LDA 0x80FE
+    CMP 0xBF
+    BNE .fail
+    LDA 0x80FD
+    CMP 0x80
+    BNE .fail
+    LDA 0x80FC
+    BNE .fail
+    LDA 0x80FB
+    BNE .fail
+
+;   Test #F4: Roundtrip INT_TO_FLOAT(100) -> FLOAT_TO_INT = 0x0064
+    LDA 0x64
+    LDX 0x00
+    JSR INT_TO_FLOAT
+    JSR FLOAT_TO_INT
+    CMP 0x64
+    BNE .fail
+    CPX 0x00
+    BNE .fail
+
+;   Test #F5: Roundtrip INT_TO_FLOAT(1000) -> FLOAT_TO_INT = 0x03E8
+    LDA 0xE8
+    LDX 0x03
+    JSR INT_TO_FLOAT
+    JSR FLOAT_TO_INT
+    CMP 0xE8
+    BNE .fail
+    CPX 0x03
+    BNE .fail
+
+    RTS
+
+.fail:
+    LDO 0xFB
+    HLT
