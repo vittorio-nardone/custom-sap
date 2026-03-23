@@ -20,10 +20,7 @@
 #const ACIA_STATUS_REG_TRANSMIT_DATA_REGISTER_EMPTY = 0x02
 #const ACIA_STATUS_REG_RECEIVER_OVERRUN = 0x20
 
-#const ACIA_1_RX_BUFFER_AVAILABLE   = 0x83F1
-#const ACIA_1_RX_BUFFER_PULL_INDEX  = 0x83F2 
-#const ACIA_1_RX_BUFFER_PUSH_INDEX  = 0x83F3 
-#const ACIA_1_RX_BUFFER_POINTER  = 0x83F4 ; -0x83F5  - pointer to ACIA 1 RX buffer base address
+; RAM variables defined in memmap.asm
 
 ; **********************************************************
 ; SUBROUTINE: ACIA_INIT

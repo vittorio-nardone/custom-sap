@@ -121,35 +121,35 @@ DIVIDE_INT:
 ; **********************************************************
 
 MULTIPLY_INT:
-	sta 0x80fd          ; 0x15 -> 0xfd
-	cpx 0x80fd          ; 0x23 > 0x15 -> C = 1
+	sta MUL_TMP          ; 0x15 -> 0xfd
+	cpx MUL_TMP          ; 0x23 > 0x15 -> C = 1
 	bcc .sorted         ; not jump
 	txa                 ; swap
-	ldx 0x80fd
+	ldx MUL_TMP
 .sorted:
-	sta 0x80ff          ; 0x23 -> ff
-	stx 0x80fd          ; 0x15 -> fd
+	sta MUL_TMP + 2          ; 0x23 -> ff
+	stx MUL_TMP          ; 0x15 -> fd
 	sec                 ; C -> 1
-	sbc 0x80fd          ; 0x23 - 0x15 = 0x0E -> acc
+	sbc MUL_TMP          ; 0x23 - 0x15 = 0x0E -> acc
 	tay                 ; y = 0x0E
-   	ldx 0x80ff          ; x = 0x23
+   	ldx MUL_TMP + 2          ; x = 0x23
 	lda SQTAB_LSB,x     ; acc = 0xC9
 	sec                 ; C -> 1
 	sbc SQTAB_LSB,y     ; 0xC9 - 0xC4 = 0x05
-	sta 0x80fe          ; 0x05 -> fe
+	sta MUL_TMP + 1          ; 0x05 -> fe
 	lda SQTAB_MSB,x     ; acc = 0x04
 	sbc SQTAB_MSB,y     ; 0x04 - 0x00 = 0x04
-	sta 0x80ff          ; 0x04 -> ff
-	ldx 0x80fd          ; x = 0x15
-	lda 0x80fe          ; a = 0x05
+	sta MUL_TMP + 2          ; 0x04 -> ff
+	ldx MUL_TMP          ; x = 0x15
+	lda MUL_TMP + 1          ; a = 0x05
     clc
 	adc SQTAB_LSB,x     ; 0x05 + 0xb9 = 0xbe
-	sta 0x80fe          ; 0xbe -> fe
-	lda 0x80ff          ; a = 0x04
+	sta MUL_TMP + 1          ; 0xbe -> fe
+	lda MUL_TMP + 2          ; a = 0x04
 	adc SQTAB_MSB,x     ; 0x04 + 0x01 = 0x05 (carry from ADC preserved for ROR)
     ror a               ; 0x05 >> a = 0x02 + C
-    ror 0x80fe          ; 0xbe >> 0x5f + C = 0xdf
-	ldx 0x80fe	        ; x = 0xdf
+    ror MUL_TMP + 1          ; 0xbe >> 0x5f + C = 0xdf
+	ldx MUL_TMP + 1	        ; x = 0xdf
     rts
 
 ; **********************************************************

@@ -3,7 +3,7 @@
 
 #include "serial.asm"
 
-#const VT100_BUFFER   = 0x8120
+; VT100_BUFFER defined in memmap.asm
 
 VT100:
 

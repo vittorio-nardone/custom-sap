@@ -23,13 +23,13 @@
     jsr ACIA_SEND_NEWLINE
 
     ; Save A to app-local storage
-    lda 0x80FB
+    lda FLOAT1
     sta .save_a_b0
-    lda 0x80FC
+    lda FLOAT1 + 1
     sta .save_a_b1
-    lda 0x80FD
+    lda FLOAT1 + 2
     sta .save_a_b2
-    lda 0x80FE
+    lda FLOAT1 + 3
     sta .save_a_b3
 
     ; Read second operand
@@ -40,13 +40,13 @@
     jsr ACIA_SEND_NEWLINE
 
     ; Save B to app-local storage
-    lda 0x80FB
+    lda FLOAT1
     sta .save_b_b0
-    lda 0x80FC
+    lda FLOAT1 + 1
     sta .save_b_b1
-    lda 0x80FD
+    lda FLOAT1 + 2
     sta .save_b_b2
-    lda 0x80FE
+    lda FLOAT1 + 3
     sta .save_b_b3
 
     ; --- ADD: A + B ---
@@ -95,25 +95,25 @@
 
     jmp .loop
 
-; Helper: load A into float1 (0x80FB-FE), B into FLOAT2 (0x80F0-F3)
+; Helper: load A into FLOAT1, B into FLOAT2
 ; Both operands are restored from app-local storage
 .load_a_f1_b_f2:
     lda .save_a_b0
-    sta 0x80FB
+    sta FLOAT1
     lda .save_a_b1
-    sta 0x80FC
+    sta FLOAT1 + 1
     lda .save_a_b2
-    sta 0x80FD
+    sta FLOAT1 + 2
     lda .save_a_b3
-    sta 0x80FE
+    sta FLOAT1 + 3
     lda .save_b_b0
-    sta FLOAT2_B0
+    sta FLOAT2
     lda .save_b_b1
-    sta FLOAT2_B1
+    sta FLOAT2 + 1
     lda .save_b_b2
-    sta FLOAT2_B2
+    sta FLOAT2 + 2
     lda .save_b_b3
-    sta FLOAT2_B3
+    sta FLOAT2 + 3
     rts
 
 .header:

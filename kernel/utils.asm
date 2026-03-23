@@ -1,8 +1,7 @@
 #once
 #bank kernel
 
-#const BINDEC32_VALUE = 0x8340 ; - 0x8343
-#const BINDEC32_RESULT = 0x8344 ; - 0x834D
+; RAM variables defined in memmap.asm
 
 ;================================================================================
 ;

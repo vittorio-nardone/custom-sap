@@ -11,13 +11,7 @@
 #const INT_TIMER    = 0x04
 #const INT_KEYBOARD = 0x08
 
-#const INT_TIMER_COUNTER_MSB        = 0x83F6 ;
-#const INT_TIMER_COUNTER_LSB        = 0x83F7 ;
-
-#const INT_EXTINT1_HANDLER_POINTER  = 0x83F8 ; -0x83F9  - pointer to INT1 interrupt handler 
-#const INT_EXTINT2_HANDLER_POINTER  = 0x83FA ; -0x83FB  - pointer to INT2 interrupt handler
-#const INT_TIMER_HANDLER_POINTER    = 0x83FC ; -0x83FD  - pointer to TIMER interrupt handler
-#const INT_KEYBOARD_HANDLER_POINTER = 0x83FE ; -0x83FF  - pointer to KEYB interrupt handler
+; RAM variables defined in memmap.asm
 
 #addr 0x00FF  
 INTERRUPT_HANDLER:

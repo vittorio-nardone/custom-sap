@@ -62,18 +62,7 @@
 ; zero page variables (adjust these to suit your needs)
 ;
 ;
-#const XMODEM_CRC			=	0x8337		; CRC lo byte  (two byte variable)
-#const XMODEM_CRCH			=	0x8338		; CRC hi byte  
-
-#const XMODEM_PTRP			=	0x8339		; data pointer (three byte variable)
-#const XMODEM_PTRH			=	0x833a		; data pointer 
-#const XMODEM_PTR			=	0x833b		; data pointer 
-
-
-#const XMODEM_BLK_NO		=	0x833c			; block number 
-#const XMODEM_RETRY_COUNTER	=	0x833d		; retry counter 
-#const XMODEM_RETRY_COUNTER2 =	0x833e	; 2nd counter
-#const XMODEM_BLOCK_FLAG	=	0x833f		; block flag 
+; RAM variables defined in memmap.asm
 
 #const XMODEM_RETRY_3SECONDS = 0x3f
 #const XMODEM_RETRY_1SECOND = 0x15
@@ -83,8 +72,7 @@
 ; non-zero page variables and buffers
 ;
 ;
-#const XMODEM_RECEIVE_BUFFER	=	0x8200      	; temp 132 byte receive buffer 
-;(place anywhere, page aligned)
+; XMODEM_RECEIVE_BUFFER defined in memmap.asm
 ;
 ;
 ;  tables and constants
@@ -139,7 +127,7 @@ XMODEM_RCV:
 	sta	XMODEM_RETRY_COUNTER2		; set loop counter for ~3 sec delay
 	lda	0x00
 	sta	XMODEM_CRC
-	sta	XMODEM_CRCH 				; init CRC value	
+	sta	XMODEM_CRC + 1 				; init CRC value	
 	jsr	.GetByte					; wait for input
 	bcs	.GotByte					; byte received, process it
 	bcc	.StartCrc					; resend "C"
@@ -149,7 +137,7 @@ XMODEM_RCV:
 	sta	XMODEM_RETRY_COUNTER2		; set loop counter for ~3 sec delay
 	lda	0x00						;
 	sta	XMODEM_CRC					;
-	sta	XMODEM_CRCH					; init CRC value	
+	sta	XMODEM_CRC + 1					; init CRC value	
 	jsr	.GetByte					; get first byte of block
 	bcc	.StartBlk					; timed out, keep waiting...
 .GotByte:
@@ -215,7 +203,7 @@ XMODEM_RCV:
 	cpy	0x82						; 128 bytes
 	bne	.CalcCrc					;
 	lda	XMODEM_RECEIVE_BUFFER,y		; get hi CRC from buffer
-	cmp	XMODEM_CRCH					; compare to calculated hi CRC
+	cmp	XMODEM_CRC + 1					; compare to calculated hi CRC
 	bne	.BadCrc						; bad crc, send NAK
 	iny								;
 	lda	XMODEM_RECEIVE_BUFFER,y		; get lo CRC from buffer
@@ -354,14 +342,14 @@ XMODEM_RCV:
 ;
 ;
 .UpdCrc:
-	eor 	XMODEM_CRCH			; Quick CRC computation with lookup tables
+	eor 	XMODEM_CRC + 1			; Quick CRC computation with lookup tables
 	tax		 					; updates the two bytes at crc & crc+1
 	
 	lda 	XMODEM_CRC_HI_TABLE,x
 	tad
 	lda 	XMODEM_CRC			; with the byte send in the "A" register
 	eor 	d
-	sta 	XMODEM_CRCH
+	sta 	XMODEM_CRC + 1
 	lda 	XMODEM_CRC_LO_TABLE,x
 	sta 	XMODEM_CRC
 	rts

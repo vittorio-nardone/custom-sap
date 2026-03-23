@@ -19,7 +19,6 @@
 ; 0x8000-0xFFFF (32k) - RAM
 ;       0x8000-0x83FF (1k) - reserved for kernel operations
 
-;           0x8100-0x810F  - MEMORY management variables  
 ;           0x8120-0x812F  - VT100 variables          
 
 ;           0x8200-0x82FF  - XMODEM buffer
@@ -53,15 +52,15 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.64"
+#const KERNEL_VERSION = "v1.2.66"
 #const KERNEL_BUILDDATE = "03/23/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
+#include "memmap.asm"
 #include "tests.asm"
 #include "math.asm"
 #include "float.asm"
-#include "memory.asm"
 #include "utils.asm"
 #include "serial.asm"
 #include "interrupt.asm"
@@ -83,18 +82,7 @@ boot:
 
 #const FORTH_START = 0x4000
 
-#const MAIN_MENU_STATUS = 0x8000
-#const MAIN_MENU_INPUT_BUFFER_COUNT = 0x8001
-#const MAIN_MENU_ADDR_PAGE = 0x8002
-#const MAIN_MENU_ADDR_MSB = 0x8003
-#const MAIN_MENU_ADDR_LSB = 0x8004
-#const MAIN_MENU_DUMP_COUNT = 0x8005
-#const MAIN_MENU_OPCODE_MSB = 0x8006
-#const MAIN_MENU_OPCODE_LSB = 0x8007
-#const MAIN_MENU_OPCODE_LENGTH = 0x8008
-#const MAIN_MENU_OPCODE_LENGTH_2 = 0x8009
-#const MAIN_MENU_OPCODE_PTR = 0x800A
-#const MAIN_MENU_INPUT_BUFFER = 0x800B  ; - 0x801A (max 16 chars)
+; RAM variables are defined in memmap.asm
 
 #bank kernel
 main:

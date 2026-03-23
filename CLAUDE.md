@@ -76,21 +76,7 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 0x006800-0x007FFF  (6 KB)  Video RAM (reserved)
 
 0x008000-0x00FFFF  (32 KB) Main RAM
-  0x8000-0x83FF  (1 KB)    Kernel reserved variables
-    0x8000-0x800A          Main menu state
-    0x8100-0x810F          Memory management
-    0x8120-0x812F          VT100 variables
-    0x8200-0x82FF          XMODEM buffer
-    0x8337-0x833F          XMODEM variables
-    0x8340-0x834D          Utility variables
-    0x83F1                 ACIA RX buffer size
-    0x83F2-0x83F3          ACIA RX push/pull indexes
-    0x83F4-0x83F5          ACIA RX buffer pointer
-    0x83F6-0x83F7          16-bit timer counter (MSB, LSB)
-    0x83F8-0x83F9          INT1 handler pointer
-    0x83FA-0x83FB          INT2 handler pointer (serial)
-    0x83FC-0x83FD          TIMER handler pointer
-    0x83FE-0x83FF          KEYBOARD handler pointer
+  0x8000-0x83FF  (1 KB)    Kernel reserved variables (see kernel/memmap.asm for full map)
   0x8400-0xEFFF  (27 KB)   Application RAM (apps load here)
   0xF000-0xFFFF  (4 KB)    Stack (grows downward from 0xFFFF)
 
@@ -491,14 +477,6 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 | DIVIDE_INT | 0x0AD0 | Integer division |
 | MULTIPLY_INT | 0x0AF9 | Integer multiplication |
 
-### Memory Management
-| Symbol | Address | Description |
-|--------|---------|-------------|
-| MEMORY_INIT_DEFAULT | 0x0B84 | Init memory manager (default) |
-| MEMORY_INIT | 0x0B9F | Init memory manager |
-| MEMORY_ALLOCATE | 0x0BBA | Allocate memory block |
-| MEMORY_DEALLOCATE | 0x0C17 | Free memory block |
-
 ### File Transfer
 | Symbol | Address | Description |
 |--------|---------|-------------|
@@ -728,11 +706,11 @@ assembly/ruledef.asm     - Instruction set definitions for CustomASM
 kernel/
   kernel.asm             - Main kernel (v1.2.50)
   banks.asm              - ROM/RAM bank definitions
+  memmap.asm             - Kernel RAM allocation map (0x8000-0x83FF)
   symbols.asm            - Exported kernel symbols/constants
   interrupt.asm          - Interrupt handling
   serial.asm             - ACIA serial I/O
   vt100.asm              - VT100 terminal escape sequences
-  memory.asm             - Block memory allocator
   math.asm               - Multiplication, division, sqrt
   utils.asm              - Hex/decimal conversions
   xmodem.asm             - XMODEM/CRC file transfer

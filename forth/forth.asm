@@ -7,7 +7,7 @@
 }
 #bank rom3   
 
-#const FORTH_VERSION = "v1.2.27"
+#const FORTH_VERSION = "v1.2.28"
 #const FORTH_BUILDDATE = "03/23/2026"
 
 ; Include definitions, kernel symbols and Forth consts
