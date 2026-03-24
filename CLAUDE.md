@@ -710,7 +710,7 @@ Project Otto includes a Tiny Pascal system: a P-Machine bytecode interpreter in 
 
 ### Architecture
 
-The Pascal P-Machine sits in ROM #3 (0x4000-0x5FFF, 8 KB). The Python compiler (`pascal_compiler.py`) compiles `.pas` source files into self-executing binaries that include a native Otto stub followed by P-code bytecode. These binaries load at 0x8400 like any other app and run with the `r` command (or `--autorun`).
+The Pascal P-Machine sits in ROM #3 (0x4000-0x5FFF, 8 KB), together with the on-board editor and compiler. The Python cross-compiler (`pascal_compiler.py`) compiles `.pas` source files into self-executing binaries that include a native Otto stub followed by P-code bytecode. These binaries load at 0x8400 like any other app and run with the `r` command (or `--autorun`).
 
 The kernel menu also provides a `p` command that directly invokes the P-Machine on pure P-code data at 0x8400 (without the native stub).
 
@@ -862,6 +862,39 @@ Comments: `{ block }`, `(* block *)`, `// line`
 
 See `pascal/LANGUAGE.md` for full language reference.
 
+### On-board Editor/Compiler
+
+ROM #3 also contains a line editor and single-pass Pascal compiler, accessible via the kernel `e` command. This allows writing and running Pascal programs directly on Otto without a host PC.
+
+#### Editor Commands
+
+| Command | Description |
+|---------|-------------|
+| `n` | New (clear source) |
+| `l` / `l N` / `l N-M` | List all / line N / range |
+| `i` / `i N` | Insert lines (at end / at position N) |
+| `d N` / `d N-M` | Delete line / range |
+| `e N` | Edit line N |
+| `lo` | Load — paste program from terminal, empty line to stop |
+| `r` | Run — compile and execute |
+| `h` | Help |
+| `q` | Quit to kernel |
+
+Source is stored in Expansion RAM page 1 (0x010000+), up to 255 lines × 80 characters.
+
+#### Testing the On-board Editor/Compiler in Simulator
+
+```bash
+source .venv/bin/activate
+
+# Use --input to feed commands to the simulator (headless mode)
+# 'e' enters editor, 'lo' starts LOAD, then paste lines, empty line ends paste, 'r' runs
+python simulate.py --headless --max-cycles 5000000 --input \
+  "e\rlo\rprogram T;\rbegin\rwriteln(42)\rend.\r\r\rr\rq\rq\r"
+```
+
+The on-board compiler supports the full Tiny Pascal language including procedures, functions, arrays, recursion, and nested scopes. ROM #3 is at 99.96% capacity (3 bytes free).
+
 ## Project Structure
 
 ```
@@ -884,12 +917,16 @@ apps/                    - Example applications
 forth/                   - FORTH language interpreter (legacy, not built)
 pascal/
   pmachine.asm           - P-Machine interpreter (ROM #3)
-  consts.asm             - P-Machine constants and RAM layout
+  editor.asm             - On-board line editor
+  compiler.asm           - On-board single-pass Pascal compiler
+  consts.asm             - P-Machine/editor/compiler constants and RAM layout
   LANGUAGE.md            - Tiny Pascal language reference
   examples/              - Pascal example programs
     hello.pas            - Hello World (MS1)
     calc.pas             - Variables and arithmetic (MS2)
     fizzbuzz.pas         - Control flow: for, if/else, mod (MS3)
+    functions.pas        - Recursive factorial (MS4)
+    bubblesort.pas       - Bubble sort with arrays (MS4.5)
 roms/                    - Compiled binaries
   system/                - Kernel, P-Machine, microcode, 7-segment ROMs
   apps/

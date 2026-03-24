@@ -60,9 +60,12 @@ This repository houses the complete design files and software components for the
 ### System Software
 * **kernel/** - Operating system kernel source code
 * **apps/** - Example applications and demos
-* **pascal/** - Tiny Pascal support (WIP)
+* **pascal/** - Tiny Pascal system
   * **pmachine.asm** - P-Machine bytecode interpreter (ROM #3)
-  * **consts.asm** - P-Machine constants and RAM layout
+  * **editor.asm** - On-board line editor
+  * **compiler.asm** - On-board single-pass Pascal compiler
+  * **consts.asm** - Constants and RAM layout
+  * **LANGUAGE.md** - Tiny Pascal language reference
   * **examples/** - Pascal example programs
 * **pascal_compiler.py** - Tiny Pascal cross-compiler (Python, produces P-code binaries)
 * **forth/** - FORTH language interpreter (deprecated, files retained but excluded from build)
@@ -95,8 +98,12 @@ This repository houses the complete design files and software components for the
 
 4. For Tiny Pascal development:
    ```bash
+   # Cross-compile on host PC
    python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
    python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
+
+   # Or use the on-board editor (kernel menu: 'e')
+   python simulate.py   # then type 'e' to enter editor
    ```
 
 ## Otto simulator
@@ -136,27 +143,73 @@ Exit codes: `0` = program completed, `1` = timeout, `2` = execution error. Use `
 
 <img src="media/otto-kernel.png" width="600">
 
-## Tiny Pascal (WIP)
+## Tiny Pascal
 
-Otto includes experimental support for a minimal Pascal language. The system consists of two components:
+Otto includes a complete Tiny Pascal system: a P-Machine bytecode interpreter, a Python cross-compiler, and an on-board editor/compiler — all packed into ROM #3 (8 KB).
 
-* **P-Machine** — a stack-based bytecode interpreter that resides in ROM #3 (0x4000-0x5FFF). It executes P-code produced by the compiler, using the kernel serial I/O API for output.
+### Components
+
+* **P-Machine** — a stack-based bytecode interpreter in ROM #3 (0x4000-0x5FFF). It executes P-code with support for 16-bit signed integers, procedures, functions, recursion, arrays, and lexical scoping via static links.
 * **Cross-compiler** (`pascal_compiler.py`) — a Python tool that compiles Pascal source files into self-executing P-code binaries. The output can be loaded at 0x8400 and run with either the `r` (run) or `p` (Pascal) kernel commands.
+* **On-board editor/compiler** — a line editor and single-pass recursive descent compiler in native assembly, accessible via the kernel `e` command. Allows writing and running Pascal programs directly on Otto hardware without a host PC.
 
-Currently supported (Milestone 1): `program` structure, `writeln` / `write` with string literals.
+### Language Features
 
-```pascal
-program HelloWorld;
-begin
-  writeln('Hello, World!');
-end.
-```
+Variables (16-bit signed integers), arrays (`array[lo..hi] of integer`), procedures and functions with parameters (by value), recursion, nested scopes with lexical scoping, `if/then/else`, `while/do`, `for/to/downto`, `begin..end`, `write`/`writeln`, `readln`, boolean and arithmetic operators.
+
+See `pascal/LANGUAGE.md` for the full language reference.
+
+### Cross-compilation (host PC)
 
 ```bash
-# Compile and run
 python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
 python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
 ```
+
+### On-board editor (on Otto or in simulator)
+
+From the kernel menu, type `e` to enter the Pascal editor. Use `lo` to paste a program, `r` to compile and run:
+
+```
+> e
+Pascal v0.2
+H=help
+
+> lo
+Paste, end w/empty:
+program Factorial;
+var n: integer;
+function fact(x: integer): integer;
+begin
+  if x <= 1 then fact := 1
+  else fact := x * fact(x - 1)
+end;
+begin
+  for n := 1 to 7 do
+    writeln(fact(n))
+end.
+
+  11 ok
+> r
+Compiling..OK(90B)
+1
+2
+6
+24
+120
+720
+5040
+```
+
+### Examples
+
+| File | Description |
+|------|-------------|
+| `hello.pas` | Hello World |
+| `calc.pas` | Variables and arithmetic |
+| `fizzbuzz.pas` | Control flow: for, if/else, mod |
+| `functions.pas` | Recursive factorial |
+| `bubblesort.pas` | Bubble sort with arrays |
 
 > **Note**: The FORTH interpreter (`forth/`) has been deprecated and is no longer included in the build process or kernel menu. Its source files are retained in the repository for reference.
 

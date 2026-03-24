@@ -641,12 +641,6 @@
 
     ; Patch JPC exit
     jsr .cc_pop_fixup_patch
-
-    ; Deallocate temp
-    lda CC_FRAME_OFF
-    sec
-    sbc 0x02
-    sta CC_FRAME_OFF
     rts
 
 .cc_for_cleanup:

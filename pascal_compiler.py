@@ -1230,8 +1230,8 @@ class CodeGenerator:
                 for name in decl.names:
                     self._add_var(name)
 
-        frame_size = self._scope.next_offset
-        self._emit(OP_ENTER, frame_size, len(sub.params), 1 if is_func else 0)
+        enter_pos = self._code_pos()
+        self._emit(OP_ENTER, 0, len(sub.params), 1 if is_func else 0)
 
         if sub.subroutines:
             jmp_body = self._emit_jmp()
@@ -1242,6 +1242,7 @@ class CodeGenerator:
         for s in sub.body.statements:
             self._gen_stmt(s)
 
+        self.code[enter_pos + 1] = self._scope.next_offset
         self._emit(OP_RET, 1 if is_func else 0)
         self._pop_scope()
 
@@ -1268,18 +1269,19 @@ class CodeGenerator:
                 for name in decl.names:
                     self._add_var(name)
 
-        global_frame_size = self._scope.next_offset
-
         if program.subroutines:
             jmp_main = self._emit_jmp()
             for sub in program.subroutines:
                 self._gen_subroutine(sub, definition_level=0)
             self._patch_jump(jmp_main, self._code_pos())
 
-        self._emit(OP_ENTER, global_frame_size, 0, 0)
+        enter_pos = self._code_pos()
+        self._emit(OP_ENTER, 0, 0, 0)
 
         for stmt in program.statements:
             self._gen_stmt(stmt)
+
+        self.code[enter_pos + 1] = self._scope.next_offset
 
         self.code.append(OP_HALT)
         self._pop_scope()

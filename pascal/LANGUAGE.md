@@ -1,6 +1,6 @@
 # Tiny Pascal Language Reference
 
-Tiny Pascal is a minimal subset of Standard Pascal designed for the Project Otto 8-bit homebrew computer. Programs are compiled on a host PC using `pascal_compiler.py` and executed on Otto's P-Machine bytecode interpreter.
+Tiny Pascal is a minimal subset of Standard Pascal designed for the Project Otto 8-bit homebrew computer. Programs can be compiled on a host PC using the cross-compiler (`pascal_compiler.py`) or written and compiled directly on Otto hardware using the on-board editor/compiler (ROM #3). Both target Otto's P-Machine bytecode interpreter.
 
 ## Program Structure
 
@@ -312,6 +312,8 @@ Three comment styles are supported:
 
 ## Compilation and Execution
 
+### Cross-compiler (host PC)
+
 ```bash
 # Compile
 python pascal_compiler.py program.pas -o roms/apps/pascal/program.bin
@@ -322,6 +324,96 @@ python simulate.py --autorun --program roms/apps/pascal/program.bin --max-cycles
 # Or load interactively and use 'r' (run) or 'p' (Pascal) from kernel menu
 python simulate.py --program roms/apps/pascal/program.bin
 ```
+
+### On-board editor/compiler
+
+Project Otto includes an on-board Pascal editor and single-pass compiler in ROM #3. This allows writing, editing, and running Pascal programs directly on the hardware (or in the simulator) without a host PC.
+
+#### Entering the Editor
+
+From the kernel menu, type `e` + Enter to launch the Pascal editor.
+
+#### Editor Commands
+
+| Command | Description |
+|---------|-------------|
+| `n` | **New** — clear the source buffer |
+| `l` | **List** — display all lines (or `l 3` for line 3, `l 2-5` for range) |
+| `i` | **Insert** — insert lines (or `i 3` to insert at line 3). Empty line to stop |
+| `d N` | **Delete** — delete line N (or `d 2-5` for range) |
+| `e N` | **Edit** — edit line N (shows current content, type new content) |
+| `lo` | **Load** — paste a program from terminal. Empty line to stop |
+| `r` | **Run** — compile and execute the program |
+| `h` | **Help** — show available commands |
+| `q` | **Quit** — exit the editor, return to kernel |
+
+Commands are case-insensitive. `L` and `l` both work.
+
+#### Loading a Program via Copy & Paste
+
+The `lo` (load) command allows pasting a complete Pascal program from the terminal:
+
+1. Type `lo` + Enter
+2. The editor prints `Paste, end w/empty:` and clears the current program
+3. Paste the program text from your clipboard (or type it line by line)
+4. Press Enter on an empty line to finish
+5. The editor reports the number of lines loaded
+
+```
+> lo
+Paste, end w/empty:
+program Hello;
+begin
+  writeln('Hello, Otto!')
+end.
+
+  4 ok
+> r
+Compiling..OK(24B)
+Hello, Otto!
+```
+
+**Notes:**
+- Each line is echoed as it is received
+- An empty line (just Enter) signals end of input
+- The previous program is cleared (equivalent to `n` + paste)
+- Maximum 255 lines, 80 characters per line
+- Source is stored in Expansion RAM (page 1, 64 KB)
+
+#### Listing a Program
+
+Use `l` to dump the program to the terminal. This can also be used to "save" a program by copying the output from the terminal.
+
+#### Compiling and Running
+
+The `r` command compiles the source and immediately executes the resulting P-code:
+
+```
+> r
+Compiling..OK(189B)
+
+1
+2
+3
+4
+5
+```
+
+If there are errors, the compiler reports the line number and error type:
+
+```
+> r
+Compiling..Err L 4: syntax
+```
+
+#### On-board Compiler Limitations
+
+The on-board compiler supports the full Tiny Pascal language (variables, arrays, procedures, functions, recursion, nested scopes) with these restrictions compared to the cross-compiler:
+
+- Multiple `var` blocks are not supported — declare all variables (scalars and arrays) in a single `var` block, separated by semicolons
+- Identifier names are truncated to 7 characters in the symbol table
+- Maximum ~60 symbols (variables, procedures, functions) per program
+- Error messages are abbreviated (e.g., `syntax`, `undef`, `type`)
 
 ## Complete Examples
 

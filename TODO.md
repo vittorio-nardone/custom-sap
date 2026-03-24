@@ -228,13 +228,43 @@ end.
 
 Output: `1 2 3 4 5 6 7 8 9 10`
 
-## Milestone 5 — On-board editor/compiler
+## [DONE] Milestone 5 — On-board editor/compiler
 
 Enable programming directly on Otto hardware without a host PC.
 
-- [ ] Evaluate approach: editor/compiler as kernel extension vs standalone app in RAM
-- [ ] Line editor with serial terminal I/O (VT100 escape sequences)
-- [ ] On-board tokenizer and P-code generator (subset of Python compiler, in Otto assembly)
-- [ ] Source code storage in RAM expansion pages (0x010000-0x02FFFF, 128 KB)
-- [ ] Direct P-code generation and execution without intermediate files
-- [ ] Save/load programs via XMODEM
+### Phase 1: Infrastructure ✓
+
+- [x] Editor/compiler as ROM #3 extension (jump table at 0x4000)
+- [x] Line editor with serial terminal I/O: NEW, LIST, INSERT, DELETE, EDIT, LOAD, HELP, QUIT
+- [x] Source code storage in Expansion RAM page 1 (0x010000+), 255 lines × 80 chars
+- [x] Kernel integration: `e` command in kernel menu launches editor
+- [x] LOAD command for copy & paste from terminal (paste program, empty line to stop)
+
+### Phase 2: Core compiler ✓
+
+- [x] On-board single-pass recursive descent compiler (native 6502-style assembly)
+- [x] Lexer with on-demand tokenization from expansion RAM source lines
+- [x] Parser + code generator for: `var`, integer expressions, `if/then/else`, `while/do`, `for/to/downto`
+- [x] `write`/`writeln` (string literals and integer expressions), `readln`
+- [x] `begin..end` compound statements
+- [x] P-code generation directly into application RAM (0x8400+)
+- [x] Error reporting with line number: `Err L N: message`
+- [x] RUN command: compile + execute via P-Machine
+
+### Phase 3: Full language ✓
+
+- [x] Procedure and function declarations with parameters (by value)
+- [x] Recursive function calls (factorial, etc.)
+- [x] Nested procedures/functions with lexical scoping (static links)
+- [x] Array declarations: `array[lo..hi] of integer` with compile-time constant bounds
+- [x] Array element access: `arr[expr]` in expressions and assignments
+- [x] Scoped array access via `LOAD_AL`/`STORE_AL` (static chain traversal)
+- [x] Extended symbol table: 16 bytes/entry with kind, scope, frame offset, array bounds
+- [x] Nested `for` loops (compiler state saved/restored on stack)
+
+ROM #3 usage: 8189 / 8192 bytes (99.96%, 3 bytes free)
+
+### Not implemented
+
+- [ ] SAVE command (dump source to serial for backup)
+- [ ] XMODEM file transfer for source code

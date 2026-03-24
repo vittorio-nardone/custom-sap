@@ -6,7 +6,7 @@
 }
 #bank rom3
 
-#const PMACHINE_VERSION = "v0.4.35"
+#const PMACHINE_VERSION = "v0.4.36"
 #const PMACHINE_BUILDDATE = "03/24/2026"
 
 #include "../assembly/ruledef.asm"
