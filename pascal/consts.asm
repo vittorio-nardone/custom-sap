@@ -17,6 +17,12 @@
 #const PM_BASE_MSB = 0xB004  ; 1 byte - P-code base address MSB
 #const PM_BASE_LSB = 0xB005  ; 1 byte - P-code base address LSB
 #const PM_TEMP2    = 0xB006  ; 1 byte - second temporary (used by JPC)
+#const PM_FP_MSB   = 0xB007  ; 1 byte - frame pointer MSB
+#const PM_FP_LSB   = 0xB008  ; 1 byte - frame pointer LSB
+#const PM_CSP_PTR  = 0xB009  ; 1 byte - call stack pointer (4 bytes/entry, max 64)
+#const PM_FTOP_MSB = 0xB00A  ; 1 byte - frame top MSB (next free byte in data stack)
+#const PM_FTOP_LSB = 0xB00B  ; 1 byte - frame top LSB
+#const PM_TEMP3    = 0xB00C  ; 1 byte - third temporary (follow static links)
 
 ; --- Eval stack (0xB100-0xB1FF, 256 bytes, grows upward) ----
 ;     Each value is 16-bit (2 bytes: LSB at lower offset, MSB at higher).
@@ -27,6 +33,11 @@
 ;     2 bytes per variable (16-bit signed), max 128 variables.
 ;     Indexed by byte offset (0, 2, 4, ...).
 #const PM_VAR_FRAME = 0xB200
+
+; --- Call info stack (0xBA00-0xBAFF, 256 bytes) ---------------
+;     Each entry = 4 bytes: IP_MSB, IP_LSB, FP_MSB, FP_LSB.
+;     Max 64 call levels.
+#const PM_CALL_STACK = 0xBA00
 
 ; ============================================================
 ; P-CODE BINARY HEADER
@@ -60,6 +71,11 @@
 #const PM_OP_AND    = 0x14  ; pop b, pop a, push (a and b) logical
 #const PM_OP_OR     = 0x15  ; pop b, pop a, push (a or b) logical
 #const PM_OP_NOT    = 0x16  ; pop a, push (not a) logical
+#const PM_OP_CALL   = 0x17  ; addr_lo, addr_hi, static_depth — call procedure/function
+#const PM_OP_ENTER  = 0x18  ; frame_size, nparams, is_function — set up activation record
+#const PM_OP_RET    = 0x19  ; is_function — return from procedure/function
+#const PM_OP_LOAD_L = 0x1A  ; level, offset — load via static chain
+#const PM_OP_STORE_L= 0x1B  ; level, offset — store via static chain
 
 ; ============================================================
 ; CSP STANDARD PROCEDURE NUMBERS
@@ -69,3 +85,4 @@
 #const PM_CSP_WRITELN_NOARG = 0x02  ; writeln()
 #const PM_CSP_WRITE_INT     = 0x03  ; write(integer) — decimal output
 #const PM_CSP_WRITELN_INT   = 0x04  ; writeln(integer) — decimal + newline
+#const PM_CSP_READLN_INT    = 0x05  ; readln(integer) — read decimal, push on eval stack

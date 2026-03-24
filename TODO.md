@@ -151,18 +151,24 @@ begin
 end.
 ```
 
-## Milestone 4 — Procedures and functions
+## [DONE] Milestone 4 — Procedures and functions
 
 Support modular programming with user-defined subroutines.
 
-- [ ] New P-code opcodes: `CALL` (call procedure/function), `RET` (return), `ENTER` (allocate frame), `LEAVE` (deallocate frame)
-- [ ] P-Machine call stack and activation records (separate from eval stack)
-- [ ] Compiler: `procedure` and `function` declarations
-- [ ] Compiler: parameter passing (by value)
-- [ ] Compiler: local variable scoping
-- [ ] Compiler: `function` return values
-- [ ] New CSP: `readln` for serial input (integer and string)
-- [ ] Example: `pascal/examples/functions.pas`
+- [x] New P-code opcodes: `CALL` (call procedure/function), `RET` (return), `ENTER` (allocate frame)
+- [x] New P-code opcodes for lexical scoping: `LOAD_L` (load from outer scope), `STORE_L` (store to outer scope)
+- [x] P-Machine call stack and activation records (separate from eval stack)
+- [x] Frame pointer (FP) register for FP-relative variable addressing
+- [x] Static links for nested scope access
+- [x] Compiler: `procedure` and `function` declarations (with nesting)
+- [x] Compiler: parameter passing (by value)
+- [x] Compiler: local variable scoping with scope stack
+- [x] Compiler: `function` return values (`funcname := expr`)
+- [x] Compiler: recursive function calls
+- [x] New CSP: `readln(var)` for serial integer input
+- [x] Kernel: `ACIA_READ_DECIMAL16S` routine for signed integer input
+- [x] Example: `pascal/examples/functions.pas` (recursive factorial)
+- [x] Simulator fix: `pop()` no longer corrupts CPU flags during `RTS`
 
 ```pascal
 program Functions;
@@ -182,6 +188,8 @@ begin
   writeln(factorial(n));
 end.
 ```
+
+Output: `Factorial of 7 = 5040`
 
 ## Milestone 5 — On-board editor/compiler
 

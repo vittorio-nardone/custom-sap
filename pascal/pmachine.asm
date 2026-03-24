@@ -6,7 +6,7 @@
 }
 #bank rom3
 
-#const PMACHINE_VERSION = "v0.3.2"
+#const PMACHINE_VERSION = "v0.4.18"
 #const PMACHINE_BUILDDATE = "03/24/2026"
 
 #include "../assembly/ruledef.asm"
@@ -71,9 +71,14 @@ PM_ENTRY:
     adc PM_BASE_MSB          ; + base MSB + carry
     sta PM_IP_MSB
 
-    ; init eval stack
+    ; init eval stack and call frame state
     lda 0x00
     sta PM_ESP
+    sta PM_FP_MSB
+    sta PM_FP_LSB
+    sta PM_CSP_PTR
+    sta PM_FTOP_MSB
+    sta PM_FTOP_LSB
 
     jmp .fetch
 
@@ -128,6 +133,16 @@ PM_ENTRY:
     beq .op_or
     cmp PM_OP_NOT
     beq .op_not
+    cmp PM_OP_CALL
+    beq .op_call
+    cmp PM_OP_ENTER
+    beq .op_enter
+    cmp PM_OP_RET
+    beq .op_ret
+    cmp PM_OP_LOAD_L
+    beq .op_load_l
+    cmp PM_OP_STORE_L
+    beq .op_store_l
 
     jmp .error_invalid
 
@@ -155,25 +170,32 @@ PM_ENTRY:
     jsr .push_byte
     jmp .fetch
 
-; --- LOAD offset: push 16-bit variable -------------------
+; --- LOAD offset: push 16-bit variable (FP-relative) -----
 
 .op_load:
-    jsr .fetch_byte         ; A = byte offset into var frame
-    tax
-    ldd PM_VAR_FRAME[15:8]
-    lde PM_VAR_FRAME[7:0]
+    jsr .fetch_byte         ; A = byte offset (relative to FP)
+
+    clc
+    adc PM_FP_LSB
+    tae                     ; E = offset + FP_LSB (VAR_FRAME LSB=0x00)
+    lda PM_FP_MSB
+    adc 0x00                ; carry from LSB add
+    clc
+    adc PM_VAR_FRAME[15:8]  ; + base MSB
+    tad
+    ldx 0x00
     lda de,x                ; var LSB
-    sta PM_TEMP             ; save LSB before push_byte clobbers D/E/X
+    sta PM_TEMP
     inx
     lda de,x                ; var MSB
-    pha                     ; save MSB on hardware stack
+    pha
     lda PM_TEMP
     jsr .push_byte          ; push LSB
     pla
     jsr .push_byte          ; push MSB
     jmp .fetch
 
-; --- STORE offset: pop 16-bit, store to variable ---------
+; --- STORE offset: pop 16-bit, store (FP-relative) -------
 
 .op_store:
     jsr .fetch_byte         ; A = byte offset
@@ -182,9 +204,16 @@ PM_ENTRY:
     pha
     jsr .pop_byte           ; LSB
     pha
-    ldd PM_VAR_FRAME[15:8]
-    lde PM_VAR_FRAME[7:0]
-    ldx PM_TEMP
+    lda PM_TEMP
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
     pla                     ; LSB
     sta de,x
     inx
@@ -439,6 +468,277 @@ PM_ENTRY:
     beq .push_true
     jmp .push_false
 
+; --- CALL: call procedure/function -----------------------
+
+.op_call:
+    jsr .fetch_byte         ; addr_lo
+    pha
+    jsr .fetch_byte         ; addr_hi
+    pha
+    jsr .fetch_byte         ; static_depth
+    tax
+
+    jsr .follow_links       ; PM_TEMP3:PM_TEMP2 = static link value
+
+    ; Save return info to call stack (IP_MSB, IP_LSB, FP_MSB, FP_LSB)
+    ldd PM_CALL_STACK[15:8]
+    lde PM_CALL_STACK[7:0]
+    ldx PM_CSP_PTR
+    lda PM_IP_MSB
+    sta de,x
+    inx
+    lda PM_IP_LSB
+    sta de,x
+    inx
+    lda PM_FP_MSB
+    sta de,x
+    inx
+    lda PM_FP_LSB
+    sta de,x
+    inx
+    stx PM_CSP_PTR
+
+    ; New FP = FRAME_TOP
+    lda PM_FTOP_MSB
+    sta PM_FP_MSB
+    lda PM_FTOP_LSB
+    sta PM_FP_LSB
+
+    ; Write static link at new frame base (FP+0, FP+1)
+    lda PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda PM_TEMP2            ; static_link LSB
+    sta de,x
+    inx
+    lda PM_TEMP3            ; static_link MSB
+    sta de,x
+
+    ; Jump: IP = PM_BASE + addr
+    pla                     ; addr_hi
+    sta PM_TEMP2
+    pla                     ; addr_lo
+    sta PM_TEMP
+    jmp .set_ip_from_offset
+
+; --- ENTER: set up activation record --------------------
+
+.op_enter:
+    jsr .fetch_byte         ; frame_size
+    sta PM_TEMP3
+    jsr .fetch_byte         ; nparams
+    sta PM_TEMP
+    jsr .fetch_byte         ; is_function
+
+    beq .enter_proc_base
+
+    ; Function: init return value at FP+2,+3 to zero
+    lda PM_FP_LSB
+    clc
+    adc 0x02
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda 0x00
+    sta de,x
+    inx
+    sta de,x
+
+    lda 0x04                ; param_base = 4 (skip link + retval)
+    jmp .enter_set_base
+
+.enter_proc_base:
+    lda 0x02                ; param_base = 2 (skip link only)
+
+.enter_set_base:
+    sta PM_TEMP2            ; PM_TEMP2 = param_base
+
+    ldx PM_TEMP             ; X = nparams
+    beq .enter_set_ftop
+
+    ; Compute initial offset = param_base + (nparams-1)*2
+    dex
+    txa
+    asl a                   ; (nparams-1)*2
+    clc
+    adc PM_TEMP2            ; + param_base
+    sta PM_TEMP2            ; PM_TEMP2 = current store offset (highest param)
+    ldx PM_TEMP             ; X = nparams counter
+
+.enter_copy_loop:
+    phx                     ; save counter before pop_byte clobbers X
+    jsr .pop_byte
+    sta MATH16_B+1          ; MSB
+    jsr .pop_byte
+    sta MATH16_B            ; LSB
+
+    lda PM_TEMP2
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda MATH16_B            ; LSB
+    sta de,x
+    inx
+    lda MATH16_B+1          ; MSB
+    sta de,x
+    plx                     ; restore counter
+
+    lda PM_TEMP2
+    sec
+    sbc 0x02
+    sta PM_TEMP2            ; next param slot (lower offset)
+
+    dex
+    bne .enter_copy_loop
+
+.enter_set_ftop:
+    ; FRAME_TOP = FP + frame_size
+    lda PM_FP_LSB
+    clc
+    adc PM_TEMP3
+    sta PM_FTOP_LSB
+    lda PM_FP_MSB
+    adc 0x00
+    sta PM_FTOP_MSB
+    jmp .fetch
+
+; --- RET: return from procedure/function -----------------
+
+.op_ret:
+    jsr .fetch_byte         ; is_function
+    beq .ret_no_retval
+
+    ; Push return value (at FP+2, FP+3) onto eval stack
+    lda PM_FP_LSB
+    clc
+    adc 0x02
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x                ; retval LSB
+    sta PM_TEMP
+    inx
+    lda de,x                ; retval MSB
+    pha
+    lda PM_TEMP
+    jsr .push_byte
+    pla
+    jsr .push_byte
+
+.ret_no_retval:
+    ; FRAME_TOP = FP (deallocate frame)
+    lda PM_FP_MSB
+    sta PM_FTOP_MSB
+    lda PM_FP_LSB
+    sta PM_FTOP_LSB
+
+    ; Pop (IP_MSB, IP_LSB, FP_MSB, FP_LSB) from call stack
+    lda PM_CSP_PTR
+    sec
+    sbc 0x04
+    sta PM_CSP_PTR
+    tax
+
+    ldd PM_CALL_STACK[15:8]
+    lde PM_CALL_STACK[7:0]
+    lda de,x                ; IP_MSB
+    sta PM_IP_MSB
+    inx
+    lda de,x                ; IP_LSB
+    sta PM_IP_LSB
+    inx
+    lda de,x                ; FP_MSB
+    sta PM_FP_MSB
+    inx
+    lda de,x                ; FP_LSB
+    sta PM_FP_LSB
+    jmp .fetch
+
+; --- LOAD_L: load variable via static chain --------------
+
+.op_load_l:
+    jsr .fetch_byte         ; level
+    sta PM_TEMP
+    jsr .fetch_byte         ; offset
+    pha
+
+    ldx PM_TEMP
+    jsr .follow_links       ; PM_TEMP3:PM_TEMP2 = target FP
+
+    pla                     ; A = offset
+    clc
+    adc PM_TEMP2
+    tae
+    lda PM_TEMP3
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+
+    ldx 0x00
+    lda de,x                ; var LSB
+    sta PM_TEMP
+    inx
+    lda de,x                ; var MSB
+    pha
+    lda PM_TEMP
+    jsr .push_byte
+    pla
+    jsr .push_byte
+    jmp .fetch
+
+; --- STORE_L: store variable via static chain ------------
+
+.op_store_l:
+    jsr .fetch_byte         ; level
+    sta PM_TEMP
+    jsr .fetch_byte         ; offset
+    pha
+
+    jsr .pop_byte
+    sta MATH16_B+1          ; value MSB
+    jsr .pop_byte
+    sta MATH16_B            ; value LSB
+
+    ldx PM_TEMP
+    jsr .follow_links       ; PM_TEMP3:PM_TEMP2 = target FP
+
+    pla                     ; A = offset
+    clc
+    adc PM_TEMP2
+    tae
+    lda PM_TEMP3
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+
+    ldx 0x00
+    lda MATH16_B            ; LSB
+    sta de,x
+    inx
+    lda MATH16_B+1          ; MSB
+    sta de,x
+    jmp .fetch
+
 ; --- Shared helpers for comparisons ----------------------
 
 .pop_two_operands:
@@ -481,6 +781,8 @@ PM_ENTRY:
     beq .csp_write_int
     cmp PM_CSP_WRITELN_INT
     beq .csp_writeln_int
+    cmp PM_CSP_READLN_INT
+    beq .csp_readln_int
 
     jmp .error_invalid
 
@@ -529,6 +831,15 @@ PM_ENTRY:
     sta MATH16_A
     jsr ACIA_SEND_DECIMAL16S
     jsr ACIA_SEND_NEWLINE
+    jmp .fetch
+
+; CSP 5 — readln(integer): read signed decimal, push on eval stack
+.csp_readln_int:
+    jsr ACIA_READ_DECIMAL16S
+    lda MATH16_A
+    jsr .push_byte
+    lda MATH16_A+1
+    jsr .push_byte
     jmp .fetch
 
 ; --- Exit & error -----------------------------------------
@@ -584,6 +895,39 @@ PM_ENTRY:
     lde PM_EVAL_STACK[7:0]
     ldx PM_ESP
     lda de,x
+    rts
+
+; Follow X static links starting from PM_FP.
+; Out: PM_TEMP3 = target FP MSB, PM_TEMP2 = target FP LSB.
+; Clobbers A, D, E, X (saved/restored internally).
+.follow_links:
+    lda PM_FP_MSB
+    sta PM_TEMP3
+    lda PM_FP_LSB
+    sta PM_TEMP2
+.follow_loop:
+    cpx 0x00
+    beq .follow_done
+    dex
+    phx
+    ; Read static link at PM_VAR_FRAME + PM_TEMP3:PM_TEMP2
+    lda PM_TEMP2
+    tae
+    lda PM_TEMP3
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x                ; static_link LSB
+    pha
+    inx
+    lda de,x                ; static_link MSB
+    sta PM_TEMP3
+    pla
+    sta PM_TEMP2
+    plx
+    jmp .follow_loop
+.follow_done:
     rts
 
 ; =========================================================

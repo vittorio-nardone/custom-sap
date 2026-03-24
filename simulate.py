@@ -77,12 +77,13 @@ class OttoCPU:
         self.write_byte(self.SP, value)
         self.SP -= 1
 
-    def pop(self):
+    def pop(self, update_flags=True):
         """Pop a value from the stack"""
         self.SP += 1
         result = self.read_byte(self.SP)
-        self.update_zero_flag(result)
-        self.update_negative_flag(result)
+        if update_flags:
+            self.update_zero_flag(result)
+            self.update_negative_flag(result)
         return result
 
     def load_binary(self, filename, address):
@@ -231,7 +232,7 @@ class OttoCPU:
             self.PC = self.get_address_from_operands(mem_operands_size)   
 
     def rts(self):
-        self.PC = self.pop() + (self.pop() << 8) + (self.pop() << 16) + 4
+        self.PC = self.pop(update_flags=False) + (self.pop(update_flags=False) << 8) + (self.pop(update_flags=False) << 16) + 4
 
     def math_operation(self, operation, current_value=None, 
                        operator_immediate=None, operator_registry=None, operator_mem_operands_size=None, operator_index=None, 
@@ -420,7 +421,7 @@ class OttoCPU:
         """Write a byte to memory"""
         address &= 0xFFFFFF  # 24-bit address bus
         value &= 0xFF  # Ensure 8-bit value
-        
+
         for region in self.memory_regions.values():
             if region['start'] <= address <= region['stop']:
                 if region['read_only']:

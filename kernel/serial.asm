@@ -488,3 +488,80 @@ ACIA_SEND_DECIMAL16S:
 
         jsr ACIA_SEND_DECIMAL32
         rts
+
+; **********************************************************
+; SUBROUTINE: ACIA_READ_DECIMAL16S
+;
+; DESCRIPTION:
+;   Read a signed 16-bit decimal integer from serial.
+;   Characters are echoed back. Input terminates on CR (0x0D).
+;   Leading whitespace is ignored. Optional leading '-'.
+;
+; INPUTS:
+;   (none — reads from serial)
+;
+; OUTPUTS:
+;   MATH16_A : 16-bit signed result (little-endian)
+;
+; DESTROY:
+;   A D E X Y
+;
+; AUTHOR: VN
+; LAST UPDATE: 03/24/2026
+; **********************************************************
+
+ACIA_READ_DECIMAL16S:
+        lda 0x00
+        sta MATH16_A
+        sta MATH16_A+1
+        sta MATH16_SIGN
+
+.rdec_loop:
+        jsr ACIA_READ_CHAR
+        cmp 0x0D
+        beq .rdec_done
+        cmp 0x0A
+        beq .rdec_done
+
+        jsr ACIA_SEND_CHAR
+
+        cmp 0x2D
+        bne .rdec_not_minus
+        lda 0x01
+        sta MATH16_SIGN
+        jmp .rdec_loop
+.rdec_not_minus:
+        cmp 0x30
+        bcc .rdec_loop
+        cmp 0x3A
+        bcs .rdec_loop
+
+        ; A = digit char, save digit = A - 0x30
+        sec
+        sbc 0x30
+        pha
+
+        ; result = result * 10
+        lda 0x0A
+        sta MATH16_B
+        lda 0x00
+        sta MATH16_B+1
+        jsr MUL16S
+
+        ; result += digit
+        pla
+        clc
+        adc MATH16_A
+        sta MATH16_A
+        lda 0x00
+        adc MATH16_A+1
+        sta MATH16_A+1
+
+        jmp .rdec_loop
+
+.rdec_done:
+        lda MATH16_SIGN
+        beq .rdec_positive
+        jsr MATH16_NEGATE_A
+.rdec_positive:
+        rts

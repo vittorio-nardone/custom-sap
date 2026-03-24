@@ -13,7 +13,7 @@ begin
 end.
 ```
 
-The `var` block is optional. If present, it must appear between the `program` header and `begin`.
+The `var` block is optional. If present, it must appear between the `program` header and `begin`. Procedure and function declarations (see below) appear after the `var` block and before `begin`.
 
 ## Data Types
 
@@ -32,6 +32,86 @@ var
 ```
 
 Multiple variables of the same type can be declared on one line, separated by commas. Each declaration line ends with a semicolon. Maximum 128 variables per program.
+
+## Procedures and Functions
+
+### Procedure Declaration
+
+```pascal
+procedure ProcName(param1: integer; param2: integer);
+var
+  localVar: integer;
+begin
+  { statements }
+end;
+```
+
+Procedures can have zero or more parameters (passed by value) and an optional `var` block for local variables. The parameter list uses semicolons between parameter groups (not commas).
+
+### Function Declaration
+
+```pascal
+function FuncName(x: integer): integer;
+var
+  temp: integer;
+begin
+  { statements }
+  FuncName := expression;  { assign return value }
+end;
+```
+
+Functions are like procedures but return a value. The return type is specified after the parameter list. To set the return value, assign to the function's own name within the body.
+
+### Nesting
+
+Procedures and functions can be nested inside other procedures or functions. Inner routines can access variables from enclosing scopes (lexical scoping via static links):
+
+```pascal
+program Nested;
+var g: integer;
+
+procedure outer(x: integer);
+var local: integer;
+
+  function inner(y: integer): integer;
+  begin
+    inner := x + y + g;  { accesses outer's param and global var }
+  end;
+
+begin
+  local := inner(10);
+  writeln(local)
+end;
+
+begin
+  g := 100;
+  outer(5)
+end.
+```
+
+### Recursion
+
+Both procedures and functions support recursion:
+
+```pascal
+function factorial(x: integer): integer;
+begin
+  if x <= 1 then factorial := 1
+  else factorial := x * factorial(x - 1)
+end;
+```
+
+### Calling
+
+Procedures are called as statements; functions are called within expressions:
+
+```pascal
+myProcedure(arg1, arg2);      { procedure call }
+result := myFunction(arg);     { function call in expression }
+writeln(factorial(7));          { function call as argument }
+```
+
+Arguments are passed by value: the called routine receives a copy, so modifying a parameter inside the routine does not affect the caller's variable.
 
 ## Statements
 
@@ -52,6 +132,14 @@ writeln;                 { print newline only }
 ```
 
 The argument type (string literal vs integer expression) is detected automatically by the compiler.
+
+### readln
+
+```pascal
+readln(variable);        { read integer from serial input }
+```
+
+Reads a signed decimal integer from the serial port and stores it in the given variable. The input is terminated by Enter (CR). Supports optional leading `-` sign. Range: -32768 to 32767.
 
 ## Control Flow
 
@@ -164,10 +252,10 @@ Three comment styles are supported:
 
 ## Limitations (current version)
 
-- No procedures or functions — planned for Milestone 4
 - No `string` type — only string literals in write/writeln
 - No arrays or records
-- No `readln` / input
+- No pass-by-reference parameters (`var` parameters)
+- No `readln` for strings — only integer input is supported
 - No dedicated boolean type (integers are used: 0 = false, non-zero = true)
 - Integer overflow is silently truncated to 16 bits
 
@@ -221,3 +309,26 @@ end.
 ```
 
 Output: `1`, `2`, `Fizz`, `4`, `Buzz`, `Fizz`, `7`, `8`, `Fizz`, `Buzz`, `11`, `Fizz`, `13`, `14`, `FizzBuzz`, `16`, `17`, `Fizz`, `19`, `Buzz`
+
+### Recursive Function (Factorial)
+
+```pascal
+program Functions;
+var n: integer;
+
+function factorial(x: integer): integer;
+begin
+  if x <= 1 then factorial := 1
+  else factorial := x * factorial(x - 1)
+end;
+
+begin
+  n := 7;
+  write('Factorial of ');
+  write(n);
+  write(' = ');
+  writeln(factorial(n))
+end.
+```
+
+Output: `Factorial of 7 = 5040`

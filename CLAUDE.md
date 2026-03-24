@@ -717,9 +717,12 @@ The kernel menu also provides a `p` command that directly invokes the P-Machine 
 ### P-Machine RAM Layout
 
 ```
-0xB000-0xB006  P-Machine internal state (IP, eval stack ptr, temp, temp2, base addr)
-0xB100-0xB1FF  P-Machine evaluation stack (256 bytes, grows upward, 16-bit values)
-0xB200-0xB2FF  Variable frame (256 bytes, 2 bytes per variable, max 128 vars)
+0xB000-0xB00B  P-Machine internal state:
+                 IP (2B), eval stack ptr (1B), temp (1B), temp2 (1B), base addr (2B),
+                 FP MSB/LSB (2B), call stack ptr (1B), frame top MSB/LSB (2B)
+0xB100-0xB1FF  Evaluation stack (256 bytes, grows upward, 16-bit values)
+0xB200-0xB3FF  Variable frame (512 bytes, activation records with static links)
+0xBA00-0xBAFF  Call stack (256 bytes, stores return addresses and saved FPs)
 ```
 
 ### P-code Binary Format
@@ -765,6 +768,11 @@ Offset  Content
 | 0x14 | AND | - | Pop b16, pop a16, push (a and b) logical |
 | 0x15 | OR | - | Pop b16, pop a16, push (a or b) logical |
 | 0x16 | NOT | - | Pop a16, push (not a) logical |
+| 0x17 | CALL | level, lo, hi | Call procedure/function (level=lexical depth, addr=P-code offset) |
+| 0x18 | ENTER | is_func, nparams, frame_size | Set up activation record |
+| 0x19 | RET | is_func | Return from procedure/function |
+| 0x1A | LOAD_L | depth, offset | Load variable from outer lexical scope (follow static links) |
+| 0x1B | STORE_L | depth, offset | Store variable to outer lexical scope (follow static links) |
 
 Standard Procedures (CSP):
 - **0**: `write(string)` - pop address, print string
@@ -772,6 +780,7 @@ Standard Procedures (CSP):
 - **2**: `writeln()` - print CR/LF only
 - **3**: `write(integer)` - pop 16-bit signed, print decimal
 - **4**: `writeln(integer)` - pop 16-bit signed, print decimal + CR/LF
+- **5**: `readln(integer)` - read signed decimal from serial, push 16-bit value
 
 ### Compiling and Running Pascal Programs
 
@@ -788,12 +797,31 @@ python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1
 echo $?   # 0 = success
 ```
 
-### Supported Pascal Syntax (MS3)
+### Supported Pascal Syntax (MS4)
 
 ```pascal
 program ProgramName;
 var
   a, b, result: integer;   { 16-bit signed, -32768..32767 }
+
+procedure greet(n: integer);
+var i: integer;
+begin
+  for i := 1 to n do
+    writeln('Hello!')
+end;
+
+function double(x: integer): integer;
+begin
+  double := x + x           { return value by assigning to function name }
+end;
+
+function factorial(x: integer): integer;
+begin
+  if x <= 1 then factorial := 1
+  else factorial := x * factorial(x - 1)  { recursive call }
+end;
+
 begin
   a := 10;
   b := 25;
@@ -802,6 +830,14 @@ begin
   writeln(result);          { polymorphic: string or integer arg }
   writeln(-a);              { unary negation }
   writeln;                  { bare newline }
+
+  { Procedures and functions }
+  greet(3);                 { procedure call }
+  writeln(double(result));  { function call in expression }
+  writeln(factorial(7));    { recursive function: 5040 }
+
+  { Input }
+  readln(a);                { read signed integer from serial }
 
   { Control flow }
   if result > 50 then writeln('big')
