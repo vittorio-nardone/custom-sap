@@ -3989,8 +3989,8 @@ if __name__ == "__main__":
     generateInstructions(ihs)
 
     for e in range(CONTROL_ROMS_COUNT):
-        ihs[e].write_hex_file("roms/cw{0}-rom.hex".format(e+1))
-        ihs[e].tobinfile("roms/cw{0}-rom.bin".format(e+1))
+        ihs[e].write_hex_file("roms/system/cw{0}-rom.hex".format(e+1))
+        ihs[e].tobinfile("roms/system/cw{0}-rom.bin".format(e+1))
 
     print("Generating customasm ruledef.asm file")
     generateRuldef()

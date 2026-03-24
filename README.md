@@ -67,10 +67,9 @@ This repository houses the complete design files and software components for the
 * **pascal_compiler.py** - Tiny Pascal cross-compiler (Python, produces P-code binaries)
 * **forth/** - FORTH language interpreter (deprecated, files retained but excluded from build)
 * **roms/** - Binary files
-  * Microcode EEPROMs
-  * Kernel image
-  * P-Machine ROM
-  * Example applications (loadable via kernel upload function)
+  * **system/** - Microcode EEPROMs, kernel image, P-Machine ROM
+  * **apps/asm/** - Assembly app binaries (compiled from `apps/*.asm`)
+  * **apps/pascal/** - Pascal app binaries (compiled from `pascal/examples/*.pas`)
 
 ### Documentation
 * **instruction.csv** - Complete assembly instruction reference
@@ -96,8 +95,8 @@ This repository houses the complete design files and software components for the
 
 4. For Tiny Pascal development:
    ```bash
-   python pascal_compiler.py pascal/examples/hello.pas -o roms/hello.bin
-   python simulate.py --autorun --program roms/hello.bin --max-cycles 1000000 --quiet
+   python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
+   python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
    ```
 
 ## Otto simulator
@@ -115,7 +114,7 @@ python ./simulate.py --simulate-serial
 
 The simulator can also load a specific binary file in the memory and monitor it for updates.
 ```bash
-python ./simulate.py --program roms/_test_.bin
+python ./simulate.py --program roms/apps/asm/_test_.bin
 ```
 
 ### Headless mode
@@ -123,7 +122,7 @@ python ./simulate.py --program roms/_test_.bin
 The simulator supports a headless mode for automated testing and CI/CD pipelines. In this mode, no interactive terminal is required: the kernel boots, automatically executes the loaded program, and exits when the program completes (either via `RTS` or `HLT`).
 
 ```bash
-python ./simulate.py --autorun --program roms/helloworld.bin --max-cycles 1000000 --quiet
+python ./simulate.py --autorun --program roms/apps/asm/helloworld.bin --max-cycles 1000000 --quiet
 ```
 
 Available flags:
@@ -155,8 +154,8 @@ end.
 
 ```bash
 # Compile and run
-python pascal_compiler.py pascal/examples/hello.pas -o roms/hello.bin
-python simulate.py --autorun --program roms/hello.bin --max-cycles 1000000 --quiet
+python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
+python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
 ```
 
 > **Note**: The FORTH interpreter (`forth/`) has been deprecated and is no longer included in the build process or kernel menu. Its source files are retained in the repository for reference.
@@ -168,7 +167,7 @@ python microcode.py
 
 ## ROM generation
 ```sh
-customasm kernel.asm -f intelhex -o roms/kernel-rom.hex
+customasm kernel.asm -f intelhex -o roms/system/kernel-rom.hex
 ```
 
 You need an EEPROM programmer for kernel and microcode.

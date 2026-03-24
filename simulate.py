@@ -525,11 +525,11 @@ if __name__ == "__main__":
 
     # Load the kernel into memory
     print("-> loading kernel into rom memory")
-    cpu.load_binary("roms/kernel-rom.bin", cpu.memory_regions['rom']['start'])
+    cpu.load_binary("roms/system/kernel-rom.bin", cpu.memory_regions['rom']['start'])
 
     # Load the Pascal P-Machine into memory
     print("-> loading Pascal P-Machine into rom memory")
-    cpu.load_binary("roms/pmachine.bin", cpu.memory_regions['pmachine']['start'])
+    cpu.load_binary("roms/system/pmachine.bin", cpu.memory_regions['pmachine']['start'])
 
     # Load a program into memory if provided
     if args.program:

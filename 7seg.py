@@ -79,7 +79,7 @@ for v in range(256):        # Value 0->255
             ih[addr] = seg
 
 ##### Saving rom file
-ih.write_hex_file("roms/7seg-rom.hex")
-ih.tobinfile("roms/7seg-rom.bin")
+ih.write_hex_file("roms/system/7seg-rom.hex")
+ih.tobinfile("roms/system/7seg-rom.bin")
 
 print("All done")

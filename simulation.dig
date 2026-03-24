@@ -13,49 +13,49 @@
           <entry>
             <string>Flags Control Word</string>
             <romFile>
-              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw3-rom.hex</romFile>
+              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/system/cw3-rom.hex</romFile>
               <bigEndian>false</bigEndian>
             </romFile>
           </entry>
           <entry>
             <string>Registers Control Word</string>
             <romFile>
-              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw4-rom.hex</romFile>
+              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/system/cw4-rom.hex</romFile>
               <bigEndian>false</bigEndian>
             </romFile>
           </entry>
           <entry>
             <string>PC/SP Control Word</string>
             <romFile>
-              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw6-rom.hex</romFile>
+              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/system/cw6-rom.hex</romFile>
               <bigEndian>false</bigEndian>
             </romFile>
           </entry>
           <entry>
             <string>ALU Control Word</string>
             <romFile>
-              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw2-rom.hex</romFile>
+              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/system/cw2-rom.hex</romFile>
               <bigEndian>false</bigEndian>
             </romFile>
           </entry>
           <entry>
             <string>Memory Control Word</string>
             <romFile>
-              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw1-rom.hex</romFile>
+              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/system/cw1-rom.hex</romFile>
               <bigEndian>false</bigEndian>
             </romFile>
           </entry>
           <entry>
             <string>Instructions Control Word</string>
             <romFile>
-              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/cw5-rom.hex</romFile>
+              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/system/cw5-rom.hex</romFile>
               <bigEndian>false</bigEndian>
             </romFile>
           </entry>
           <entry>
             <string>ROM (1st 8k)</string>
             <romFile>
-              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/kernel-rom.hex</romFile>
+              <romFile>/Users/Vittorio.Nardone/Documents/__private__/sap-project/roms/system/kernel-rom.hex</romFile>
               <bigEndian>false</bigEndian>
             </romFile>
           </entry>

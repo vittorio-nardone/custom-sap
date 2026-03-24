@@ -12,22 +12,22 @@ python3.11 microcode.py
 python3.11 lookup_tables.py
 
 # ── Step 2: Build kernel and Pascal P-Machine binaries ───────────────
-python3.11 build-version.py --symbols symbols.txt kernel/kernel.asm roms/kernel-rom.bin
-python3.11 build-version.py pascal/pmachine.asm roms/pmachine.bin
+python3.11 build-version.py --symbols symbols.txt kernel/kernel.asm roms/system/kernel-rom.bin
+python3.11 build-version.py pascal/pmachine.asm roms/system/pmachine.bin
 
 # Intel HEX output (for EEPROM programmer)
-customasm kernel/kernel.asm -f intelhex -o roms/kernel-rom.hex
+customasm kernel/kernel.asm -f intelhex -o roms/system/kernel-rom.hex
 
 # Split kernel binary into 8 KB ROM chips
-split -b 8k -d ./roms/kernel-rom.bin ./roms/kernel-rom.bin.
+split -b 8k -d ./roms/system/kernel-rom.bin ./roms/system/kernel-rom.bin.
 
 # ── Step 3: Verify ROM sizes against capacity ────────────────────────
-KERNEL_SIZE=$(stat -f%z roms/kernel-rom.bin)
+KERNEL_SIZE=$(stat -f%z roms/system/kernel-rom.bin)
 KERNEL_CAP=16384  # 16 KB (2 x 8 KB ROM chips)
 KERNEL_FREE=$((KERNEL_CAP - KERNEL_SIZE))
 KERNEL_PCT=$((KERNEL_SIZE * 100 / KERNEL_CAP))
 
-PMACHINE_SIZE=$(stat -f%z roms/pmachine.bin)
+PMACHINE_SIZE=$(stat -f%z roms/system/pmachine.bin)
 PMACHINE_CAP=8192  # 8 KB (1 x 8 KB ROM chip)
 PMACHINE_FREE=$((PMACHINE_CAP - PMACHINE_SIZE))
 PMACHINE_PCT=$((PMACHINE_SIZE * 100 / PMACHINE_CAP))
@@ -49,7 +49,7 @@ python3.11 symbols.py
 
 APP_COUNT=0
 for i in apps/*.asm; do
-    customasm "apps/$(basename $i)" -f binary -o roms/"$(basename $i .asm)".bin
+    customasm "apps/$(basename $i)" -f binary -o roms/apps/asm/"$(basename $i .asm)".bin
     APP_COUNT=$((APP_COUNT + 1))
 done
 
@@ -66,7 +66,7 @@ INSTR_FREE=$((INSTR_CAP - INSTR_COUNT))
 PASCAL_COUNT=0
 for i in pascal/examples/*.pas; do
     [ -e "$i" ] || continue
-    python3.11 pascal_compiler.py "$i" -o roms/"$(basename "$i" .pas)".bin
+    python3.11 pascal_compiler.py "$i" -o roms/apps/pascal/"$(basename "$i" .pas)".bin
     PASCAL_COUNT=$((PASCAL_COUNT + 1))
 done
 

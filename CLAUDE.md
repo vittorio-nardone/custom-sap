@@ -10,10 +10,10 @@ The CPU is built from 7400-series TTL ICs, not a commercial microprocessor.
 - **Build all** (kernel, microcode, symbols, P-Machine, apps, Pascal examples): `source .venv/bin/activate && ./generate-all.sh`
   - Regenerates microcode ROMs, lookup tables, kernel binary, P-Machine ROM, symbols, all apps in `apps/`, and all Pascal examples in `pascal/examples/`
   - **Always run this after modifying kernel files** to ensure symbols.asm stays in sync with kernel addresses
-- **Compile single app**: `customasm apps/myapp.asm -f binary -o roms/myapp.bin`
-- **Compile Pascal program**: `python pascal_compiler.py pascal/examples/hello.pas -o roms/hello.bin`
-- **Simulator (interactive)**: `python simulate.py --program roms/myapp.bin`
-- **Simulator (headless/test)**: `python simulate.py --autorun --program roms/myapp.bin --max-cycles 1000000 --quiet`
+- **Compile single app**: `customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin`
+- **Compile Pascal program**: `python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin`
+- **Simulator (interactive)**: `python simulate.py --program roms/apps/asm/myapp.bin`
+- **Simulator (headless/test)**: `python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet`
 - **Microcode generation**: `python microcode.py`
 
 ## Architecture
@@ -522,7 +522,7 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 - Local labels start with `.` (e.g., `.loop`, `.msg`)
 - DE register pair is the standard way to pass 16-bit pointers (D=MSB, E=LSB)
 - Data directives: `#d` for bytes/strings
-- Compile: `customasm apps/myapp.asm -f binary -o roms/myapp.bin`
+- Compile: `customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin`
 - Upload to hardware via XMODEM protocol (kernel menu) or load in simulator
 
 ### Arithmetic Notes
@@ -549,10 +549,10 @@ source .venv/bin/activate   # Always activate before running simulator
 python simulate.py
 
 # Load a program binary at default address (0x8400)
-python simulate.py --program roms/myapp.bin
+python simulate.py --program roms/apps/asm/myapp.bin
 
 # Load at a specific address
-python simulate.py --program roms/myapp.bin --address 0x8400
+python simulate.py --program roms/apps/asm/myapp.bin --address 0x8400
 
 # Virtual serial port mode (use minicom or other terminal emulator)
 python simulate.py --simulate-serial
@@ -564,10 +564,10 @@ The simulator supports a headless mode for batch/CI usage and automated testing 
 
 ```bash
 # Autorun: kernel boots, auto-executes program at 0x8400, no TTY needed
-python simulate.py --autorun --program roms/myapp.bin --max-cycles 1000000
+python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000
 
 # With --quiet: suppress kernel output, show only application output
-python simulate.py --autorun --program roms/myapp.bin --max-cycles 1000000 --quiet
+python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet
 ```
 
 **Flags**:
@@ -589,7 +589,7 @@ python simulate.py --autorun --program roms/myapp.bin --max-cycles 1000000 --qui
 **Register dump** (`--dump-regs <file>`): saves all CPU registers, flags, cycle count, and stop reason to a JSON file on exit. Use this to verify program results in CI/CD pipelines:
 
 ```bash
-python simulate.py --autorun --program roms/myapp.bin --max-cycles 1000000 --quiet --dump-regs /tmp/regs.json
+python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet --dump-regs /tmp/regs.json
 ```
 
 Output JSON contains: `A`, `X`, `Y`, `D`, `E`, `OUT`, `PC`, `SP`, `flags` (Z/N/C/I/O), `cycles`, `stop_reason` ("completed", "halted", "timeout", "error").
@@ -600,10 +600,10 @@ Output JSON contains: `A`, `X`, `Y`, `D`, `E`, `OUT`, `PC`, `SP`, `flags` (Z/N/C
 source .venv/bin/activate
 
 # 1. Compile
-customasm apps/myapp.asm -f binary -o roms/myapp.bin
+customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin
 
 # 2. Run in simulator and check output
-python simulate.py --autorun --program roms/myapp.bin --max-cycles 1000000 --quiet
+python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet
 
 # 3. Check exit code
 echo $?   # 0 = success
@@ -656,10 +656,10 @@ For interactive development with hot-reload:
 source .venv/bin/activate
 
 # Terminal 1: Start simulator with the program
-python simulate.py --program roms/myapp.bin
+python simulate.py --program roms/apps/asm/myapp.bin
 
 # Terminal 2: Edit and recompile (auto-reloaded by simulator)
-customasm apps/myapp.asm -f binary -o roms/myapp.bin
+customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin
 ```
 
 The simulator runs the kernel first (boots from ROM at 0x0000), which initializes the system. In the kernel menu, type `r` + Enter to execute the loaded program. The program runs until `RTS` (returns to kernel) or `HLT` (halts CPU, exits simulator).
@@ -696,7 +696,7 @@ pip install intelhex     # Intel HEX file format support
 - Each instruction has a `sim` field (Python code string executed via `exec()`) and cycle counts
 - The simulator calls `verifyInstructionSet()` at startup to validate opcodes
 - Unimplemented instructions produce a warning at startup
-- ROM is loaded from `roms/kernel-rom.bin` and `roms/pmachine.bin` at boot
+- ROM is loaded from `roms/system/kernel-rom.bin` and `roms/system/pmachine.bin` at boot
 - Stack operations: `push()` writes at SP then decrements, `pop()` increments SP then reads
 
 ## Pascal P-Machine
@@ -752,10 +752,10 @@ Standard Procedures (CSP):
 source .venv/bin/activate
 
 # 1. Compile Pascal to self-executing binary
-python pascal_compiler.py pascal/examples/hello.pas -o roms/hello.bin
+python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
 
 # 2. Run in simulator (works with standard --autorun)
-python simulate.py --autorun --program roms/hello.bin --max-cycles 1000000 --quiet
+python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
 
 # 3. Check exit code
 echo $?   # 0 = success
@@ -800,6 +800,10 @@ pascal/
   examples/              - Pascal example programs
     hello.pas            - Hello World
 roms/                    - Compiled binaries
+  system/                - Kernel, P-Machine, microcode, 7-segment ROMs
+  apps/
+    asm/                 - Assembly app binaries (from apps/*.asm)
+    pascal/              - Pascal app binaries (from pascal/examples/*.pas)
 microcode.py             - Microcode ROM generator
 simulate.py              - CPU simulator
 pascal_compiler.py       - Tiny Pascal to P-code compiler
