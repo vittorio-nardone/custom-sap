@@ -189,4 +189,5 @@
 #const ISTRUCTIONS = 0x2544
 #const boot = 0x0
 #const PMACHINE_START = 0x4000
+#const EDITOR_START = 0x4003
 #const main = 0x2de0

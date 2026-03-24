@@ -6,12 +6,22 @@
 }
 #bank rom3
 
-#const PMACHINE_VERSION = "v0.4.19"
+#const PMACHINE_VERSION = "v0.4.35"
 #const PMACHINE_BUILDDATE = "03/24/2026"
 
 #include "../assembly/ruledef.asm"
 #include "../kernel/symbols.asm"
 #include "consts.asm"
+
+; =========================================================
+; ROM #3 Jump Table
+;
+;   0x4000: JMP PM_ENTRY      — P-Machine interpreter
+;   0x4003: JMP EDITOR_ENTRY  — On-board Pascal editor
+; =========================================================
+
+    jmp PM_ENTRY
+    jmp EDITOR_ENTRY
 
 ; =========================================================
 ; P-Machine Interpreter for Project Otto
@@ -541,7 +551,7 @@ PM_ENTRY:
     jsr .fetch_byte         ; nparams
     sta PM_TEMP
     jsr .fetch_byte         ; is_function
-
+    tax
     beq .enter_proc_base
 
     ; Function: init return value at FP+2,+3 to zero
@@ -628,6 +638,7 @@ PM_ENTRY:
 
 .op_ret:
     jsr .fetch_byte         ; is_function
+    tax
     beq .ret_no_retval
 
     ; Push return value (at FP+2, FP+3) onto eval stack
@@ -1104,3 +1115,8 @@ PM_ENTRY:
 .error_msg:
     #d 0x0A, 0x0D
     #d "P-Machine: invalid P-code.", 0x0A, 0x0D, 0x00
+
+; =========================================================
+; On-board Pascal Editor
+; =========================================================
+#include "editor.asm"

@@ -90,3 +90,151 @@
 #const PM_CSP_WRITE_INT     = 0x03  ; write(integer) — decimal output
 #const PM_CSP_WRITELN_INT   = 0x04  ; writeln(integer) — decimal + newline
 #const PM_CSP_READLN_INT    = 0x05  ; readln(integer) — read decimal, push on eval stack
+
+; ============================================================
+; EDITOR CONSTANTS
+; ============================================================
+
+; Editor scratch RAM (reuses PM_EVAL_STACK area, unused during editing)
+#const ED_CMD_BUF     = 0xB100  ; 20 bytes: command input buffer
+#const ED_CMD_LEN     = 0xB114  ; 1 byte: command buffer length
+#const ED_LINE_BUF    = 0xB120  ; 80 bytes: primary line buffer
+#const ED_RL_LEN      = 0xB170  ; 1 byte: read_line result length
+#const ED_RL_MAX      = 0xB171  ; 1 byte: read_line max length
+#const ED_RL_BUF_H    = 0xB172  ; 1 byte: read_line buffer addr MSB
+#const ED_RL_BUF_L    = 0xB173  ; 1 byte: read_line buffer addr LSB
+#const ED_NUM1        = 0xB174  ; 1 byte: parsed argument 1
+#const ED_NUM2        = 0xB175  ; 1 byte: parsed argument 2
+#const ED_HAS_NUM1    = 0xB176  ; 1 byte: flag
+#const ED_HAS_NUM2    = 0xB177  ; 1 byte: flag
+#const ED_PARSE_POS   = 0xB178  ; 1 byte: parse position in cmd buffer
+#const ED_PARSE_TMP   = 0xB179  ; 1 byte: digit accumulator
+#const ED_PARSE_FLAG  = 0xB17A  ; 1 byte: has-digits flag
+#const ED_LINE_COUNT  = 0xB17B  ; 1 byte: cached line count
+#const ED_CUR_LINE    = 0xB17C  ; 1 byte: current line in loop
+#const ED_INS_COUNT   = 0xB17D  ; 1 byte: insert/delete counter
+#const ED_SHIFT_ITER  = 0xB17E  ; 1 byte: shift loop iterator
+#const ED_SHIFT_FROM  = 0xB17F  ; 1 byte: shift start position
+
+; Secondary line buffer (reuses PM_VAR_FRAME, unused during editing)
+#const ED_LINE_BUF2   = 0xB200  ; 80 bytes: secondary line buffer
+
+; Source storage parameters
+#const ED_LINE_SIZE   = 80
+#const ED_MAX_LINES   = 255
+#const ED_SRC_PAGE    = 0x01
+
+; ============================================================
+; COMPILER CONSTANTS
+; ============================================================
+
+; Compiler state (reuses PM_EVAL_STACK area during compilation)
+#const CC_SRC_LINE    = 0xB100  ; current source line (1-based)
+#const CC_SRC_COL     = 0xB101  ; current column (0-based)
+#const CC_TOKEN_TYPE  = 0xB102  ; current token type
+#const CC_TOKEN_LEN   = 0xB103  ; token string length
+#const CC_TOKEN_NUM_LO= 0xB104  ; token numeric value low
+#const CC_TOKEN_NUM_HI= 0xB105  ; token numeric value high
+#const CC_ERROR       = 0xB106  ; error flag (0=ok)
+#const CC_ERR_LINE    = 0xB107  ; error line number
+#const CC_CODE_LO     = 0xB108  ; P-code output offset low
+#const CC_CODE_HI     = 0xB109  ; P-code output offset high
+#const CC_SYM_COUNT   = 0xB10A  ; symbol table entry count
+#const CC_SCOPE_LEVEL = 0xB10B  ; current scope depth
+#const CC_FIX_SP      = 0xB10C  ; fixup stack pointer
+#const CC_STR_OFF_LO  = 0xB10D  ; string pool offset low
+#const CC_STR_OFF_HI  = 0xB10E  ; string pool offset high
+#const CC_FRAME_OFF   = 0xB10F  ; next free byte in frame
+#const CC_TOTAL_LINES = 0xB110  ; total source lines
+#const CC_TEMP1       = 0xB111  ; temp
+#const CC_TEMP2       = 0xB112  ; temp
+#const CC_TEMP3       = 0xB113  ; temp
+#const CC_TEMP4       = 0xB114  ; temp
+#const CC_SUB_COUNT   = 0xB115  ; subroutine count (Phase 3)
+#const CC_FOR_VAR     = 0xB116  ; for loop variable offset
+#const CC_SCOPE_SP    = 0xB117  ; scope stack pointer (Phase 3)
+#const CC_FOR_LIMIT   = 0xB118  ; for loop limit temp offset
+#const CC_FOR_DIR     = 0xB119  ; for loop direction (0=to, 1=downto)
+#const CC_KW_PTR_LO   = 0xB11A  ; keyword table pointer low
+#const CC_KW_PTR_HI   = 0xB11B  ; keyword table pointer high
+#const CC_STR_FIX_SP  = 0xB11C  ; string fixup stack pointer
+#const CC_ENTER_LO    = 0xB11D  ; ENTER frame_size patch position low
+#const CC_ENTER_HI    = 0xB11E  ; ENTER frame_size patch position high
+; Reuse editor parse vars (unused during compilation) at 0xB174+
+#const CC_FOUND_KIND  = 0xB174  ; result from cc_find_sym: kind
+#const CC_FOUND_SCOPE = 0xB175  ; result from cc_find_sym: scope_level
+#const CC_FOUND_ARG1  = 0xB176  ; extra: code_hi/array_low
+#const CC_FOUND_ARG2  = 0xB177  ; extra: param_count/array_high
+#const CC_FOUND_ARG3  = 0xB178  ; extra: definition_level
+#const CC_IS_FUNC     = 0xB179  ; current subroutine is function flag
+#const CC_SAVED_SYMCNT= 0xB17A  ; saved symbol count before entering sub scope
+#const CC_FOUND_B10   = 0xB11F  ; byte 10 from cc_find_sym (before ED_LINE_BUF)
+
+; Symbol kind constants
+#const CC_KIND_SCALAR = 0x00
+#const CC_KIND_ARRAY  = 0x01
+#const CC_KIND_PROC   = 0x02
+#const CC_KIND_FUNC   = 0x03
+
+; Token string buffer (32 bytes)
+#const CC_TOKEN_BUF   = 0xB180
+
+; Token types
+#const CC_TK_EOF      = 0x00
+#const CC_TK_IDENT    = 0x01
+#const CC_TK_NUMBER   = 0x02
+#const CC_TK_STRING   = 0x03
+#const CC_TK_PLUS     = 0x04
+#const CC_TK_MINUS    = 0x05
+#const CC_TK_STAR     = 0x06
+#const CC_TK_LPAREN   = 0x07
+#const CC_TK_RPAREN   = 0x08
+#const CC_TK_SEMI     = 0x09
+#const CC_TK_COMMA    = 0x0A
+#const CC_TK_ASSIGN   = 0x0B
+#const CC_TK_COLON    = 0x0C
+#const CC_TK_DOT      = 0x0D
+#const CC_TK_EQ       = 0x0E
+#const CC_TK_NE       = 0x0F
+#const CC_TK_LT       = 0x10
+#const CC_TK_GT       = 0x11
+#const CC_TK_LE       = 0x12
+#const CC_TK_GE       = 0x13
+#const CC_TK_LBRACKET = 0x14
+#const CC_TK_RBRACKET = 0x15
+#const CC_TK_DOTDOT   = 0x16
+; Keywords (0x40+)
+#const CC_TK_PROGRAM  = 0x40
+#const CC_TK_BEGIN    = 0x41
+#const CC_TK_END      = 0x42
+#const CC_TK_VAR      = 0x43
+#const CC_TK_INTEGER  = 0x44
+#const CC_TK_IF       = 0x45
+#const CC_TK_THEN     = 0x46
+#const CC_TK_ELSE     = 0x47
+#const CC_TK_WHILE    = 0x48
+#const CC_TK_DO       = 0x49
+#const CC_TK_FOR      = 0x4A
+#const CC_TK_TO       = 0x4B
+#const CC_TK_DOWNTO   = 0x4C
+#const CC_TK_WRITE    = 0x4D
+#const CC_TK_WRITELN  = 0x4E
+#const CC_TK_READLN   = 0x4F
+#const CC_TK_DIV      = 0x50
+#const CC_TK_MOD      = 0x51
+#const CC_TK_AND      = 0x52
+#const CC_TK_OR       = 0x53
+#const CC_TK_NOT      = 0x54
+#const CC_TK_PROCEDURE= 0x55
+#const CC_TK_FUNCTION = 0x56
+#const CC_TK_ARRAY    = 0x57
+#const CC_TK_OF       = 0x58
+
+; Expansion RAM page 2 layout (compiler workspace)
+#const CC_WS_PAGE     = 0x02
+#const CC_SYM_BASE    = 0x0000  ; symbol table at 0x020000
+#const CC_SYM_ENTRY   = 16      ; bytes per symbol entry
+#const CC_FIX_BASE    = 0x0C40  ; jump fixup table at 0x020C40
+#const CC_FIX_ENTRY   = 2       ; bytes per fixup entry
+#const CC_STR_FIX_BASE= 0x0D40  ; string fixup table at 0x020D40
+#const CC_STR_BASE    = 0x0E00  ; string pool at 0x020E00

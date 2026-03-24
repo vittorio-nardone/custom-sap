@@ -52,7 +52,7 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.73"
+#const KERNEL_VERSION = "v1.2.74"
 #const KERNEL_BUILDDATE = "03/24/2026"
 
 #include "../assembly/ruledef.asm"
@@ -81,6 +81,7 @@ boot:
 
 
 #const PMACHINE_START = 0x4000
+#const EDITOR_START = 0x4003
 
 ; RAM variables are defined in memmap.asm
 
@@ -151,6 +152,8 @@ main:
     beq .menu_disassembler_command
     cmp "p"
     beq .menu_pascal_command
+    cmp "e"
+    beq .menu_editor_command
 .menu_show_error:
     ldd .menu_error_msg[15:8]
     lde .menu_error_msg[7:0]
@@ -402,6 +405,10 @@ main:
 
     jmp .ready
 
+.menu_editor_command:
+    jsr EDITOR_START
+    jmp .ready
+
 .menu_pascal_command:
     ldd 0x84
     lde 0x00
@@ -580,6 +587,7 @@ main:
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
     #d "   p        - run Pascal P-code program", 0x0A, 0x0D
+    #d "   e        - Pascal editor/compiler", 0x0A, 0x0D
     #d "   h        - show Help", 0x0A, 0x0D
     #d 0x00
 
