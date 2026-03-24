@@ -7,10 +7,11 @@ The CPU is built from 7400-series TTL ICs, not a commercial microprocessor.
 
 - **Python venv**: `source .venv/bin/activate` (Python 3.11, required for simulator and build scripts)
 - **Assembler**: [CustomASM](https://github.com/hlorenzi/customasm) (`cargo install customasm`)
-- **Build all** (kernel, microcode, symbols, apps): `source .venv/bin/activate && ./generate-all.sh`
-  - Regenerates microcode ROMs, lookup tables, kernel binary, symbols, and all apps in `apps/`
+- **Build all** (kernel, microcode, symbols, P-Machine, apps, Pascal examples): `source .venv/bin/activate && ./generate-all.sh`
+  - Regenerates microcode ROMs, lookup tables, kernel binary, P-Machine ROM, symbols, all apps in `apps/`, and all Pascal examples in `pascal/examples/`
   - **Always run this after modifying kernel files** to ensure symbols.asm stays in sync with kernel addresses
 - **Compile single app**: `customasm apps/myapp.asm -f binary -o roms/myapp.bin`
+- **Compile Pascal program**: `python pascal_compiler.py pascal/examples/hello.pas -o roms/hello.bin`
 - **Simulator (interactive)**: `python simulate.py --program roms/myapp.bin`
 - **Simulator (headless/test)**: `python simulate.py --autorun --program roms/myapp.bin --max-cycles 1000000 --quiet`
 - **Microcode generation**: `python microcode.py`
@@ -63,7 +64,7 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
   0x0200+                  Kernel routines
 
 0x002000-0x003FFF  (8 KB)  ROM #2 (kernel bank 1)
-0x004000-0x005FFF  (8 KB)  ROM #3 (FORTH)
+0x004000-0x005FFF  (8 KB)  ROM #3 (Pascal P-Machine)
 
 0x006000-0x0067FF  (2 KB)  Device I/O
   0x6000-0x600F            Keyboard (read only)
@@ -626,7 +627,7 @@ The simulator (`OttoCPU` class in `simulate.py`) faithfully emulates:
 | Region | Start | End | Read-only | I/O |
 |--------|-------|-----|-----------|-----|
 | rom | 0x0000 | 0x3FFF | Yes | No |
-| forth | 0x4000 | 0x5FFF | Yes | No |
+| pmachine | 0x4000 | 0x5FFF | Yes | No |
 | ram | 0x8000 | 0xFFFF | No | No |
 | ram_ext_1 | 0x010000 | 0x01FFFF | No | No |
 | ram_ext_2 | 0x020000 | 0x02FFFF | No | No |
@@ -695,8 +696,83 @@ pip install intelhex     # Intel HEX file format support
 - Each instruction has a `sim` field (Python code string executed via `exec()`) and cycle counts
 - The simulator calls `verifyInstructionSet()` at startup to validate opcodes
 - Unimplemented instructions produce a warning at startup
-- ROM is loaded from `roms/kernel-rom.bin` and `roms/forth.bin` at boot
+- ROM is loaded from `roms/kernel-rom.bin` and `roms/pmachine.bin` at boot
 - Stack operations: `push()` writes at SP then decrements, `pop()` increments SP then reads
+
+## Pascal P-Machine
+
+Project Otto includes a Tiny Pascal system: a P-Machine bytecode interpreter in ROM and a Python cross-compiler.
+
+### Architecture
+
+The Pascal P-Machine sits in ROM #3 (0x4000-0x5FFF, 8 KB). The Python compiler (`pascal_compiler.py`) compiles `.pas` source files into self-executing binaries that include a native Otto stub followed by P-code bytecode. These binaries load at 0x8400 like any other app and run with the `r` command (or `--autorun`).
+
+The kernel menu also provides a `p` command that directly invokes the P-Machine on pure P-code data at 0x8400 (without the native stub).
+
+### P-Machine RAM Layout
+
+```
+0xB000-0xB005  P-Machine internal state (IP, eval stack ptr, temp, base addr)
+0xB100-0xB1FF  P-Machine evaluation stack (256 bytes, grows upward)
+```
+
+### P-code Binary Format
+
+Compiled binaries consist of a native stub + P-code:
+
+```
+Offset  Content
+0x00    Native Otto stub (9 bytes: LDD, LDE, JSR 0x4000, RTS)
+0x09    P-code header:
+          0x50 0x4D  magic "PM"
+          version    format version (0x01)
+          code_off   code section offset from header (LE u16)
+          data_off   data section offset from header (LE u16)
+0x10    P-code instructions
+...     String constants (null-terminated)
+```
+
+### P-code Opcodes (MS1)
+
+| Opcode | Mnemonic | Operands | Description |
+|--------|----------|----------|-------------|
+| 0x00 | HALT | - | Stop execution, return to kernel |
+| 0x01 | LIT | u8 | Push 8-bit literal |
+| 0x02 | LIT16 | lo, hi | Push 16-bit literal (LE) |
+| 0x10 | CSP | u8 | Call standard procedure |
+
+Standard Procedures (CSP):
+- **0**: `write(string)` - pop address, print string
+- **1**: `writeln(string)` - pop address, print string + CR/LF
+- **2**: `writeln()` - print CR/LF only
+
+### Compiling and Running Pascal Programs
+
+```bash
+source .venv/bin/activate
+
+# 1. Compile Pascal to self-executing binary
+python pascal_compiler.py pascal/examples/hello.pas -o roms/hello.bin
+
+# 2. Run in simulator (works with standard --autorun)
+python simulate.py --autorun --program roms/hello.bin --max-cycles 1000000 --quiet
+
+# 3. Check exit code
+echo $?   # 0 = success
+```
+
+### Supported Pascal Syntax (MS1)
+
+```pascal
+program ProgramName;
+begin
+  writeln('string literal');
+  write('without newline');
+  writeln;
+end.
+```
+
+Comments: `{ block }`, `(* block *)`, `// line`
 
 ## Project Structure
 
@@ -717,9 +793,15 @@ kernel/
   tests.asm              - CPU instruction tests
   float.asm              - Floating point (WIP)
 apps/                    - Example applications
-forth/                   - FORTH language interpreter
+forth/                   - FORTH language interpreter (legacy, not built)
+pascal/
+  pmachine.asm           - P-Machine interpreter (ROM #3)
+  consts.asm             - P-Machine constants and RAM layout
+  examples/              - Pascal example programs
+    hello.pas            - Hello World
 roms/                    - Compiled binaries
 microcode.py             - Microcode ROM generator
 simulate.py              - CPU simulator
+pascal_compiler.py       - Tiny Pascal to P-code compiler
 istructions.csv          - Instruction reference (CSV)
 ```

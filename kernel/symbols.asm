@@ -175,5 +175,5 @@
 #const VT100_QUERY_CURSOR_POSITION = 0x22bc
 #const ISTRUCTIONS = 0x22ca
 #const boot = 0x0
-#const FORTH_START = 0x4000
+#const PMACHINE_START = 0x4000
 #const main = 0x2b66

@@ -60,9 +60,16 @@ This repository houses the complete design files and software components for the
 ### System Software
 * **kernel/** - Operating system kernel source code
 * **apps/** - Example applications and demos
+* **pascal/** - Tiny Pascal support (WIP)
+  * **pmachine.asm** - P-Machine bytecode interpreter (ROM #3)
+  * **consts.asm** - P-Machine constants and RAM layout
+  * **examples/** - Pascal example programs
+* **pascal_compiler.py** - Tiny Pascal cross-compiler (Python, produces P-code binaries)
+* **forth/** - FORTH language interpreter (deprecated, files retained but excluded from build)
 * **roms/** - Binary files
   * Microcode EEPROMs
   * Kernel image
+  * P-Machine ROM
   * Example applications (loadable via kernel upload function)
 
 ### Documentation
@@ -86,6 +93,12 @@ This repository houses the complete design files and software components for the
    * Refer to the instruction set documentation
    * Use the example applications as reference
    * Build and upload applications
+
+4. For Tiny Pascal development:
+   ```bash
+   python pascal_compiler.py pascal/examples/hello.pas -o roms/hello.bin
+   python simulate.py --autorun --program roms/hello.bin --max-cycles 1000000 --quiet
+   ```
 
 ## Otto simulator
 
@@ -123,6 +136,30 @@ Available flags:
 Exit codes: `0` = program completed, `1` = timeout, `2` = execution error. Use `--dump-regs` to inspect the full CPU state (including `OUT` register value) after execution.
 
 <img src="media/otto-kernel.png" width="600">
+
+## Tiny Pascal (WIP)
+
+Otto includes experimental support for a minimal Pascal language. The system consists of two components:
+
+* **P-Machine** — a stack-based bytecode interpreter that resides in ROM #3 (0x4000-0x5FFF). It executes P-code produced by the compiler, using the kernel serial I/O API for output.
+* **Cross-compiler** (`pascal_compiler.py`) — a Python tool that compiles Pascal source files into self-executing P-code binaries. The output can be loaded at 0x8400 and run with either the `r` (run) or `p` (Pascal) kernel commands.
+
+Currently supported (Milestone 1): `program` structure, `writeln` / `write` with string literals.
+
+```pascal
+program HelloWorld;
+begin
+  writeln('Hello, World!');
+end.
+```
+
+```bash
+# Compile and run
+python pascal_compiler.py pascal/examples/hello.pas -o roms/hello.bin
+python simulate.py --autorun --program roms/hello.bin --max-cycles 1000000 --quiet
+```
+
+> **Note**: The FORTH interpreter (`forth/`) has been deprecated and is no longer included in the build process or kernel menu. Its source files are retained in the repository for reference.
 
 ## Control words ROM generation
 ```sh

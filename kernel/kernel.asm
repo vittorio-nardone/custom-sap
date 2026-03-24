@@ -52,8 +52,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.66"
-#const KERNEL_BUILDDATE = "03/23/2026"
+#const KERNEL_VERSION = "v1.2.69"
+#const KERNEL_BUILDDATE = "03/24/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -80,7 +80,7 @@ boot:
     jmp main
 
 
-#const FORTH_START = 0x4000
+#const PMACHINE_START = 0x4000
 
 ; RAM variables are defined in memmap.asm
 
@@ -149,8 +149,8 @@ main:
     beq .menu_help_command
     cmp "a"
     beq .menu_disassembler_command
-    cmp "f"
-    beq .menu_forth_command
+    cmp "p"
+    beq .menu_pascal_command
 .menu_show_error:
     ldd .menu_error_msg[15:8]
     lde .menu_error_msg[7:0]
@@ -402,8 +402,16 @@ main:
 
     jmp .ready
 
-.menu_forth_command:    
-    jsr FORTH_START
+.menu_pascal_command:
+    ldd 0x84
+    lde 0x00
+    ldx 0x00
+    lda de,x
+    cmp 0x50
+    beq .menu_pascal_run
+    lde 0x09
+.menu_pascal_run:
+    jsr PMACHINE_START
     jmp .ready
 
 .menu_disassembler_command:
@@ -571,7 +579,7 @@ main:
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
-    #d "   f        - start Forth interpreter", 0x0A, 0x0D
+    #d "   p        - run Pascal P-code program", 0x0A, 0x0D
     #d "   h        - show Help", 0x0A, 0x0D
     #d 0x00
 
