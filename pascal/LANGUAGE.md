@@ -31,7 +31,56 @@ var
   a, b, result: integer;
 ```
 
-Multiple variables of the same type can be declared on one line, separated by commas. Each declaration line ends with a semicolon. Maximum 128 variables per program.
+Multiple variables of the same type can be declared on one line, separated by commas. Each declaration line ends with a semicolon. Maximum 128 variables per scope.
+
+## Arrays
+
+One-dimensional arrays of `integer` are supported with compile-time constant bounds:
+
+```pascal
+var
+  data: array[1..10] of integer;
+  table: array[0..49] of integer;
+```
+
+Array bounds are inclusive and must be integer constants (negative bounds are allowed, e.g. `array[-5..5]`). Each array declaration must have a single name (no multi-name declarations like `a, b: array[...]`).
+
+### Array Access
+
+```pascal
+data[1] := 42;              { store value }
+x := data[i];               { load value }
+data[i] := data[i-1] + 1;   { read and write in same statement }
+writeln(data[5]);            { use in expressions }
+```
+
+Array elements can be used anywhere an integer expression is expected. The index expression can be any integer expression evaluated at runtime.
+
+### Scope and Nesting
+
+Arrays declared in an outer scope can be accessed from nested procedures/functions via lexical scoping, just like regular variables:
+
+```pascal
+program Example;
+var
+  arr: array[1..5] of integer;
+
+procedure fillArray;
+var i: integer;
+begin
+  for i := 1 to 5 do
+    arr[i] := i * 10
+end;
+```
+
+### Limitations
+
+- Only `integer` element type
+- Only one-dimensional arrays
+- Arrays cannot be passed as procedure/function parameters
+- No bounds checking at runtime (invalid indices may corrupt memory)
+- Maximum ~120 elements per array (limited by 256-byte frame size per scope)
+- `readln` does not support array elements — read into a temporary variable first
 
 ## Procedures and Functions
 
@@ -253,10 +302,12 @@ Three comment styles are supported:
 ## Limitations (current version)
 
 - No `string` type — only string literals in write/writeln
-- No arrays or records
+- No records or multi-dimensional arrays
 - No pass-by-reference parameters (`var` parameters)
-- No `readln` for strings — only integer input is supported
+- Arrays cannot be passed as parameters to procedures/functions
+- No `readln` for strings or array elements — only scalar integer input
 - No dedicated boolean type (integers are used: 0 = false, non-zero = true)
+- No runtime bounds checking for array indices
 - Integer overflow is silently truncated to 16 bits
 
 ## Compilation and Execution
@@ -332,3 +383,36 @@ end.
 ```
 
 Output: `Factorial of 7 = 5040`
+
+### Arrays (Bubble Sort)
+
+```pascal
+program BubbleSort;
+var
+  data: array[1..10] of integer;
+  i, j, n, temp: integer;
+
+begin
+  n := 10;
+  for i := 1 to n do
+    data[i] := n - i + 1;
+
+  for i := 1 to n - 1 do
+    for j := 1 to n - i do
+      if data[j] > data[j + 1] then
+      begin
+        temp := data[j];
+        data[j] := data[j + 1];
+        data[j + 1] := temp
+      end;
+
+  for i := 1 to n do
+  begin
+    write(data[i]);
+    write(' ')
+  end;
+  writeln
+end.
+```
+
+Output: `1 2 3 4 5 6 7 8 9 10`

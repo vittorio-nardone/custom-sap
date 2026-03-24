@@ -191,6 +191,43 @@ end.
 
 Output: `Factorial of 7 = 5040`
 
+## [DONE] Milestone 4.5 — Arrays
+
+Add one-dimensional array support with compile-time constant bounds.
+
+- [x] New P-code opcodes: `LOAD_A`, `STORE_A` (array element access, FP-relative)
+- [x] New P-code opcodes: `LOAD_AL`, `STORE_AL` (array element access via static chain for nested scopes)
+- [x] Compiler: `array[low..high] of integer` declarations
+- [x] Compiler: array indexing in expressions (`arr[expr]`) and assignments (`arr[expr] := expr`)
+- [x] Compiler: adjusted-base optimization (index offset computed at compile time)
+- [x] Compiler: lexical scoping for arrays in nested procedures/functions
+- [x] Frame allocation with size validation (256-byte limit per scope)
+- [x] Example: `pascal/examples/bubblesort.pas` (bubble sort of 10 elements)
+
+```pascal
+program BubbleSort;
+var
+  data: array[1..10] of integer;
+  i, j, n, temp: integer;
+begin
+  n := 10;
+  for i := 1 to n do
+    data[i] := n - i + 1;
+  for i := 1 to n - 1 do
+    for j := 1 to n - i do
+      if data[j] > data[j + 1] then
+      begin
+        temp := data[j];
+        data[j] := data[j + 1];
+        data[j + 1] := temp
+      end;
+  for i := 1 to n do begin write(data[i]); write(' ') end;
+  writeln
+end.
+```
+
+Output: `1 2 3 4 5 6 7 8 9 10`
+
 ## Milestone 5 — On-board editor/compiler
 
 Enable programming directly on Otto hardware without a host PC.

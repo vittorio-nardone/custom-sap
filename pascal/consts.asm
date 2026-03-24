@@ -76,6 +76,10 @@
 #const PM_OP_RET    = 0x19  ; is_function — return from procedure/function
 #const PM_OP_LOAD_L = 0x1A  ; level, offset — load via static chain
 #const PM_OP_STORE_L= 0x1B  ; level, offset — store via static chain
+#const PM_OP_LOAD_A = 0x1C  ; adjusted_base — load array element (FP-relative)
+#const PM_OP_STORE_A= 0x1D  ; adjusted_base — store array element (FP-relative)
+#const PM_OP_LOAD_AL= 0x1E  ; depth, adjusted_base — load array element via static chain
+#const PM_OP_STORE_AL=0x1F  ; depth, adjusted_base — store array element via static chain
 
 ; ============================================================
 ; CSP STANDARD PROCEDURE NUMBERS

@@ -6,7 +6,7 @@
 }
 #bank rom3
 
-#const PMACHINE_VERSION = "v0.4.18"
+#const PMACHINE_VERSION = "v0.4.19"
 #const PMACHINE_BUILDDATE = "03/24/2026"
 
 #include "../assembly/ruledef.asm"
@@ -143,6 +143,14 @@ PM_ENTRY:
     beq .op_load_l
     cmp PM_OP_STORE_L
     beq .op_store_l
+    cmp PM_OP_LOAD_A
+    beq .op_load_a
+    cmp PM_OP_STORE_A
+    beq .op_store_a
+    cmp PM_OP_LOAD_AL
+    beq .op_load_al
+    cmp PM_OP_STORE_AL
+    beq .op_store_al
 
     jmp .error_invalid
 
@@ -736,6 +744,158 @@ PM_ENTRY:
     sta de,x
     inx
     lda MATH16_B+1          ; MSB
+    sta de,x
+    jmp .fetch
+
+; --- LOAD_A: load array element (FP-relative) -----------
+; Operand: adjusted_base (1 byte)
+; Stack in: index (16-bit)
+; Stack out: value (16-bit)
+
+.op_load_a:
+    jsr .fetch_byte         ; A = adjusted_base
+    sta PM_TEMP
+
+    jsr .pop_byte           ; index MSB (discard)
+    jsr .pop_byte           ; index LSB
+    asl a                   ; index * 2
+    clc
+    adc PM_TEMP             ; + adjusted_base
+
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x                ; element LSB
+    sta PM_TEMP
+    inx
+    lda de,x                ; element MSB
+    pha
+    lda PM_TEMP
+    jsr .push_byte
+    pla
+    jsr .push_byte
+    jmp .fetch
+
+; --- STORE_A: store array element (FP-relative) ---------
+; Operand: adjusted_base (1 byte)
+; Stack in: index (16-bit), value (16-bit)  [index pushed first]
+
+.op_store_a:
+    jsr .fetch_byte         ; A = adjusted_base
+    sta PM_TEMP
+
+    jsr .pop_byte           ; value MSB
+    sta MATH16_B+1
+    jsr .pop_byte           ; value LSB
+    sta MATH16_B
+    jsr .pop_byte           ; index MSB (discard)
+    jsr .pop_byte           ; index LSB
+    asl a                   ; index * 2
+    clc
+    adc PM_TEMP             ; + adjusted_base
+
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda MATH16_B            ; value LSB
+    sta de,x
+    inx
+    lda MATH16_B+1          ; value MSB
+    sta de,x
+    jmp .fetch
+
+; --- LOAD_AL: load array element via static chain -------
+; Operands: depth (1 byte), adjusted_base (1 byte)
+; Stack in: index (16-bit)
+; Stack out: value (16-bit)
+
+.op_load_al:
+    jsr .fetch_byte         ; depth
+    tax
+    jsr .fetch_byte         ; adjusted_base
+    sta PM_TEMP
+
+    jsr .pop_byte           ; index MSB (discard)
+    jsr .pop_byte           ; index LSB
+    asl a                   ; index * 2
+    clc
+    adc PM_TEMP             ; + adjusted_base
+    sta PM_TEMP             ; final byte offset
+
+    jsr .follow_links       ; PM_TEMP3:PM_TEMP2 = target FP
+
+    lda PM_TEMP
+    clc
+    adc PM_TEMP2
+    tae
+    lda PM_TEMP3
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+
+    ldx 0x00
+    lda de,x                ; element LSB
+    sta PM_TEMP
+    inx
+    lda de,x                ; element MSB
+    pha
+    lda PM_TEMP
+    jsr .push_byte
+    pla
+    jsr .push_byte
+    jmp .fetch
+
+; --- STORE_AL: store array element via static chain -----
+; Operands: depth (1 byte), adjusted_base (1 byte)
+; Stack in: index (16-bit), value (16-bit)  [index pushed first]
+
+.op_store_al:
+    jsr .fetch_byte         ; depth
+    tax
+    jsr .fetch_byte         ; adjusted_base
+    sta PM_TEMP
+
+    jsr .pop_byte           ; value MSB
+    sta MATH16_B+1
+    jsr .pop_byte           ; value LSB
+    sta MATH16_B
+    jsr .pop_byte           ; index MSB (discard)
+    jsr .pop_byte           ; index LSB
+    asl a                   ; index * 2
+    clc
+    adc PM_TEMP             ; + adjusted_base
+    sta PM_TEMP             ; final byte offset
+
+    jsr .follow_links       ; PM_TEMP3:PM_TEMP2 = target FP
+
+    lda PM_TEMP
+    clc
+    adc PM_TEMP2
+    tae
+    lda PM_TEMP3
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+
+    ldx 0x00
+    lda MATH16_B            ; value LSB
+    sta de,x
+    inx
+    lda MATH16_B+1          ; value MSB
     sta de,x
     jmp .fetch
 

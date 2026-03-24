@@ -5,14 +5,15 @@ Tiny Pascal Compiler for Project Otto P-Machine.
 Compiles a minimal subset of Pascal into P-code bytecode
 that runs on the Otto P-Machine interpreter (ROM #3).
 
-Supported (MS4): program structure, var declarations (integer),
+Supported (MS4.5): program structure, var declarations (integer, arrays),
 assignments, arithmetic expressions (+, -, *, div, mod, unary -),
 writeln/write with string literals or integer expressions,
 readln for integer input,
 control flow (if/then/else, while/do, for/to/downto),
 relational operators (=, <>, <, >, <=, >=),
 boolean operators (and, or, not), compound statements (begin..end),
-procedures and functions (nested, recursive), parameter passing (by value).
+procedures and functions (nested, recursive), parameter passing (by value),
+one-dimensional arrays of integer with compile-time constant bounds.
 
 Usage:
     python pascal_compiler.py input.pas -o output.bin [--base 0x8400]
@@ -54,6 +55,10 @@ OP_ENTER   = 0x18
 OP_RET     = 0x19
 OP_LOAD_L  = 0x1A
 OP_STORE_L = 0x1B
+OP_LOAD_A  = 0x1C
+OP_STORE_A = 0x1D
+OP_LOAD_AL = 0x1E
+OP_STORE_AL= 0x1F
 
 CSP_WRITE         = 0x00
 CSP_WRITELN       = 0x01
@@ -95,6 +100,8 @@ class TokenType(Enum):
     NOT            = auto()
     PROCEDURE      = auto()
     FUNCTION       = auto()
+    ARRAY          = auto()
+    OF             = auto()
     IDENTIFIER     = auto()
     STRING_LITERAL = auto()
     NUMBER         = auto()
@@ -103,6 +110,9 @@ class TokenType(Enum):
     COMMA          = auto()   # ,
     SEMICOLON      = auto()   # ;
     DOT            = auto()   # .
+    DOTDOT         = auto()   # ..
+    LBRACKET       = auto()   # [
+    RBRACKET       = auto()   # ]
     LPAREN         = auto()   # (
     RPAREN         = auto()   # )
     PLUS           = auto()   # +
@@ -140,6 +150,8 @@ KEYWORDS = {
     'not':       TokenType.NOT,
     'procedure': TokenType.PROCEDURE,
     'function':  TokenType.FUNCTION,
+    'array':     TokenType.ARRAY,
+    'of':        TokenType.OF,
 }
 
 @dataclass
@@ -265,7 +277,18 @@ class Lexer:
                 tokens.append(Token(TokenType.SEMICOLON, ';', line, col))
                 self._advance()
             elif ch == '.':
-                tokens.append(Token(TokenType.DOT, '.', line, col))
+                if self._peek(1) == '.':
+                    tokens.append(Token(TokenType.DOTDOT, '..', line, col))
+                    self._advance()
+                    self._advance()
+                else:
+                    tokens.append(Token(TokenType.DOT, '.', line, col))
+                    self._advance()
+            elif ch == '[':
+                tokens.append(Token(TokenType.LBRACKET, '[', line, col))
+                self._advance()
+            elif ch == ']':
+                tokens.append(Token(TokenType.RBRACKET, ']', line, col))
                 self._advance()
             elif ch == '(':
                 tokens.append(Token(TokenType.LPAREN, '(', line, col))
@@ -340,11 +363,22 @@ class CallExpr:
     name: str
     args: List['Expression']
 
-Expression = Union[NumberLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr]
+@dataclass
+class ArrayRef:
+    name: str
+    index: 'Expression'
+
+Expression = Union[NumberLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef]
 
 @dataclass
 class VarDecl:
     names: List[str]
+
+@dataclass
+class ArrayDecl:
+    name: str
+    low: int
+    high: int
 
 @dataclass
 class ParamDecl:
@@ -392,17 +426,26 @@ class ForStmt:
     body: 'Statement'
 
 @dataclass
+class ArrayAssignStmt:
+    name: str
+    index: Expression
+    expr: Expression
+
+@dataclass
 class CompoundStmt:
     statements: List['Statement']
 
 Statement = Union[VarDecl, AssignStmt, WritelnStmt, WriteStmt, ReadlnStmt,
-                  CallStmt, IfStmt, WhileStmt, ForStmt, CompoundStmt]
+                  CallStmt, IfStmt, WhileStmt, ForStmt, CompoundStmt,
+                  ArrayAssignStmt]
+
+Declaration = Union[VarDecl, ArrayDecl]
 
 @dataclass
 class ProcDecl:
     name: str
     params: List[ParamDecl]
-    var_decls: List[VarDecl]
+    var_decls: List[Declaration]
     subroutines: List[Union['ProcDecl', 'FuncDecl']]
     body: CompoundStmt
 
@@ -411,7 +454,7 @@ class FuncDecl:
     name: str
     params: List[ParamDecl]
     return_type: str
-    var_decls: List[VarDecl]
+    var_decls: List[Declaration]
     subroutines: List[Union['ProcDecl', 'FuncDecl']]
     body: CompoundStmt
 
@@ -420,7 +463,7 @@ Subroutine = Union[ProcDecl, FuncDecl]
 @dataclass
 class PascalProgram:
     name: str
-    var_decls: List[VarDecl]
+    var_decls: List[Declaration]
     subroutines: List[Subroutine]
     statements: List[Statement]
 
@@ -467,19 +510,41 @@ class Parser:
         return PascalProgram(name=name, var_decls=var_decls,
                              subroutines=subroutines, statements=stmts)
 
-    def _parse_var_block(self) -> list[VarDecl]:
+    def _parse_var_block(self) -> list[Declaration]:
         self._expect(TokenType.VAR)
-        decls: list[VarDecl] = []
+        decls: list[Declaration] = []
         while self._current().type == TokenType.IDENTIFIER:
             names = [self._expect(TokenType.IDENTIFIER).value]
             while self._current().type == TokenType.COMMA:
                 self.pos += 1
                 names.append(self._expect(TokenType.IDENTIFIER).value)
             self._expect(TokenType.COLON)
-            self._expect(TokenType.INTEGER)
-            self._expect(TokenType.SEMICOLON)
-            decls.append(VarDecl(names=names))
+            if self._current().type == TokenType.ARRAY:
+                if len(names) > 1:
+                    self._error("array declaration must have a single name")
+                self._expect(TokenType.ARRAY)
+                self._expect(TokenType.LBRACKET)
+                low = self._parse_const_int()
+                self._expect(TokenType.DOTDOT)
+                high = self._parse_const_int()
+                self._expect(TokenType.RBRACKET)
+                self._expect(TokenType.OF)
+                self._expect(TokenType.INTEGER)
+                self._expect(TokenType.SEMICOLON)
+                decls.append(ArrayDecl(name=names[0], low=low, high=high))
+            else:
+                self._expect(TokenType.INTEGER)
+                self._expect(TokenType.SEMICOLON)
+                decls.append(VarDecl(names=names))
         return decls
+
+    def _parse_const_int(self) -> int:
+        sign = 1
+        if self._current().type == TokenType.MINUS:
+            sign = -1
+            self.pos += 1
+        tok = self._expect(TokenType.NUMBER)
+        return sign * int(tok.value)
 
     def _parse_subroutines(self) -> list[Subroutine]:
         subs: list[Subroutine] = []
@@ -570,6 +635,8 @@ class Parser:
             nxt = self._peek_next()
             if nxt.type == TokenType.ASSIGN:
                 return self._parse_assignment()
+            if nxt.type == TokenType.LBRACKET:
+                return self._parse_array_assign()
             return self._parse_call_stmt()
         if tok.type == TokenType.IF:
             return self._parse_if()
@@ -601,6 +668,15 @@ class Parser:
                     args.append(self._parse_expression())
             self._expect(TokenType.RPAREN)
         return CallStmt(name=name, args=args)
+
+    def _parse_array_assign(self) -> ArrayAssignStmt:
+        name = self._expect(TokenType.IDENTIFIER).value
+        self._expect(TokenType.LBRACKET)
+        index = self._parse_expression()
+        self._expect(TokenType.RBRACKET)
+        self._expect(TokenType.ASSIGN)
+        expr = self._parse_expression()
+        return ArrayAssignStmt(name=name, index=index, expr=expr)
 
     def _parse_readln(self) -> ReadlnStmt:
         self._expect(TokenType.READLN)
@@ -728,6 +804,11 @@ class Parser:
                         args.append(self._parse_expression())
                 self._expect(TokenType.RPAREN)
                 return CallExpr(name=tok.value, args=args)
+            if self._current().type == TokenType.LBRACKET:
+                self.pos += 1
+                index = self._parse_expression()
+                self._expect(TokenType.RBRACKET)
+                return ArrayRef(name=tok.value, index=index)
             return VarRef(name=tok.value)
 
         if tok.type == TokenType.LPAREN:
@@ -756,6 +837,7 @@ class Parser:
 class Scope:
     level: int
     symbols: dict
+    arrays: dict
     is_function: bool
     function_name: Optional[str]
     enclosing: Optional['Scope']
@@ -786,7 +868,7 @@ class CodeGenerator:
                     function_name: Optional[str] = None,
                     start_offset: int = 0):
         self._scope = Scope(
-            level=level, symbols={}, is_function=is_function,
+            level=level, symbols={}, arrays={}, is_function=is_function,
             function_name=function_name, enclosing=self._scope,
             next_offset=start_offset
         )
@@ -813,6 +895,36 @@ class CodeGenerator:
             scope = scope.enclosing
             level_diff += 1
         raise SyntaxError(f"undefined variable: '{name}'")
+
+    def _add_array(self, name: str, low: int, high: int) -> int:
+        lower = name.lower()
+        if lower in self._scope.symbols:
+            raise SyntaxError(f"duplicate variable declaration: '{name}'")
+        count = high - low + 1
+        if count <= 0:
+            raise SyntaxError(f"invalid array bounds: [{low}..{high}]")
+        byte_size = count * 2
+        offset = self._scope.next_offset
+        if offset + byte_size > 256:
+            raise SyntaxError(f"array '{name}' exceeds frame size limit (256 bytes)")
+        self._scope.symbols[lower] = offset
+        self._scope.arrays[lower] = (low, high)
+        self._scope.next_offset += byte_size
+        return offset
+
+    def _resolve_array(self, name: str) -> tuple[int, int, int, int]:
+        """Returns (level_diff, base_offset, low, high)."""
+        lower = name.lower()
+        scope = self._scope
+        level_diff = 0
+        while scope is not None:
+            if lower in scope.arrays:
+                base_offset = scope.symbols[lower]
+                low, high = scope.arrays[lower]
+                return (level_diff, base_offset, low, high)
+            scope = scope.enclosing
+            level_diff += 1
+        raise SyntaxError(f"undefined array: '{name}'")
 
     def _is_current_function_name(self, name: str) -> bool:
         return (self._scope is not None
@@ -886,6 +998,22 @@ class CodeGenerator:
         else:
             self._emit(OP_STORE_L, level_diff, offset)
 
+    def _emit_load_array(self, name: str):
+        level_diff, base_offset, low, high = self._resolve_array(name)
+        adjusted_base = (base_offset - low * 2) & 0xFF
+        if level_diff == 0:
+            self._emit(OP_LOAD_A, adjusted_base)
+        else:
+            self._emit(OP_LOAD_AL, level_diff, adjusted_base)
+
+    def _emit_store_array(self, name: str):
+        level_diff, base_offset, low, high = self._resolve_array(name)
+        adjusted_base = (base_offset - low * 2) & 0xFF
+        if level_diff == 0:
+            self._emit(OP_STORE_A, adjusted_base)
+        else:
+            self._emit(OP_STORE_AL, level_diff, adjusted_base)
+
     # ── Expression codegen ───────────────────────────────────
 
     def _gen_expr(self, expr: Expression):
@@ -913,6 +1041,9 @@ class CodeGenerator:
                 'and': OP_AND, 'or': OP_OR,
             }
             self._emit(op_map[expr.op])
+        elif isinstance(expr, ArrayRef):
+            self._gen_expr(expr.index)
+            self._emit_load_array(expr.name)
         elif isinstance(expr, CallExpr):
             self._gen_call(expr.name, expr.args)
 
@@ -949,6 +1080,11 @@ class CodeGenerator:
                 self._emit(OP_STORE, 2)
             else:
                 self._emit_store_var(stmt.target)
+
+        elif isinstance(stmt, ArrayAssignStmt):
+            self._gen_expr(stmt.index)
+            self._gen_expr(stmt.expr)
+            self._emit_store_array(stmt.name)
 
         elif isinstance(stmt, CallStmt):
             lower = stmt.name.lower()
@@ -1088,8 +1224,11 @@ class CodeGenerator:
         for param in sub.params:
             self._add_var(param.name)
         for decl in sub.var_decls:
-            for name in decl.names:
-                self._add_var(name)
+            if isinstance(decl, ArrayDecl):
+                self._add_array(decl.name, decl.low, decl.high)
+            else:
+                for name in decl.names:
+                    self._add_var(name)
 
         frame_size = self._scope.next_offset
         self._emit(OP_ENTER, frame_size, len(sub.params), 1 if is_func else 0)
@@ -1123,8 +1262,11 @@ class CodeGenerator:
         self._push_scope(level=0, is_function=False, start_offset=2)
 
         for decl in program.var_decls:
-            for name in decl.names:
-                self._add_var(name)
+            if isinstance(decl, ArrayDecl):
+                self._add_array(decl.name, decl.low, decl.high)
+            else:
+                for name in decl.names:
+                    self._add_var(name)
 
         global_frame_size = self._scope.next_offset
 
