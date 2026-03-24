@@ -267,3 +267,7 @@ Project Otto is released under the [CC BY-NC-SA 4.0](https://creativecommons.org
 You are free to share and adapt but you can not use the material for commercial purposes.
 The manufacturing and sale of assembly kits, PCBs, or complete devices based on or derived from this repository is strictly prohibited. This includes, but is not limited to, direct copies, modifications, and derivative works intended for commercial purposes.
 For more information please refer to the LICENSE file.
+
+## Links
+
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/custom-sap)
