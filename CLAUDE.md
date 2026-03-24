@@ -480,6 +480,7 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 | MUL16S | (symbols.asm) | 16-bit signed multiply (MATH16_A * MATH16_B -> MATH16_A) |
 | DIV16S | (symbols.asm) | 16-bit signed divide (MATH16_A / MATH16_B -> MATH16_A) |
 | MOD16S | (symbols.asm) | 16-bit signed modulo (MATH16_A % MATH16_B -> MATH16_A) |
+| CMP16S | (symbols.asm) | 16-bit signed compare (MATH16_A vs MATH16_B -> MATH16_TMP: 0=eq, 1=gt, 0xFF=lt) |
 | ACIA_SEND_DECIMAL16S | (symbols.asm) | Print signed 16-bit int (MATH16_A) as decimal |
 
 ### File Transfer
@@ -716,7 +717,7 @@ The kernel menu also provides a `p` command that directly invokes the P-Machine 
 ### P-Machine RAM Layout
 
 ```
-0xB000-0xB005  P-Machine internal state (IP, eval stack ptr, temp, base addr)
+0xB000-0xB006  P-Machine internal state (IP, eval stack ptr, temp, temp2, base addr)
 0xB100-0xB1FF  P-Machine evaluation stack (256 bytes, grows upward, 16-bit values)
 0xB200-0xB2FF  Variable frame (256 bytes, 2 bytes per variable, max 128 vars)
 ```
@@ -752,7 +753,18 @@ Offset  Content
 | 0x08 | DIV | - | Pop b16, pop a16, push a div b (signed) |
 | 0x09 | NEG | - | Pop a16, push -a |
 | 0x0A | MOD | - | Pop b16, pop a16, push a mod b (signed) |
+| 0x0B | JMP | lo, hi | Unconditional jump (offset from P-code base) |
+| 0x0C | JPC | lo, hi | Jump if false (pop 16-bit, jump if zero) |
+| 0x0D | EQ | - | Pop b16, pop a16, push (a = b) |
+| 0x0E | NE | - | Pop b16, pop a16, push (a <> b) |
+| 0x0F | LT | - | Pop b16, pop a16, push (a < b) signed |
 | 0x10 | CSP | u8 | Call standard procedure |
+| 0x11 | GE | - | Pop b16, pop a16, push (a >= b) signed |
+| 0x12 | GT | - | Pop b16, pop a16, push (a > b) signed |
+| 0x13 | LE | - | Pop b16, pop a16, push (a <= b) signed |
+| 0x14 | AND | - | Pop b16, pop a16, push (a and b) logical |
+| 0x15 | OR | - | Pop b16, pop a16, push (a or b) logical |
+| 0x16 | NOT | - | Pop a16, push (not a) logical |
 
 Standard Procedures (CSP):
 - **0**: `write(string)` - pop address, print string
@@ -776,7 +788,7 @@ python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1
 echo $?   # 0 = success
 ```
 
-### Supported Pascal Syntax (MS2)
+### Supported Pascal Syntax (MS3)
 
 ```pascal
 program ProgramName;
@@ -785,11 +797,28 @@ var
 begin
   a := 10;
   b := 25;
-  result := a + b * 2;     { operator precedence: *, div, mod before +, - }
+  result := a + b * 2;     { operator precedence: *, div, mod, and before +, -, or }
   write('Result: ');
   writeln(result);          { polymorphic: string or integer arg }
   writeln(-a);              { unary negation }
   writeln;                  { bare newline }
+
+  { Control flow }
+  if result > 50 then writeln('big')
+  else writeln('small');
+
+  while a > 0 do
+  begin
+    writeln(a);
+    a := a - 1
+  end;
+
+  for b := 1 to 10 do
+    writeln(b);
+
+  { Boolean operators }
+  if (a = 0) and (b > 5) then writeln('both true');
+  if not (a = 0) then writeln('not zero')
 end.
 ```
 
@@ -824,6 +853,7 @@ pascal/
   examples/              - Pascal example programs
     hello.pas            - Hello World (MS1)
     calc.pas             - Variables and arithmetic (MS2)
+    fizzbuzz.pas         - Control flow: for, if/else, mod (MS3)
 roms/                    - Compiled binaries
   system/                - Kernel, P-Machine, microcode, 7-segment ROMs
   apps/

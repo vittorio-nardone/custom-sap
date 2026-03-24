@@ -126,14 +126,16 @@ Output: `Result: 60`
 
 Add branching and looping constructs.
 
-- [ ] New P-code opcodes: `JMP` (unconditional jump), `JPC` (jump if condition false)
-- [ ] Comparison opcodes: `EQ`, `NE`, `LT`, `GT`, `LE`, `GE`
-- [ ] Boolean logic opcodes: `AND`, `OR`, `NOT`
-- [ ] Compiler: `if ... then ... else` parsing and code generation
-- [ ] Compiler: `while ... do` loop
-- [ ] Compiler: `for ... to/downto ... do` loop
-- [ ] Compiler: relational and boolean expressions
-- [ ] Example: `pascal/examples/fizzbuzz.pas` or similar loop-based program
+- [x] Kernel: `CMP16S` signed 16-bit comparison routine (result in MATH16_TMP)
+- [x] New P-code opcodes: `JMP` (unconditional jump), `JPC` (jump if condition false)
+- [x] Comparison opcodes: `EQ`, `NE`, `LT`, `GT`, `LE`, `GE`
+- [x] Boolean logic opcodes: `AND`, `OR`, `NOT`
+- [x] Compiler: `if ... then ... else` parsing and code generation
+- [x] Compiler: `while ... do` loop
+- [x] Compiler: `for ... to/downto ... do` loop (overflow-safe, with hidden limit variable)
+- [x] Compiler: relational and boolean expressions (standard Pascal precedence)
+- [x] Compiler: `begin..end` compound statements
+- [x] Example: `pascal/examples/fizzbuzz.pas`
 
 ```pascal
 program FizzBuzz;

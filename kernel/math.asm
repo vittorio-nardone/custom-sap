@@ -419,6 +419,66 @@ MATH16_NEGATE_B:
     rts
 
 ; **********************************************************
+; SUBROUTINE: CMP16S
+;
+; DESCRIPTION:
+;   Signed 16-bit comparison of MATH16_A vs MATH16_B.
+;   Result stored in MATH16_TMP (not flags, because RTS
+;   clobbers Z/N via stack pops on Otto hardware).
+;
+; INPUTS:
+;   MATH16_A : 16-bit signed value (little-endian)
+;   MATH16_B : 16-bit signed value (little-endian)
+;
+; OUTPUTS:
+;   MATH16_TMP = 0x00 if A == B
+;   MATH16_TMP = 0x01 if A > B (signed)
+;   MATH16_TMP = 0xFF if A < B (signed)
+;
+; Caller checks: LDA MATH16_TMP then BEQ/BNE/BMI/BPL.
+;
+; DESTROY: A
+; **********************************************************
+
+CMP16S:
+    lda MATH16_A
+    cmp MATH16_B
+    bne .cmp_ne
+    lda MATH16_A+1
+    cmp MATH16_B+1
+    bne .cmp_ne
+    lda 0x00
+    sta MATH16_TMP
+    rts
+
+.cmp_ne:
+    lda MATH16_A+1
+    eor MATH16_B+1
+    bmi .cmp_diff
+
+    lda MATH16_A+1
+    cmp MATH16_B+1
+    bne .cmp_msb
+    lda MATH16_A
+    cmp MATH16_B
+.cmp_msb:
+    bcs .cmp_gt_res
+    lda 0xFF
+    sta MATH16_TMP
+    rts
+.cmp_gt_res:
+    lda 0x01
+    sta MATH16_TMP
+    rts
+
+.cmp_diff:
+    lda MATH16_B+1
+    bmi .cmp_gt_res
+    lda 0xFF
+    sta MATH16_TMP
+    rts
+
+; **********************************************************
 ; TESTS START HERE
 ;
 

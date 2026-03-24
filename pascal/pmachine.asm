@@ -6,7 +6,7 @@
 }
 #bank rom3
 
-#const PMACHINE_VERSION = "v0.2.2"
+#const PMACHINE_VERSION = "v0.3.2"
 #const PMACHINE_BUILDDATE = "03/24/2026"
 
 #include "../assembly/ruledef.asm"
@@ -104,8 +104,30 @@ PM_ENTRY:
     beq .op_neg
     cmp PM_OP_MOD
     beq .op_mod
+    cmp PM_OP_JMP
+    beq .op_jmp
+    cmp PM_OP_JPC
+    beq .op_jpc
+    cmp PM_OP_EQ
+    beq .op_eq
+    cmp PM_OP_NE
+    beq .op_ne
+    cmp PM_OP_LT
+    beq .op_lt
     cmp PM_OP_CSP
     beq .op_csp
+    cmp PM_OP_GE
+    beq .op_ge
+    cmp PM_OP_GT
+    beq .op_gt
+    cmp PM_OP_LE
+    beq .op_le
+    cmp PM_OP_AND
+    beq .op_and
+    cmp PM_OP_OR
+    beq .op_or
+    cmp PM_OP_NOT
+    beq .op_not
 
     jmp .error_invalid
 
@@ -272,6 +294,175 @@ PM_ENTRY:
     lda MATH16_A
     jsr .push_byte
     lda MATH16_A+1
+    jsr .push_byte
+    jmp .fetch
+
+; --- JMP: unconditional jump ------------------------------
+
+.op_jmp:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+.set_ip_from_offset:
+    lda PM_TEMP
+    clc
+    adc PM_BASE_LSB
+    sta PM_IP_LSB
+    lda PM_TEMP2
+    adc PM_BASE_MSB
+    sta PM_IP_MSB
+    jmp .fetch
+
+; --- JPC: jump if false (top == 0) -----------------------
+
+.op_jpc:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pop_byte
+    pha
+    jsr .pop_byte
+    sta MATH16_A
+    pla
+    ora MATH16_A
+    beq .set_ip_from_offset
+    jmp .fetch
+
+; --- EQ: pop b, pop a, push (a = b) ---------------------
+
+.op_eq:
+    jsr .pop_two_operands
+    jsr CMP16S
+    lda MATH16_TMP
+    beq .push_true
+    jmp .push_false
+
+; --- NE: pop b, pop a, push (a <> b) --------------------
+
+.op_ne:
+    jsr .pop_two_operands
+    jsr CMP16S
+    lda MATH16_TMP
+    bne .push_true
+    jmp .push_false
+
+; --- LT: pop b, pop a, push (a < b) signed --------------
+
+.op_lt:
+    jsr .pop_two_operands
+    jsr CMP16S
+    lda MATH16_TMP
+    bmi .push_true
+    jmp .push_false
+
+; --- GE: pop b, pop a, push (a >= b) signed -------------
+
+.op_ge:
+    jsr .pop_two_operands
+    jsr CMP16S
+    lda MATH16_TMP
+    bpl .push_true
+    jmp .push_false
+
+; --- GT: pop b, pop a, push (a > b) signed --------------
+
+.op_gt:
+    jsr .pop_two_operands
+    jsr CMP16S
+    lda MATH16_TMP
+    cmp 0x01
+    beq .push_true
+    jmp .push_false
+
+; --- LE: pop b, pop a, push (a <= b) signed -------------
+
+.op_le:
+    jsr .pop_two_operands
+    jsr CMP16S
+    lda MATH16_TMP
+    cmp 0x01
+    beq .push_false
+    jmp .push_true
+
+; --- AND: pop b, pop a, push (a and b) logical ----------
+
+.op_and:
+    jsr .pop_byte
+    pha
+    jsr .pop_byte
+    sta MATH16_B
+    pla
+    ora MATH16_B
+    sta MATH16_B
+    jsr .pop_byte
+    pha
+    jsr .pop_byte
+    sta MATH16_A
+    pla
+    ora MATH16_A
+    beq .push_false
+    lda MATH16_B
+    beq .push_false
+    jmp .push_true
+
+; --- OR: pop b, pop a, push (a or b) logical ------------
+
+.op_or:
+    jsr .pop_byte
+    pha
+    jsr .pop_byte
+    sta MATH16_B
+    pla
+    ora MATH16_B
+    sta MATH16_B
+    jsr .pop_byte
+    pha
+    jsr .pop_byte
+    sta MATH16_A
+    pla
+    ora MATH16_A
+    ora MATH16_B
+    bne .push_true
+    jmp .push_false
+
+; --- NOT: pop a, push (not a) logical -------------------
+
+.op_not:
+    jsr .pop_byte
+    pha
+    jsr .pop_byte
+    sta MATH16_A
+    pla
+    ora MATH16_A
+    beq .push_true
+    jmp .push_false
+
+; --- Shared helpers for comparisons ----------------------
+
+.pop_two_operands:
+    jsr .pop_byte
+    sta MATH16_B+1
+    jsr .pop_byte
+    sta MATH16_B
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte
+    sta MATH16_A
+    rts
+
+.push_true:
+    lda 0x01
+    jsr .push_byte
+    lda 0x00
+    jsr .push_byte
+    jmp .fetch
+
+.push_false:
+    lda 0x00
+    jsr .push_byte
+    lda 0x00
     jsr .push_byte
     jmp .fetch
 

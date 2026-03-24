@@ -53,17 +53,89 @@ writeln;                 { print newline only }
 
 The argument type (string literal vs integer expression) is detected automatically by the compiler.
 
+## Control Flow
+
+### if / then / else
+
+```pascal
+if condition then statement;
+if condition then statement else statement;
+```
+
+The `else` clause is optional. Nested `if` chains are supported:
+
+```pascal
+if x = 1 then writeln('one')
+else if x = 2 then writeln('two')
+else writeln('other')
+```
+
+### while / do
+
+```pascal
+while condition do statement;
+while condition do
+begin
+  { multiple statements }
+end;
+```
+
+### for / to / downto
+
+```pascal
+for i := 1 to 10 do statement;
+for i := 10 downto 1 do statement;
+```
+
+The loop variable must be declared in the `var` block. The start and end expressions are evaluated once before the loop begins. The loop is overflow-safe: it correctly handles the boundary case when the loop variable equals the limit.
+
+### Compound Statements (begin..end)
+
+```pascal
+begin
+  statement1;
+  statement2;
+  statement3
+end
+```
+
+Use `begin..end` to group multiple statements where a single statement is expected (e.g., as the body of `if`, `while`, or `for`).
+
 ## Expressions
 
 ### Operators (by precedence, highest first)
 
 | Precedence | Operators | Description |
 |------------|-----------|-------------|
-| 1 (highest) | `-` (unary) | Negation |
-| 2 | `*`, `div`, `mod` | Multiplication, integer division, modulo |
-| 3 (lowest) | `+`, `-` | Addition, subtraction |
+| 1 (highest) | `not`, `-` (unary) | Logical negation, arithmetic negation |
+| 2 | `*`, `div`, `mod`, `and` | Multiplication, integer division, modulo, logical AND |
+| 3 | `+`, `-`, `or` | Addition, subtraction, logical OR |
+| 4 (lowest) | `=`, `<>`, `<`, `>`, `<=`, `>=` | Relational operators |
 
 Parentheses `( )` can be used to override precedence.
+
+### Relational Operators
+
+| Operator | Description |
+|----------|-------------|
+| `=` | Equal |
+| `<>` | Not equal |
+| `<` | Less than |
+| `>` | Greater than |
+| `<=` | Less than or equal |
+| `>=` | Greater than or equal |
+
+Relational operators compare two integer expressions and produce a boolean result (0 = false, 1 = true) used by control flow statements.
+
+### Boolean Operators
+
+| Operator | Description |
+|----------|-------------|
+| `and` | Logical AND (both operands must be non-zero) |
+| `or` | Logical OR (at least one operand must be non-zero) |
+| `not` | Logical NOT (zero becomes 1, non-zero becomes 0) |
+
+Boolean operators work on integer values: any non-zero value is considered true, zero is false.
 
 ### Integer Literals
 
@@ -92,12 +164,11 @@ Three comment styles are supported:
 
 ## Limitations (current version)
 
-- No control flow (`if`, `while`, `for`) — planned for Milestone 3
 - No procedures or functions — planned for Milestone 4
 - No `string` type — only string literals in write/writeln
 - No arrays or records
 - No `readln` / input
-- No boolean type or relational operators
+- No dedicated boolean type (integers are used: 0 = false, non-zero = true)
 - Integer overflow is silently truncated to 16 bits
 
 ## Compilation and Execution
@@ -113,7 +184,9 @@ python simulate.py --autorun --program roms/apps/pascal/program.bin --max-cycles
 python simulate.py --program roms/apps/pascal/program.bin
 ```
 
-## Complete Example
+## Complete Examples
+
+### Arithmetic
 
 ```pascal
 program Calc;
@@ -129,3 +202,22 @@ end.
 ```
 
 Output: `Result: 60`
+
+### Control Flow (FizzBuzz)
+
+```pascal
+program FizzBuzz;
+var
+  i: integer;
+begin
+  for i := 1 to 20 do
+  begin
+    if (i mod 15) = 0 then writeln('FizzBuzz')
+    else if (i mod 3) = 0 then writeln('Fizz')
+    else if (i mod 5) = 0 then writeln('Buzz')
+    else writeln(i)
+  end
+end.
+```
+
+Output: `1`, `2`, `Fizz`, `4`, `Buzz`, `Fizz`, `7`, `8`, `Fizz`, `Buzz`, `11`, `Fizz`, `13`, `14`, `FizzBuzz`, `16`, `17`, `Fizz`, `19`, `Buzz`

@@ -5,9 +5,12 @@ Tiny Pascal Compiler for Project Otto P-Machine.
 Compiles a minimal subset of Pascal into P-code bytecode
 that runs on the Otto P-Machine interpreter (ROM #3).
 
-Supported (MS2): program structure, var declarations (integer),
+Supported (MS3): program structure, var declarations (integer),
 assignments, arithmetic expressions (+, -, *, div, mod, unary -),
-writeln/write with string literals or integer expressions.
+writeln/write with string literals or integer expressions,
+control flow (if/then/else, while/do, for/to/downto),
+relational operators (=, <>, <, >, <=, >=),
+boolean operators (and, or, not), compound statements (begin..end).
 
 Usage:
     python pascal_compiler.py input.pas -o output.bin [--base 0x8400]
@@ -32,7 +35,18 @@ OP_MUL   = 0x07
 OP_DIV   = 0x08
 OP_NEG   = 0x09
 OP_MOD   = 0x0A
+OP_JMP   = 0x0B
+OP_JPC   = 0x0C
+OP_EQ    = 0x0D
+OP_NE    = 0x0E
+OP_LT    = 0x0F
 OP_CSP   = 0x10
+OP_GE    = 0x11
+OP_GT    = 0x12
+OP_LE    = 0x13
+OP_AND   = 0x14
+OP_OR    = 0x15
+OP_NOT   = 0x16
 
 CSP_WRITE         = 0x00
 CSP_WRITELN       = 0x01
@@ -59,6 +73,17 @@ class TokenType(Enum):
     MOD            = auto()
     WRITELN        = auto()
     WRITE          = auto()
+    IF             = auto()
+    THEN           = auto()
+    ELSE           = auto()
+    WHILE          = auto()
+    DO             = auto()
+    FOR            = auto()
+    TO             = auto()
+    DOWNTO         = auto()
+    AND            = auto()
+    OR             = auto()
+    NOT            = auto()
     IDENTIFIER     = auto()
     STRING_LITERAL = auto()
     NUMBER         = auto()
@@ -72,6 +97,12 @@ class TokenType(Enum):
     PLUS           = auto()   # +
     MINUS          = auto()   # -
     STAR           = auto()   # *
+    EQ             = auto()   # =
+    NE             = auto()   # <>
+    LT             = auto()   # <
+    GT             = auto()   # >
+    LE             = auto()   # <=
+    GE             = auto()   # >=
     EOF            = auto()
 
 KEYWORDS = {
@@ -84,6 +115,17 @@ KEYWORDS = {
     'mod':     TokenType.MOD,
     'writeln': TokenType.WRITELN,
     'write':   TokenType.WRITE,
+    'if':      TokenType.IF,
+    'then':    TokenType.THEN,
+    'else':    TokenType.ELSE,
+    'while':   TokenType.WHILE,
+    'do':      TokenType.DO,
+    'for':     TokenType.FOR,
+    'to':      TokenType.TO,
+    'downto':  TokenType.DOWNTO,
+    'and':     TokenType.AND,
+    'or':      TokenType.OR,
+    'not':     TokenType.NOT,
 }
 
 @dataclass
@@ -226,6 +268,29 @@ class Lexer:
             elif ch == '*':
                 tokens.append(Token(TokenType.STAR, '*', line, col))
                 self._advance()
+            elif ch == '=':
+                tokens.append(Token(TokenType.EQ, '=', line, col))
+                self._advance()
+            elif ch == '<':
+                if self._peek(1) == '>':
+                    tokens.append(Token(TokenType.NE, '<>', line, col))
+                    self._advance()
+                    self._advance()
+                elif self._peek(1) == '=':
+                    tokens.append(Token(TokenType.LE, '<=', line, col))
+                    self._advance()
+                    self._advance()
+                else:
+                    tokens.append(Token(TokenType.LT, '<', line, col))
+                    self._advance()
+            elif ch == '>':
+                if self._peek(1) == '=':
+                    tokens.append(Token(TokenType.GE, '>=', line, col))
+                    self._advance()
+                    self._advance()
+                else:
+                    tokens.append(Token(TokenType.GT, '>', line, col))
+                    self._advance()
             else:
                 self._error(f"unexpected character: '{ch}'")
 
@@ -275,7 +340,31 @@ class WritelnStmt:
 class WriteStmt:
     arg: Expression
 
-Statement = Union[VarDecl, AssignStmt, WritelnStmt, WriteStmt]
+@dataclass
+class IfStmt:
+    condition: Expression
+    then_stmt: 'Statement'
+    else_stmt: Optional['Statement']
+
+@dataclass
+class WhileStmt:
+    condition: Expression
+    body: 'Statement'
+
+@dataclass
+class ForStmt:
+    var_name: str
+    start: Expression
+    end_expr: Expression
+    direction: str
+    body: 'Statement'
+
+@dataclass
+class CompoundStmt:
+    statements: List['Statement']
+
+Statement = Union[VarDecl, AssignStmt, WritelnStmt, WriteStmt,
+                  IfStmt, WhileStmt, ForStmt, CompoundStmt]
 
 @dataclass
 class PascalProgram:
@@ -351,6 +440,14 @@ class Parser:
             return self._parse_write()
         if tok.type == TokenType.IDENTIFIER:
             return self._parse_assignment()
+        if tok.type == TokenType.IF:
+            return self._parse_if()
+        if tok.type == TokenType.WHILE:
+            return self._parse_while()
+        if tok.type == TokenType.FOR:
+            return self._parse_for()
+        if tok.type == TokenType.BEGIN:
+            return self._parse_compound()
         if tok.type in (TokenType.SEMICOLON, TokenType.END):
             return None
         self._error(f"unexpected token: {tok.type.name} ('{tok.value}')")
@@ -377,12 +474,66 @@ class Parser:
         self._expect(TokenType.RPAREN)
         return WriteStmt(arg=expr)
 
-    # ── Expression parsing (recursive descent with precedence) ──
+    def _parse_if(self) -> IfStmt:
+        self._expect(TokenType.IF)
+        condition = self._parse_expression()
+        self._expect(TokenType.THEN)
+        then_stmt = self._parse_statement()
+        else_stmt = None
+        if self._current().type == TokenType.ELSE:
+            self.pos += 1
+            else_stmt = self._parse_statement()
+        return IfStmt(condition=condition, then_stmt=then_stmt, else_stmt=else_stmt)
+
+    def _parse_while(self) -> WhileStmt:
+        self._expect(TokenType.WHILE)
+        condition = self._parse_expression()
+        self._expect(TokenType.DO)
+        body = self._parse_statement()
+        return WhileStmt(condition=condition, body=body)
+
+    def _parse_for(self) -> ForStmt:
+        self._expect(TokenType.FOR)
+        var_name = self._expect(TokenType.IDENTIFIER).value
+        self._expect(TokenType.ASSIGN)
+        start = self._parse_expression()
+        if self._current().type == TokenType.TO:
+            direction = 'to'
+            self.pos += 1
+        elif self._current().type == TokenType.DOWNTO:
+            direction = 'downto'
+            self.pos += 1
+        else:
+            self._error("expected 'to' or 'downto'")
+        end_expr = self._parse_expression()
+        self._expect(TokenType.DO)
+        body = self._parse_statement()
+        return ForStmt(var_name=var_name, start=start, end_expr=end_expr,
+                       direction=direction, body=body)
+
+    def _parse_compound(self) -> CompoundStmt:
+        self._expect(TokenType.BEGIN)
+        stmts = self._parse_statement_list()
+        self._expect(TokenType.END)
+        return CompoundStmt(statements=stmts)
+
+    # ── Expression parsing (standard Pascal precedence) ──────
 
     def _parse_expression(self) -> Expression:
+        left = self._parse_simple_expression()
+        rel_ops = {TokenType.EQ: '=', TokenType.NE: '<>', TokenType.LT: '<',
+                   TokenType.GT: '>', TokenType.LE: '<=', TokenType.GE: '>='}
+        if self._current().type in rel_ops:
+            op = rel_ops[self._current().type]
+            self.pos += 1
+            right = self._parse_simple_expression()
+            left = BinaryOp(op=op, left=left, right=right)
+        return left
+
+    def _parse_simple_expression(self) -> Expression:
         left = self._parse_term()
-        while self._current().type in (TokenType.PLUS, TokenType.MINUS):
-            op = self._current().value
+        while self._current().type in (TokenType.PLUS, TokenType.MINUS, TokenType.OR):
+            op = self._current().value.lower()
             self.pos += 1
             right = self._parse_term()
             left = BinaryOp(op=op, left=left, right=right)
@@ -390,7 +541,8 @@ class Parser:
 
     def _parse_term(self) -> Expression:
         left = self._parse_factor()
-        while self._current().type in (TokenType.STAR, TokenType.DIV, TokenType.MOD):
+        while self._current().type in (TokenType.STAR, TokenType.DIV,
+                                        TokenType.MOD, TokenType.AND):
             op = self._current().value.lower()
             if op == '*':
                 pass
@@ -430,6 +582,11 @@ class Parser:
                 return NumberLiteral(value=-operand.value)
             return UnaryOp(op='-', operand=operand)
 
+        if tok.type == TokenType.NOT:
+            self.pos += 1
+            operand = self._parse_factor()
+            return UnaryOp(op='not', operand=operand)
+
         self._error(f"expected expression, got {tok.type.name} ('{tok.value}')")
 
 # ── Code generator ──────────────────────────────────────────
@@ -442,6 +599,7 @@ class CodeGenerator:
         self._fixups: List[tuple[int, int]] = []
         self.symbols: dict[str, int] = {}
         self._next_var_offset = 0
+        self._for_counter = 0
 
     def _add_string(self, s: str) -> int:
         if s in self.strings:
@@ -481,6 +639,30 @@ class CodeGenerator:
             raise SyntaxError(f"undefined variable: '{name}'")
         return self.symbols[lower]
 
+    def _code_pos(self) -> int:
+        return len(self.code)
+
+    def _emit_jmp(self) -> int:
+        pos = self._code_pos()
+        self._emit(OP_JMP, 0x00, 0x00)
+        return pos
+
+    def _emit_jpc(self) -> int:
+        pos = self._code_pos()
+        self._emit(OP_JPC, 0x00, 0x00)
+        return pos
+
+    def _patch_jump(self, instr_pos: int, target_code_pos: int):
+        offset = PCODE_HEADER_SIZE + target_code_pos
+        self.code[instr_pos + 1] = offset & 0xFF
+        self.code[instr_pos + 2] = (offset >> 8) & 0xFF
+
+    def _alloc_hidden_var(self, prefix: str) -> int:
+        name = f'_{prefix}_{self._for_counter}'
+        self.symbols[name] = self._next_var_offset
+        self._next_var_offset += 2
+        return self.symbols[name]
+
     def _gen_expr(self, expr: Expression):
         if isinstance(expr, NumberLiteral):
             self._emit_lit16(expr.value & 0xFFFF)
@@ -493,10 +675,18 @@ class CodeGenerator:
             self._gen_expr(expr.operand)
             if expr.op == '-':
                 self._emit(OP_NEG)
+            elif expr.op == 'not':
+                self._emit(OP_NOT)
         elif isinstance(expr, BinaryOp):
             self._gen_expr(expr.left)
             self._gen_expr(expr.right)
-            op_map = {'+': OP_ADD, '-': OP_SUB, '*': OP_MUL, 'div': OP_DIV, 'mod': OP_MOD}
+            op_map = {
+                '+': OP_ADD, '-': OP_SUB, '*': OP_MUL,
+                'div': OP_DIV, 'mod': OP_MOD,
+                '=': OP_EQ, '<>': OP_NE, '<': OP_LT,
+                '>': OP_GT, '<=': OP_LE, '>=': OP_GE,
+                'and': OP_AND, 'or': OP_OR,
+            }
             self._emit(op_map[expr.op])
 
     def _is_string_expr(self, expr: Expression) -> bool:
@@ -522,6 +712,80 @@ class CodeGenerator:
             else:
                 self._gen_expr(stmt.arg)
                 self._emit_csp(CSP_WRITE_INT)
+        elif isinstance(stmt, IfStmt):
+            self._gen_if(stmt)
+        elif isinstance(stmt, WhileStmt):
+            self._gen_while(stmt)
+        elif isinstance(stmt, ForStmt):
+            self._gen_for(stmt)
+        elif isinstance(stmt, CompoundStmt):
+            for s in stmt.statements:
+                self._gen_stmt(s)
+
+    def _gen_if(self, stmt: IfStmt):
+        self._gen_expr(stmt.condition)
+        jpc_pos = self._emit_jpc()
+        self._gen_stmt(stmt.then_stmt)
+        if stmt.else_stmt is not None:
+            jmp_pos = self._emit_jmp()
+            self._patch_jump(jpc_pos, self._code_pos())
+            self._gen_stmt(stmt.else_stmt)
+            self._patch_jump(jmp_pos, self._code_pos())
+        else:
+            self._patch_jump(jpc_pos, self._code_pos())
+
+    def _gen_while(self, stmt: WhileStmt):
+        loop_start = self._code_pos()
+        self._gen_expr(stmt.condition)
+        jpc_pos = self._emit_jpc()
+        self._gen_stmt(stmt.body)
+        jmp_pos = self._emit_jmp()
+        self._patch_jump(jmp_pos, loop_start)
+        self._patch_jump(jpc_pos, self._code_pos())
+
+    def _gen_for(self, stmt: ForStmt):
+        var_offset = self._var_offset(stmt.var_name)
+        limit_offset = self._alloc_hidden_var('for_end')
+        self._for_counter += 1
+
+        self._gen_expr(stmt.start)
+        self._emit(OP_STORE, var_offset)
+        self._gen_expr(stmt.end_expr)
+        self._emit(OP_STORE, limit_offset)
+
+        loop_start = self._code_pos()
+        self._emit(OP_LOAD, var_offset)
+        self._emit(OP_LOAD, limit_offset)
+        if stmt.direction == 'to':
+            self._emit(OP_GT)
+        else:
+            self._emit(OP_LT)
+        jpc_body = self._emit_jpc()
+        jmp_end = self._emit_jmp()
+
+        self._patch_jump(jpc_body, self._code_pos())
+        self._gen_stmt(stmt.body)
+
+        self._emit(OP_LOAD, var_offset)
+        self._emit(OP_LOAD, limit_offset)
+        self._emit(OP_EQ)
+        jpc_inc = self._emit_jpc()
+        jmp_end2 = self._emit_jmp()
+
+        self._patch_jump(jpc_inc, self._code_pos())
+        self._emit(OP_LOAD, var_offset)
+        self._emit_lit16(1)
+        if stmt.direction == 'to':
+            self._emit(OP_ADD)
+        else:
+            self._emit(OP_SUB)
+        self._emit(OP_STORE, var_offset)
+        jmp_loop = self._emit_jmp()
+        self._patch_jump(jmp_loop, loop_start)
+
+        end_pos = self._code_pos()
+        self._patch_jump(jmp_end, end_pos)
+        self._patch_jump(jmp_end2, end_pos)
 
     def _build_native_stub(self, pcode_addr: int) -> bytes:
         stub = bytearray()
