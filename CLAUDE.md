@@ -475,8 +475,12 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 | HEXBIN | 0x0C7F | Hex string to binary conversion |
 | BINDEC | 0x0CA3 | Binary to decimal string |
 | BINDEC32 | 0x0CE3 | 32-bit binary to decimal |
-| DIVIDE_INT | 0x0AD0 | Integer division |
-| MULTIPLY_INT | 0x0AF9 | Integer multiplication |
+| DIVIDE_INT | 0x0AD0 | 8-bit integer division (X/Y -> A=quot, X=rem) |
+| MULTIPLY_INT | 0x0AF9 | 8-bit integer multiplication (A*X -> A:X) |
+| MUL16S | (symbols.asm) | 16-bit signed multiply (MATH16_A * MATH16_B -> MATH16_A) |
+| DIV16S | (symbols.asm) | 16-bit signed divide (MATH16_A / MATH16_B -> MATH16_A) |
+| MOD16S | (symbols.asm) | 16-bit signed modulo (MATH16_A % MATH16_B -> MATH16_A) |
+| ACIA_SEND_DECIMAL16S | (symbols.asm) | Print signed 16-bit int (MATH16_A) as decimal |
 
 ### File Transfer
 | Symbol | Address | Description |
@@ -713,7 +717,8 @@ The kernel menu also provides a `p` command that directly invokes the P-Machine 
 
 ```
 0xB000-0xB005  P-Machine internal state (IP, eval stack ptr, temp, base addr)
-0xB100-0xB1FF  P-Machine evaluation stack (256 bytes, grows upward)
+0xB100-0xB1FF  P-Machine evaluation stack (256 bytes, grows upward, 16-bit values)
+0xB200-0xB2FF  Variable frame (256 bytes, 2 bytes per variable, max 128 vars)
 ```
 
 ### P-code Binary Format
@@ -732,19 +737,29 @@ Offset  Content
 ...     String constants (null-terminated)
 ```
 
-### P-code Opcodes (MS1)
+### P-code Opcodes
 
 | Opcode | Mnemonic | Operands | Description |
 |--------|----------|----------|-------------|
 | 0x00 | HALT | - | Stop execution, return to kernel |
 | 0x01 | LIT | u8 | Push 8-bit literal |
-| 0x02 | LIT16 | lo, hi | Push 16-bit literal (LE) |
+| 0x02 | LIT16 | lo, hi | Push 16-bit literal (LE, signed) |
+| 0x03 | LOAD | offset | Push 16-bit variable at byte offset |
+| 0x04 | STORE | offset | Pop 16-bit, store to variable at byte offset |
+| 0x05 | ADD | - | Pop b16, pop a16, push a+b |
+| 0x06 | SUB | - | Pop b16, pop a16, push a-b |
+| 0x07 | MUL | - | Pop b16, pop a16, push a*b (signed) |
+| 0x08 | DIV | - | Pop b16, pop a16, push a div b (signed) |
+| 0x09 | NEG | - | Pop a16, push -a |
+| 0x0A | MOD | - | Pop b16, pop a16, push a mod b (signed) |
 | 0x10 | CSP | u8 | Call standard procedure |
 
 Standard Procedures (CSP):
 - **0**: `write(string)` - pop address, print string
 - **1**: `writeln(string)` - pop address, print string + CR/LF
 - **2**: `writeln()` - print CR/LF only
+- **3**: `write(integer)` - pop 16-bit signed, print decimal
+- **4**: `writeln(integer)` - pop 16-bit signed, print decimal + CR/LF
 
 ### Compiling and Running Pascal Programs
 
@@ -761,18 +776,26 @@ python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1
 echo $?   # 0 = success
 ```
 
-### Supported Pascal Syntax (MS1)
+### Supported Pascal Syntax (MS2)
 
 ```pascal
 program ProgramName;
+var
+  a, b, result: integer;   { 16-bit signed, -32768..32767 }
 begin
-  writeln('string literal');
-  write('without newline');
-  writeln;
+  a := 10;
+  b := 25;
+  result := a + b * 2;     { operator precedence: *, div, mod before +, - }
+  write('Result: ');
+  writeln(result);          { polymorphic: string or integer arg }
+  writeln(-a);              { unary negation }
+  writeln;                  { bare newline }
 end.
 ```
 
 Comments: `{ block }`, `(* block *)`, `// line`
+
+See `pascal/LANGUAGE.md` for full language reference.
 
 ## Project Structure
 
@@ -787,7 +810,7 @@ kernel/
   interrupt.asm          - Interrupt handling
   serial.asm             - ACIA serial I/O
   vt100.asm              - VT100 terminal escape sequences
-  math.asm               - Multiplication, division, sqrt
+  math.asm               - Multiplication, division, sqrt, 16-bit signed math
   utils.asm              - Hex/decimal conversions
   xmodem.asm             - XMODEM/CRC file transfer
   tests.asm              - CPU instruction tests
@@ -797,8 +820,10 @@ forth/                   - FORTH language interpreter (legacy, not built)
 pascal/
   pmachine.asm           - P-Machine interpreter (ROM #3)
   consts.asm             - P-Machine constants and RAM layout
+  LANGUAGE.md            - Tiny Pascal language reference
   examples/              - Pascal example programs
-    hello.pas            - Hello World
+    hello.pas            - Hello World (MS1)
+    calc.pas             - Variables and arithmetic (MS2)
 roms/                    - Compiled binaries
   system/                - Kernel, P-Machine, microcode, 7-segment ROMs
   apps/

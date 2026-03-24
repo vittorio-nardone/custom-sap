@@ -89,18 +89,23 @@ Basic infrastructure to compile and execute a Pascal program that prints text vi
 - [x] Build integration in `generate-all.sh`
 - [x] CLAUDE.md and README.md documentation
 
-## Milestone 2 — Integer variables, assignments, arithmetic expressions
+## Milestone 2 — Integer variables, assignments, arithmetic expressions ✓
 
-Extend the language to support integer data types and basic computation.
+Extend the language to support 16-bit signed integer data types and basic computation.
 
-- [ ] New P-code opcodes: `LOAD` (push variable value), `STORE` (pop to variable), `ADD`, `SUB`, `MUL`, `DIV`, `NEG`
-- [ ] P-Machine RAM allocation for variable storage (frame at 0xB200+)
-- [ ] Compiler: `var` block parsing with integer type declarations
-- [ ] Compiler: assignment statements (`x := expr`)
-- [ ] Compiler: arithmetic expression parsing with operator precedence
-- [ ] Compiler: `write(integer_expr)` and `writeln(integer_expr)` — numeric output via `ACIA_SEND_DECIMAL`
-- [ ] New CSP for integer output (decimal string conversion)
-- [ ] Example: `pascal/examples/calc.pas` — simple calculations with variables
+- [x] New P-code opcodes: `LOAD`, `STORE`, `ADD`, `SUB`, `MUL`, `DIV`, `NEG`, `MOD`
+- [x] P-Machine RAM allocation for variable storage (frame at 0xB200, 256 bytes)
+- [x] Eval stack uniformly 16-bit (2 bytes per value, max 128 values)
+- [x] Kernel math routines: `MUL16S`, `DIV16S`, `MOD16S` (signed 16-bit)
+- [x] Kernel serial routine: `ACIA_SEND_DECIMAL16S` (signed 16-bit decimal output)
+- [x] Compiler: `var` block parsing with integer type declarations
+- [x] Compiler: assignment statements (`x := expr`)
+- [x] Compiler: arithmetic expression parsing with operator precedence (`+`, `-`, `*`, `div`, `mod`, unary `-`)
+- [x] Compiler: polymorphic `write`/`writeln` — string literal vs integer expression
+- [x] New CSPs for integer output: `CSP_WRITE_INT` (0x03), `CSP_WRITELN_INT` (0x04)
+- [x] Language documentation: `pascal/LANGUAGE.md`
+- [x] Example: `pascal/examples/calc.pas`
+- [x] Build order fix: `symbols.py` runs after kernel, before P-Machine compilation
 
 ```pascal
 program Calc;
@@ -110,10 +115,12 @@ begin
   a := 10;
   b := 25;
   result := a + b * 2;
-  writeln('Result: ');
-  writeln(result);
+  write('Result: ');
+  writeln(result)
 end.
 ```
+
+Output: `Result: 60`
 
 ## Milestone 3 — Control flow (`if/then/else`, `while/do`, `for`)
 

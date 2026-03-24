@@ -6,7 +6,7 @@
 }
 #bank rom3
 
-#const PMACHINE_VERSION = "v0.1.2"
+#const PMACHINE_VERSION = "v0.2.2"
 #const PMACHINE_BUILDDATE = "03/24/2026"
 
 #include "../assembly/ruledef.asm"
@@ -88,6 +88,22 @@ PM_ENTRY:
     beq .op_lit
     cmp PM_OP_LIT16
     beq .op_lit16
+    cmp PM_OP_LOAD
+    beq .op_load
+    cmp PM_OP_STORE
+    beq .op_store
+    cmp PM_OP_ADD
+    beq .op_add
+    cmp PM_OP_SUB
+    beq .op_sub
+    cmp PM_OP_MUL
+    beq .op_mul
+    cmp PM_OP_DIV
+    beq .op_div
+    cmp PM_OP_NEG
+    beq .op_neg
+    cmp PM_OP_MOD
+    beq .op_mod
     cmp PM_OP_CSP
     beq .op_csp
 
@@ -117,6 +133,148 @@ PM_ENTRY:
     jsr .push_byte
     jmp .fetch
 
+; --- LOAD offset: push 16-bit variable -------------------
+
+.op_load:
+    jsr .fetch_byte         ; A = byte offset into var frame
+    tax
+    ldd PM_VAR_FRAME[15:8]
+    lde PM_VAR_FRAME[7:0]
+    lda de,x                ; var LSB
+    sta PM_TEMP             ; save LSB before push_byte clobbers D/E/X
+    inx
+    lda de,x                ; var MSB
+    pha                     ; save MSB on hardware stack
+    lda PM_TEMP
+    jsr .push_byte          ; push LSB
+    pla
+    jsr .push_byte          ; push MSB
+    jmp .fetch
+
+; --- STORE offset: pop 16-bit, store to variable ---------
+
+.op_store:
+    jsr .fetch_byte         ; A = byte offset
+    sta PM_TEMP
+    jsr .pop_byte           ; MSB
+    pha
+    jsr .pop_byte           ; LSB
+    pha
+    ldd PM_VAR_FRAME[15:8]
+    lde PM_VAR_FRAME[7:0]
+    ldx PM_TEMP
+    pla                     ; LSB
+    sta de,x
+    inx
+    pla                     ; MSB
+    sta de,x
+    jmp .fetch
+
+; --- ADD: pop b16, pop a16, push a+b --------------------
+; Note: push_byte/pop_byte do NOT affect carry flag.
+
+.op_add:
+    jsr .pop_byte
+    sta MATH16_B+1          ; b MSB
+    jsr .pop_byte
+    sta MATH16_B            ; b LSB
+    jsr .pop_byte
+    sta MATH16_A+1          ; a MSB
+    jsr .pop_byte           ; A = a LSB
+    clc
+    adc MATH16_B
+    jsr .push_byte          ; result LSB (carry preserved)
+    lda MATH16_A+1
+    adc MATH16_B+1
+    jsr .push_byte          ; result MSB
+    jmp .fetch
+
+; --- SUB: pop b16, pop a16, push a-b --------------------
+
+.op_sub:
+    jsr .pop_byte
+    sta MATH16_B+1
+    jsr .pop_byte
+    sta MATH16_B
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte           ; A = a LSB
+    sec
+    sbc MATH16_B
+    jsr .push_byte          ; result LSB (carry/borrow preserved)
+    lda MATH16_A+1
+    sbc MATH16_B+1
+    jsr .push_byte          ; result MSB
+    jmp .fetch
+
+; --- MUL: pop b16, pop a16, push a*b (signed 16-bit) ----
+
+.op_mul:
+    jsr .pop_byte
+    sta MATH16_B+1
+    jsr .pop_byte
+    sta MATH16_B
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte
+    sta MATH16_A
+    jsr MUL16S
+    lda MATH16_A
+    jsr .push_byte
+    lda MATH16_A+1
+    jsr .push_byte
+    jmp .fetch
+
+; --- DIV: pop b16, pop a16, push a div b (signed) -------
+
+.op_div:
+    jsr .pop_byte
+    sta MATH16_B+1
+    jsr .pop_byte
+    sta MATH16_B
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte
+    sta MATH16_A
+    jsr DIV16S
+    lda MATH16_A
+    jsr .push_byte
+    lda MATH16_A+1
+    jsr .push_byte
+    jmp .fetch
+
+; --- NEG: pop a16, push -a (two's complement) -----------
+
+.op_neg:
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte
+    sta MATH16_A
+    jsr MATH16_NEGATE_A
+    lda MATH16_A
+    jsr .push_byte
+    lda MATH16_A+1
+    jsr .push_byte
+    jmp .fetch
+
+; --- MOD: pop b16, pop a16, push a mod b (signed) -------
+
+.op_mod:
+    jsr .pop_byte
+    sta MATH16_B+1
+    jsr .pop_byte
+    sta MATH16_B
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte
+    sta MATH16_A
+    jsr MOD16S
+    lda MATH16_A
+    jsr .push_byte
+    lda MATH16_A+1
+    jsr .push_byte
+    jmp .fetch
+
 ; --- CSP: call standard procedure ------------------------
 
 .op_csp:
@@ -128,10 +286,14 @@ PM_ENTRY:
     beq .csp_writeln
     cmp PM_CSP_WRITELN_NOARG
     beq .csp_writeln_noarg
+    cmp PM_CSP_WRITE_INT
+    beq .csp_write_int
+    cmp PM_CSP_WRITELN_INT
+    beq .csp_writeln_int
 
     jmp .error_invalid
 
-; CSP 0 — write(string): print string without newline
+; CSP 0 — write(string)
 .csp_write:
     jsr .pop_byte
     pha
@@ -142,7 +304,7 @@ PM_ENTRY:
     jsr ACIA_SEND_STRING
     jmp .fetch
 
-; CSP 1 — writeln(string): print string then CR/LF
+; CSP 1 — writeln(string)
 .csp_writeln:
     jsr .pop_byte
     pha
@@ -154,8 +316,27 @@ PM_ENTRY:
     jsr ACIA_SEND_NEWLINE
     jmp .fetch
 
-; CSP 2 — writeln(): just CR/LF
+; CSP 2 — writeln() (no argument)
 .csp_writeln_noarg:
+    jsr ACIA_SEND_NEWLINE
+    jmp .fetch
+
+; CSP 3 — write(integer): print signed 16-bit decimal
+.csp_write_int:
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte
+    sta MATH16_A
+    jsr ACIA_SEND_DECIMAL16S
+    jmp .fetch
+
+; CSP 4 — writeln(integer): print signed 16-bit decimal + newline
+.csp_writeln_int:
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte
+    sta MATH16_A
+    jsr ACIA_SEND_DECIMAL16S
     jsr ACIA_SEND_NEWLINE
     jmp .fetch
 

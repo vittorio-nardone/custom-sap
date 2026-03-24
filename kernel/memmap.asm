@@ -35,9 +35,18 @@
 #const FP_SAVE     = 0x80D1  ; 4 bytes (0x80D1-0x80D4)
 #const FP_TEMP     = 0x80D5  ; 1 byte
 
+; --- 0x801B-0x801C: Math16 work area (math.asm) ----------------
+#const MATH16_WORK    = 0x801B  ; 2 bytes (0x801B-0x801C) - work area for MUL16S/DIV16S
+
 ; --- 0x80D6-0x80D9: Math / float conversion temp -------------
 #const MUL_TMP        = 0x80D6  ; 3 bytes (0x80D6-0x80D8) - MULTIPLY_INT temp (math.asm)
 #const FLOAT_SIGN_TMP = 0x80D9  ; 1 byte  - sign temp for float conversion
+
+; --- 0x80DA-0x80DF: Math16 signed 16-bit operands (math.asm) --
+#const MATH16_A       = 0x80DA  ; 2 bytes (LSB=+0, MSB=+1) — operand A / result
+#const MATH16_B       = 0x80DC  ; 2 bytes (LSB=+0, MSB=+1) — operand B
+#const MATH16_SIGN    = 0x80DE  ; 1 byte  — sign tracking
+#const MATH16_TMP     = 0x80DF  ; 1 byte  — temporary
 
 ; --- 0x80E0-0x80EF: Float MUL/ADD/DIV shared temp (float.asm)
 ; WARNING: reused by MUL, ADD, SUB, DIV — never called together

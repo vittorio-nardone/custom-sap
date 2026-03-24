@@ -443,3 +443,48 @@ ACIA_SEND_DECIMAL32:
         dex
         bpl .l2
         rts
+
+; **********************************************************
+; SUBROUTINE: ACIA_SEND_DECIMAL16S
+;
+; DESCRIPTION:
+;   Print a signed 16-bit integer as a decimal string.
+;   Negative values are printed with a leading '-'.
+;   Uses BINDEC32 / ACIA_SEND_DECIMAL32 internally.
+;
+; INPUTS:
+;   MATH16_A : 16-bit signed value (little-endian)
+;
+; OUTPUTS:
+;   (none — output sent to ACIA)
+;
+; DESTROY:
+;   A X Y
+;
+; AUTHOR: VN
+; LAST UPDATE: 03/24/2026
+; **********************************************************
+
+ACIA_SEND_DECIMAL16S:
+        lda MATH16_A+1
+        bpl .positive
+
+        ; Print '-' sign
+        lda 0x2D
+        jsr ACIA_SEND_CHAR
+
+        ; Negate to get absolute value
+        jsr MATH16_NEGATE_A
+
+.positive:
+        ; Zero-extend 16-bit to 32-bit into BINDEC32_VALUE
+        lda MATH16_A
+        sta BINDEC32_VALUE
+        lda MATH16_A+1
+        sta BINDEC32_VALUE+1
+        lda 0x00
+        sta BINDEC32_VALUE+2
+        sta BINDEC32_VALUE+3
+
+        jsr ACIA_SEND_DECIMAL32
+        rts

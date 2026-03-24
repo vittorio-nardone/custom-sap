@@ -11,8 +11,10 @@ set -e
 python3.11 microcode.py
 python3.11 lookup_tables.py
 
-# ── Step 2: Build kernel and Pascal P-Machine binaries ───────────────
+# ── Step 2: Build kernel, export symbols, then P-Machine ────────────
 python3.11 build-version.py --symbols symbols.txt kernel/kernel.asm roms/system/kernel-rom.bin
+python3.11 symbols.py
+
 python3.11 build-version.py pascal/pmachine.asm roms/system/pmachine.bin
 
 # Intel HEX output (for EEPROM programmer)
@@ -44,9 +46,7 @@ if [ "$PMACHINE_SIZE" -gt "$PMACHINE_CAP" ]; then
     exit 1
 fi
 
-# ── Step 4: Export kernel symbols and compile applications ───────────
-python3.11 symbols.py
-
+# ── Step 4: Compile applications ─────────────────────────────────────
 APP_COUNT=0
 for i in apps/*.asm; do
     customasm "apps/$(basename $i)" -f binary -o roms/apps/asm/"$(basename $i .asm)".bin
