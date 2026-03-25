@@ -52,11 +52,12 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.74"
-#const KERNEL_BUILDDATE = "03/24/2026"
+#const KERNEL_VERSION = "v1.2.85"
+#const KERNEL_BUILDDATE = "03/25/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
+#include "build_config.asm"
 #include "memmap.asm"
 #include "tests.asm"
 #include "math.asm"
@@ -67,6 +68,7 @@
 #include "xmodem.asm"
 #include "vt100.asm"
 #include "istructions.asm"
+#include "../pascal/pmachine.asm"
 
 #bank low_kernel
 #addr 0x0000
@@ -74,14 +76,14 @@ boot:
     sei             ; disable interrupts
     scf
     ldo 0x00
+#if BUILD_DEBUG != 0 {
     jsr MICROCODE_test
     jsr MATH_test
     jsr FLOAT_test
+}
     jmp main
 
 
-#const PMACHINE_START = 0x4000
-#const EDITOR_START = 0x4003
 
 ; RAM variables are defined in memmap.asm
 
@@ -406,19 +408,19 @@ main:
     jmp .ready
 
 .menu_editor_command:
-    jsr EDITOR_START
+    jsr EDITOR_ENTRY
     jmp .ready
 
 .menu_pascal_command:
-    ldd 0x84
-    lde 0x00
+    jsr .menu_read_address
+    bcs .menu_show_error
     ldx 0x00
     lda de,x
     cmp 0x50
     beq .menu_pascal_run
     lde 0x09
 .menu_pascal_run:
-    jsr PMACHINE_START
+    jsr PM_ENTRY
     jmp .ready
 
 .menu_disassembler_command:
@@ -586,8 +588,8 @@ main:
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
-    #d "   p        - run Pascal P-code program", 0x0A, 0x0D
-    #d "   e        - Pascal editor/compiler", 0x0A, 0x0D
+    #d "   pyyxxxx  - run TinyPascal P-code program", 0x0A, 0x0D
+    #d "   e        - TinyPascal editor/compiler", 0x0A, 0x0D
     #d "   h        - show Help", 0x0A, 0x0D
     #d 0x00
 

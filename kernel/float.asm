@@ -1896,9 +1896,7 @@ FLOAT_PRINT:
     STA FLOAT1 + 3
     RTS
 
-; **********************************************************
-; TESTS START HERE
-;
+#if BUILD_DEBUG != 0 {
 
 FLOAT_test:
 ;   Test #F1: INT_TO_FLOAT(1) = 0x3F800000
@@ -2338,3 +2336,5 @@ FLOAT_test:
 .fail:
     LDO 0xFB
     HLT
+
+}

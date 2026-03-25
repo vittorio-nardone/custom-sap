@@ -1,27 +1,10 @@
-#bankdef rom3
-{
-    #addr 0x4000
-    #size 0x2000
-    #outp 0
-}
-#bank rom3
+#once
+#bank kernel
 
-#const PMACHINE_VERSION = "v0.4.36"
-#const PMACHINE_BUILDDATE = "03/24/2026"
+#const PMACHINE_VERSION = "v0.4.37"
+#const PMACHINE_BUILDDATE = "03/25/2026"
 
-#include "../assembly/ruledef.asm"
-#include "../kernel/symbols.asm"
 #include "consts.asm"
-
-; =========================================================
-; ROM #3 Jump Table
-;
-;   0x4000: JMP PM_ENTRY      — P-Machine interpreter
-;   0x4003: JMP EDITOR_ENTRY  — On-board Pascal editor
-; =========================================================
-
-    jmp PM_ENTRY
-    jmp EDITOR_ENTRY
 
 ; =========================================================
 ; P-Machine Interpreter for Project Otto

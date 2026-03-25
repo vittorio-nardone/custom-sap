@@ -1,5 +1,8 @@
 #once
 #bank kernel
+
+#if BUILD_DEBUG != 0 {
+
 MICROCODE_test:
     ldo 0x7E            ; Tests started indicator
 
@@ -896,4 +899,4 @@ MICROCODE_test:
 .fail:
     hlt
 
-
+} ; BUILD_DEBUG

@@ -20,6 +20,8 @@ Usage:
 """
 
 import sys
+import os
+import re
 import argparse
 from enum import Enum, auto
 from dataclasses import dataclass, field
@@ -72,7 +74,21 @@ FORMAT_VERSION = 0x01
 PCODE_HEADER_SIZE = 7
 
 NATIVE_STUB_SIZE = 9
-PMACHINE_ADDR = 0x4000
+PMACHINE_ADDR_DEFAULT = 0x4000
+
+def _read_pmachine_addr() -> int:
+    symbols_path = os.path.join(os.path.dirname(__file__) or '.', 'kernel', 'symbols.asm')
+    try:
+        with open(symbols_path, 'r') as f:
+            for line in f:
+                m = re.match(r'#const\s+PM_ENTRY\s*=\s*(0x[0-9A-Fa-f]+)', line)
+                if m:
+                    return int(m.group(1), 16)
+    except FileNotFoundError:
+        pass
+    return PMACHINE_ADDR_DEFAULT
+
+PMACHINE_ADDR = _read_pmachine_addr()
 
 # ── Token types ─────────────────────────────────────────────
 

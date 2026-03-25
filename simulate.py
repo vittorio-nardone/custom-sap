@@ -528,9 +528,16 @@ if __name__ == "__main__":
     print("-> loading kernel into rom memory")
     cpu.load_binary("roms/system/kernel-rom.bin", cpu.memory_regions['rom']['start'])
 
-    # Load the Pascal P-Machine into memory
-    print("-> loading Pascal P-Machine into rom memory")
-    cpu.load_binary("roms/system/pmachine.bin", cpu.memory_regions['pmachine']['start'])
+    # Load the Pascal P-Machine into memory (optional, may be empty in debug builds)
+    try:
+        pmachine_size = os.path.getsize("roms/system/pmachine.bin")
+        if pmachine_size > 1:
+            print("-> loading Pascal P-Machine into rom memory")
+            cpu.load_binary("roms/system/pmachine.bin", cpu.memory_regions['pmachine']['start'])
+        else:
+            print("-> P-Machine ROM empty (debug build)")
+    except FileNotFoundError:
+        print("-> P-Machine ROM not found (debug build)")
 
     # Load a program into memory if provided
     if args.program:

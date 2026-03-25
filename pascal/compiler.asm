@@ -98,6 +98,8 @@
     bne .cc_compile_end
     jsr .cc_parse_block
 
+    lda CC_ERROR
+    bne .cc_compile_end
     lda CC_TOKEN_TYPE
     cmp CC_TK_DOT
     bne .cc_err_dot
@@ -684,7 +686,7 @@
 
 .cc_write_args:
     lda CC_ERROR
-    bne .cc_write_done
+    bne .cc_write_err_pop
 
     ; Check argument type: string literal or expression
     lda CC_TOKEN_TYPE
@@ -694,7 +696,7 @@
     ; Integer expression
     jsr .cc_parse_expression
     lda CC_ERROR
-    bne .cc_write_done
+    bne .cc_write_err_pop
     lda PM_OP_CSP
     jsr .cc_emit
     ; write_int or writeln_int for last arg
@@ -764,6 +766,10 @@
     jsr .cc_emit
     lda PM_CSP_WRITELN_NOARG
     jsr .cc_emit
+    rts
+
+.cc_write_err_pop:
+    pla                      ; pop newline flag pushed at .cc_write_common
 .cc_write_done:
     rts
 

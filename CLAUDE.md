@@ -7,14 +7,27 @@ The CPU is built from 7400-series TTL ICs, not a commercial microprocessor.
 
 - **Python venv**: `source .venv/bin/activate` (Python 3.11, required for simulator and build scripts)
 - **Assembler**: [CustomASM](https://github.com/hlorenzi/customasm) (`cargo install customasm`)
-- **Build all** (kernel, microcode, symbols, P-Machine, apps, Pascal examples): `source .venv/bin/activate && ./generate-all.sh`
-  - Regenerates microcode ROMs, lookup tables, kernel binary, P-Machine ROM, symbols, all apps in `apps/`, and all Pascal examples in `pascal/examples/`
-  - **Always run this after modifying kernel files** to ensure symbols.asm stays in sync with kernel addresses
+- **Build all (release)**: `source .venv/bin/activate && ./generate-all.sh`
+  - Regenerates microcode ROMs, lookup tables, unified ROM binary (kernel + P-Machine), symbols, all apps in `apps/`, and all Pascal examples in `pascal/examples/`
+  - **Always run this after modifying kernel or P-Machine files** to ensure symbols.asm stays in sync with kernel addresses
+  - Release mode: no boot tests, includes TinyPascal (P-Machine + editor + compiler)
+- **Build all (debug)**: `source .venv/bin/activate && ./generate-all.sh --debug`
+  - Debug mode: includes boot tests (CPU instruction + math + float tests), also includes TinyPascal
 - **Compile single app**: `customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin`
 - **Compile Pascal program**: `python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin`
 - **Simulator (interactive)**: `python simulate.py --program roms/apps/asm/myapp.bin`
 - **Simulator (headless/test)**: `python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet`
 - **Microcode generation**: `python microcode.py`
+
+### Unified ROM Build
+
+The three ROM chips (24 KB total) are built as a single compilation unit. The kernel, P-Machine, editor, and compiler share the same address space (0x0000-0x5FFF) and are compiled together. This allows the P-Machine to use free space from the kernel banks and vice versa.
+
+Build configuration is controlled by `kernel/build_config.asm` (set automatically by `generate-all.sh`):
+- `BUILD_DEBUG = 0` (release): boot tests excluded, ~5.5 KB free for development
+- `BUILD_DEBUG = 1` (debug): boot tests included, ~2.7 KB free
+
+**Important customasm limitation**: `#include` inside `#if` blocks scopes labels to the `#if` block. Always put `#if` guards INSIDE included files, never wrap `#include` with `#if`.
 
 ## Architecture
 
@@ -58,13 +71,11 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 ## Memory Map
 
 ```
-0x000000-0x001FFF  (8 KB)  ROM #1 (kernel bank 0)
+0x000000-0x005FFF  (24 KB) ROM #1-3 (unified kernel + P-Machine)
   0x0000-0x00FE            Boot code
   0x00FF                   Interrupt handler entry point
-  0x0200+                  Kernel routines
-
-0x002000-0x003FFF  (8 KB)  ROM #2 (kernel bank 1)
-0x004000-0x005FFF  (8 KB)  ROM #3 (Pascal P-Machine)
+  0x0200+                  Kernel routines, P-Machine, editor, compiler
+  Split into 3 x 8 KB ROM chips: .bin.00, .bin.01, .bin.02
 
 0x006000-0x0067FF  (2 KB)  Device I/O
   0x6000-0x600F            Keyboard (read only)
@@ -701,7 +712,7 @@ pip install intelhex     # Intel HEX file format support
 - Each instruction has a `sim` field (Python code string executed via `exec()`) and cycle counts
 - The simulator calls `verifyInstructionSet()` at startup to validate opcodes
 - Unimplemented instructions produce a warning at startup
-- ROM is loaded from `roms/system/kernel-rom.bin` and `roms/system/pmachine.bin` at boot
+- ROM is loaded from `roms/system/kernel-rom.bin` (first 16 KB) and `roms/system/pmachine.bin` (remaining, extracted from unified build) at boot
 - Stack operations: `push()` writes at SP then decrements, `pop()` increments SP then reads
 
 ## Pascal P-Machine
@@ -710,7 +721,7 @@ Project Otto includes a Tiny Pascal system: a P-Machine bytecode interpreter in 
 
 ### Architecture
 
-The Pascal P-Machine sits in ROM #3 (0x4000-0x5FFF, 8 KB), together with the on-board editor and compiler. The Python cross-compiler (`pascal_compiler.py`) compiles `.pas` source files into self-executing binaries that include a native Otto stub followed by P-code bytecode. These binaries load at 0x8400 like any other app and run with the `r` command (or `--autorun`).
+The Pascal P-Machine is part of the unified ROM build (compiled together with the kernel). The Python cross-compiler (`pascal_compiler.py`) compiles `.pas` source files into self-executing binaries that include a native Otto stub followed by P-code bytecode. These binaries load at 0x8400 like any other app and run with the `r` command (or `--autorun`). The stub's JSR target address is read from `kernel/symbols.asm` (PM_ENTRY) at compile time.
 
 The kernel menu also provides a `p` command that directly invokes the P-Machine on pure P-code data at 0x8400 (without the native stub).
 
@@ -893,7 +904,7 @@ python simulate.py --headless --max-cycles 5000000 --input \
   "e\rlo\rprogram T;\rbegin\rwriteln(42)\rend.\r\r\rr\rq\rq\r"
 ```
 
-The on-board compiler supports the full Tiny Pascal language including procedures, functions, arrays, recursion, and nested scopes. ROM #3 is at 99.96% capacity (3 bytes free).
+The on-board compiler supports the full Tiny Pascal language including procedures, functions, arrays, recursion, and nested scopes.
 
 ## Project Structure
 
@@ -901,22 +912,23 @@ The on-board compiler supports the full Tiny Pascal language including procedure
 .venv/                   - Python 3.11 virtual environment
 assembly/ruledef.asm     - Instruction set definitions for CustomASM
 kernel/
-  kernel.asm             - Main kernel (v1.2.50)
-  banks.asm              - ROM/RAM bank definitions
+  kernel.asm             - Main kernel (includes P-Machine in unified build)
+  banks.asm              - ROM/RAM bank definitions (24 KB unified)
+  build_config.asm       - Build configuration (BUILD_DEBUG flag)
   memmap.asm             - Kernel RAM allocation map (0x8000-0x83FF)
-  symbols.asm            - Exported kernel symbols/constants
+  symbols.asm            - Exported kernel symbols/constants (auto-generated)
   interrupt.asm          - Interrupt handling
   serial.asm             - ACIA serial I/O
   vt100.asm              - VT100 terminal escape sequences
   math.asm               - Multiplication, division, sqrt, 16-bit signed math
   utils.asm              - Hex/decimal conversions
   xmodem.asm             - XMODEM/CRC file transfer
-  tests.asm              - CPU instruction tests
+  tests.asm              - CPU instruction tests (debug build only)
   float.asm              - Floating point (WIP)
 apps/                    - Example applications
 forth/                   - FORTH language interpreter (legacy, not built)
 pascal/
-  pmachine.asm           - P-Machine interpreter (ROM #3)
+  pmachine.asm           - P-Machine interpreter (part of unified build)
   editor.asm             - On-board line editor
   compiler.asm           - On-board single-pass Pascal compiler
   consts.asm             - P-Machine/editor/compiler constants and RAM layout

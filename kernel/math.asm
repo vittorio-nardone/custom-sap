@@ -478,12 +478,9 @@ CMP16S:
     sta MATH16_TMP
     rts
 
-; **********************************************************
-; TESTS START HERE
-;
+#if BUILD_DEBUG != 0 {
 
 MATH_test:
-; ;    ldo 0xA1                ; Test #A1: Integer division
     ldx 0x85
     ldy 0x05
     jsr DIVIDE_INT
@@ -494,7 +491,6 @@ MATH_test:
     cpy 0x05
     bne .fail
 
-;    ldo 0xA2               ; Test #A2: Integer multiplication
     lda 0x58
     ldx 0x45
     jsr MULTIPLY_INT        ; 0x58 * 0x45 = 0x17B8
@@ -503,7 +499,6 @@ MATH_test:
     cpx 0xB8
     bne .fail
 
-;    ldo 0xA3               ; Test #A3: Integer multiplication
     lda 0x3c
     ldx 0x02
     jsr MULTIPLY_INT        ; 0x3C * 0x02 = 0x0078
@@ -517,6 +512,8 @@ MATH_test:
 .fail:
     ldo 0xFA
     hlt
+
+}
 
 
 

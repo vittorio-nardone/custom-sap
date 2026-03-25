@@ -23,11 +23,9 @@ EDITOR_ENTRY:
 ; ── Main loop ────────────────────────────────────────────
 
 .ed_main_loop:
-    jsr ACIA_SEND_NEWLINE
-    lda 0x3E
-    jsr ACIA_SEND_CHAR
-    lda 0x20
-    jsr ACIA_SEND_CHAR
+    ldd .ed_prompt[15:8]
+    lde .ed_prompt[7:0]
+    jsr ACIA_SEND_STRING
 
     ldd ED_CMD_BUF[15:8]
     lde ED_CMD_BUF[7:0]
@@ -142,7 +140,7 @@ EDITOR_ENTRY:
     ; Execute P-code
     ldd PM_PCODE_BASE[15:8]
     lde PM_PCODE_BASE[7:0]
-    jsr PMACHINE_START
+    jsr PM_ENTRY
     jmp .ed_main_loop
 
 .ed_run_err:
@@ -207,9 +205,13 @@ EDITOR_ENTRY:
 
     lda ED_CUR_LINE
     cmp ED_INS_COUNT
-    beq .ed_main_loop
+    beq .ed_list_end
     inc ED_CUR_LINE
     jmp .ed_list_loop
+
+.ed_list_end:
+    jsr ACIA_SEND_NEWLINE
+    jmp .ed_main_loop
 
 .ed_list_empty:
     ldd .ed_empty_msg[15:8]
@@ -246,7 +248,6 @@ EDITOR_ENTRY:
     sta ED_CUR_LINE
 
 .ed_ins_loop:
-    jsr ACIA_SEND_NEWLINE
     lda ED_CUR_LINE
     jsr .ed_print_line_num
 
@@ -733,37 +734,46 @@ EDITOR_ENTRY:
 
 ; ── Strings ──────────────────────────────────────────────
 
+.ed_prompt:
+    #d "P> ", 0x00
+
 .ed_welcome:
-    #d "Pascal v0.2", 0x0A, 0x0D
-    #d "H=help", 0x0A, 0x0D, 0x00
+    #d "TinyPascal for OTTO - v0.2", 0x0A, 0x0D
+    #d "Type H for help.", 0x0A, 0x0D, 0x00
 
 .ed_help_msg:
     #d 0x0A, 0x0D
-    #d "n=new l=list i=ins", 0x0A, 0x0D
-    #d "d=del e=edit load", 0x0A, 0x0D
-    #d "r=run q=quit", 0x0A, 0x0D
+    #d "Editor commands:", 0x0A, 0x0D
+    #d "   n        - New (clear source)", 0x0A, 0x0D
+    #d "   l [n-m]  - List lines", 0x0A, 0x0D
+    #d "   i [n]    - Insert at line", 0x0A, 0x0D
+    #d "   d n[-m]  - Delete line(s)", 0x0A, 0x0D
+    #d "   e n      - Edit line", 0x0A, 0x0D
+    #d "   lo       - Load (paste source)", 0x0A, 0x0D
+    #d "   r        - Run (compile & execute)", 0x0A, 0x0D
+    #d "   q        - Quit to kernel", 0x0A, 0x0D
     #d 0x00
 
 .ed_error_msg:
-    #d "?err", 0x0A, 0x0D, 0x00
+    #d "Unknown command.", 0x0A, 0x0D, 0x00
 
 .ed_new_msg:
-    #d "Cleared", 0x0A, 0x0D, 0x00
+    #d "Source cleared.", 0x0A, 0x0D, 0x00
 
 .ed_empty_msg:
-    #d "No src", 0x0A, 0x0D, 0x00
+    #d "No source loaded.", 0x0A, 0x0D, 0x00
 
 .ed_compiling_msg:
-    #d "Compiling..", 0x00
+    #d "Compiling... ", 0x00
 
 .ed_comp_ok_msg:
-    #d "OK(", 0x00
+    #d "OK (", 0x00
 
 .ed_comp_bytes_msg:
-    #d "B)", 0x00
+    #d " bytes)", 0x00
 
 .ed_load_msg:
-    #d "Paste, end w/empty:", 0x0A, 0x0D, 0x00
+    #d "Paste source, end with empty line:", 0x0A, 0x0D, 0x00
 
 .ed_loaded_msg:
-    #d " ok", 0x0A, 0x0D, 0x00
+    #d " lines loaded.", 0x0A, 0x0D, 0x00
