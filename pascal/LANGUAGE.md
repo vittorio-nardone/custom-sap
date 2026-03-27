@@ -20,8 +20,35 @@ The `var` block is optional. If present, it must appear between the `program` he
 | Type | Size | Range | Description |
 |------|------|-------|-------------|
 | `integer` | 16-bit | -32768 to 32767 | Signed two's complement integer |
+| `real` | 32-bit | ±3.4×10³⁸ | IEEE 754 single-precision floating point |
 
 String literals can be used in `write`/`writeln` calls but there is no `string` variable type.
+
+### Type Coercion
+
+`integer` values are implicitly promoted to `real` when mixed in expressions, assignments, or function returns. Conversely, `real` values are truncated to `integer` when assigned to an integer variable or used with integer-only operators (`div`, `mod`, `and`, `or`, `not`, `odd`).
+
+```pascal
+var x: real;
+x := 10;          { integer 10 is promoted to 10.00 }
+x := x + 3;       { 3 is promoted to 3.00, result is real }
+writeln(x div 1); { x is truncated to integer for div }
+```
+
+## Constants
+
+Named constants can be declared in a `const` block before `var`. Constants are integer-only and can use negative values:
+
+```pascal
+const
+  maxsize = 100;
+  minval = -10;
+  offset = 42;
+var
+  data: array[1..maxsize] of integer;  { constants usable in array bounds }
+```
+
+Constants can be used in any expression where an integer literal is expected. Local `const` blocks are also allowed inside procedures and functions.
 
 ## Variable Declarations
 
@@ -29,9 +56,11 @@ String literals can be used in `write`/`writeln` calls but there is no `string` 
 var
   x: integer;
   a, b, result: integer;
+  pi: real;
+  temp, avg: real;
 ```
 
-Multiple variables of the same type can be declared on one line, separated by commas. Each declaration line ends with a semicolon. Maximum 128 variables per scope.
+Multiple variables of the same type can be declared on one line, separated by commas. Each declaration line ends with a semicolon. `integer` and `real` variables can be mixed in the same `var` block. Maximum 128 variables per scope.
 
 ## Arrays
 
@@ -109,7 +138,16 @@ begin
 end;
 ```
 
-Functions are like procedures but return a value. The return type is specified after the parameter list. To set the return value, assign to the function's own name within the body.
+Functions are like procedures but return a value. The return type (`integer` or `real`) is specified after the parameter list. To set the return value, assign to the function's own name within the body.
+
+```pascal
+function circle_area(r: real): real;
+begin
+  circle_area := 3.14159 * r * r
+end;
+```
+
+A function returning `real` can accept `integer` arguments — they are promoted automatically. The return value is also coerced if needed (e.g., returning an integer expression from a `real` function).
 
 ### Nesting
 
@@ -160,7 +198,24 @@ result := myFunction(arg);     { function call in expression }
 writeln(factorial(7));          { function call as argument }
 ```
 
-Arguments are passed by value: the called routine receives a copy, so modifying a parameter inside the routine does not affect the caller's variable.
+Arguments are passed by value by default: the called routine receives a copy. Use `var` to pass by reference — changes to the parameter are reflected in the caller's variable:
+
+```pascal
+procedure swap(var x, y: integer);
+var temp: integer;
+begin
+  temp := x;
+  x := y;
+  y := temp
+end;
+
+procedure inc_by(var n: integer; amount: integer);
+begin
+  n := n + amount
+end;
+```
+
+`var` and value parameters can be mixed in the same parameter list. Each parameter group (separated by `;`) can independently have `var`.
 
 ## Statements
 
@@ -174,21 +229,24 @@ variable := expression;
 
 ```pascal
 write('text');           { print string, no newline }
-write(expression);       { print integer value, no newline }
+write(intExpr);          { print integer value, no newline }
+write(realExpr);         { print real value, no newline }
 writeln('text');          { print string + newline }
-writeln(expression);     { print integer value + newline }
+writeln(intExpr);        { print integer value + newline }
+writeln(realExpr);       { print real value + newline }
 writeln;                 { print newline only }
 ```
 
-The argument type (string literal vs integer expression) is detected automatically by the compiler.
+The argument type (string literal, integer expression, or real expression) is detected automatically by the compiler. Real values are printed with two decimal places (e.g., `3.14`, `-0.50`).
 
 ### readln
 
 ```pascal
-readln(variable);        { read integer from serial input }
+readln(intVar);          { read integer from serial input }
+readln(realVar);         { read real from serial input }
 ```
 
-Reads a signed decimal integer from the serial port and stores it in the given variable. The input is terminated by Enter (CR). Supports optional leading `-` sign. Range: -32768 to 32767.
+Reads a value from the serial port and stores it in the given variable. The input is terminated by Enter (CR). For integers: signed decimal, range -32768 to 32767. For reals: decimal with optional fractional part (e.g., `3.14`, `-0.5`).
 
 ## Control Flow
 
@@ -226,6 +284,17 @@ for i := 10 downto 1 do statement;
 
 The loop variable must be declared in the `var` block. The start and end expressions are evaluated once before the loop begins. The loop is overflow-safe: it correctly handles the boundary case when the loop variable equals the limit.
 
+### repeat / until
+
+```pascal
+repeat
+  statement1;
+  statement2
+until condition;
+```
+
+Executes the statements at least once, then repeats as long as the condition is false. Unlike `while`, the condition is checked after each iteration and the body does not require `begin..end` for multiple statements.
+
 ### Compound Statements (begin..end)
 
 ```pascal
@@ -245,11 +314,13 @@ Use `begin..end` to group multiple statements where a single statement is expect
 | Precedence | Operators | Description |
 |------------|-----------|-------------|
 | 1 (highest) | `not`, `-` (unary) | Logical negation, arithmetic negation |
-| 2 | `*`, `div`, `mod`, `and` | Multiplication, integer division, modulo, logical AND |
+| 2 | `*`, `/`, `div`, `mod`, `and` | Multiplication, real division, integer division, modulo, logical AND |
 | 3 | `+`, `-`, `or` | Addition, subtraction, logical OR |
 | 4 (lowest) | `=`, `<>`, `<`, `>`, `<=`, `>=` | Relational operators |
 
 Parentheses `( )` can be used to override precedence.
+
+The `/` operator always produces a `real` result (both operands are promoted to `real` if needed). The `div` and `mod` operators always produce an `integer` result (both operands are truncated to integer if needed). The `*`, `+`, `-` operators produce `real` if either operand is `real`, `integer` otherwise.
 
 ### Relational Operators
 
@@ -262,7 +333,7 @@ Parentheses `( )` can be used to override precedence.
 | `<=` | Less than or equal |
 | `>=` | Greater than or equal |
 
-Relational operators compare two integer expressions and produce a boolean result (0 = false, 1 = true) used by control flow statements.
+Relational operators compare two expressions and produce a boolean result (0 = false, 1 = true) used by control flow statements. Both `integer` and `real` operands are supported; if one operand is `real`, the other is promoted automatically.
 
 ### Boolean Operators
 
@@ -274,10 +345,33 @@ Relational operators compare two integer expressions and produce a boolean resul
 
 Boolean operators work on integer values: any non-zero value is considered true, zero is false.
 
+### Built-in Functions
+
+| Function | Argument | Result | Description |
+|----------|----------|--------|-------------|
+| `abs(x)` | `integer` or `real` | same type | Absolute value |
+| `odd(x)` | `integer` | `integer` | 1 if x is odd, 0 if even |
+| `ord(c)` | char literal | `integer` | ASCII code of character (e.g., `ord('A')` = 65) |
+| `chr(x)` | `integer` | writes char | Output the character with ASCII code x |
+
+```pascal
+writeln(abs(-5));        { 5 }
+writeln(abs(-3.14));     { 3.14 }
+writeln(odd(7));         { 1 }
+writeln(ord('A'));       { 65 }
+write(chr(65));          { A }
+```
+
 ### Integer Literals
 
 Decimal integers: `0`, `42`, `255`, `32767`.
 Negative literals: `-1`, `-100` (parsed as unary minus applied to a positive literal).
+
+### Real Literals
+
+Decimal numbers with a fractional part: `3.14`, `0.5`, `2.0`, `100.75`.
+A digit must appear before and after the decimal point (`0.5` not `.5`, `2.0` not `2.`).
+Negative real literals: `-3.14` (parsed as unary minus). No scientific notation.
 
 ### Examples
 
@@ -303,12 +397,14 @@ Three comment styles are supported:
 
 - No `string` type — only string literals in write/writeln
 - No records or multi-dimensional arrays
-- No pass-by-reference parameters (`var` parameters)
 - Arrays cannot be passed as parameters to procedures/functions
-- No `readln` for strings or array elements — only scalar integer input
+- No `readln` for strings or array elements — only scalar integer/real input
 - No dedicated boolean type (integers are used: 0 = false, non-zero = true)
 - No runtime bounds checking for array indices
 - Integer overflow is silently truncated to 16 bits
+- `real` precision is IEEE 754 single-precision (~7 significant decimal digits); some decimal values like 3.14 may display as 3.13 due to binary representation
+- No scientific notation for real literals
+- `real` arrays are not supported — only `integer` arrays
 
 ## Compilation and Execution
 
@@ -408,11 +504,12 @@ Compiling..Err L 4: syntax
 
 #### On-board Compiler Limitations
 
-The on-board compiler supports the full Tiny Pascal language (variables, arrays, procedures, functions, recursion, nested scopes) with these restrictions compared to the cross-compiler:
+The on-board compiler supports the full Tiny Pascal language (variables, arrays, constants, procedures, functions, recursion, nested scopes, `real` type) with these restrictions compared to the cross-compiler:
 
-- Multiple `var` blocks are not supported — declare all variables (scalars and arrays) in a single `var` block, separated by semicolons
+- Multiple `var` blocks are not supported — declare all variables (scalars, arrays, integer, real) in a single `var` block, separated by semicolons
 - Identifier names are truncated to 7 characters in the symbol table
-- Maximum ~60 symbols (variables, procedures, functions) per program
+- Maximum ~60 symbols (variables, constants, procedures, functions) per program
+- All parameters are treated as `integer` (no `real` parameters in the on-board compiler)
 - Error messages are abbreviated (e.g., `syntax`, `undef`, `type`)
 
 ## Complete Examples
@@ -475,6 +572,68 @@ end.
 ```
 
 Output: `Factorial of 7 = 5040`
+
+### Floating Point
+
+```pascal
+program FloatDemo;
+var
+  x: real;
+
+function circle_area(r: real): real;
+begin
+  circle_area := 3.14159 * r * r
+end;
+
+begin
+  x := 3.5;
+  writeln(x);                  { 3.50 }
+  writeln(x * 2.0);            { 7.00 }
+  writeln(x + 1);              { 4.50 — integer 1 promoted to real }
+  writeln(circle_area(5.0));   { 78.53 }
+  if x > 3.0 then
+    writeln('x is greater than 3')
+end.
+```
+
+### Constants and repeat..until
+
+```pascal
+program Demo;
+const
+  limit = 5;
+var
+  n: integer;
+begin
+  n := limit;
+  repeat
+    writeln(n);
+    n := n - 1
+  until n = 0
+end.
+```
+
+Output: `5`, `4`, `3`, `2`, `1`
+
+### var Parameters
+
+```pascal
+program SwapDemo;
+var a, b: integer;
+
+procedure swap(var x, y: integer);
+var temp: integer;
+begin
+  temp := x; x := y; y := temp
+end;
+
+begin
+  a := 10; b := 20;
+  swap(a, b);
+  writeln(a);    { 20 }
+  writeln(b)     { 10 }
+end.
+```
 
 ### Arrays (Bubble Sort)
 

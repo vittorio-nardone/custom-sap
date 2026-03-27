@@ -24,6 +24,10 @@
     sta CC_SRC_COL
     sta CC_STR_FIX_SP
     sta CC_IS_FUNC
+    sta CC_PARAM_VAR
+    sta CC_VAR_TYPE
+    sta CC_FUNC_RET
+    sta CC_EXPR_TYPE
     ; Frame offset starts at 2 (bytes 0-1 reserved for static link)
     lda 0x02
     sta CC_FRAME_OFF
@@ -58,6 +62,15 @@
     jsr .cc_next_token
     lda CC_TK_SEMI
     jsr .cc_expect
+
+    ; Parse optional const block
+    lda CC_ERROR
+    bne .cc_compile_end
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_CONST
+    bne .cc_no_const
+    jsr .cc_parse_const
+.cc_no_const:
 
     ; Parse optional var block
     lda CC_ERROR
@@ -129,6 +142,94 @@
     lda .cc_e_dot
     jmp .cc_error_a
 
+; ── const block parser ───────────────────────────────────
+
+.cc_parse_const:
+    jsr .cc_next_token       ; consume 'const'
+
+.cc_pc_loop:
+    lda CC_ERROR
+    bne .cc_pc_done
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_IDENT
+    bne .cc_pc_done
+
+    ; Save name in symbol table (cc_add_const reads CC_TOKEN_BUF)
+    ; First, get the value: consume ident, expect '=', parse number
+    jsr .cc_add_const_name   ; write name+scope+kind, leave entry open
+    jsr .cc_next_token       ; consume ident
+    lda CC_TK_EQ
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_pc_done
+
+    ; Parse optional '-' and number
+    lda 0x00
+    sta CC_TEMP3             ; sign flag (0=positive)
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_MINUS
+    bne .cc_pc_no_neg
+    lda 0x01
+    sta CC_TEMP3
+    jsr .cc_next_token       ; consume '-'
+.cc_pc_no_neg:
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_NUMBER
+    bne .cc_pc_err
+
+    ; Store value in the last symbol entry (bytes 10-11)
+    lda CC_SYM_COUNT
+    sec
+    sbc 0x01
+    jsr .cc_sym_addr
+    ldx 0x0A
+    lda CC_TEMP3
+    beq .cc_pc_store_pos
+    ; Negate: two's complement of CC_TOKEN_NUM
+    lda CC_TOKEN_NUM_LO
+    eor 0xFF
+    clc
+    adc 0x01
+    sta yde,x
+    inx
+    lda CC_TOKEN_NUM_HI
+    eor 0xFF
+    adc 0x00
+    sta yde,x
+    jmp .cc_pc_next
+.cc_pc_store_pos:
+    lda CC_TOKEN_NUM_LO
+    sta yde,x
+    inx
+    lda CC_TOKEN_NUM_HI
+    sta yde,x
+
+.cc_pc_next:
+    jsr .cc_next_token       ; consume number
+    lda CC_TK_SEMI
+    jsr .cc_expect
+    jmp .cc_pc_loop
+
+.cc_pc_err:
+    lda .cc_e_syntax
+    jmp .cc_error_a
+
+.cc_pc_done:
+    rts
+
+.cc_add_const_name:
+    ; Add constant entry to symbol table (name+scope+kind only, value patched later)
+    lda CC_SYM_COUNT
+    jsr .cc_sym_addr
+    jsr .cc_sym_write_name   ; X=8
+    lda CC_SCOPE_LEVEL
+    sta yde,x                ; byte 8: scope
+    inx
+    lda CC_KIND_CONST
+    sta yde,x                ; byte 9: kind=CONST
+    inc CC_SYM_COUNT
+    rts
+
 ; ── var block parser ─────────────────────────────────────
 
 .cc_parse_var:
@@ -141,8 +242,11 @@
     cmp CC_TK_IDENT
     bne .cc_pv_done
 
+    ; Save sym count before adding this group (for real re-patching)
+    lda CC_SYM_COUNT
+    sta CC_TEMP4
+
 .cc_pv_names:
-    ; Add variable to symbol table
     jsr .cc_add_var
     jsr .cc_next_token       ; consume ident
     lda CC_TOKEN_TYPE
@@ -157,8 +261,16 @@
     lda CC_TOKEN_TYPE
     cmp CC_TK_ARRAY
     beq .cc_pv_array
+    cmp CC_TK_REAL
+    bne .cc_pv_not_real
+    lda CC_TEMP4
+    jsr .cc_repatch_real
+    jsr .cc_next_token       ; consume 'real'
+    jmp .cc_pv_after_type
+.cc_pv_not_real:
     lda CC_TK_INTEGER
     jsr .cc_expect
+.cc_pv_after_type:
     lda CC_TK_SEMI
     jsr .cc_expect
     jmp .cc_pv_loop
@@ -276,6 +388,8 @@
     beq .cc_parse_writeln
     cmp CC_TK_READLN
     beq .cc_parse_readln
+    cmp CC_TK_REPEAT
+    beq .cc_parse_repeat
 
 .cc_ps_done:
     rts
@@ -310,7 +424,17 @@
     jsr .cc_parse_expression
     lda CC_ERROR
     bne .cc_ps_done
+    lda CC_FUNC_RET
+    bne .cc_ps_fret_real
+    jsr .cc_ensure_int
     lda PM_OP_STORE
+    jsr .cc_emit
+    lda 0x02                 ; return value at offset 2
+    jsr .cc_emit
+    rts
+.cc_ps_fret_real:
+    jsr .cc_ensure_real
+    lda PM_OP_FSTORE
     jsr .cc_emit
     lda 0x02                 ; return value at offset 2
     jsr .cc_emit
@@ -332,28 +456,86 @@
 ; ── Assignment: ident := expr ────────────────────────────
 
 .cc_parse_assign:
-    ; CC_FOUND_KIND is already set by cc_ps_ident dispatch.
     lda CC_FOUND_KIND
+    cmp CC_KIND_CONST
+    beq .cc_pa_const_err
     cmp CC_KIND_ARRAY
     beq .cc_pa_array
-    lda CC_FOUND_B10         ; offset (saved by cc_ps_ident)
-    pha                      ; save offset
+    ; Check if var param
+    lda CC_FOUND_B14
+    bne .cc_pa_var_param
+    lda CC_FOUND_B15         ; variable type (0=int, 1=real)
+    pha                      ; save var type on stack
+    lda CC_FOUND_B10         ; offset
+    pha
     lda CC_SCOPE_LEVEL
     sec
     sbc CC_FOUND_SCOPE
-    pha                      ; save level_diff
+    pha                      ; [stack: var_type, offset, level_diff]
     jsr .cc_next_token       ; consume ident
     lda CC_TK_ASSIGN
     jsr .cc_expect
     lda CC_ERROR
-    bne .cc_pa_done_pop2
+    bne .cc_pa_done_pop3
     jsr .cc_parse_expression
     lda CC_ERROR
-    bne .cc_pa_done_pop2
+    bne .cc_pa_done_pop3
+    ; Check types: stack has [var_type, offset, level_diff]
+    ; We need to peek at var_type to decide coercion
+    ; Pop level_diff and offset temporarily
+    pla
+    sta CC_TEMP3             ; level_diff
+    pla
+    sta CC_TEMP4             ; offset
+    pla                      ; var_type
+    ; A = var_type, CC_EXPR_TYPE = expr_type
+    cmp 0x01
+    beq .cc_pa_store_real
+    ; Integer var: coerce expr to int if needed
+    jsr .cc_ensure_int
+    lda CC_TEMP4
+    pha                      ; push offset back
+    lda CC_TEMP3
+    pha                      ; push level_diff back
     lda PM_OP_STORE_L
     sta CC_TEMP2
     lda PM_OP_STORE
     jmp .cc_emit_scoped
+.cc_pa_store_real:
+    ; Real var: coerce expr to real if needed
+    jsr .cc_ensure_real
+    lda CC_TEMP4
+    pha
+    lda CC_TEMP3
+    pha
+    lda PM_OP_FSTORE_L
+    sta CC_TEMP2
+    lda PM_OP_FSTORE
+    jmp .cc_emit_scoped
+.cc_pa_var_param:
+    lda CC_FOUND_B10         ; offset
+    pha
+    jsr .cc_next_token       ; consume ident
+    lda CC_TK_ASSIGN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_pa_done_pop1
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_pa_done_pop1
+    lda PM_OP_STORE_REF
+    jsr .cc_emit
+    pla
+    jsr .cc_emit
+    rts
+.cc_pa_done_pop1:
+    pla
+    rts
+.cc_pa_done_pop3:
+    pla
+    pla
+    pla
+    rts
 .cc_pa_array:
     lda CC_FOUND_B10         ; adjusted_base (saved by cc_ps_ident)
     pha                      ; save adjusted_base
@@ -387,6 +569,9 @@
     pla
 .cc_pa_done:
     rts
+.cc_pa_const_err:
+    lda .cc_e_const
+    jmp .cc_error_a
 .cc_pa_undef:
     lda .cc_e_undef
     jmp .cc_error_a
@@ -405,12 +590,12 @@
     jsr .cc_parse_expression
     lda CC_ERROR
     bne .cc_if_done
+    jsr .cc_ensure_int       ; FTOI if needed for JPC
     lda CC_TK_THEN
     jsr .cc_expect
     lda CC_ERROR
     bne .cc_if_done
 
-    ; Emit JPC (jump if false) with placeholder
     lda PM_OP_JPC
     jsr .cc_emit
     jsr .cc_push_fixup       ; save fixup position
@@ -453,12 +638,12 @@
     jsr .cc_parse_expression
     lda CC_ERROR
     bne .cc_wh_done
+    jsr .cc_ensure_int       ; FTOI if needed for JPC
     lda CC_TK_DO
     jsr .cc_expect
     lda CC_ERROR
     bne .cc_wh_done
 
-    ; Emit JPC (exit loop if false)
     lda PM_OP_JPC
     jsr .cc_emit
     jsr .cc_push_fixup
@@ -660,6 +845,58 @@
     lda .cc_e_undef
     jmp .cc_error_a
 
+; ── Repeat: repeat stmts until expr ──────────────────────
+
+.cc_parse_repeat:
+    jsr .cc_next_token       ; consume 'repeat'
+
+    ; Save loop top address
+    lda CC_CODE_LO
+    pha
+    lda CC_CODE_HI
+    pha
+
+    ; Parse statements until 'until' keyword
+.cc_rpt_loop:
+    lda CC_ERROR
+    bne .cc_rpt_done
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_UNTIL
+    beq .cc_rpt_until
+    jsr .cc_parse_statement
+    lda CC_ERROR
+    bne .cc_rpt_done
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_SEMI
+    bne .cc_rpt_check_until
+    jsr .cc_next_token       ; consume ';'
+.cc_rpt_check_until:
+    jmp .cc_rpt_loop
+
+.cc_rpt_until:
+    jsr .cc_next_token       ; consume 'until'
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_rpt_done
+    jsr .cc_ensure_int       ; FTOI if needed for JPC
+
+    lda PM_OP_JPC
+    jsr .cc_emit
+    pla
+    sta CC_TEMP2             ; loop_top high
+    pla
+    sta CC_TEMP1             ; loop_top low
+    lda CC_TEMP1
+    jsr .cc_emit
+    lda CC_TEMP2
+    jsr .cc_emit
+    rts
+
+.cc_rpt_done:
+    pla
+    pla
+    rts
+
 ; ── Write/Writeln ────────────────────────────────────────
 
 .cc_parse_write:
@@ -688,22 +925,25 @@
     lda CC_ERROR
     bne .cc_write_err_pop
 
-    ; Check argument type: string literal or expression
+    ; Check argument type: string literal, chr(expr), or expression
     lda CC_TOKEN_TYPE
     cmp CC_TK_STRING
     beq .cc_write_str
+    cmp CC_TK_CHR
+    beq .cc_write_chr
 
-    ; Integer expression
+    ; Expression (integer or real)
     jsr .cc_parse_expression
     lda CC_ERROR
     bne .cc_write_err_pop
+    lda CC_EXPR_TYPE
+    bne .cc_write_real_expr
+    ; Integer expression
     lda PM_OP_CSP
     jsr .cc_emit
-    ; write_int or writeln_int for last arg
     lda CC_TOKEN_TYPE
     cmp CC_TK_COMMA
     beq .cc_write_int_cont
-    ; Last (or only) arg — check newline flag on stack
     pla
     bne .cc_write_int_nl
     lda PM_CSP_WRITE_INT
@@ -716,6 +956,27 @@
 
 .cc_write_int_cont:
     lda PM_CSP_WRITE_INT
+    jsr .cc_emit
+    jsr .cc_next_token       ; consume ','
+    jmp .cc_write_args
+
+.cc_write_real_expr:
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_COMMA
+    beq .cc_write_real_cont
+    pla
+    bne .cc_write_real_nl
+    lda PM_CSP_WRITE_REAL
+    jmp .cc_write_real_emit
+.cc_write_real_nl:
+    lda PM_CSP_WRITELN_REAL
+.cc_write_real_emit:
+    jsr .cc_emit
+    jmp .cc_write_close
+.cc_write_real_cont:
+    lda PM_CSP_WRITE_REAL
     jsr .cc_emit
     jsr .cc_next_token       ; consume ','
     jmp .cc_write_args
@@ -753,6 +1014,40 @@
     jsr .cc_next_token       ; consume ','
     jmp .cc_write_args
 
+.cc_write_chr:
+    ; chr(expr) as write argument: emit expr + CSP_WRITE_CHAR
+    jsr .cc_next_token       ; consume 'chr'
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_write_err_pop
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_write_err_pop
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_WRITE_CHAR
+    jsr .cc_emit
+
+    ; Check if more args or end
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_COMMA
+    bne .cc_write_chr_last
+    jsr .cc_next_token       ; consume ','
+    jmp .cc_write_args
+.cc_write_chr_last:
+    ; Last arg: check newline flag
+    pla
+    beq .cc_write_close
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_WRITELN_NOARG
+    jsr .cc_emit
+    jmp .cc_write_close
+
 .cc_write_close:
     lda CC_TK_RPAREN
     jsr .cc_expect
@@ -788,21 +1083,34 @@
     bne .cc_rdln_err
     jsr .cc_find_sym
     bcs .cc_rdln_undef
-    sta CC_TEMP1
+    sta CC_TEMP1             ; offset
+    lda CC_FOUND_B15
+    sta CC_TEMP2             ; var type
 
     jsr .cc_next_token       ; consume ident
 
-    ; Emit CSP READLN_INT
+    lda CC_TEMP2
+    bne .cc_rdln_real
+    ; Integer readln
     lda PM_OP_CSP
     jsr .cc_emit
     lda PM_CSP_READLN_INT
     jsr .cc_emit
-    ; STORE to variable
     lda PM_OP_STORE
     jsr .cc_emit
     lda CC_TEMP1
     jsr .cc_emit
-
+    jmp .cc_rdln_close
+.cc_rdln_real:
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_READLN_REAL
+    jsr .cc_emit
+    lda PM_OP_FSTORE
+    jsr .cc_emit
+    lda CC_TEMP1
+    jsr .cc_emit
+.cc_rdln_close:
     lda CC_TK_RPAREN
     jsr .cc_expect
 .cc_rdln_done:
@@ -820,31 +1128,128 @@
 ; Identifier already consumed.
 
 .cc_call_args:
-    ; Save callee info on stack (3 bytes: code_lo, code_hi, def_level)
+    ; Save callee info on stack (4 bytes: code_lo, code_hi, def_level, var_mask)
     lda CC_FOUND_B10
     pha
     lda CC_FOUND_ARG1
     pha
     lda CC_FOUND_ARG3
     pha
+    lda CC_FOUND_B14         ; var param bitmask
+    pha
     ; Parse arguments
     lda CC_TOKEN_TYPE
     cmp CC_TK_LPAREN
-    bne .cc_ca_no_args
+    beq .cc_ca_has_lparen
+    pla                      ; pop var_mask (no parens, no args)
+    jmp .cc_ca_no_args
+.cc_ca_has_lparen:
     jsr .cc_next_token       ; consume '('
     lda CC_TOKEN_TYPE
     cmp CC_TK_RPAREN
     beq .cc_ca_close
 .cc_ca_arg_loop:
+    ; Check if current arg is a var param (test bit 0 of mask)
+    pla                      ; get var_mask
+    pha                      ; keep it on stack
+    and 0x01
+    beq .cc_ca_val_arg
+    ; Var param: emit PUSH_ADDR for the argument variable
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_IDENT
+    bne .cc_ca_var_err
+    jsr .cc_find_sym
+    bcs .cc_ca_var_err
+    ; If the arg itself is a var param, emit LOAD (pass the pointer through)
+    lda CC_FOUND_B14
+    bne .cc_ca_var_pass_ref
+    ; Regular variable: emit PUSH_ADDR
+    lda CC_FOUND_B10         ; offset
+    pha
+    lda CC_SCOPE_LEVEL
+    sec
+    sbc CC_FOUND_SCOPE
+    beq .cc_ca_push_local
+    ; Non-local: PUSH_ADDR_L
+    pha
+    lda PM_OP_PUSH_ADDR_L
+    jsr .cc_emit
+    pla
+    jsr .cc_emit             ; depth
+    pla
+    jsr .cc_emit             ; offset
+    jmp .cc_ca_var_done
+.cc_ca_push_local:
+    lda PM_OP_PUSH_ADDR
+    jsr .cc_emit
+    pla
+    jsr .cc_emit             ; offset
+    jmp .cc_ca_var_done
+.cc_ca_var_pass_ref:
+    ; Arg is already a var param (holds an address) — just load the pointer value
+    lda CC_FOUND_B10
+    pha
+    lda CC_SCOPE_LEVEL
+    sec
+    sbc CC_FOUND_SCOPE
+    pha
+    jsr .cc_next_token
+    lda PM_OP_LOAD_L
+    sta CC_TEMP2
+    lda PM_OP_LOAD
+    jmp .cc_ca_var_scoped
+.cc_ca_var_scoped:
+    ; Reuse cc_emit_scoped logic inline
+    sta CC_TEMP1
+    pla                      ; level_diff
+    beq .cc_ca_vs_local
+    pha
+    lda CC_TEMP2
+    jsr .cc_emit
+    pla
+    jsr .cc_emit
+    pla
+    jsr .cc_emit
+    jmp .cc_ca_var_done2
+.cc_ca_vs_local:
+    lda CC_TEMP1
+    jsr .cc_emit
+    pla
+    jsr .cc_emit
+    jmp .cc_ca_var_done2
+.cc_ca_var_done:
+    jsr .cc_next_token       ; consume ident
+.cc_ca_var_done2:
+    ; Shift mask right for next arg
+    pla                      ; var_mask
+    lsr a
+    pha
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_COMMA
+    bne .cc_ca_close
+    jsr .cc_next_token
+    jmp .cc_ca_arg_loop
+
+.cc_ca_var_err:
+    lda .cc_e_syntax
+    jmp .cc_error_a
+
+.cc_ca_val_arg:
+    ; Value param: parse as expression
     jsr .cc_parse_expression
     lda CC_ERROR
     bne .cc_ca_err
+    ; Shift mask right for next arg
+    pla                      ; var_mask
+    lsr a
+    pha
     lda CC_TOKEN_TYPE
     cmp CC_TK_COMMA
     bne .cc_ca_close
     jsr .cc_next_token
     jmp .cc_ca_arg_loop
 .cc_ca_close:
+    pla                      ; pop var_mask
     lda CC_TK_RPAREN
     jsr .cc_expect
 .cc_ca_no_args:
@@ -867,6 +1272,7 @@
     jsr .cc_emit
     rts
 .cc_ca_err:
+    pla                      ; pop var_mask (or whatever is on top)
     pla
     pla
     pla
@@ -910,8 +1316,6 @@
     rts
 
 .cc_parse_sub:
-    ; Parse one procedure or function declaration.
-    ; On entry: CC_TOKEN_TYPE = CC_TK_PROCEDURE or CC_TK_FUNCTION
     lda CC_TOKEN_TYPE
     cmp CC_TK_FUNCTION
     beq .cc_sub_func
@@ -921,13 +1325,16 @@
     sta CC_FOUND_KIND
     lda 0x00
     sta CC_IS_FUNC
+    sta CC_FUNC_RET
     jmp .cc_sub_common
 
 .cc_sub_func:
     lda CC_KIND_FUNC
     sta CC_FOUND_KIND
     lda 0x01
-    sta CC_IS_FUNC
+    sta CC_IS_FUNC           ; default int func; patched after seeing ': real'
+    lda 0x00
+    sta CC_FUNC_RET          ; default int return
 
 .cc_sub_common:
     ; Save compiler state on stack
@@ -939,6 +1346,8 @@
     pha
     lda CC_ENTER_HI
     pha
+    lda CC_FUNC_RET
+    pha                      ; save outer CC_FUNC_RET
 
     jsr .cc_next_token       ; consume 'procedure'/'function'
 
@@ -958,21 +1367,22 @@
     ; Enter new scope
     inc CC_SCOPE_LEVEL
 
-    ; Set frame offset (4 for func, 2 for proc)
+    ; Frame offset: 2 for proc, 4 for int func, set later for real func
     lda CC_IS_FUNC
     beq .cc_sub_frame_proc
-    lda 0x04
+    lda 0x04                 ; 2 static link + 2 int return value
     jmp .cc_sub_frame_set
 .cc_sub_frame_proc:
-    lda 0x02
+    lda 0x02                 ; 2 static link only
 .cc_sub_frame_set:
     sta CC_FRAME_OFF
 
     jsr .cc_next_token       ; consume name
 
-    ; Parse parameters: (a: integer; b: integer)
+    ; Parse parameters: (a: integer; var b: integer)
     lda 0x00
     sta CC_FOUND_ARG2        ; param counter
+    sta CC_FOUND_B14         ; var param bitmask accumulator
     lda CC_TOKEN_TYPE
     cmp CC_TK_LPAREN
     bne .cc_sub_no_params
@@ -981,8 +1391,30 @@
     lda CC_TOKEN_TYPE
     cmp CC_TK_RPAREN
     beq .cc_sub_params_done
+    cmp CC_TK_VAR
+    bne .cc_sub_param_novar
+    lda 0x01
+    sta CC_PARAM_VAR
+    jsr .cc_next_token       ; consume 'var'
+.cc_sub_param_novar:
+    lda CC_TOKEN_TYPE
     cmp CC_TK_IDENT
     bne .cc_sub_err
+    ; Build var param bitmask: set bit N if param N is var
+    lda CC_PARAM_VAR
+    beq .cc_sub_param_add
+    ; Set bit CC_FOUND_ARG2 in CC_FOUND_B14
+    lda 0x01
+    ldx CC_FOUND_ARG2
+    beq .cc_sub_bitmask_done
+.cc_sub_bitmask_shift:
+    asl a
+    dex
+    bne .cc_sub_bitmask_shift
+.cc_sub_bitmask_done:
+    ora CC_FOUND_B14
+    sta CC_FOUND_B14
+.cc_sub_param_add:
     jsr .cc_add_var
     inc CC_FOUND_ARG2
     jsr .cc_next_token       ; consume ident
@@ -993,20 +1425,51 @@
     beq .cc_sub_params_done
     cmp CC_TK_IDENT
     beq .cc_sub_param_loop
+    cmp CC_TK_SEMI
+    bne .cc_sub_ps_no_semi
+    lda 0x00
+    sta CC_PARAM_VAR         ; reset var flag for next param group
+.cc_sub_ps_no_semi:
     jsr .cc_next_token
     jmp .cc_sub_param_skip
 .cc_sub_params_done:
+    lda 0x00
+    sta CC_PARAM_VAR         ; reset var flag
     lda CC_TK_RPAREN
     jsr .cc_expect
 .cc_sub_no_params:
     lda CC_SAVED_SYMCNT
     jsr .cc_patch_sub_params
 
-    ; For functions, expect ': integer'
+    ; For functions, expect ': integer' or ': real'
     lda CC_IS_FUNC
     beq .cc_sub_expect_semi
     lda CC_TK_COLON
     jsr .cc_expect
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_REAL
+    bne .cc_sub_ret_int
+    ; Real return type
+    lda 0x02
+    sta CC_IS_FUNC           ; 2 = real function
+    sta CC_FUNC_RET
+    ; Adjust frame: need 6 bytes (2 static + 4 real return) instead of 4
+    ; Add 2 more to frame offset, and adjust all param offsets
+    lda CC_FRAME_OFF
+    clc
+    adc 0x02
+    sta CC_FRAME_OFF
+    ; Patch the symbol table entry byte 15 for this function
+    lda CC_SAVED_SYMCNT
+    jsr .cc_sym_addr
+    ldx 0x0F
+    lda 0x02
+    sta yde,x                ; byte 15 = 2 (real return)
+    ; Also need to shift all param offsets by +2
+    jsr .cc_shift_param_offsets
+    jsr .cc_next_token       ; consume 'real'
+    jmp .cc_sub_expect_semi
+.cc_sub_ret_int:
     lda CC_TK_INTEGER
     jsr .cc_expect
 .cc_sub_expect_semi:
@@ -1014,6 +1477,13 @@
     jsr .cc_expect
     lda CC_ERROR
     bne .cc_sub_restore
+
+    ; Parse optional local const block
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_CONST
+    bne .cc_sub_no_lconst
+    jsr .cc_parse_const
+.cc_sub_no_lconst:
 
     ; Parse optional local var block
     lda CC_TOKEN_TYPE
@@ -1058,9 +1528,9 @@
     jsr .cc_expect
 
 .cc_sub_restore:
-    ; Restore compiler state
     dec CC_SCOPE_LEVEL
-    ; Remove local symbols (restore count to saved value)
+    pla
+    sta CC_FUNC_RET          ; restore outer CC_FUNC_RET
     pla
     sta CC_ENTER_HI
     pla
@@ -1068,14 +1538,9 @@
     pla
     sta CC_FRAME_OFF
     pla
-    sta CC_SYM_COUNT         ; discard locals, keep subroutine entry
-    ; Re-add the subroutine entry count (saved before push)
-    ; Actually: the subroutine was added BEFORE we pushed old SYM_COUNT.
-    ; We pushed old count (before add_sub), so restoring removes the sub entry too.
-    ; Fix: we need to keep the sub entry. Increment by 1.
+    sta CC_SYM_COUNT
     inc CC_SYM_COUNT
 
-    ; Clear is_func flag
     lda 0x00
     sta CC_IS_FUNC
     rts
@@ -1110,24 +1575,49 @@
     rts
 
 .cc_expr_rel:
-    pha                      ; save operator token type
+    lda CC_EXPR_TYPE
+    pha                      ; save left type
+    lda CC_TOKEN_TYPE
+    pha                      ; save operator
     jsr .cc_next_token       ; consume operator
     jsr .cc_parse_simple_expr
-    pla
-    pha
+    pla                      ; operator
+    sta CC_TEMP3
     lda CC_ERROR
-    bne .cc_expr_rel_err
+    bne .cc_expr_rel_pop1
 
-    ; Emit comparison opcode
-    pla
+    pla                      ; left type → A
+    cmp CC_EXPR_TYPE
+    bne .cc_expr_fcmp_mixed
+    cmp 0x01
+    beq .cc_expr_fcmp        ; both real
+    jmp .cc_expr_int_cmp     ; both int
+
+.cc_expr_fcmp_mixed:
+    jsr .cc_coerce_binop     ; make both real
+.cc_expr_fcmp:
+    lda PM_OP_FCMP
+    jsr .cc_emit
+    lda PM_OP_LIT16
+    jsr .cc_emit
+    lda 0x00
+    jsr .cc_emit
+    lda 0x00
+    jsr .cc_emit
+    ; FCMP result is integer, compared with 0
+
+.cc_expr_int_cmp:
+    lda CC_TEMP3
     sec
-    sbc CC_TK_EQ             ; normalize to 0-based
+    sbc CC_TK_EQ
     tax
     lda .cc_relop_table,x
     jsr .cc_emit
+    lda 0x00
+    sta CC_EXPR_TYPE         ; comparisons always produce integer
     rts
 
-.cc_expr_rel_err:
+.cc_expr_rel_pop1:
     pla
 .cc_expr_done:
     rts
@@ -1146,7 +1636,6 @@
     lda CC_ERROR
     bne .cc_se_done
 
-    ; Check for leading + or -
     lda CC_TOKEN_TYPE
     cmp CC_TK_MINUS
     beq .cc_se_neg
@@ -1161,7 +1650,13 @@
     jsr .cc_parse_term
     lda CC_ERROR
     bne .cc_se_done
+    lda CC_EXPR_TYPE
+    bne .cc_se_fneg
     lda PM_OP_NEG
+    jsr .cc_emit
+    jmp .cc_se_loop
+.cc_se_fneg:
+    lda PM_OP_FNEG
     jsr .cc_emit
     jmp .cc_se_loop
 
@@ -1182,36 +1677,60 @@
     rts
 
 .cc_se_add:
+    lda CC_EXPR_TYPE
+    pha                      ; save left type
     jsr .cc_next_token
     jsr .cc_parse_term
     lda CC_ERROR
-    bne .cc_se_done
+    bne .cc_se_pop_done
+    pla                      ; left type
+    jsr .cc_coerce_binop
+    lda CC_EXPR_TYPE
+    bne .cc_se_fadd
     lda PM_OP_ADD
+    jsr .cc_emit
+    jmp .cc_se_loop
+.cc_se_fadd:
+    lda PM_OP_FADD
     jsr .cc_emit
     jmp .cc_se_loop
 
 .cc_se_sub:
+    lda CC_EXPR_TYPE
+    pha
     jsr .cc_next_token
     jsr .cc_parse_term
     lda CC_ERROR
-    bne .cc_se_done
+    bne .cc_se_pop_done
+    pla
+    jsr .cc_coerce_binop
+    lda CC_EXPR_TYPE
+    bne .cc_se_fsub
     lda PM_OP_SUB
+    jsr .cc_emit
+    jmp .cc_se_loop
+.cc_se_fsub:
+    lda PM_OP_FSUB
     jsr .cc_emit
     jmp .cc_se_loop
 
 .cc_se_or:
+    jsr .cc_ensure_int       ; left → int before parsing right
     jsr .cc_next_token
     jsr .cc_parse_term
     lda CC_ERROR
     bne .cc_se_done
+    jsr .cc_ensure_int       ; right → int
     lda PM_OP_OR
     jsr .cc_emit
     jmp .cc_se_loop
 
+.cc_se_pop_done:
+    pla
 .cc_se_done:
     rts
 
-; ── Term (*, div, mod, and) ──────────────────────────────
+; ── Term (*, /, div, mod, and) ───────────────────────────
 
 .cc_parse_term:
     lda CC_ERROR
@@ -1224,6 +1743,8 @@
     lda CC_TOKEN_TYPE
     cmp CC_TK_STAR
     beq .cc_tm_mul
+    cmp CC_TK_SLASH
+    beq .cc_tm_slash
     cmp CC_TK_DIV
     beq .cc_tm_div
     cmp CC_TK_MOD
@@ -1233,41 +1754,75 @@
     rts
 
 .cc_tm_mul:
+    lda CC_EXPR_TYPE
+    pha
     jsr .cc_next_token
     jsr .cc_parse_factor
     lda CC_ERROR
-    bne .cc_tm_done
+    bne .cc_tm_pop_done
+    pla
+    jsr .cc_coerce_binop
+    lda CC_EXPR_TYPE
+    bne .cc_tm_fmul
     lda PM_OP_MUL
     jsr .cc_emit
     jmp .cc_tm_loop
+.cc_tm_fmul:
+    lda PM_OP_FMUL
+    jsr .cc_emit
+    jmp .cc_tm_loop
+
+.cc_tm_slash:
+    ; '/' always produces real result
+    lda CC_EXPR_TYPE
+    pha
+    jsr .cc_next_token
+    jsr .cc_parse_factor
+    lda CC_ERROR
+    bne .cc_tm_pop_done
+    pla
+    jsr .cc_coerce_both_real
+    lda PM_OP_FDIV
+    jsr .cc_emit
+    lda 0x01
+    sta CC_EXPR_TYPE
+    jmp .cc_tm_loop
 
 .cc_tm_div:
+    jsr .cc_ensure_int       ; left → int
     jsr .cc_next_token
     jsr .cc_parse_factor
     lda CC_ERROR
     bne .cc_tm_done
+    jsr .cc_ensure_int       ; right → int
     lda PM_OP_DIV
     jsr .cc_emit
     jmp .cc_tm_loop
 
 .cc_tm_mod:
+    jsr .cc_ensure_int
     jsr .cc_next_token
     jsr .cc_parse_factor
     lda CC_ERROR
     bne .cc_tm_done
+    jsr .cc_ensure_int
     lda PM_OP_MOD
     jsr .cc_emit
     jmp .cc_tm_loop
 
 .cc_tm_and:
+    jsr .cc_ensure_int
     jsr .cc_next_token
     jsr .cc_parse_factor
     lda CC_ERROR
     bne .cc_tm_done
+    jsr .cc_ensure_int
     lda PM_OP_AND
     jsr .cc_emit
     jmp .cc_tm_loop
 
+.cc_tm_pop_done:
+    pla
 .cc_tm_done:
     rts
 
@@ -1280,25 +1835,53 @@
 
     cmp CC_TK_NUMBER
     beq .cc_fc_number
+    cmp CC_TK_FLOAT_LIT
+    beq .cc_fc_float
     cmp CC_TK_IDENT
     beq .cc_fc_ident
     cmp CC_TK_LPAREN
     beq .cc_fc_paren
     cmp CC_TK_NOT
     beq .cc_fc_not
+    cmp CC_TK_ORD
+    beq .cc_fc_ord
+    cmp CC_TK_CHR
+    beq .cc_fc_chr
+    cmp CC_TK_ABS
+    beq .cc_fc_abs
+    cmp CC_TK_ODD
+    beq .cc_fc_odd
 
     ; Unexpected token
     lda .cc_e_expr
     jmp .cc_error_a
 
 .cc_fc_number:
-    ; Always emit LIT16 (P-Machine uses 16-bit eval stack values)
     lda PM_OP_LIT16
     jsr .cc_emit
     lda CC_TOKEN_NUM_LO
     jsr .cc_emit
     lda CC_TOKEN_NUM_HI
     jsr .cc_emit
+    lda 0x00
+    sta CC_EXPR_TYPE         ; integer
+    jsr .cc_next_token
+    rts
+
+.cc_fc_float:
+    ; Emit FLIT + 4 bytes from FLOAT1 (set by lexer)
+    lda PM_OP_FLIT
+    jsr .cc_emit
+    lda FLOAT1
+    jsr .cc_emit
+    lda FLOAT1+1
+    jsr .cc_emit
+    lda FLOAT1+2
+    jsr .cc_emit
+    lda FLOAT1+3
+    jsr .cc_emit
+    lda 0x01
+    sta CC_EXPR_TYPE         ; real
     jsr .cc_next_token
     rts
 
@@ -1306,32 +1889,94 @@
     jsr .cc_find_sym
     bcs .cc_fc_undef
     lda CC_FOUND_KIND
+    cmp CC_KIND_CONST
+    beq .cc_fc_const
     cmp CC_KIND_FUNC
     beq .cc_fc_func_call
     cmp CC_KIND_ARRAY
     beq .cc_fc_arr
-    lda CC_FOUND_B10         ; offset (from cc_find_sym above)
-    pha                      ; save offset
+    ; Check if var param (byte 14)
+    lda CC_FOUND_B14
+    bne .cc_fc_var_param
+    lda CC_FOUND_B15
+    sta CC_EXPR_TYPE         ; set expression type from variable type
+    lda CC_FOUND_B10         ; offset
+    pha
     lda CC_SCOPE_LEVEL
     sec
     sbc CC_FOUND_SCOPE
-    pha                      ; save level_diff
+    pha
     jsr .cc_next_token       ; consume ident
+    lda CC_EXPR_TYPE
+    bne .cc_fc_real_var
     lda PM_OP_LOAD_L
     sta CC_TEMP2
     lda PM_OP_LOAD
     jmp .cc_emit_scoped
-.cc_fc_func_call:
-    jsr .cc_next_token       ; consume identifier
-    jsr .cc_call_args        ; parse args and emit CALL
-    rts
-.cc_fc_arr:
-    lda CC_FOUND_B10         ; adjusted_base (from cc_find_sym above)
-    pha                      ; save adjusted_base
+.cc_fc_real_var:
+    lda PM_OP_FLOAD_L
+    sta CC_TEMP2
+    lda PM_OP_FLOAD
+    jmp .cc_emit_scoped
+.cc_fc_var_param:
+    lda 0x00
+    sta CC_EXPR_TYPE         ; var params are always integer
+    lda CC_FOUND_B10         ; offset
+    pha
     lda CC_SCOPE_LEVEL
     sec
     sbc CC_FOUND_SCOPE
-    pha                      ; save level_diff
+    pha
+    jsr .cc_next_token       ; consume ident
+    pla                      ; level_diff
+    beq .cc_fc_vp_local
+    pha
+    lda PM_OP_LOAD_L
+    sta CC_TEMP2
+    lda PM_OP_LOAD_REF
+    jmp .cc_emit_scoped
+.cc_fc_vp_local:
+    lda PM_OP_LOAD_REF
+    jsr .cc_emit
+    pla                      ; offset
+    jsr .cc_emit
+    rts
+.cc_fc_const:
+    lda PM_OP_LIT16
+    jsr .cc_emit
+    lda CC_FOUND_B10         ; value low (byte 10)
+    jsr .cc_emit
+    lda CC_FOUND_ARG1        ; value high (byte 11)
+    jsr .cc_emit
+    lda 0x00
+    sta CC_EXPR_TYPE         ; constants are always integer
+    jsr .cc_next_token
+    rts
+.cc_fc_func_call:
+    ; CC_FOUND_B15 has return type (0=int, 2=real)
+    ; Save return type on stack — cc_call_args overwrites CC_EXPR_TYPE
+    lda CC_FOUND_B15
+    pha
+    jsr .cc_next_token       ; consume identifier
+    jsr .cc_call_args
+    pla                      ; return type (0=int, 2=real)
+    beq .cc_fc_func_int_ret
+    lda 0x01
+    sta CC_EXPR_TYPE         ; real function
+    rts
+.cc_fc_func_int_ret:
+    lda 0x00
+    sta CC_EXPR_TYPE         ; integer function
+    rts
+.cc_fc_arr:
+    lda 0x00
+    sta CC_EXPR_TYPE         ; arrays are always integer
+    lda CC_FOUND_B10         ; adjusted_base
+    pha
+    lda CC_SCOPE_LEVEL
+    sec
+    sbc CC_FOUND_SCOPE
+    pha
     jsr .cc_next_token       ; consume ident
     lda CC_TK_LBRACKET
     jsr .cc_expect
@@ -1361,11 +2006,98 @@
     jsr .cc_expect
     rts
 
+.cc_fc_ord:
+    jsr .cc_next_token       ; consume 'ord'
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_fc_done
+    ; Expect a single-char string literal
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_STRING
+    bne .cc_fc_ord_expr
+    lda CC_TOKEN_LEN
+    cmp 0x01
+    bne .cc_fc_ord_expr
+    ; Single char: emit LIT16 with ASCII value
+    lda PM_OP_LIT16
+    jsr .cc_emit
+    lda CC_TOKEN_BUF         ; first byte = ASCII value
+    jsr .cc_emit
+    lda 0x00
+    jsr .cc_emit
+    jsr .cc_next_token       ; consume string
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    rts
+.cc_fc_ord_expr:
+    ; Non-string: just evaluate expression (already integer = identity)
+    jsr .cc_parse_expression
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    rts
+
+.cc_fc_chr:
+    ; chr(expr) as standalone expression: evaluate arg (result is integer)
+    jsr .cc_next_token       ; consume 'chr'
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_fc_done
+    jsr .cc_parse_expression
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    rts
+
+.cc_fc_abs:
+    jsr .cc_next_token       ; consume 'abs'
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_fc_done
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_fc_done
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    lda CC_EXPR_TYPE
+    bne .cc_fc_fabs
+    lda PM_OP_ABS
+    jsr .cc_emit
+    rts
+.cc_fc_fabs:
+    lda PM_OP_FABS
+    jsr .cc_emit
+    rts
+
+.cc_fc_odd:
+    jsr .cc_next_token       ; consume 'odd'
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_fc_done
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_fc_done
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    jsr .cc_ensure_int       ; FTOI if real
+    lda PM_OP_LIT16
+    jsr .cc_emit
+    lda 0x02
+    jsr .cc_emit
+    lda 0x00
+    jsr .cc_emit
+    lda PM_OP_MOD
+    jsr .cc_emit
+    rts
+
 .cc_fc_not:
     jsr .cc_next_token       ; consume 'not'
     jsr .cc_parse_factor
     lda CC_ERROR
     bne .cc_fc_done
+    jsr .cc_ensure_int       ; FTOI if real
     lda PM_OP_NOT
     jsr .cc_emit
 .cc_fc_done:
@@ -1444,6 +2176,105 @@
     jmp .cc_nt_num_loop
 
 .cc_nt_num_done:
+    jsr .cc_peek_char
+    cmp 0x2E                 ; '.'
+    bne .cc_nt_num_int
+    ; Could be float literal or '..' range operator
+    ; Save integer part, peek ahead
+    jsr .cc_next_char        ; consume '.'
+    jsr .cc_peek_char
+    cmp 0x2E                 ; '..' → dotdot, not float
+    beq .cc_nt_num_dotdot
+    ; Float literal: integer part already in CC_TOKEN_NUM_LO/HI
+    ; Convert integer part to float
+    lda CC_TOKEN_NUM_LO
+    ldx CC_TOKEN_NUM_HI
+    jsr INT_TO_FLOAT         ; FLOAT1 = integer part
+    ; Save integer-part float
+    lda FLOAT1
+    sta FR_TMP
+    lda FLOAT1+1
+    sta FR_TMP+1
+    lda FLOAT1+2
+    sta FR_TMP+2
+    lda FLOAT1+3
+    sta FR_TMP+3
+    ; Parse fractional digits
+    lda 0x00
+    sta CC_TOKEN_NUM_LO
+    sta CC_TOKEN_NUM_HI
+    sta FR_FRAC_CNT
+.cc_nt_frac_loop:
+    jsr .cc_peek_char
+    cmp 0x30
+    bcc .cc_nt_frac_done
+    cmp 0x3A
+    bcs .cc_nt_frac_done
+    sec
+    sbc 0x30
+    pha
+    lda CC_TOKEN_NUM_LO
+    sta MATH16_A
+    lda CC_TOKEN_NUM_HI
+    sta MATH16_A+1
+    lda 0x0A
+    sta MATH16_B
+    lda 0x00
+    sta MATH16_B+1
+    jsr MUL16S
+    pla
+    clc
+    adc MATH16_A
+    sta CC_TOKEN_NUM_LO
+    lda MATH16_A+1
+    adc 0x00
+    sta CC_TOKEN_NUM_HI
+    inc FR_FRAC_CNT
+    jsr .cc_next_char
+    jmp .cc_nt_frac_loop
+.cc_nt_frac_done:
+    ; Convert fractional integer to float
+    lda CC_TOKEN_NUM_LO
+    ldx CC_TOKEN_NUM_HI
+    jsr INT_TO_FLOAT         ; FLOAT1 = fractional digits
+    ; Multiply by 0.1 for each fractional digit
+    lda FR_FRAC_CNT
+    beq .cc_nt_frac_add
+    lda 0xCD
+    sta FLOAT2
+    lda 0xCC
+    sta FLOAT2+1
+    lda 0xCC
+    sta FLOAT2+2
+    lda 0x3D
+    sta FLOAT2+3
+    lda FR_FRAC_CNT
+.cc_nt_frac_div:
+    pha
+    jsr FLOAT_MUL
+    pla
+    sec
+    sbc 0x01
+    bne .cc_nt_frac_div
+.cc_nt_frac_add:
+    ; Add integer part (in FR_TMP) + fractional part (in FLOAT1)
+    lda FR_TMP
+    sta FLOAT2
+    lda FR_TMP+1
+    sta FLOAT2+1
+    lda FR_TMP+2
+    sta FLOAT2+2
+    lda FR_TMP+3
+    sta FLOAT2+3
+    jsr FLOAT_ADD            ; FLOAT1 = complete float value
+    lda CC_TK_FLOAT_LIT
+    sta CC_TOKEN_TYPE
+    rts
+.cc_nt_num_dotdot:
+    ; First '.' was consumed by cc_next_char; second '.' was only peeked.
+    ; Un-consume the first '.' so next token scan sees '..'
+    dec CC_SRC_COL
+.cc_nt_num_int:
     lda CC_TK_NUMBER
     sta CC_TOKEN_TYPE
     rts
@@ -1537,6 +2368,76 @@
     jsr .cc_emit             ; offset
     rts
 
+; ── Type coercion helpers ───────────────────────────────
+
+.cc_ensure_int:
+    ; If CC_EXPR_TYPE = 1 (real), emit FTOI and set to 0.
+    lda CC_EXPR_TYPE
+    beq .cc_ei_done
+    lda PM_OP_FTOI
+    jsr .cc_emit
+    lda 0x00
+    sta CC_EXPR_TYPE
+.cc_ei_done:
+    rts
+
+.cc_ensure_real:
+    ; If CC_EXPR_TYPE = 0 (int), emit ITOF and set to 1.
+    lda CC_EXPR_TYPE
+    bne .cc_er_done
+    lda PM_OP_ITOF
+    jsr .cc_emit
+    lda 0x01
+    sta CC_EXPR_TYPE
+.cc_er_done:
+    rts
+
+.cc_coerce_binop:
+    ; Coerce binary op operands. A = left type, CC_EXPR_TYPE = right type.
+    ; Stack: left(2 or 4B), right(2 or 4B).
+    ; If both same → nothing.
+    ; If left=int, right=real → ITOF_SWAP (convert left under right).
+    ; If left=real, right=int → ITOF (convert right on top).
+    ; Sets CC_EXPR_TYPE to result type.
+    cmp CC_EXPR_TYPE
+    beq .cc_cb_done          ; same types
+    cmp 0x01
+    beq .cc_cb_left_real
+    ; left=int, right=real → ITOF_SWAP
+    lda PM_OP_ITOF_SWAP
+    jsr .cc_emit
+    lda 0x01
+    sta CC_EXPR_TYPE
+    rts
+.cc_cb_left_real:
+    ; left=real, right=int → ITOF
+    lda PM_OP_ITOF
+    jsr .cc_emit
+    lda 0x01
+    sta CC_EXPR_TYPE
+.cc_cb_done:
+    rts
+
+.cc_coerce_both_real:
+    ; Ensure both operands are real. A = left type, CC_EXPR_TYPE = right type.
+    ; Used for '/' operator.
+    cmp CC_EXPR_TYPE
+    bne .cc_cbr_mixed
+    cmp 0x01
+    beq .cc_cbr_done         ; both real
+    ; Both int → convert right then left
+    lda PM_OP_ITOF
+    jsr .cc_emit
+    lda PM_OP_ITOF_SWAP
+    jsr .cc_emit
+    lda 0x01
+    sta CC_EXPR_TYPE
+    rts
+.cc_cbr_mixed:
+    jmp .cc_coerce_binop
+.cc_cbr_done:
+    rts
+
 .cc_patch_enter:
     ; Patch ENTER frame_size at CC_ENTER_LO:HI with CC_FRAME_OFF
     lda CC_ENTER_LO
@@ -1562,6 +2463,8 @@
     beq .cc_op_minus
     cmp 0x2A                 ; '*'
     beq .cc_op_star
+    cmp 0x2F                 ; '/'
+    beq .cc_op_slash
     cmp 0x28                 ; '('
     beq .cc_op_lparen
     cmp 0x29                 ; ')'
@@ -1599,6 +2502,10 @@
     rts
 .cc_op_star:
     lda CC_TK_STAR
+    sta CC_TOKEN_TYPE
+    rts
+.cc_op_slash:
+    lda CC_TK_SLASH
     sta CC_TOKEN_TYPE
     rts
 .cc_op_lparen:
@@ -1960,7 +2867,8 @@
 
 .cc_add_var:
     ; Add scalar variable to symbol table from CC_TOKEN_BUF.
-    ; Allocates 2 bytes in frame.
+    ; CC_VAR_TYPE: 0=integer (2 bytes), 1=real (4 bytes).
+    ; CC_PARAM_VAR = var param flag.
     lda CC_SYM_COUNT
     jsr .cc_sym_addr
     jsr .cc_sym_write_name   ; X=8
@@ -1972,9 +2880,34 @@
     inx
     lda CC_FRAME_OFF
     sta yde,x                ; byte 10: offset
+    inx
+    lda 0x00
+    sta yde,x                ; byte 11: unused
+    inx
+    sta yde,x                ; byte 12: unused
+    inx
+    sta yde,x                ; byte 13: unused
+    inx
+    lda CC_PARAM_VAR
+    sta yde,x                ; byte 14: var param flag
+    inx
+    lda CC_VAR_TYPE
+    sta yde,x                ; byte 15: var type (0=int, 1=real)
+    ; Allocate frame space: 2 for int, 4 for real (var params always 2)
+    lda CC_PARAM_VAR
+    bne .cc_av_ptr
+    lda CC_VAR_TYPE
+    bne .cc_av_real
+.cc_av_ptr:
     lda CC_FRAME_OFF
     clc
     adc 0x02
+    jmp .cc_av_set
+.cc_av_real:
+    lda CC_FRAME_OFF
+    clc
+    adc 0x04
+.cc_av_set:
     sta CC_FRAME_OFF
     inc CC_SYM_COUNT
     rts
@@ -2003,6 +2936,12 @@
     inx
     lda CC_SCOPE_LEVEL
     sta yde,x                ; byte 13: definition_level
+    inx
+    lda 0x00
+    sta yde,x                ; byte 14: var_param_mask (patched later)
+    inx
+    lda CC_FUNC_RET
+    sta yde,x                ; byte 15: return type (0=int proc, 0=int func, 2=real func)
     inc CC_SYM_COUNT
     rts
 
@@ -2040,12 +2979,77 @@
     rts
 
 .cc_patch_sub_params:
-    ; Patch param_count for the subroutine at symbol index A.
-    ; Input: A = symbol index, CC_FOUND_ARG2 = param count
+    ; Patch param_count and var_param_mask for the subroutine at symbol index A.
+    ; Input: A = symbol index, CC_FOUND_ARG2 = param count, CC_FOUND_B14 = var mask
     jsr .cc_sym_addr
     ldx 0x0C                 ; byte 12
     lda CC_FOUND_ARG2
     sta yde,x
+    inx
+    inx                      ; byte 14
+    lda CC_FOUND_B14
+    sta yde,x
+    rts
+
+.cc_shift_param_offsets:
+    ; Shift all parameter offsets by +2 (from CC_SAVED_SYMCNT+1 to CC_SYM_COUNT-1)
+    lda CC_SAVED_SYMCNT
+    clc
+    adc 0x01
+.cc_spo_loop:
+    cmp CC_SYM_COUNT
+    bcs .cc_spo_done
+    pha
+    jsr .cc_sym_addr
+    ldx 0x0A
+    lda yde,x
+    clc
+    adc 0x02
+    sta yde,x                ; byte 10: offset += 2
+    pla
+    clc
+    adc 0x01
+    jmp .cc_spo_loop
+.cc_spo_done:
+    rts
+
+.cc_repatch_real:
+    ; Re-patch variables from index A to CC_SYM_COUNT-1 as real type.
+    ; Fixes byte 15 (type=1) and recalculates offsets (4 bytes each).
+    sta CC_TEMP3             ; start index
+    ; Compute original frame base = current frame - n*2
+    lda CC_SYM_COUNT
+    sec
+    sbc CC_TEMP3             ; n = number of vars in batch
+    asl a                    ; n * 2
+    sta CC_TEMP1
+    lda CC_FRAME_OFF
+    sec
+    sbc CC_TEMP1             ; base_off = frame_off - n*2
+    sta CC_TEMP1             ; CC_TEMP1 = running offset
+    lda CC_TEMP3             ; current index
+.cc_rpr_loop:
+    cmp CC_SYM_COUNT
+    bcs .cc_rpr_done
+    pha
+    jsr .cc_sym_addr
+    ldx 0x0A
+    lda CC_TEMP1
+    sta yde,x                ; byte 10: new offset
+    ldx 0x0F
+    lda 0x01
+    sta yde,x                ; byte 15: type = real
+    lda CC_TEMP1
+    clc
+    adc 0x04
+    sta CC_TEMP1
+    pla
+    clc
+    adc 0x01
+    jmp .cc_rpr_loop
+.cc_rpr_done:
+    lda CC_TEMP1
+    sta CC_FRAME_OFF
     rts
 
 .cc_find_sym:
@@ -2105,6 +3109,12 @@
     inx
     lda yde,x
     sta CC_FOUND_ARG3        ; byte 13
+    inx
+    lda yde,x
+    sta CC_FOUND_B14         ; byte 14: var param flag
+    inx
+    lda yde,x
+    sta CC_FOUND_B15         ; byte 15: type (0=int, 1=real; func: 0/2)
     lda CC_FOUND_B10         ; A = byte 10
     clc
     rts
@@ -2489,6 +3499,7 @@
 .cc_e_expect  = 5
 .cc_e_expr    = 6
 .cc_e_string  = 7
+.cc_e_const   = 8
 
 .cc_errtab_lo:
     #d .cc_em0[7:0]
@@ -2499,6 +3510,7 @@
     #d .cc_em4[7:0]
     #d .cc_em6[7:0]
     #d .cc_em7[7:0]
+    #d .cc_em8[7:0]
 
 .cc_errtab_hi:
     #d .cc_em0[15:8]
@@ -2509,6 +3521,7 @@
     #d .cc_em4[15:8]
     #d .cc_em6[15:8]
     #d .cc_em7[15:8]
+    #d .cc_em8[15:8]
 
 ; ── Keyword table ────────────────────────────────────────
 
@@ -2538,6 +3551,14 @@
     #d "function", 0x00, CC_TK_FUNCTION
     #d "array", 0x00, CC_TK_ARRAY
     #d "of", 0x00, CC_TK_OF
+    #d "const", 0x00, CC_TK_CONST
+    #d "repeat", 0x00, CC_TK_REPEAT
+    #d "until", 0x00, CC_TK_UNTIL
+    #d "chr", 0x00, CC_TK_CHR
+    #d "ord", 0x00, CC_TK_ORD
+    #d "abs", 0x00, CC_TK_ABS
+    #d "odd", 0x00, CC_TK_ODD
+    #d "real", 0x00, CC_TK_REAL
     #d 0x00                  ; sentinel
 
 ; ── Compiler strings ─────────────────────────────────────
@@ -2559,3 +3580,5 @@
     #d "exp expr", 0x00
 .cc_em7:
     #d "bad string", 0x00
+.cc_em8:
+    #d "const assign", 0x00

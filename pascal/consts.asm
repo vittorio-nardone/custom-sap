@@ -80,6 +80,28 @@
 #const PM_OP_STORE_A= 0x1D  ; adjusted_base — store array element (FP-relative)
 #const PM_OP_LOAD_AL= 0x1E  ; depth, adjusted_base — load array element via static chain
 #const PM_OP_STORE_AL=0x1F  ; depth, adjusted_base — store array element via static chain
+#const PM_OP_ABS    = 0x20  ; pop a16, push abs(a)
+#const PM_OP_LOAD_REF  = 0x21  ; offset — load via reference (indirect through frame pointer)
+#const PM_OP_STORE_REF = 0x22  ; offset — store via reference
+#const PM_OP_PUSH_ADDR = 0x23  ; offset — push FP+offset as address
+#const PM_OP_PUSH_ADDR_L=0x24  ; depth, offset — push target_FP+offset via static chain
+
+; --- Float opcodes (0x30-0x3C) --------------------------------
+#const PM_OP_FLIT    = 0x30  ; push 4-byte IEEE 754 float literal
+#const PM_OP_FLOAD   = 0x31  ; load 4-byte float from FP+offset
+#const PM_OP_FSTORE  = 0x32  ; pop and store 4-byte float to FP+offset
+#const PM_OP_FADD    = 0x33  ; pop b(4B), pop a(4B), push a+b
+#const PM_OP_FSUB    = 0x34  ; pop b(4B), pop a(4B), push a-b
+#const PM_OP_FMUL    = 0x35  ; pop b(4B), pop a(4B), push a*b
+#const PM_OP_FDIV    = 0x36  ; pop b(4B), pop a(4B), push a/b
+#const PM_OP_FNEG    = 0x37  ; pop float(4B), flip sign, push
+#const PM_OP_ITOF    = 0x38  ; pop int16(2B), convert to float, push float(4B)
+#const PM_OP_FTOI    = 0x39  ; pop float(4B), truncate to int, push int16(2B)
+#const PM_OP_FCMP    = 0x3A  ; pop b(4B), pop a(4B), push int16 (-1/0/1)
+#const PM_OP_FLOAD_L = 0x3B  ; depth, offset — load float via static chain
+#const PM_OP_FSTORE_L= 0x3C  ; depth, offset — store float via static chain
+#const PM_OP_FABS    = 0x3D  ; pop float(4B), clear sign, push float(4B)
+#const PM_OP_ITOF_SWAP = 0x3E ; swap: pop float(4B), pop int(2B), convert int→float, push both back
 
 ; ============================================================
 ; CSP STANDARD PROCEDURE NUMBERS
@@ -90,6 +112,10 @@
 #const PM_CSP_WRITE_INT     = 0x03  ; write(integer) — decimal output
 #const PM_CSP_WRITELN_INT   = 0x04  ; writeln(integer) — decimal + newline
 #const PM_CSP_READLN_INT    = 0x05  ; readln(integer) — read decimal, push on eval stack
+#const PM_CSP_WRITE_CHAR    = 0x06  ; write(chr(expr)) — pop 16-bit, print low byte as char
+#const PM_CSP_WRITE_REAL    = 0x07  ; write(real) — pop float(4B), print decimal
+#const PM_CSP_WRITELN_REAL  = 0x08  ; writeln(real) — pop float(4B), print + newline
+#const PM_CSP_READLN_REAL   = 0x09  ; readln(real) — read float, push float(4B)
 
 ; ============================================================
 ; EDITOR CONSTANTS
@@ -169,12 +195,19 @@
 #const CC_IS_FUNC     = 0xB179  ; current subroutine is function flag
 #const CC_SAVED_SYMCNT= 0xB17A  ; saved symbol count before entering sub scope
 #const CC_FOUND_B10   = 0xB11F  ; byte 10 from cc_find_sym (before ED_LINE_BUF)
+#const CC_FOUND_B14   = 0xB17B  ; byte 14 from cc_find_sym (var param flag, reuses ED_LINE_COUNT)
+#const CC_FOUND_B15   = 0xB170  ; byte 15 from cc_find_sym (var type: 0=int, 1=real; func ret: 0/2)
+#const CC_PARAM_VAR   = 0xB17C  ; temp: current param is var (during param parsing, reuses ED_CUR_LINE)
+#const CC_EXPR_TYPE   = 0xB17D  ; expression type: 0=integer, 1=real
+#const CC_VAR_TYPE    = 0xB17E  ; current var block type: 0=integer, 1=real
+#const CC_FUNC_RET    = 0xB17F  ; function return type: 0=integer, 2=real (matches is_func encoding)
 
 ; Symbol kind constants
 #const CC_KIND_SCALAR = 0x00
 #const CC_KIND_ARRAY  = 0x01
 #const CC_KIND_PROC   = 0x02
 #const CC_KIND_FUNC   = 0x03
+#const CC_KIND_CONST  = 0x04
 
 ; Token string buffer (32 bytes)
 #const CC_TOKEN_BUF   = 0xB180
@@ -203,6 +236,8 @@
 #const CC_TK_LBRACKET = 0x14
 #const CC_TK_RBRACKET = 0x15
 #const CC_TK_DOTDOT   = 0x16
+#const CC_TK_SLASH    = 0x17
+#const CC_TK_FLOAT_LIT= 0x18
 ; Keywords (0x40+)
 #const CC_TK_PROGRAM  = 0x40
 #const CC_TK_BEGIN    = 0x41
@@ -229,6 +264,14 @@
 #const CC_TK_FUNCTION = 0x56
 #const CC_TK_ARRAY    = 0x57
 #const CC_TK_OF       = 0x58
+#const CC_TK_CONST    = 0x59
+#const CC_TK_REPEAT   = 0x5A
+#const CC_TK_UNTIL    = 0x5B
+#const CC_TK_CHR      = 0x5C
+#const CC_TK_ORD      = 0x5D
+#const CC_TK_ABS      = 0x5E
+#const CC_TK_ODD      = 0x5F
+#const CC_TK_REAL     = 0x60
 
 ; Expansion RAM page 2 layout (compiler workspace)
 #const CC_WS_PAGE     = 0x02

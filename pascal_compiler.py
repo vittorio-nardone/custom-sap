@@ -22,6 +22,7 @@ Usage:
 import sys
 import os
 import re
+import struct
 import argparse
 from enum import Enum, auto
 from dataclasses import dataclass, field
@@ -61,6 +62,25 @@ OP_LOAD_A  = 0x1C
 OP_STORE_A = 0x1D
 OP_LOAD_AL = 0x1E
 OP_STORE_AL= 0x1F
+OP_ABS     = 0x20
+OP_LOAD_REF  = 0x21
+OP_STORE_REF = 0x22
+OP_PUSH_ADDR = 0x23
+OP_PUSH_ADDR_L = 0x24
+OP_FLIT      = 0x30
+OP_FLOAD     = 0x31
+OP_FSTORE    = 0x32
+OP_FADD      = 0x33
+OP_FSUB      = 0x34
+OP_FMUL      = 0x35
+OP_FDIV      = 0x36
+OP_FNEG      = 0x37
+OP_ITOF      = 0x38
+OP_FTOI      = 0x39
+OP_FCMP      = 0x3A
+OP_FLOAD_L   = 0x3B
+OP_FSTORE_L  = 0x3C
+OP_FABS      = 0x3D
 
 CSP_WRITE         = 0x00
 CSP_WRITELN       = 0x01
@@ -68,6 +88,10 @@ CSP_WRITELN_NOARG = 0x02
 CSP_WRITE_INT     = 0x03
 CSP_WRITELN_INT   = 0x04
 CSP_READLN_INT    = 0x05
+CSP_WRITE_CHAR    = 0x06
+CSP_WRITE_REAL    = 0x07
+CSP_WRITELN_REAL  = 0x08
+CSP_READLN_REAL   = 0x09
 
 MAGIC = bytes([0x50, 0x4D])   # "PM"
 FORMAT_VERSION = 0x01
@@ -96,8 +120,10 @@ class TokenType(Enum):
     PROGRAM        = auto()
     BEGIN          = auto()
     END            = auto()
+    CONST          = auto()
     VAR            = auto()
     INTEGER        = auto()
+    REAL           = auto()
     DIV            = auto()
     MOD            = auto()
     WRITELN        = auto()
@@ -116,11 +142,18 @@ class TokenType(Enum):
     NOT            = auto()
     PROCEDURE      = auto()
     FUNCTION       = auto()
+    REPEAT         = auto()
+    UNTIL          = auto()
+    CHR            = auto()
+    ORD            = auto()
+    ABS            = auto()
+    ODD            = auto()
     ARRAY          = auto()
     OF             = auto()
     IDENTIFIER     = auto()
     STRING_LITERAL = auto()
     NUMBER         = auto()
+    FLOAT_LITERAL  = auto()
     ASSIGN         = auto()   # :=
     COLON          = auto()   # :
     COMMA          = auto()   # ,
@@ -134,6 +167,7 @@ class TokenType(Enum):
     PLUS           = auto()   # +
     MINUS          = auto()   # -
     STAR           = auto()   # *
+    SLASH          = auto()   # /
     EQ             = auto()   # =
     NE             = auto()   # <>
     LT             = auto()   # <
@@ -146,8 +180,10 @@ KEYWORDS = {
     'program':   TokenType.PROGRAM,
     'begin':     TokenType.BEGIN,
     'end':       TokenType.END,
+    'const':     TokenType.CONST,
     'var':       TokenType.VAR,
     'integer':   TokenType.INTEGER,
+    'real':      TokenType.REAL,
     'div':       TokenType.DIV,
     'mod':       TokenType.MOD,
     'writeln':   TokenType.WRITELN,
@@ -166,6 +202,12 @@ KEYWORDS = {
     'not':       TokenType.NOT,
     'procedure': TokenType.PROCEDURE,
     'function':  TokenType.FUNCTION,
+    'repeat':    TokenType.REPEAT,
+    'until':     TokenType.UNTIL,
+    'chr':       TokenType.CHR,
+    'ord':       TokenType.ORD,
+    'abs':       TokenType.ABS,
+    'odd':       TokenType.ODD,
     'array':     TokenType.ARRAY,
     'of':        TokenType.OF,
 }
@@ -254,11 +296,18 @@ class Lexer:
             self._advance()
         return self.source[start:self.pos]
 
-    def _read_number(self) -> str:
+    def _read_number(self) -> tuple[str, bool]:
+        """Returns (number_string, is_float)."""
         start = self.pos
         while self.pos < len(self.source) and self.source[self.pos].isdigit():
             self._advance()
-        return self.source[start:self.pos]
+        if (self.pos < len(self.source) and self.source[self.pos] == '.'
+                and self.pos + 1 < len(self.source) and self.source[self.pos + 1] != '.'):
+            self._advance()
+            while self.pos < len(self.source) and self.source[self.pos].isdigit():
+                self._advance()
+            return self.source[start:self.pos], True
+        return self.source[start:self.pos], False
 
     def tokenize(self) -> List[Token]:
         tokens: list[Token] = []
@@ -274,7 +323,11 @@ class Lexer:
             if ch == "'":
                 tokens.append(Token(TokenType.STRING_LITERAL, self._read_string(), line, col))
             elif ch.isdigit():
-                tokens.append(Token(TokenType.NUMBER, self._read_number(), line, col))
+                num_str, is_float = self._read_number()
+                if is_float:
+                    tokens.append(Token(TokenType.FLOAT_LITERAL, num_str, line, col))
+                else:
+                    tokens.append(Token(TokenType.NUMBER, num_str, line, col))
             elif ch.isalpha() or ch == '_':
                 word = self._read_identifier()
                 ttype = KEYWORDS.get(word.lower(), TokenType.IDENTIFIER)
@@ -321,6 +374,9 @@ class Lexer:
             elif ch == '*':
                 tokens.append(Token(TokenType.STAR, '*', line, col))
                 self._advance()
+            elif ch == '/' and self._peek(1) != '/':
+                tokens.append(Token(TokenType.SLASH, '/', line, col))
+                self._advance()
             elif ch == '=':
                 tokens.append(Token(TokenType.EQ, '=', line, col))
                 self._advance()
@@ -356,6 +412,10 @@ class NumberLiteral:
     value: int
 
 @dataclass
+class FloatLiteral:
+    value: float
+
+@dataclass
 class StringLiteral:
     value: str
 
@@ -384,11 +444,29 @@ class ArrayRef:
     name: str
     index: 'Expression'
 
-Expression = Union[NumberLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef]
+@dataclass
+class ChrExpr:
+    arg: 'Expression'
+
+@dataclass
+class AbsExpr:
+    arg: 'Expression'
+
+@dataclass
+class OddExpr:
+    arg: 'Expression'
+
+Expression = Union[NumberLiteral, FloatLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef, ChrExpr, AbsExpr, OddExpr]
+
+@dataclass
+class ConstDecl:
+    name: str
+    value: int
 
 @dataclass
 class VarDecl:
     names: List[str]
+    var_type: str = 'integer'
 
 @dataclass
 class ArrayDecl:
@@ -399,6 +477,8 @@ class ArrayDecl:
 @dataclass
 class ParamDecl:
     name: str
+    is_var: bool = False
+    param_type: str = 'integer'
 
 @dataclass
 class AssignStmt:
@@ -442,6 +522,11 @@ class ForStmt:
     body: 'Statement'
 
 @dataclass
+class RepeatStmt:
+    statements: List['Statement']
+    condition: Expression
+
+@dataclass
 class ArrayAssignStmt:
     name: str
     index: Expression
@@ -452,8 +537,8 @@ class CompoundStmt:
     statements: List['Statement']
 
 Statement = Union[VarDecl, AssignStmt, WritelnStmt, WriteStmt, ReadlnStmt,
-                  CallStmt, IfStmt, WhileStmt, ForStmt, CompoundStmt,
-                  ArrayAssignStmt]
+                  CallStmt, IfStmt, WhileStmt, ForStmt, RepeatStmt,
+                  CompoundStmt, ArrayAssignStmt]
 
 Declaration = Union[VarDecl, ArrayDecl]
 
@@ -461,6 +546,7 @@ Declaration = Union[VarDecl, ArrayDecl]
 class ProcDecl:
     name: str
     params: List[ParamDecl]
+    const_decls: List[ConstDecl]
     var_decls: List[Declaration]
     subroutines: List[Union['ProcDecl', 'FuncDecl']]
     body: CompoundStmt
@@ -470,6 +556,7 @@ class FuncDecl:
     name: str
     params: List[ParamDecl]
     return_type: str
+    const_decls: List[ConstDecl]
     var_decls: List[Declaration]
     subroutines: List[Union['ProcDecl', 'FuncDecl']]
     body: CompoundStmt
@@ -479,6 +566,7 @@ Subroutine = Union[ProcDecl, FuncDecl]
 @dataclass
 class PascalProgram:
     name: str
+    const_decls: List[ConstDecl]
     var_decls: List[Declaration]
     subroutines: List[Subroutine]
     statements: List[Statement]
@@ -489,6 +577,7 @@ class Parser:
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
         self.pos = 0
+        self._const_decls: list[ConstDecl] = []
 
     def _error(self, msg: str):
         tok = self._current()
@@ -513,6 +602,11 @@ class Parser:
         name = self._expect(TokenType.IDENTIFIER).value
         self._expect(TokenType.SEMICOLON)
 
+        const_decls: list[ConstDecl] = []
+        if self._current().type == TokenType.CONST:
+            const_decls = self._parse_const_block()
+        self._const_decls = const_decls
+
         var_decls: list[VarDecl] = []
         if self._current().type == TokenType.VAR:
             var_decls = self._parse_var_block()
@@ -523,7 +617,8 @@ class Parser:
         stmts = self._parse_statement_list()
         self._expect(TokenType.END)
         self._expect(TokenType.DOT)
-        return PascalProgram(name=name, var_decls=var_decls,
+        return PascalProgram(name=name, const_decls=const_decls,
+                             var_decls=var_decls,
                              subroutines=subroutines, statements=stmts)
 
     def _parse_var_block(self) -> list[Declaration]:
@@ -549,9 +644,25 @@ class Parser:
                 self._expect(TokenType.SEMICOLON)
                 decls.append(ArrayDecl(name=names[0], low=low, high=high))
             else:
-                self._expect(TokenType.INTEGER)
+                var_type = 'integer'
+                if self._current().type == TokenType.REAL:
+                    var_type = 'real'
+                    self.pos += 1
+                else:
+                    self._expect(TokenType.INTEGER)
                 self._expect(TokenType.SEMICOLON)
-                decls.append(VarDecl(names=names))
+                decls.append(VarDecl(names=names, var_type=var_type))
+        return decls
+
+    def _parse_const_block(self) -> list[ConstDecl]:
+        self._expect(TokenType.CONST)
+        decls: list[ConstDecl] = []
+        while self._current().type == TokenType.IDENTIFIER:
+            name = self._expect(TokenType.IDENTIFIER).value
+            self._expect(TokenType.EQ)
+            value = self._parse_const_int()
+            self._expect(TokenType.SEMICOLON)
+            decls.append(ConstDecl(name=name, value=value))
         return decls
 
     def _parse_const_int(self) -> int:
@@ -559,8 +670,20 @@ class Parser:
         if self._current().type == TokenType.MINUS:
             sign = -1
             self.pos += 1
-        tok = self._expect(TokenType.NUMBER)
-        return sign * int(tok.value)
+        if self._current().type == TokenType.NUMBER:
+            tok = self._expect(TokenType.NUMBER)
+            return sign * int(tok.value)
+        if self._current().type == TokenType.IDENTIFIER:
+            tok = self._expect(TokenType.IDENTIFIER)
+            return sign * self._resolve_named_const(tok.value, tok.line, tok.col)
+        self._error("expected integer constant")
+
+    def _resolve_named_const(self, name: str, line: int, col: int) -> int:
+        lower = name.lower()
+        for cd in self._const_decls:
+            if cd.name.lower() == lower:
+                return cd.value
+        raise SyntaxError(f"line {line}, col {col}: undefined constant: '{name}'")
 
     def _parse_subroutines(self) -> list[Subroutine]:
         subs: list[Subroutine] = []
@@ -585,19 +708,31 @@ class Parser:
         return params
 
     def _parse_param_group(self) -> list[ParamDecl]:
+        is_var = False
+        if self._current().type == TokenType.VAR:
+            is_var = True
+            self.pos += 1
         names = [self._expect(TokenType.IDENTIFIER).value]
         while self._current().type == TokenType.COMMA:
             self.pos += 1
             names.append(self._expect(TokenType.IDENTIFIER).value)
         self._expect(TokenType.COLON)
-        self._expect(TokenType.INTEGER)
-        return [ParamDecl(name=n) for n in names]
+        param_type = 'integer'
+        if self._current().type == TokenType.REAL:
+            param_type = 'real'
+            self.pos += 1
+        else:
+            self._expect(TokenType.INTEGER)
+        return [ParamDecl(name=n, is_var=is_var, param_type=param_type) for n in names]
 
     def _parse_proc_decl(self) -> ProcDecl:
         self._expect(TokenType.PROCEDURE)
         name = self._expect(TokenType.IDENTIFIER).value
         params = self._parse_param_list()
         self._expect(TokenType.SEMICOLON)
+        const_decls: list[ConstDecl] = []
+        if self._current().type == TokenType.CONST:
+            const_decls = self._parse_const_block()
         var_decls: list[VarDecl] = []
         if self._current().type == TokenType.VAR:
             var_decls = self._parse_var_block()
@@ -606,8 +741,8 @@ class Parser:
         stmts = self._parse_statement_list()
         self._expect(TokenType.END)
         self._expect(TokenType.SEMICOLON)
-        return ProcDecl(name=name, params=params, var_decls=var_decls,
-                        subroutines=subroutines,
+        return ProcDecl(name=name, params=params, const_decls=const_decls,
+                        var_decls=var_decls, subroutines=subroutines,
                         body=CompoundStmt(statements=stmts))
 
     def _parse_func_decl(self) -> FuncDecl:
@@ -615,8 +750,16 @@ class Parser:
         name = self._expect(TokenType.IDENTIFIER).value
         params = self._parse_param_list()
         self._expect(TokenType.COLON)
-        self._expect(TokenType.INTEGER)
+        return_type = 'integer'
+        if self._current().type == TokenType.REAL:
+            return_type = 'real'
+            self.pos += 1
+        else:
+            self._expect(TokenType.INTEGER)
         self._expect(TokenType.SEMICOLON)
+        const_decls: list[ConstDecl] = []
+        if self._current().type == TokenType.CONST:
+            const_decls = self._parse_const_block()
         var_decls: list[VarDecl] = []
         if self._current().type == TokenType.VAR:
             var_decls = self._parse_var_block()
@@ -625,8 +768,9 @@ class Parser:
         stmts = self._parse_statement_list()
         self._expect(TokenType.END)
         self._expect(TokenType.SEMICOLON)
-        return FuncDecl(name=name, params=params, return_type='integer',
-                        var_decls=var_decls, subroutines=subroutines,
+        return FuncDecl(name=name, params=params, return_type=return_type,
+                        const_decls=const_decls, var_decls=var_decls,
+                        subroutines=subroutines,
                         body=CompoundStmt(statements=stmts))
 
     def _parse_statement_list(self) -> list:
@@ -660,6 +804,8 @@ class Parser:
             return self._parse_while()
         if tok.type == TokenType.FOR:
             return self._parse_for()
+        if tok.type == TokenType.REPEAT:
+            return self._parse_repeat()
         if tok.type == TokenType.BEGIN:
             return self._parse_compound()
         if tok.type in (TokenType.SEMICOLON, TokenType.END):
@@ -754,6 +900,19 @@ class Parser:
         return ForStmt(var_name=var_name, start=start, end_expr=end_expr,
                        direction=direction, body=body)
 
+    def _parse_repeat(self) -> RepeatStmt:
+        self._expect(TokenType.REPEAT)
+        stmts: list = []
+        while self._current().type not in (TokenType.UNTIL, TokenType.EOF):
+            stmt = self._parse_statement()
+            if stmt is not None:
+                stmts.append(stmt)
+            if self._current().type == TokenType.SEMICOLON:
+                self.pos += 1
+        self._expect(TokenType.UNTIL)
+        condition = self._parse_expression()
+        return RepeatStmt(statements=stmts, condition=condition)
+
     def _parse_compound(self) -> CompoundStmt:
         self._expect(TokenType.BEGIN)
         stmts = self._parse_statement_list()
@@ -784,11 +943,14 @@ class Parser:
 
     def _parse_term(self) -> Expression:
         left = self._parse_factor()
-        while self._current().type in (TokenType.STAR, TokenType.DIV,
-                                        TokenType.MOD, TokenType.AND):
-            op = self._current().value.lower()
-            if op == '*':
-                pass
+        while self._current().type in (TokenType.STAR, TokenType.SLASH,
+                                        TokenType.DIV, TokenType.MOD,
+                                        TokenType.AND):
+            tok = self._current()
+            if tok.type == TokenType.SLASH:
+                op = '/'
+            else:
+                op = tok.value.lower()
             self.pos += 1
             right = self._parse_factor()
             left = BinaryOp(op=op, left=left, right=right)
@@ -803,6 +965,10 @@ class Parser:
             if value > 32767:
                 self._error(f"integer literal {value} exceeds 16-bit signed range")
             return NumberLiteral(value=value)
+
+        if tok.type == TokenType.FLOAT_LITERAL:
+            self.pos += 1
+            return FloatLiteral(value=float(tok.value))
 
         if tok.type == TokenType.STRING_LITERAL:
             self.pos += 1
@@ -838,12 +1004,44 @@ class Parser:
             operand = self._parse_factor()
             if isinstance(operand, NumberLiteral):
                 return NumberLiteral(value=-operand.value)
+            if isinstance(operand, FloatLiteral):
+                return FloatLiteral(value=-operand.value)
             return UnaryOp(op='-', operand=operand)
 
         if tok.type == TokenType.NOT:
             self.pos += 1
             operand = self._parse_factor()
             return UnaryOp(op='not', operand=operand)
+
+        if tok.type == TokenType.ORD:
+            self.pos += 1
+            self._expect(TokenType.LPAREN)
+            arg = self._parse_expression()
+            self._expect(TokenType.RPAREN)
+            if isinstance(arg, StringLiteral) and len(arg.value) == 1:
+                return NumberLiteral(value=ord(arg.value))
+            return arg
+
+        if tok.type == TokenType.CHR:
+            self.pos += 1
+            self._expect(TokenType.LPAREN)
+            arg = self._parse_expression()
+            self._expect(TokenType.RPAREN)
+            return ChrExpr(arg=arg)
+
+        if tok.type == TokenType.ABS:
+            self.pos += 1
+            self._expect(TokenType.LPAREN)
+            arg = self._parse_expression()
+            self._expect(TokenType.RPAREN)
+            return AbsExpr(arg=arg)
+
+        if tok.type == TokenType.ODD:
+            self.pos += 1
+            self._expect(TokenType.LPAREN)
+            arg = self._parse_expression()
+            self._expect(TokenType.RPAREN)
+            return OddExpr(arg=arg)
 
         self._error(f"expected expression, got {tok.type.name} ('{tok.value}')")
 
@@ -852,10 +1050,14 @@ class Parser:
 @dataclass
 class Scope:
     level: int
-    symbols: dict
+    symbols: dict          # name -> offset
+    var_types: dict        # name -> 'integer' or 'real'
     arrays: dict
+    constants: dict
+    var_params: set
     is_function: bool
     function_name: Optional[str]
+    function_return_type: Optional[str]
     enclosing: Optional['Scope']
     next_offset: int
 
@@ -863,8 +1065,11 @@ class Scope:
 class SubroutineInfo:
     code_offset: int
     params: list
+    param_types: list      # ['integer', 'real', ...]
     is_function: bool
+    return_type: str       # 'integer', 'real', or '' for procedures
     definition_level: int
+    is_var_param: list = field(default_factory=list)
 
 # ── Code generator ──────────────────────────────────────────
 
@@ -882,23 +1087,61 @@ class CodeGenerator:
 
     def _push_scope(self, level: int, is_function: bool,
                     function_name: Optional[str] = None,
+                    function_return_type: Optional[str] = None,
                     start_offset: int = 0):
         self._scope = Scope(
-            level=level, symbols={}, arrays={}, is_function=is_function,
-            function_name=function_name, enclosing=self._scope,
+            level=level, symbols={}, var_types={}, arrays={}, constants={},
+            var_params=set(), is_function=is_function,
+            function_name=function_name,
+            function_return_type=function_return_type,
+            enclosing=self._scope,
             next_offset=start_offset
         )
 
     def _pop_scope(self):
         self._scope = self._scope.enclosing
 
-    def _add_var(self, name: str) -> int:
+    def _add_const(self, name: str, value: int):
+        lower = name.lower()
+        if lower in self._scope.symbols or lower in self._scope.constants:
+            raise SyntaxError(f"duplicate declaration: '{name}'")
+        self._scope.constants[lower] = value
+
+    def _resolve_const(self, name: str) -> Optional[int]:
+        lower = name.lower()
+        scope = self._scope
+        while scope is not None:
+            if lower in scope.constants:
+                return scope.constants[lower]
+            scope = scope.enclosing
+        return None
+
+    def _add_var_param(self, name: str) -> int:
+        offset = self._add_var(name)
+        self._scope.var_params.add(name.lower())
+        return offset
+
+    def _is_var_param(self, name: str) -> tuple[bool, int]:
+        """Check if name is a var param. Returns (is_var, level_diff)."""
+        lower = name.lower()
+        scope = self._scope
+        level_diff = 0
+        while scope is not None:
+            if lower in scope.symbols:
+                return (lower in scope.var_params, level_diff)
+            scope = scope.enclosing
+            level_diff += 1
+        return (False, 0)
+
+    def _add_var(self, name: str, var_type: str = 'integer') -> int:
         lower = name.lower()
         if lower in self._scope.symbols:
             raise SyntaxError(f"duplicate variable declaration: '{name}'")
         offset = self._scope.next_offset
         self._scope.symbols[lower] = offset
-        self._scope.next_offset += 2
+        self._scope.var_types[lower] = var_type
+        size = 4 if var_type == 'real' else 2
+        self._scope.next_offset += size
         return offset
 
     def _resolve_var(self, name: str) -> tuple[int, int]:
@@ -911,6 +1154,15 @@ class CodeGenerator:
             scope = scope.enclosing
             level_diff += 1
         raise SyntaxError(f"undefined variable: '{name}'")
+
+    def _resolve_var_type(self, name: str) -> str:
+        lower = name.lower()
+        scope = self._scope
+        while scope is not None:
+            if lower in scope.var_types:
+                return scope.var_types[lower]
+            scope = scope.enclosing
+        return 'integer'
 
     def _add_array(self, name: str, low: int, high: int) -> int:
         lower = name.lower()
@@ -965,6 +1217,11 @@ class CodeGenerator:
         self.code.append(value & 0xFF)
         self.code.append((value >> 8) & 0xFF)
 
+    def _emit_flit(self, value: float):
+        self.code.append(OP_FLIT)
+        fb = struct.pack('<f', value)
+        self.code.extend(fb)
+
     def _emit_lit16_fixup(self, string_index: int):
         self.code.append(OP_LIT16)
         self._fixups.append((len(self.code), string_index))
@@ -997,22 +1254,79 @@ class CodeGenerator:
 
     # ── Variable load/store with scope resolution ────────────
 
-    def _emit_load_var(self, name: str):
+    def _emit_load_var(self, name: str) -> str:
+        """Load variable onto eval stack. Returns the type ('integer' or 'real')."""
+        is_var, _ = self._is_var_param(name)
         level_diff, offset = self._resolve_var(name)
+        vtype = self._resolve_var_type(name)
+        if is_var:
+            if level_diff == 0:
+                self._emit(OP_LOAD_REF, offset)
+            else:
+                self._emit(OP_LOAD_L, level_diff, offset)
+            return 'integer'
+        if vtype == 'real':
+            if level_diff == 0:
+                self._emit(OP_FLOAD, offset)
+            else:
+                self._emit(OP_FLOAD_L, level_diff, offset)
+            return 'real'
         if level_diff == 0:
             self._emit(OP_LOAD, offset)
         else:
             self._emit(OP_LOAD_L, level_diff, offset)
+        return 'integer'
 
-    def _emit_store_var(self, name: str):
+    def _emit_store_var(self, name: str, value_type: str = 'integer'):
+        """Store top of eval stack to variable. value_type is the type currently on stack."""
         if self._is_current_function_name(name):
-            self._emit(OP_STORE, 2)
+            ret_type = self._scope.function_return_type or 'integer'
+            if ret_type == 'real':
+                if value_type == 'integer':
+                    self._emit(OP_ITOF)
+                self._emit(OP_FSTORE, 2)
+            else:
+                if value_type == 'real':
+                    self._emit(OP_FTOI)
+                self._emit(OP_STORE, 2)
             return
+        is_var, _ = self._is_var_param(name)
         level_diff, offset = self._resolve_var(name)
-        if level_diff == 0:
-            self._emit(OP_STORE, offset)
+        vtype = self._resolve_var_type(name)
+        if is_var:
+            if value_type == 'real':
+                self._emit(OP_FTOI)
+            if level_diff == 0:
+                self._emit(OP_STORE_REF, offset)
+            else:
+                self._emit(OP_STORE_L, level_diff, offset)
+            return
+        if vtype == 'real':
+            if value_type == 'integer':
+                self._emit(OP_ITOF)
+            if level_diff == 0:
+                self._emit(OP_FSTORE, offset)
+            else:
+                self._emit(OP_FSTORE_L, level_diff, offset)
         else:
-            self._emit(OP_STORE_L, level_diff, offset)
+            if value_type == 'real':
+                self._emit(OP_FTOI)
+            if level_diff == 0:
+                self._emit(OP_STORE, offset)
+            else:
+                self._emit(OP_STORE_L, level_diff, offset)
+
+    def _coerce_to_real(self, current_type: str) -> str:
+        if current_type == 'integer':
+            self._emit(OP_ITOF)
+            return 'real'
+        return current_type
+
+    def _coerce_to_int(self, current_type: str) -> str:
+        if current_type == 'real':
+            self._emit(OP_FTOI)
+            return 'integer'
+        return current_type
 
     def _emit_load_array(self, name: str):
         level_diff, base_offset, low, high = self._resolve_array(name)
@@ -1032,43 +1346,182 @@ class CodeGenerator:
 
     # ── Expression codegen ───────────────────────────────────
 
-    def _gen_expr(self, expr: Expression):
+    def _gen_expr(self, expr: Expression) -> str:
+        """Generate code for expression. Returns type: 'integer', 'real', or 'string'."""
         if isinstance(expr, NumberLiteral):
             self._emit_lit16(expr.value & 0xFFFF)
+            return 'integer'
+        elif isinstance(expr, FloatLiteral):
+            self._emit_flit(expr.value)
+            return 'real'
         elif isinstance(expr, StringLiteral):
             idx = self._add_string(expr.value)
             self._emit_lit16_fixup(idx)
+            return 'string'
         elif isinstance(expr, VarRef):
-            self._emit_load_var(expr.name)
+            const_val = self._resolve_const(expr.name)
+            if const_val is not None:
+                self._emit_lit16(const_val & 0xFFFF)
+                return 'integer'
+            return self._emit_load_var(expr.name)
         elif isinstance(expr, UnaryOp):
-            self._gen_expr(expr.operand)
+            t = self._gen_expr(expr.operand)
             if expr.op == '-':
-                self._emit(OP_NEG)
+                if t == 'real':
+                    self._emit(OP_FNEG)
+                else:
+                    self._emit(OP_NEG)
             elif expr.op == 'not':
+                if t == 'real':
+                    t = self._coerce_to_int(t)
                 self._emit(OP_NOT)
+                t = 'integer'
+            return t
         elif isinstance(expr, BinaryOp):
-            self._gen_expr(expr.left)
-            self._gen_expr(expr.right)
-            op_map = {
-                '+': OP_ADD, '-': OP_SUB, '*': OP_MUL,
-                'div': OP_DIV, 'mod': OP_MOD,
-                '=': OP_EQ, '<>': OP_NE, '<': OP_LT,
-                '>': OP_GT, '<=': OP_LE, '>=': OP_GE,
-                'and': OP_AND, 'or': OP_OR,
-            }
-            self._emit(op_map[expr.op])
+            return self._gen_binary_op(expr)
         elif isinstance(expr, ArrayRef):
             self._gen_expr(expr.index)
             self._emit_load_array(expr.name)
+            return 'integer'
+        elif isinstance(expr, ChrExpr):
+            t = self._gen_expr(expr.arg)
+            if t == 'real':
+                self._emit(OP_FTOI)
+            return 'integer'
+        elif isinstance(expr, AbsExpr):
+            t = self._gen_expr(expr.arg)
+            if t == 'real':
+                self._emit(OP_FABS)
+            else:
+                self._emit(OP_ABS)
+            return t
+        elif isinstance(expr, OddExpr):
+            t = self._gen_expr(expr.arg)
+            if t == 'real':
+                self._emit(OP_FTOI)
+            self._emit_lit16(2)
+            self._emit(OP_MOD)
+            return 'integer'
         elif isinstance(expr, CallExpr):
-            self._gen_call(expr.name, expr.args)
+            return self._gen_call(expr.name, expr.args)
+        return 'integer'
+
+    def _expr_type(self, expr: Expression) -> str:
+        """Determine expression result type without generating code."""
+        if isinstance(expr, NumberLiteral):
+            return 'integer'
+        if isinstance(expr, FloatLiteral):
+            return 'real'
+        if isinstance(expr, StringLiteral):
+            return 'string'
+        if isinstance(expr, VarRef):
+            if self._resolve_const(expr.name) is not None:
+                return 'integer'
+            return self._resolve_var_type(expr.name)
+        if isinstance(expr, UnaryOp):
+            if expr.op == 'not':
+                return 'integer'
+            return self._expr_type(expr.operand)
+        if isinstance(expr, BinaryOp):
+            lt = self._expr_type(expr.left)
+            rt = self._expr_type(expr.right)
+            if expr.op in ('=', '<>', '<', '>', '<=', '>=', 'and', 'or', 'div', 'mod'):
+                return 'integer'
+            if expr.op == '/':
+                return 'real'
+            if lt == 'real' or rt == 'real':
+                return 'real'
+            return 'integer'
+        if isinstance(expr, ArrayRef):
+            return 'integer'
+        if isinstance(expr, ChrExpr):
+            return 'integer'
+        if isinstance(expr, AbsExpr):
+            return self._expr_type(expr.arg)
+        if isinstance(expr, OddExpr):
+            return 'integer'
+        if isinstance(expr, CallExpr):
+            sub = self._subroutines.get(expr.name.lower())
+            if sub:
+                return sub.return_type or 'integer'
+            return 'integer'
+        return 'integer'
+
+    def _gen_binary_op(self, expr: BinaryOp) -> str:
+        lt_predicted = self._expr_type(expr.left)
+        rt_predicted = self._expr_type(expr.right)
+
+        # div and mod always operate on integers
+        if expr.op in ('div', 'mod'):
+            lt = self._gen_expr(expr.left)
+            if lt == 'real':
+                self._emit(OP_FTOI)
+            rt = self._gen_expr(expr.right)
+            if rt == 'real':
+                self._emit(OP_FTOI)
+            self._emit(OP_DIV if expr.op == 'div' else OP_MOD)
+            return 'integer'
+
+        # and/or always operate on integers
+        if expr.op in ('and', 'or'):
+            lt = self._gen_expr(expr.left)
+            if lt == 'real':
+                self._emit(OP_FTOI)
+            rt = self._gen_expr(expr.right)
+            if rt == 'real':
+                self._emit(OP_FTOI)
+            self._emit(OP_AND if expr.op == 'and' else OP_OR)
+            return 'integer'
+
+        use_float = False
+        if expr.op in ('+', '-', '*', '/'):
+            if expr.op == '/' or lt_predicted == 'real' or rt_predicted == 'real':
+                use_float = True
+        if expr.op in ('=', '<>', '<', '>', '<=', '>='):
+            if lt_predicted == 'real' or rt_predicted == 'real':
+                use_float = True
+
+        lt = self._gen_expr(expr.left)
+        if use_float and lt == 'integer':
+            self._emit(OP_ITOF)
+            lt = 'real'
+
+        rt = self._gen_expr(expr.right)
+        if use_float and rt == 'integer':
+            self._emit(OP_ITOF)
+            rt = 'real'
+
+        if use_float:
+            if expr.op in ('+', '-', '*', '/'):
+                float_op_map = {'+': OP_FADD, '-': OP_FSUB, '*': OP_FMUL, '/': OP_FDIV}
+                self._emit(float_op_map[expr.op])
+                return 'real'
+            self._emit(OP_FCMP)
+            self._emit_lit16(0)
+            rel_map = {'=': OP_EQ, '<>': OP_NE, '<': OP_LT,
+                       '>': OP_GT, '<=': OP_LE, '>=': OP_GE}
+            self._emit(rel_map[expr.op])
+            return 'integer'
+
+        if expr.op in ('+', '-', '*'):
+            int_op_map = {'+': OP_ADD, '-': OP_SUB, '*': OP_MUL}
+            self._emit(int_op_map[expr.op])
+            return 'integer'
+
+        if expr.op in ('=', '<>', '<', '>', '<=', '>='):
+            rel_map = {'=': OP_EQ, '<>': OP_NE, '<': OP_LT,
+                       '>': OP_GT, '<=': OP_LE, '>=': OP_GE}
+            self._emit(rel_map[expr.op])
+            return 'integer'
+
+        raise SyntaxError(f"unknown operator: {expr.op}")
 
     def _is_string_expr(self, expr: Expression) -> bool:
         return isinstance(expr, StringLiteral)
 
     # ── Call codegen ─────────────────────────────────────────
 
-    def _gen_call(self, name: str, args: list[Expression]):
+    def _gen_call(self, name: str, args: list[Expression]) -> str:
         lower = name.lower()
         sub_info = self._subroutines.get(lower)
         if sub_info is None:
@@ -1078,28 +1531,58 @@ class CodeGenerator:
                 f"'{name}' expects {len(sub_info.params)} argument(s), "
                 f"got {len(args)}")
 
-        for arg in args:
-            self._gen_expr(arg)
+        for i, arg in enumerate(args):
+            if sub_info.is_var_param[i]:
+                self._gen_var_arg(arg)
+            else:
+                t = self._gen_expr(arg)
+                expected = sub_info.param_types[i]
+                if expected == 'real' and t == 'integer':
+                    self._emit(OP_ITOF)
+                elif expected == 'integer' and t == 'real':
+                    self._emit(OP_FTOI)
 
         caller_level = self._scope.level
         static_depth = caller_level - sub_info.definition_level
 
         addr = PCODE_HEADER_SIZE + sub_info.code_offset
         self._emit(OP_CALL, addr & 0xFF, (addr >> 8) & 0xFF, static_depth)
+        return sub_info.return_type or 'integer'
+
+    def _gen_var_arg(self, expr: Expression):
+        """Emit code to push the address of a variable for var parameter passing."""
+        if isinstance(expr, VarRef):
+            is_var, _ = self._is_var_param(expr.name)
+            level_diff, offset = self._resolve_var(expr.name)
+            if is_var:
+                if level_diff == 0:
+                    self._emit(OP_LOAD, offset)
+                else:
+                    self._emit(OP_LOAD_L, level_diff, offset)
+            else:
+                if level_diff == 0:
+                    self._emit(OP_PUSH_ADDR, offset)
+                else:
+                    self._emit(OP_PUSH_ADDR_L, level_diff, offset)
+        elif isinstance(expr, ArrayRef):
+            raise SyntaxError("array elements as var parameters not yet supported")
+        else:
+            raise SyntaxError("var parameter must be a variable")
 
     # ── Statement codegen ────────────────────────────────────
 
     def _gen_stmt(self, stmt: Statement):
         if isinstance(stmt, AssignStmt):
-            self._gen_expr(stmt.expr)
-            if self._is_current_function_name(stmt.target):
-                self._emit(OP_STORE, 2)
-            else:
-                self._emit_store_var(stmt.target)
+            if self._resolve_const(stmt.target) is not None:
+                raise SyntaxError(f"cannot assign to constant '{stmt.target}'")
+            t = self._gen_expr(stmt.expr)
+            self._emit_store_var(stmt.target, t)
 
         elif isinstance(stmt, ArrayAssignStmt):
             self._gen_expr(stmt.index)
-            self._gen_expr(stmt.expr)
+            t = self._gen_expr(stmt.expr)
+            if t == 'real':
+                self._emit(OP_FTOI)
             self._emit_store_array(stmt.name)
 
         elif isinstance(stmt, CallStmt):
@@ -1108,19 +1591,15 @@ class CodeGenerator:
             if sub_info is None:
                 raise SyntaxError(f"undefined procedure: '{stmt.name}'")
             self._gen_call(stmt.name, stmt.args)
-            if sub_info.is_function:
-                # discard unused return value
-                self._emit(OP_STORE, 0)  # dummy store (won't be read)
-                # Actually, let's pop it properly
-                # Pop 2 bytes from eval stack (no opcode for that, use a dummy approach)
-                pass
-                # Hmm, there's no POP opcode. Let me just allow it — calling a function
-                # as a statement leaves a value on the eval stack. This is a minor leak.
-                # For now, ignore. A proper fix would need an OP_POP opcode.
 
         elif isinstance(stmt, ReadlnStmt):
-            self._emit_csp(CSP_READLN_INT)
-            self._emit_store_var(stmt.var_name)
+            vtype = self._resolve_var_type(stmt.var_name)
+            if vtype == 'real':
+                self._emit_csp(CSP_READLN_REAL)
+                self._emit_store_var(stmt.var_name, 'real')
+            else:
+                self._emit_csp(CSP_READLN_INT)
+                self._emit_store_var(stmt.var_name, 'integer')
 
         elif isinstance(stmt, WritelnStmt):
             if stmt.arg is None:
@@ -1128,22 +1607,37 @@ class CodeGenerator:
             elif self._is_string_expr(stmt.arg):
                 self._gen_expr(stmt.arg)
                 self._emit_csp(CSP_WRITELN)
-            else:
+            elif isinstance(stmt.arg, ChrExpr):
                 self._gen_expr(stmt.arg)
-                self._emit_csp(CSP_WRITELN_INT)
+                self._emit_csp(CSP_WRITE_CHAR)
+                self._emit_csp(CSP_WRITELN_NOARG)
+            else:
+                t = self._gen_expr(stmt.arg)
+                if t == 'real':
+                    self._emit_csp(CSP_WRITELN_REAL)
+                else:
+                    self._emit_csp(CSP_WRITELN_INT)
 
         elif isinstance(stmt, WriteStmt):
             if self._is_string_expr(stmt.arg):
                 self._gen_expr(stmt.arg)
                 self._emit_csp(CSP_WRITE)
-            else:
+            elif isinstance(stmt.arg, ChrExpr):
                 self._gen_expr(stmt.arg)
-                self._emit_csp(CSP_WRITE_INT)
+                self._emit_csp(CSP_WRITE_CHAR)
+            else:
+                t = self._gen_expr(stmt.arg)
+                if t == 'real':
+                    self._emit_csp(CSP_WRITE_REAL)
+                else:
+                    self._emit_csp(CSP_WRITE_INT)
 
         elif isinstance(stmt, IfStmt):
             self._gen_if(stmt)
         elif isinstance(stmt, WhileStmt):
             self._gen_while(stmt)
+        elif isinstance(stmt, RepeatStmt):
+            self._gen_repeat(stmt)
         elif isinstance(stmt, ForStmt):
             self._gen_for(stmt)
         elif isinstance(stmt, CompoundStmt):
@@ -1151,7 +1645,9 @@ class CodeGenerator:
                 self._gen_stmt(s)
 
     def _gen_if(self, stmt: IfStmt):
-        self._gen_expr(stmt.condition)
+        ct = self._gen_expr(stmt.condition)
+        if ct == 'real':
+            self._emit(OP_FTOI)
         jpc_pos = self._emit_jpc()
         self._gen_stmt(stmt.then_stmt)
         if stmt.else_stmt is not None:
@@ -1164,12 +1660,25 @@ class CodeGenerator:
 
     def _gen_while(self, stmt: WhileStmt):
         loop_start = self._code_pos()
-        self._gen_expr(stmt.condition)
+        ct = self._gen_expr(stmt.condition)
+        if ct == 'real':
+            self._emit(OP_FTOI)
         jpc_pos = self._emit_jpc()
         self._gen_stmt(stmt.body)
         jmp_pos = self._emit_jmp()
         self._patch_jump(jmp_pos, loop_start)
         self._patch_jump(jpc_pos, self._code_pos())
+
+    def _gen_repeat(self, stmt: RepeatStmt):
+        loop_start = self._code_pos()
+        for s in stmt.statements:
+            self._gen_stmt(s)
+        ct = self._gen_expr(stmt.condition)
+        if ct == 'real':
+            self._emit(OP_FTOI)
+        jpc_pos = self._code_pos()
+        self._emit(OP_JPC, 0x00, 0x00)
+        self._patch_jump(jpc_pos, loop_start)
 
     def _gen_for(self, stmt: ForStmt):
         limit_offset = self._alloc_hidden_var('for_end')
@@ -1219,35 +1728,63 @@ class CodeGenerator:
     def _gen_subroutine(self, sub: Subroutine, definition_level: int):
         is_func = isinstance(sub, FuncDecl)
         sub_name = sub.name.lower()
+        return_type = sub.return_type if is_func else ''
+
+        # Count nparams as 16-bit slots (real params take 2 slots each)
+        nparams_slots = 0
+        for p in sub.params:
+            if p.is_var:
+                nparams_slots += 1
+            elif p.param_type == 'real':
+                nparams_slots += 2
+            else:
+                nparams_slots += 1
 
         code_addr = self._code_pos()
         self._subroutines[sub_name] = SubroutineInfo(
             code_offset=code_addr,
             params=[p.name for p in sub.params],
+            param_types=[p.param_type for p in sub.params],
             is_function=is_func,
-            definition_level=definition_level
+            return_type=return_type,
+            definition_level=definition_level,
+            is_var_param=[p.is_var for p in sub.params]
         )
 
-        start_offset = 4 if is_func else 2
+        if is_func:
+            start_offset = 6 if return_type == 'real' else 4
+        else:
+            start_offset = 2
         body_level = definition_level + 1
+
+        # is_function encoding: 0=proc, 1=int func, 2=real func
+        is_func_byte = 0
+        if is_func:
+            is_func_byte = 2 if return_type == 'real' else 1
 
         self._push_scope(
             level=body_level, is_function=is_func,
             function_name=sub.name if is_func else None,
+            function_return_type=return_type if is_func else None,
             start_offset=start_offset
         )
 
+        for cd in sub.const_decls:
+            self._add_const(cd.name, cd.value)
         for param in sub.params:
-            self._add_var(param.name)
+            if param.is_var:
+                self._add_var_param(param.name)
+            else:
+                self._add_var(param.name, param.param_type)
         for decl in sub.var_decls:
             if isinstance(decl, ArrayDecl):
                 self._add_array(decl.name, decl.low, decl.high)
             else:
                 for name in decl.names:
-                    self._add_var(name)
+                    self._add_var(name, decl.var_type)
 
         enter_pos = self._code_pos()
-        self._emit(OP_ENTER, 0, len(sub.params), 1 if is_func else 0)
+        self._emit(OP_ENTER, 0, nparams_slots, is_func_byte)
 
         if sub.subroutines:
             jmp_body = self._emit_jmp()
@@ -1259,7 +1796,7 @@ class CodeGenerator:
             self._gen_stmt(s)
 
         self.code[enter_pos + 1] = self._scope.next_offset
-        self._emit(OP_RET, 1 if is_func else 0)
+        self._emit(OP_RET, is_func_byte)
         self._pop_scope()
 
     # ── Binary generation ────────────────────────────────────
@@ -1278,12 +1815,15 @@ class CodeGenerator:
     def generate(self, program: PascalProgram) -> bytes:
         self._push_scope(level=0, is_function=False, start_offset=2)
 
+        for cd in program.const_decls:
+            self._add_const(cd.name, cd.value)
+
         for decl in program.var_decls:
             if isinstance(decl, ArrayDecl):
                 self._add_array(decl.name, decl.low, decl.high)
             else:
                 for name in decl.names:
-                    self._add_var(name)
+                    self._add_var(name, decl.var_type)
 
         if program.subroutines:
             jmp_main = self._emit_jmp()

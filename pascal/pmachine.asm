@@ -144,6 +144,46 @@ PM_ENTRY:
     beq .op_load_al
     cmp PM_OP_STORE_AL
     beq .op_store_al
+    cmp PM_OP_ABS
+    beq .op_abs
+    cmp PM_OP_LOAD_REF
+    beq .op_load_ref
+    cmp PM_OP_STORE_REF
+    beq .op_store_ref
+    cmp PM_OP_PUSH_ADDR
+    beq .op_push_addr
+    cmp PM_OP_PUSH_ADDR_L
+    beq .op_push_addr_l
+    cmp PM_OP_FLIT
+    beq .op_flit
+    cmp PM_OP_FLOAD
+    beq .op_fload
+    cmp PM_OP_FSTORE
+    beq .op_fstore
+    cmp PM_OP_FADD
+    beq .op_fadd
+    cmp PM_OP_FSUB
+    beq .op_fsub
+    cmp PM_OP_FMUL
+    beq .op_fmul
+    cmp PM_OP_FDIV
+    beq .op_fdiv
+    cmp PM_OP_FNEG
+    beq .op_fneg
+    cmp PM_OP_ITOF
+    beq .op_itof
+    cmp PM_OP_FTOI
+    beq .op_ftoi
+    cmp PM_OP_FCMP
+    beq .op_fcmp
+    cmp PM_OP_FLOAD_L
+    beq .op_fload_l
+    cmp PM_OP_FSTORE_L
+    beq .op_fstore_l
+    cmp PM_OP_FABS
+    beq .op_fabs
+    cmp PM_OP_ITOF_SWAP
+    beq .op_itof_swap
 
     jmp .error_invalid
 
@@ -533,11 +573,13 @@ PM_ENTRY:
     sta PM_TEMP3
     jsr .fetch_byte         ; nparams
     sta PM_TEMP
-    jsr .fetch_byte         ; is_function
+    jsr .fetch_byte         ; is_function (0=proc, 1=int func, 2=real func)
     tax
     beq .enter_proc_base
+    cpx 0x02
+    beq .enter_real_func
 
-    ; Function: init return value at FP+2,+3 to zero
+    ; Integer function: init return value at FP+2,+3 to zero
     lda PM_FP_LSB
     clc
     adc 0x02
@@ -553,7 +595,31 @@ PM_ENTRY:
     inx
     sta de,x
 
-    lda 0x04                ; param_base = 4 (skip link + retval)
+    lda 0x04                ; param_base = 4 (skip link + 2B retval)
+    jmp .enter_set_base
+
+.enter_real_func:
+    ; Real function: init return value at FP+2..+5 to zero
+    lda PM_FP_LSB
+    clc
+    adc 0x02
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda 0x00
+    sta de,x
+    inx
+    sta de,x
+    inx
+    sta de,x
+    inx
+    sta de,x
+
+    lda 0x06                ; param_base = 6 (skip link + 4B retval)
     jmp .enter_set_base
 
 .enter_proc_base:
@@ -620,11 +686,13 @@ PM_ENTRY:
 ; --- RET: return from procedure/function -----------------
 
 .op_ret:
-    jsr .fetch_byte         ; is_function
+    jsr .fetch_byte         ; is_function (0=proc, 1=int func, 2=real func)
     tax
     beq .ret_no_retval
+    cpx 0x02
+    beq .ret_real_func
 
-    ; Push return value (at FP+2, FP+3) onto eval stack
+    ; Integer function: push 2-byte return value from FP+2
     lda PM_FP_LSB
     clc
     adc 0x02
@@ -644,6 +712,32 @@ PM_ENTRY:
     jsr .push_byte
     pla
     jsr .push_byte
+    jmp .ret_no_retval
+
+.ret_real_func:
+    ; Real function: push 4-byte return value from FP+2
+    lda PM_FP_LSB
+    clc
+    adc 0x02
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x
+    sta FLOAT1
+    inx
+    lda de,x
+    sta FLOAT1+1
+    inx
+    lda de,x
+    sta FLOAT1+2
+    inx
+    lda de,x
+    sta FLOAT1+3
+    jsr .push_float1
 
 .ret_no_retval:
     ; FRAME_TOP = FP (deallocate frame)
@@ -893,6 +987,139 @@ PM_ENTRY:
     sta de,x
     jmp .fetch
 
+; --- ABS: absolute value of signed 16-bit ----------------
+
+.op_abs:
+    jsr .pop_byte            ; MSB
+    sta PM_TEMP
+    jsr .pop_byte            ; LSB
+    sta PM_TEMP2
+    lda PM_TEMP
+    and 0x80
+    beq .op_abs_pos
+    ; Negative: negate (two's complement)
+    lda PM_TEMP2
+    eor 0xFF
+    clc
+    adc 0x01
+    sta PM_TEMP2
+    lda PM_TEMP
+    eor 0xFF
+    adc 0x00
+    sta PM_TEMP
+.op_abs_pos:
+    lda PM_TEMP2
+    jsr .push_byte
+    lda PM_TEMP
+    jsr .push_byte
+    jmp .fetch
+
+; --- LOAD_REF: load via reference (indirect through frame) -
+
+.op_load_ref:
+    jsr .fetch_byte          ; offset of the pointer in frame
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x                 ; pointer LSB
+    sta PM_TEMP
+    inx
+    lda de,x                 ; pointer MSB
+    sta PM_TEMP2
+    ; Now load 16-bit value at PM_VAR_FRAME + pointer
+    lda PM_TEMP
+    tae
+    lda PM_TEMP2
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x                 ; value LSB
+    pha
+    inx
+    lda de,x                 ; value MSB
+    sta PM_TEMP
+    pla
+    jsr .push_byte
+    lda PM_TEMP
+    jsr .push_byte
+    jmp .fetch
+
+; --- STORE_REF: store via reference -----------------------
+
+.op_store_ref:
+    jsr .fetch_byte          ; offset of the pointer in frame
+    sta PM_TEMP3
+    jsr .pop_byte            ; value MSB
+    pha
+    jsr .pop_byte            ; value LSB
+    pha
+    ; Read pointer from frame
+    lda PM_TEMP3
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x                 ; pointer LSB
+    sta PM_TEMP
+    inx
+    lda de,x                 ; pointer MSB
+    sta PM_TEMP2
+    ; Write value at PM_VAR_FRAME + pointer
+    lda PM_TEMP
+    tae
+    lda PM_TEMP2
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    pla                      ; value LSB
+    sta de,x
+    inx
+    pla                      ; value MSB
+    sta de,x
+    jmp .fetch
+
+; --- PUSH_ADDR: push FP+offset as address ----------------
+
+.op_push_addr:
+    jsr .fetch_byte          ; offset
+    clc
+    adc PM_FP_LSB
+    jsr .push_byte           ; addr LSB
+    lda PM_FP_MSB
+    adc 0x00
+    jsr .push_byte           ; addr MSB
+    jmp .fetch
+
+; --- PUSH_ADDR_L: push target_FP+offset via static chain --
+
+.op_push_addr_l:
+    jsr .fetch_byte          ; depth
+    tax
+    jsr .fetch_byte          ; offset
+    sta PM_TEMP
+    jsr .follow_links        ; PM_TEMP3:PM_TEMP2 = target FP
+    lda PM_TEMP
+    clc
+    adc PM_TEMP2
+    jsr .push_byte           ; addr LSB
+    lda PM_TEMP3
+    adc 0x00
+    jsr .push_byte           ; addr MSB
+    jmp .fetch
+
 ; --- Shared helpers for comparisons ----------------------
 
 .pop_two_operands:
@@ -937,6 +1164,14 @@ PM_ENTRY:
     beq .csp_writeln_int
     cmp PM_CSP_READLN_INT
     beq .csp_readln_int
+    cmp PM_CSP_WRITE_CHAR
+    beq .csp_write_char
+    cmp PM_CSP_WRITE_REAL
+    beq .csp_write_real
+    cmp PM_CSP_WRITELN_REAL
+    beq .csp_writeln_real
+    cmp PM_CSP_READLN_REAL
+    beq .csp_readln_real
 
     jmp .error_invalid
 
@@ -994,6 +1229,372 @@ PM_ENTRY:
     jsr .push_byte
     lda MATH16_A+1
     jsr .push_byte
+    jmp .fetch
+
+; CSP 6 — write(char): pop 16-bit, print low byte as character
+.csp_write_char:
+    jsr .pop_byte            ; MSB (discard)
+    jsr .pop_byte            ; LSB = char
+    jsr ACIA_SEND_CHAR
+    jmp .fetch
+
+; CSP 7 — write(real): pop float(4B), print with 2 decimal places
+.csp_write_real:
+    jsr .pop_byte
+    sta FLOAT1+3
+    jsr .pop_byte
+    sta FLOAT1+2
+    jsr .pop_byte
+    sta FLOAT1+1
+    jsr .pop_byte
+    sta FLOAT1
+    ldy 0x02
+    jsr FLOAT_PRINT
+    jmp .fetch
+
+; CSP 8 — writeln(real): pop float(4B), print + newline
+.csp_writeln_real:
+    jsr .pop_byte
+    sta FLOAT1+3
+    jsr .pop_byte
+    sta FLOAT1+2
+    jsr .pop_byte
+    sta FLOAT1+1
+    jsr .pop_byte
+    sta FLOAT1
+    ldy 0x02
+    jsr FLOAT_PRINT
+    jsr ACIA_SEND_NEWLINE
+    jmp .fetch
+
+; CSP 9 — readln(real): read float from serial, push float(4B)
+.csp_readln_real:
+    jsr FLOAT_READ
+    lda FLOAT1
+    jsr .push_byte
+    lda FLOAT1+1
+    jsr .push_byte
+    lda FLOAT1+2
+    jsr .push_byte
+    lda FLOAT1+3
+    jsr .push_byte
+    jmp .fetch
+
+; --- Float opcodes ----------------------------------------
+
+; FLIT: push 4-byte float literal (4 operand bytes follow)
+.op_flit:
+    jsr .fetch_byte
+    jsr .push_byte           ; byte 0 (FLOAT LSB)
+    jsr .fetch_byte
+    jsr .push_byte           ; byte 1
+    jsr .fetch_byte
+    jsr .push_byte           ; byte 2
+    jsr .fetch_byte
+    jsr .push_byte           ; byte 3 (FLOAT MSB)
+    jmp .fetch
+
+; FLOAD offset: load 4-byte float from FP+offset
+.op_fload:
+    jsr .fetch_byte          ; A = byte offset
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x
+    sta FLOAT1
+    inx
+    lda de,x
+    sta FLOAT1+1
+    inx
+    lda de,x
+    sta FLOAT1+2
+    inx
+    lda de,x
+    sta FLOAT1+3
+    jsr .push_float1
+    jmp .fetch
+
+; FSTORE offset: pop 4-byte float, store at FP+offset
+.op_fstore:
+    jsr .fetch_byte          ; A = byte offset
+    sta PM_TEMP
+    ; Pop 4 bytes (MSB first from stack)
+    jsr .pop_byte
+    sta FLOAT1+3
+    jsr .pop_byte
+    sta FLOAT1+2
+    jsr .pop_byte
+    sta FLOAT1+1
+    jsr .pop_byte
+    sta FLOAT1
+    ; Store to frame
+    lda PM_TEMP
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_FP_MSB
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda FLOAT1
+    sta de,x
+    inx
+    lda FLOAT1+1
+    sta de,x
+    inx
+    lda FLOAT1+2
+    sta de,x
+    inx
+    lda FLOAT1+3
+    sta de,x
+    jmp .fetch
+
+; Helper: pop float into FLOAT2, then pop float into FLOAT1
+.pop_two_floats:
+    jsr .pop_byte
+    sta FLOAT2+3
+    jsr .pop_byte
+    sta FLOAT2+2
+    jsr .pop_byte
+    sta FLOAT2+1
+    jsr .pop_byte
+    sta FLOAT2
+    jsr .pop_byte
+    sta FLOAT1+3
+    jsr .pop_byte
+    sta FLOAT1+2
+    jsr .pop_byte
+    sta FLOAT1+1
+    jsr .pop_byte
+    sta FLOAT1
+    rts
+
+; Helper: push FLOAT1 result onto eval stack
+.push_float1:
+    lda FLOAT1
+    jsr .push_byte
+    lda FLOAT1+1
+    jsr .push_byte
+    lda FLOAT1+2
+    jsr .push_byte
+    lda FLOAT1+3
+    jsr .push_byte
+    rts
+
+; FADD: pop b(4B), pop a(4B), push a+b
+.op_fadd:
+    jsr .pop_two_floats
+    jsr FLOAT_ADD
+    jsr .push_float1
+    jmp .fetch
+
+; FSUB: pop b(4B), pop a(4B), push a-b
+.op_fsub:
+    jsr .pop_two_floats
+    jsr FLOAT_SUB
+    jsr .push_float1
+    jmp .fetch
+
+; FMUL: pop b(4B), pop a(4B), push a*b
+.op_fmul:
+    jsr .pop_two_floats
+    jsr FLOAT_MUL
+    jsr .push_float1
+    jmp .fetch
+
+; FDIV: pop b(4B), pop a(4B), push a/b
+.op_fdiv:
+    jsr .pop_two_floats
+    jsr FLOAT_DIV
+    jsr .push_float1
+    jmp .fetch
+
+; FNEG: pop float(4B), flip sign bit, push
+.op_fneg:
+    jsr .pop_byte
+    eor 0x80                 ; flip sign bit of byte 3 (MSB)
+    jsr .push_byte
+    jmp .fetch
+
+; ITOF_SWAP: stack has int(2B) under float(4B); convert int to float
+; stack: ..., int16(2B), float(4B) → ..., float(4B), float(4B)
+.op_itof_swap:
+    ; Pop top float into FLOAT2
+    jsr .pop_byte
+    sta FLOAT2+3
+    jsr .pop_byte
+    sta FLOAT2+2
+    jsr .pop_byte
+    sta FLOAT2+1
+    jsr .pop_byte
+    sta FLOAT2
+    ; Pop int16, convert to float
+    jsr .pop_byte
+    sta PM_TEMP
+    jsr .pop_byte
+    ldx PM_TEMP
+    jsr INT_TO_FLOAT         ; FLOAT1 = converted int
+    ; Push converted int (now float)
+    jsr .push_float1
+    ; Push original float back on top
+    lda FLOAT2
+    jsr .push_byte
+    lda FLOAT2+1
+    jsr .push_byte
+    lda FLOAT2+2
+    jsr .push_byte
+    lda FLOAT2+3
+    jsr .push_byte
+    jmp .fetch
+
+; FABS: pop float(4B), clear sign bit, push float(4B)
+.op_fabs:
+    jsr .pop_byte
+    and 0x7F                 ; clear sign bit of byte 3 (MSB)
+    jsr .push_byte
+    jmp .fetch
+
+; ITOF: pop int16(2B), convert to float, push float(4B)
+.op_itof:
+    jsr .pop_byte            ; MSB of int
+    sta PM_TEMP              ; save MSB
+    jsr .pop_byte            ; LSB of int → A
+    ldx PM_TEMP              ; X = MSB
+    jsr INT_TO_FLOAT
+    jsr .push_float1
+    jmp .fetch
+
+; FTOI: pop float(4B), truncate to int16, push int16(2B)
+.op_ftoi:
+    jsr .pop_byte
+    sta FLOAT1+3
+    jsr .pop_byte
+    sta FLOAT1+2
+    jsr .pop_byte
+    sta FLOAT1+1
+    jsr .pop_byte
+    sta FLOAT1
+    jsr FLOAT_TO_INT         ; A=lo, X=hi
+    stx PM_TEMP              ; save MSB
+    jsr .push_byte           ; push LSB
+    lda PM_TEMP
+    jsr .push_byte           ; push MSB
+    jmp .fetch
+
+; FCMP: pop b(4B), pop a(4B), subtract, push int16 (-1/0/1)
+.op_fcmp:
+    jsr .pop_two_floats
+    jsr FLOAT_SUB            ; FLOAT1 = a - b
+    ; Check result (mask sign bit for +0/-0)
+    lda FLOAT1+3
+    and 0x7F
+    ora FLOAT1+2
+    ora FLOAT1+1
+    ora FLOAT1
+    beq .fcmp_eq             ; result == 0
+    lda FLOAT1+3
+    bmi .fcmp_lt             ; result < 0 (sign bit set)
+    ; result > 0
+    lda 0x01
+    jsr .push_byte
+    lda 0x00
+    jsr .push_byte
+    jmp .fetch
+.fcmp_lt:
+    lda 0xFF                 ; -1 LSB
+    jsr .push_byte
+    lda 0xFF                 ; -1 MSB
+    jsr .push_byte
+    jmp .fetch
+.fcmp_eq:
+    lda 0x00
+    jsr .push_byte
+    lda 0x00
+    jsr .push_byte
+    jmp .fetch
+
+; FLOAD_L depth offset: load 4-byte float via static chain
+.op_fload_l:
+    jsr .fetch_byte          ; depth
+    sta PM_TEMP
+    jsr .fetch_byte          ; offset
+    pha
+
+    ldx PM_TEMP
+    jsr .follow_links        ; PM_TEMP3:PM_TEMP2 = target FP
+
+    pla                      ; A = offset
+    clc
+    adc PM_TEMP2
+    tae
+    lda PM_TEMP3
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x
+    sta FLOAT1
+    inx
+    lda de,x
+    sta FLOAT1+1
+    inx
+    lda de,x
+    sta FLOAT1+2
+    inx
+    lda de,x
+    sta FLOAT1+3
+    jsr .push_float1
+    jmp .fetch
+
+; FSTORE_L depth offset: store 4-byte float via static chain
+.op_fstore_l:
+    jsr .fetch_byte          ; depth
+    sta PM_TEMP
+    jsr .fetch_byte          ; offset
+    pha
+    ; Pop float first
+    jsr .pop_byte
+    sta FLOAT1+3
+    jsr .pop_byte
+    sta FLOAT1+2
+    jsr .pop_byte
+    sta FLOAT1+1
+    jsr .pop_byte
+    sta FLOAT1
+
+    ldx PM_TEMP
+    jsr .follow_links        ; PM_TEMP3:PM_TEMP2 = target FP
+
+    pla                      ; A = offset
+    clc
+    adc PM_TEMP2
+    tae
+    lda PM_TEMP3
+    adc 0x00
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda FLOAT1
+    sta de,x
+    inx
+    lda FLOAT1+1
+    sta de,x
+    inx
+    lda FLOAT1+2
+    sta de,x
+    inx
+    lda FLOAT1+3
+    sta de,x
     jmp .fetch
 
 ; --- Exit & error -----------------------------------------
