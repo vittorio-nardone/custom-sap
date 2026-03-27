@@ -75,117 +75,88 @@ PM_ENTRY:
 
     jmp .fetch
 
-; --- Fetch-decode-execute loop ----------------------------
+; --- Fetch-decode-execute loop (jump table dispatch) ------
 
 .fetch:
     jsr .fetch_byte
+    cmp 0x3F
+    bcs .error_invalid
+    tax
+    lda .dispatch_hi,x
+    sta PM_DISPATCH
+    lda .dispatch_lo,x
+    sta PM_DISPATCH + 1
+    jmp (PM_DISPATCH)
 
-    cmp PM_OP_HALT
-    beq .op_halt
-    cmp PM_OP_LIT
-    beq .op_lit
-    cmp PM_OP_LIT16
-    beq .op_lit16
-    cmp PM_OP_LOAD
-    beq .op_load
-    cmp PM_OP_STORE
-    beq .op_store
-    cmp PM_OP_ADD
-    beq .op_add
-    cmp PM_OP_SUB
-    beq .op_sub
-    cmp PM_OP_MUL
-    beq .op_mul
-    cmp PM_OP_DIV
-    beq .op_div
-    cmp PM_OP_NEG
-    beq .op_neg
-    cmp PM_OP_MOD
-    beq .op_mod
-    cmp PM_OP_JMP
-    beq .op_jmp
-    cmp PM_OP_JPC
-    beq .op_jpc
-    cmp PM_OP_EQ
-    beq .op_eq
-    cmp PM_OP_NE
-    beq .op_ne
-    cmp PM_OP_LT
-    beq .op_lt
-    cmp PM_OP_CSP
-    beq .op_csp
-    cmp PM_OP_GE
-    beq .op_ge
-    cmp PM_OP_GT
-    beq .op_gt
-    cmp PM_OP_LE
-    beq .op_le
-    cmp PM_OP_AND
-    beq .op_and
-    cmp PM_OP_OR
-    beq .op_or
-    cmp PM_OP_NOT
-    beq .op_not
-    cmp PM_OP_CALL
-    beq .op_call
-    cmp PM_OP_ENTER
-    beq .op_enter
-    cmp PM_OP_RET
-    beq .op_ret
-    cmp PM_OP_LOAD_L
-    beq .op_load_l
-    cmp PM_OP_STORE_L
-    beq .op_store_l
-    cmp PM_OP_LOAD_A
-    beq .op_load_a
-    cmp PM_OP_STORE_A
-    beq .op_store_a
-    cmp PM_OP_LOAD_AL
-    beq .op_load_al
-    cmp PM_OP_STORE_AL
-    beq .op_store_al
-    cmp PM_OP_ABS
-    beq .op_abs
-    cmp PM_OP_LOAD_REF
-    beq .op_load_ref
-    cmp PM_OP_STORE_REF
-    beq .op_store_ref
-    cmp PM_OP_PUSH_ADDR
-    beq .op_push_addr
-    cmp PM_OP_PUSH_ADDR_L
-    beq .op_push_addr_l
-    cmp PM_OP_FLIT
-    beq .op_flit
-    cmp PM_OP_FLOAD
-    beq .op_fload
-    cmp PM_OP_FSTORE
-    beq .op_fstore
-    cmp PM_OP_FADD
-    beq .op_fadd
-    cmp PM_OP_FSUB
-    beq .op_fsub
-    cmp PM_OP_FMUL
-    beq .op_fmul
-    cmp PM_OP_FDIV
-    beq .op_fdiv
-    cmp PM_OP_FNEG
-    beq .op_fneg
-    cmp PM_OP_ITOF
-    beq .op_itof
-    cmp PM_OP_FTOI
-    beq .op_ftoi
-    cmp PM_OP_FCMP
-    beq .op_fcmp
-    cmp PM_OP_FLOAD_L
-    beq .op_fload_l
-    cmp PM_OP_FSTORE_L
-    beq .op_fstore_l
-    cmp PM_OP_FABS
-    beq .op_fabs
-    cmp PM_OP_ITOF_SWAP
-    beq .op_itof_swap
+; --- Dispatch tables (opcode → handler address) -----------
 
-    jmp .error_invalid
+.dispatch_lo:
+    ; 0x00 HALT    0x01 LIT     0x02 LIT16   0x03 LOAD
+    #d .op_halt[7:0], .op_lit[7:0], .op_lit16[7:0], .op_load[7:0]
+    ; 0x04 STORE   0x05 ADD     0x06 SUB     0x07 MUL
+    #d .op_store[7:0], .op_add[7:0], .op_sub[7:0], .op_mul[7:0]
+    ; 0x08 DIV     0x09 NEG     0x0A MOD     0x0B JMP
+    #d .op_div[7:0], .op_neg[7:0], .op_mod[7:0], .op_jmp[7:0]
+    ; 0x0C JPC     0x0D EQ      0x0E NE      0x0F LT
+    #d .op_jpc[7:0], .op_eq[7:0], .op_ne[7:0], .op_lt[7:0]
+    ; 0x10 CSP     0x11 GE      0x12 GT      0x13 LE
+    #d .op_csp[7:0], .op_ge[7:0], .op_gt[7:0], .op_le[7:0]
+    ; 0x14 AND     0x15 OR      0x16 NOT     0x17 CALL
+    #d .op_and[7:0], .op_or[7:0], .op_not[7:0], .op_call[7:0]
+    ; 0x18 ENTER   0x19 RET     0x1A LOAD_L  0x1B STORE_L
+    #d .op_enter[7:0], .op_ret[7:0], .op_load_l[7:0], .op_store_l[7:0]
+    ; 0x1C LOAD_A  0x1D STORE_A 0x1E LOAD_AL 0x1F STORE_AL
+    #d .op_load_a[7:0], .op_store_a[7:0], .op_load_al[7:0], .op_store_al[7:0]
+    ; 0x20 ABS     0x21 LOAD_REF 0x22 STORE_REF 0x23 PUSH_ADDR
+    #d .op_abs[7:0], .op_load_ref[7:0], .op_store_ref[7:0], .op_push_addr[7:0]
+    ; 0x24 PUSH_ADDR_L  0x25-0x2F unused (→ error)
+    #d .op_push_addr_l[7:0]
+    #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
+    #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
+    #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
+    #d .error_invalid[7:0], .error_invalid[7:0]
+    ; 0x30 FLIT    0x31 FLOAD   0x32 FSTORE  0x33 FADD
+    #d .op_flit[7:0], .op_fload[7:0], .op_fstore[7:0], .op_fadd[7:0]
+    ; 0x34 FSUB    0x35 FMUL    0x36 FDIV    0x37 FNEG
+    #d .op_fsub[7:0], .op_fmul[7:0], .op_fdiv[7:0], .op_fneg[7:0]
+    ; 0x38 ITOF    0x39 FTOI    0x3A FCMP    0x3B FLOAD_L
+    #d .op_itof[7:0], .op_ftoi[7:0], .op_fcmp[7:0], .op_fload_l[7:0]
+    ; 0x3C FSTORE_L 0x3D FABS   0x3E ITOF_SWAP
+    #d .op_fstore_l[7:0], .op_fabs[7:0], .op_itof_swap[7:0]
+
+.dispatch_hi:
+    ; 0x00-0x03
+    #d .op_halt[15:8], .op_lit[15:8], .op_lit16[15:8], .op_load[15:8]
+    ; 0x04-0x07
+    #d .op_store[15:8], .op_add[15:8], .op_sub[15:8], .op_mul[15:8]
+    ; 0x08-0x0B
+    #d .op_div[15:8], .op_neg[15:8], .op_mod[15:8], .op_jmp[15:8]
+    ; 0x0C-0x0F
+    #d .op_jpc[15:8], .op_eq[15:8], .op_ne[15:8], .op_lt[15:8]
+    ; 0x10-0x13
+    #d .op_csp[15:8], .op_ge[15:8], .op_gt[15:8], .op_le[15:8]
+    ; 0x14-0x17
+    #d .op_and[15:8], .op_or[15:8], .op_not[15:8], .op_call[15:8]
+    ; 0x18-0x1B
+    #d .op_enter[15:8], .op_ret[15:8], .op_load_l[15:8], .op_store_l[15:8]
+    ; 0x1C-0x1F
+    #d .op_load_a[15:8], .op_store_a[15:8], .op_load_al[15:8], .op_store_al[15:8]
+    ; 0x20-0x24
+    #d .op_abs[15:8], .op_load_ref[15:8], .op_store_ref[15:8], .op_push_addr[15:8]
+    #d .op_push_addr_l[15:8]
+    ; 0x25-0x2F unused
+    #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
+    #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
+    #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
+    #d .error_invalid[15:8], .error_invalid[15:8]
+    ; 0x30-0x33
+    #d .op_flit[15:8], .op_fload[15:8], .op_fstore[15:8], .op_fadd[15:8]
+    ; 0x34-0x37
+    #d .op_fsub[15:8], .op_fmul[15:8], .op_fdiv[15:8], .op_fneg[15:8]
+    ; 0x38-0x3B
+    #d .op_itof[15:8], .op_ftoi[15:8], .op_fcmp[15:8], .op_fload_l[15:8]
+    ; 0x3C-0x3E
+    #d .op_fstore_l[15:8], .op_fabs[15:8], .op_itof_swap[15:8]
 
 ; --- HALT -------------------------------------------------
 

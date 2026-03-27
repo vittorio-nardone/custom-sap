@@ -23,6 +23,7 @@
 #const PM_FTOP_MSB = 0xB00A  ; 1 byte - frame top MSB (next free byte in data stack)
 #const PM_FTOP_LSB = 0xB00B  ; 1 byte - frame top LSB
 #const PM_TEMP3    = 0xB00C  ; 1 byte - third temporary (follow static links)
+#const PM_DISPATCH = 0xB00D  ; 2 bytes - dispatch jump target (MSB, LSB)
 
 ; --- Eval stack (0xB100-0xB1FF, 256 bytes, grows upward) ----
 ;     Each value is 16-bit (2 bytes: LSB at lower offset, MSB at higher).

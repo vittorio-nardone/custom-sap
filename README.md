@@ -60,8 +60,8 @@ This repository houses the complete design files and software components for the
 ### System Software
 * **kernel/** - Operating system kernel source code
 * **apps/** - Example applications and demos
-* **pascal/** - Tiny Pascal system
-  * **pmachine.asm** - P-Machine bytecode interpreter (ROM #3)
+* **pascal/** - Tiny Pascal system (part of the unified ROM build)
+  * **pmachine.asm** - P-Machine bytecode interpreter
   * **editor.asm** - On-board line editor
   * **compiler.asm** - On-board single-pass Pascal compiler
   * **consts.asm** - Constants and RAM layout
@@ -70,7 +70,7 @@ This repository houses the complete design files and software components for the
 * **pascal_compiler.py** - Tiny Pascal cross-compiler (Python, produces P-code binaries)
 * **forth/** - FORTH language interpreter (deprecated, files retained but excluded from build)
 * **roms/** - Binary files
-  * **system/** - Microcode EEPROMs, kernel image, P-Machine ROM
+  * **system/** - Microcode EEPROMs, unified kernel ROM (kernel + P-Machine + editor + compiler)
   * **apps/asm/** - Assembly app binaries (compiled from `apps/*.asm`)
   * **apps/pascal/** - Pascal app binaries (compiled from `pascal/examples/*.pas`)
 
@@ -145,17 +145,17 @@ Exit codes: `0` = program completed, `1` = timeout, `2` = execution error. Use `
 
 ## Tiny Pascal
 
-Otto includes a complete Tiny Pascal system: a P-Machine bytecode interpreter, a Python cross-compiler, and an on-board editor/compiler — all packed into ROM #3 (8 KB).
+Otto includes a complete Tiny Pascal system: a P-Machine bytecode interpreter, a Python cross-compiler, and an on-board editor/compiler — all part of the unified 24 KB ROM build (kernel + P-Machine + editor + compiler share the same address space).
 
 ### Components
 
-* **P-Machine** — a stack-based bytecode interpreter in ROM #3 (0x4000-0x5FFF). It executes P-code with support for 16-bit signed integers, procedures, functions, recursion, arrays, and lexical scoping via static links.
+* **P-Machine** — a stack-based bytecode interpreter that executes P-code with support for 16-bit signed integers, 32-bit IEEE 754 floating point (`real` type), procedures, functions, recursion, arrays, `var` parameters, constants, and lexical scoping via static links.
 * **Cross-compiler** (`pascal_compiler.py`) — a Python tool that compiles Pascal source files into self-executing P-code binaries. The output can be loaded at 0x8400 and run with either the `r` (run) or `p` (Pascal) kernel commands.
 * **On-board editor/compiler** — a line editor and single-pass recursive descent compiler in native assembly, accessible via the kernel `e` command. Allows writing and running Pascal programs directly on Otto hardware without a host PC.
 
 ### Language Features
 
-Variables (16-bit signed integers), arrays (`array[lo..hi] of integer`), procedures and functions with parameters (by value), recursion, nested scopes with lexical scoping, `if/then/else`, `while/do`, `for/to/downto`, `begin..end`, `write`/`writeln`, `readln`, boolean and arithmetic operators.
+Two data types (`integer`: 16-bit signed, `real`: 32-bit IEEE 754 float with automatic coercion), named constants, arrays (`array[lo..hi] of integer`), procedures and functions with parameters (by value and by reference via `var`), recursion, nested scopes with lexical scoping, `if/then/else`, `while/do`, `for/to/downto`, `repeat/until`, `begin..end`, `write`/`writeln`/`readln` (polymorphic: string, integer, real, char), boolean and arithmetic operators, built-in functions (`abs`, `odd`, `chr`, `ord`).
 
 See `pascal/LANGUAGE.md` for the full language reference.
 
@@ -210,6 +210,16 @@ Compiling..OK(90B)
 | `fizzbuzz.pas` | Control flow: for, if/else, mod |
 | `functions.pas` | Recursive factorial |
 | `bubblesort.pas` | Bubble sort with arrays |
+| `constants.pas` | Named constants and const expressions |
+| `chars.pas` | Character output with chr/ord |
+| `varparams.pas` | Var (by-reference) parameters |
+| `float_simple.pas` | Basic real arithmetic |
+| `float_test.pas` | Real type: arithmetic, comparisons, coercion |
+| `float_func.pas` | Functions with real parameters and return values |
+| `float_mix.pas` | Mixed integer/real expressions |
+| `float_two.pas` | Two real variables |
+| `simple_func.pas` | Simple function call |
+| `debug_func.pas` | Function call debugging |
 
 > **Note**: The FORTH interpreter (`forth/`) has been deprecated and is no longer included in the build process or kernel menu. Its source files are retained in the repository for reference.
 
@@ -219,8 +229,11 @@ python microcode.py
 ```
 
 ## ROM generation
+
+The three ROM chips (24 KB total) are built as a single compilation unit via `generate-all.sh`. The kernel, P-Machine, editor, and compiler share the same address space (0x0000-0x5FFF) and are compiled together.
+
 ```sh
-customasm kernel.asm -f intelhex -o roms/system/kernel-rom.hex
+source .venv/bin/activate && ./generate-all.sh
 ```
 
 You need an EEPROM programmer for kernel and microcode.
