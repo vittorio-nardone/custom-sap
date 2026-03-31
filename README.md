@@ -265,7 +265,7 @@ I use minicom to communicate with Otto and upload files using XMODEM protocol.
 
 ```sh
 ls /dev/cu*
-minicom --device /dev/cu.usbserial-1433240 
+minicom --device  /dev/cu.usbserial-2110
 minicom --device /dev/cu.usbserial-A50285BI  -c on
 ```
 
