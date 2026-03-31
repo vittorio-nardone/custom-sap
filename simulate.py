@@ -9,6 +9,7 @@ import argparse
 from watchdog.observers import Observer 
 from watchdog.events import FileSystemEventHandler 
 import os
+import random as pyrandom
 
 class OttoCPU:
     def __init__(self):
@@ -42,11 +43,11 @@ class OttoCPU:
         
         # Memory regions
         self.memory_regions = {
-            'rom': {'start': 0x0000, 'stop': 0x3FFF, 'read_only': True, 'io': False},
-            'pmachine': {'start': 0x4000, 'stop': 0x5FFF, 'read_only': True, 'io': False},
+            'rom': {'start': 0x0000, 'stop': 0x5FFF, 'read_only': True, 'io': False},
             'ram': {'start': 0x8000, 'stop': 0xFFFF, 'read_only': False, 'io': False},
             'ram_ext_1': {'start': 0x010000, 'stop': 0x01FFFF, 'read_only': False, 'io': False},
             'ram_ext_2': {'start': 0x020000, 'stop': 0x02FFFF, 'read_only': False, 'io': False},
+            'random': {'start': 0x6010, 'stop': 0x6012, 'read_only': False, 'io': True},
             'acia_1': {'start': 0x6020, 'stop': 0x6021, 'read_only': False, 'io': True},
         }
         
@@ -86,35 +87,58 @@ class OttoCPU:
             self.update_negative_flag(result)
         return result
 
-    def load_binary(self, filename, address):
-        """Load a binary file into memory at a specific address"""
+    def load_binary(self, filename, address, auto_detect_header=True):
+        """Load a binary file into memory at a specific address.
+        
+        If auto_detect_header is True and the file starts with the OT magic
+        (0x4F 0x54), the 6-byte header is stripped and the address encoded in
+        the header is returned (but the caller-provided address is used for
+        loading when it was explicitly given).
+        Returns the effective load address.
+        """
         try:
             with open(filename, 'rb') as f:
                 data = f.read()
         except FileNotFoundError:
             raise FileNotFoundError(f"Could not open binary file: {filename}")
-        
+
+        effective_address = address
+        if auto_detect_header and len(data) >= 6 and data[0] == 0x4F and data[1] == 0x54:
+            header_address = (data[3] << 16) | (data[4] << 8) | data[5]
+            data = data[6:]
+            if address is None:
+                effective_address = header_address
+                print(f"   OT header detected: loading at {hex(effective_address)}")
+            else:
+                effective_address = address
+                print(f"   OT header stripped (header address {hex(header_address)}, using {hex(effective_address)})")
+
+        if effective_address is None:
+            effective_address = 0x8400
+
         # Check if the address is within a valid, not read-only region
         valid_region = None
         for region_name, region in self.memory_regions.items():
-            if region['start'] <= address <= region['stop']:
+            if region['start'] <= effective_address <= region['stop']:
                 valid_region = region
                 break
         
         if not valid_region:
-            raise ValueError(f"Address {hex(address)} is not within a valid region")
+            raise ValueError(f"Address {hex(effective_address)} is not within a valid region")
         
         # Check if the file will fit in the region
-        end_address = address + len(data) - 1
+        end_address = effective_address + len(data) - 1
         if end_address > valid_region['stop']:
             raise ValueError(
                 f"Binary file ({len(data)} bytes) too large for region {region_name} "
-                f"starting at address {hex(address)} (space available: {valid_region['stop'] - address + 1} bytes)"
+                f"starting at address {hex(effective_address)} (space available: {valid_region['stop'] - effective_address + 1} bytes)"
             )
         
         # Perform the load
         for i, byte in enumerate(data):
-            self.memory[address + i] = byte
+            self.memory[effective_address + i] = byte
+
+        return effective_address
 
     def reset(self):
         """Reset the CPU to its initial state"""
@@ -399,7 +423,11 @@ class OttoCPU:
                 if region['io'] == False:
                     return self.memory[address]
                 else:
-                    if address == 0x6021:
+                    if address == 0x6010 or address == 0x6011:
+                        return pyrandom.randint(0, 255)
+                    elif address == 0x6012:
+                        return 0x00
+                    elif address == 0x6021:
                         if self.serial_io != None:
                             if self.serial_io.in_waiting > 0:
                                 return self.serial_io.read(1)[0]
@@ -429,7 +457,9 @@ class OttoCPU:
                 if region['io'] == False:
                     self.memory[address] = value
                 else:
-                    if address == 0x6021:
+                    if address == 0x6012:
+                        pass
+                    elif address == 0x6021:
                         if self.serial_io != None:
                             self.serial_io.write(bytes([value]))
                         else:
@@ -476,7 +506,7 @@ class FileChangeHandler(FileSystemEventHandler):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Project OTTO - Simulator")
     parser.add_argument("--program", type=str, help="Path to the binary program file to load")
-    parser.add_argument("--address", type=lambda x: int(x, 0), default=0x8400, help="Memory address to load the program (default: 0x8400)")
+    parser.add_argument("--address", type=lambda x: int(x, 0), default=None, help="Memory address to load the program (default: auto-detect from OT header, fallback 0x8400)")
     parser.add_argument("--simulate-serial", action="store_true", help="Simulate serial ports instead of using stdin/stdout")
     parser.add_argument("--headless", action="store_true", help="Run without TTY (no stdin, no termios). Compatible with batch/CI usage")
     parser.add_argument("--autorun", action="store_true", help="Automatically run the loaded program after kernel boot (implies --headless)")
@@ -494,23 +524,32 @@ if __name__ == "__main__":
     # Create a new OttoCPU instance
     cpu = OttoCPU()
 
+    # Load unified ROM (kernel + P-Machine) into memory
+    print("-> loading ROM into memory")
+    cpu.load_binary("roms/system/kernel-rom.bin", cpu.memory_regions['rom']['start'], auto_detect_header=False)
+
+    # Load a program into memory if provided
+    effective_address = args.address if args.address is not None else 0x8400
+    if args.program:
+        print(f"-> loading program {args.program} into memory")
+        effective_address = cpu.load_binary(args.program, args.address)
+
     # App execution tracking: detect when the program starts (PC enters app space)
     # and when it returns (PC back in kernel AND SP restored above JSR level).
-    # Used by --autorun (to exit cleanly on RTS) and --quiet (to suppress kernel output).
+    # Uses effective_address (resolved after OT header auto-detection).
     if args.autorun or args.quiet:
         cpu._app_running = False
         cpu._app_started = False
         cpu._app_sp = 0
+        cpu._app_address = effective_address
         _original_step = cpu.step
         def _tracking_step():
             if not cpu._app_running and not cpu._app_started \
-                    and cpu.PC >= args.address and len(cpu.KEY) == 0:
-                # App started: PC entered app space and autorun input was consumed
+                    and cpu.PC >= cpu._app_address and len(cpu.KEY) == 0:
                 cpu._app_running = True
                 cpu._app_started = True
-                cpu._app_sp = cpu.SP  # SP right after kernel's JSR to app
-            elif cpu._app_running and cpu.PC < 0x8400 and cpu.SP > cpu._app_sp:
-                # SP restored above the app call level = app did RTS
+                cpu._app_sp = cpu.SP
+            elif cpu._app_running and cpu.PC < cpu._app_address and cpu.SP > cpu._app_sp:
                 cpu._app_running = False
             _original_step()
         cpu.step = _tracking_step
@@ -524,26 +563,6 @@ if __name__ == "__main__":
             _original_write_byte(address, value)
         cpu.write_byte = _quiet_write_byte
 
-    # Load the kernel into memory
-    print("-> loading kernel into rom memory")
-    cpu.load_binary("roms/system/kernel-rom.bin", cpu.memory_regions['rom']['start'])
-
-    # Load the Pascal P-Machine into memory (optional, may be empty in debug builds)
-    try:
-        pmachine_size = os.path.getsize("roms/system/pmachine.bin")
-        if pmachine_size > 1:
-            print("-> loading Pascal P-Machine into rom memory")
-            cpu.load_binary("roms/system/pmachine.bin", cpu.memory_regions['pmachine']['start'])
-        else:
-            print("-> P-Machine ROM empty (debug build)")
-    except FileNotFoundError:
-        print("-> P-Machine ROM not found (debug build)")
-
-    # Load a program into memory if provided
-    if args.program:
-        print(f"-> loading program {args.program} into memory")
-        cpu.load_binary(args.program, args.address)
-
         # Set up file change handler (not needed in headless mode)
         if not args.headless:
             event_handler = FileChangeHandler(cpu, args.program, args.address)
@@ -553,7 +572,11 @@ if __name__ == "__main__":
 
     # In autorun mode, pre-load keyboard buffer with 'r' + CR to trigger program execution
     if args.autorun:
-        cpu.KEY = [ord('r'), 0x0D]
+        if effective_address == 0x8400:
+            cpu.KEY = [ord('r'), 0x0D]
+        else:
+            addr_hex = f"{effective_address:06x}" if effective_address > 0xFFFF else f"{effective_address:04x}"
+            cpu.KEY = [ord('r')] + [ord(c) for c in addr_hex] + [0x0D]
 
     # Pre-load additional keyboard input if provided
     if args.input:

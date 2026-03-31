@@ -1,3 +1,4 @@
+; @load-address 0x8400
 ;==========================================================
 ; Otto assembly code to solve N Queens puzzle
 ; created 2025 by Vittorio Nardone

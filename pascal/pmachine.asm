@@ -1143,6 +1143,8 @@ PM_ENTRY:
     beq .csp_writeln_real
     cmp PM_CSP_READLN_REAL
     beq .csp_readln_real
+    cmp PM_CSP_RANDOM
+    beq .csp_random
 
     jmp .error_invalid
 
@@ -1248,6 +1250,15 @@ PM_ENTRY:
     lda FLOAT1+2
     jsr .push_byte
     lda FLOAT1+3
+    jsr .push_byte
+    jmp .fetch
+
+; CSP 10 — random: push random integer (0..32767)
+.csp_random:
+    jsr RANDOM_BYTE
+    jsr .push_byte
+    jsr RANDOM_BYTE
+    and 0x7F
     jsr .push_byte
     jmp .fetch
 
@@ -1662,10 +1673,10 @@ PM_ENTRY:
 
 .welcome_msg:
     #d 0x0A, 0x0D
-    #d "P-Machine ", PMACHINE_VERSION, 0x0A, 0x0D, 0x00
+    #d "P-Machine (", PMACHINE_VERSION, "): started", 0x0A, 0x0D, 0x00
 
 .done_msg:
-    #d "P-Machine: execution complete.", 0x0A, 0x0D, 0x00
+    #d "P-Machine (", PMACHINE_VERSION, "): execution complete", 0x0A, 0x0D, 0x00
 
 .error_msg:
     #d 0x0A, 0x0D

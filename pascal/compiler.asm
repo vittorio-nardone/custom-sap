@@ -1851,6 +1851,8 @@
     beq .cc_fc_abs
     cmp CC_TK_ODD
     beq .cc_fc_odd
+    cmp CC_TK_RANDOM
+    beq .cc_fc_random
 
     ; Unexpected token
     lda .cc_e_expr
@@ -2100,6 +2102,25 @@
     jsr .cc_ensure_int       ; FTOI if real
     lda PM_OP_NOT
     jsr .cc_emit
+.cc_fc_random:
+    jsr .cc_next_token       ; consume 'random'
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_LPAREN
+    bne .cc_fc_random_emit
+    jsr .cc_next_token       ; consume '('
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+.cc_fc_random_emit:
+    lda CC_ERROR
+    bne .cc_fc_done
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_RANDOM
+    jsr .cc_emit
+    lda 0x00
+    sta CC_EXPR_TYPE         ; integer
+    rts
+
 .cc_fc_done:
     rts
 
@@ -3558,6 +3579,7 @@
     #d "ord", 0x00, CC_TK_ORD
     #d "abs", 0x00, CC_TK_ABS
     #d "odd", 0x00, CC_TK_ODD
+    #d "random", 0x00, CC_TK_RANDOM
     #d "real", 0x00, CC_TK_REAL
     #d 0x00                  ; sentinel
 

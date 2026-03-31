@@ -514,7 +514,8 @@ ACIA_READ_DECIMAL16S:
         lda 0x00
         sta MATH16_A
         sta MATH16_A+1
-        sta MATH16_SIGN
+        sta ACIA_RDEC_SIGN
+        sta ACIA_RDEC_COUNT
 
 .rdec_loop:
         jsr ACIA_READ_CHAR
@@ -522,13 +523,17 @@ ACIA_READ_DECIMAL16S:
         beq .rdec_done
         cmp 0x0A
         beq .rdec_done
+        cmp 0x7F
+        beq .rdec_bs
+        cmp 0x08
+        beq .rdec_bs
 
         jsr ACIA_SEND_CHAR
 
         cmp 0x2D
         bne .rdec_not_minus
         lda 0x01
-        sta MATH16_SIGN
+        sta ACIA_RDEC_SIGN
         jmp .rdec_loop
 .rdec_not_minus:
         cmp 0x30
@@ -536,19 +541,16 @@ ACIA_READ_DECIMAL16S:
         cmp 0x3A
         bcs .rdec_loop
 
-        ; A = digit char, save digit = A - 0x30
         sec
         sbc 0x30
         pha
 
-        ; result = result * 10
         lda 0x0A
         sta MATH16_B
         lda 0x00
         sta MATH16_B+1
         jsr MUL16S
 
-        ; result += digit
         pla
         clc
         adc MATH16_A
@@ -557,10 +559,32 @@ ACIA_READ_DECIMAL16S:
         adc MATH16_A+1
         sta MATH16_A+1
 
+        inc ACIA_RDEC_COUNT
+        jmp .rdec_loop
+
+.rdec_bs:
+        lda ACIA_RDEC_COUNT
+        bne .rdec_bs_digit
+        lda ACIA_RDEC_SIGN
+        beq .rdec_loop
+        lda 0x00
+        sta ACIA_RDEC_SIGN
+        jsr VT100_CURSOR_LEFT
+        jsr VT100_CLEAR_LINE_END
+        jmp .rdec_loop
+.rdec_bs_digit:
+        lda 0x0A
+        sta MATH16_B
+        lda 0x00
+        sta MATH16_B+1
+        jsr DIV16S
+        dec ACIA_RDEC_COUNT
+        jsr VT100_CURSOR_LEFT
+        jsr VT100_CLEAR_LINE_END
         jmp .rdec_loop
 
 .rdec_done:
-        lda MATH16_SIGN
+        lda ACIA_RDEC_SIGN
         beq .rdec_positive
         jsr MATH16_NEGATE_A
 .rdec_positive:

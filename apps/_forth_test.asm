@@ -1,3 +1,4 @@
+; @load-address 0x8400
 #bankdef ram
 {
     #addr 0x8400

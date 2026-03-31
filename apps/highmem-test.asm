@@ -1,3 +1,4 @@
+; @load-address 0x010000
 #include "../assembly/ruledef.asm"
 #include "../kernel/symbols.asm"
 

@@ -52,8 +52,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.101"
-#const KERNEL_BUILDDATE = "03/27/2026"
+#const KERNEL_VERSION = "v1.2.112"
+#const KERNEL_BUILDDATE = "03/31/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -65,9 +65,9 @@
 #include "utils.asm"
 #include "serial.asm"
 #include "interrupt.asm"
+#include "random.asm"
 #include "xmodem.asm"
 #include "vt100.asm"
-#include "istructions.asm"
 #include "../pascal/pmachine.asm"
 
 #bank low_kernel
@@ -100,9 +100,17 @@ main:
     JSR INTERRUPT_INIT
     cli
 
+    ; Seed random number generator
+    jsr RANDOM_SEED
+
 .init:
     lda 0x00
     sta MAIN_MENU_STATUS
+    sta MAIN_MENU_ADDR_PAGE
+    lda 0x84
+    sta MAIN_MENU_ADDR_MSB
+    lda 0x00
+    sta MAIN_MENU_ADDR_LSB
 
 .ready:
     jsr ACIA_SEND_NEWLINE
@@ -121,6 +129,8 @@ main:
     beq .cmd_entered
     cmp 0x7F
     beq .backspace
+    cmp 0x08
+    beq .backspace
     jsr ACIA_SEND_CHAR
     ldx MAIN_MENU_INPUT_BUFFER_COUNT
     sta MAIN_MENU_INPUT_BUFFER,x
@@ -130,11 +140,11 @@ main:
     jmp .loop
 
 .backspace:
-    jsr VT100_CURSOR_LEFT
-    jsr VT100_CLEAR_LINE_END
     lda MAIN_MENU_INPUT_BUFFER_COUNT
     beq .loop
     dec MAIN_MENU_INPUT_BUFFER_COUNT
+    jsr VT100_CURSOR_LEFT
+    jsr VT100_CLEAR_LINE_END
     jmp .loop
 
 .cmd_entered:
@@ -150,10 +160,6 @@ main:
     beq .menu_run_command
     cmp "h"
     beq .menu_help_command
-    cmp "a"
-    beq .menu_disassembler_command
-    cmp "p"
-    beq .menu_pascal_command
     cmp "e"
     beq .menu_editor_command
 .menu_show_error:
@@ -166,13 +172,20 @@ main:
     ldd .menu_help_msg[15:8]
     lde .menu_help_msg[7:0]
     jsr ACIA_SEND_STRING
-
-    ldy MAIN_MENU_STATUS    
-    cpy 0x01 
-    beq .menu_upload_command_error
-    cpy 0x02
-    beq .menu_upload_command_ok
-    jmp .ready    
+    ; Print current default address dynamically
+    ldd .menu_default_addr_msg[15:8]
+    lde .menu_default_addr_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda MAIN_MENU_ADDR_PAGE
+    jsr ACIA_SEND_HEX
+    lda MAIN_MENU_ADDR_MSB
+    jsr ACIA_SEND_HEX
+    lda MAIN_MENU_ADDR_LSB
+    jsr ACIA_SEND_HEX
+    lda ")"
+    jsr ACIA_SEND_CHAR
+    jsr ACIA_SEND_NEWLINE
+    jmp .ready
 
 .menu_help_command:
     ldd .menu_help_msg[15:8]
@@ -229,10 +242,10 @@ main:
     clc
     rts
 
-.menu_read_address_default:  
-    ldy 0x00
-    ldd 0x84
-    lde 0x00
+.menu_read_address_default:
+    ldy MAIN_MENU_ADDR_PAGE
+    ldd MAIN_MENU_ADDR_MSB
+    lde MAIN_MENU_ADDR_LSB
     clc
     rts
 
@@ -240,21 +253,6 @@ main:
     sty MAIN_MENU_ADDR_PAGE
     std MAIN_MENU_ADDR_MSB
     ste MAIN_MENU_ADDR_LSB
-    rts
-
-.menu_load_address:
-    ldy MAIN_MENU_ADDR_PAGE
-    ldd MAIN_MENU_ADDR_MSB
-    lde MAIN_MENU_ADDR_LSB
-    rts
-
-.menu_inc_address:
-    inc MAIN_MENU_ADDR_LSB
-    bne .menu_inc_address_end
-    inc MAIN_MENU_ADDR_MSB
-    bne .menu_inc_address_end
-    inc MAIN_MENU_ADDR_PAGE
-.menu_inc_address_end:
     rts
 
 ; --------------------------------------
@@ -361,6 +359,16 @@ main:
 .menu_upload_command:
     jsr .menu_read_address
     bcs .menu_show_error
+    ; Set auto-detect flag based on whether address was explicit
+    lda MAIN_MENU_INPUT_BUFFER_COUNT
+    cmp 0x01
+    bne .menu_upload_explicit
+    lda 0x01
+    sta XMODEM_AUTO_ADDR
+    jmp .menu_upload_command_start
+.menu_upload_explicit:
+    lda 0x00
+    sta XMODEM_AUTO_ADDR
 
 .menu_upload_command_start:
     phd
@@ -373,23 +381,42 @@ main:
     sei
     jsr XMODEM_RCV
     cli
-    sta MAIN_MENU_STATUS    
-    jmp .ready
-
-.menu_upload_command_error:
-    ldd .menu_upload_command_error_msg[15:8]
-    lde .menu_upload_command_error_msg[7:0]
-    jsr ACIA_SEND_STRING
-    ldy 0x00
-    sty MAIN_MENU_STATUS
-    jmp .ready
-
-.menu_upload_command_ok:
+    cmp 0x02
+    bne .menu_upload_failed
+    ; Upload successful — show immediate feedback
     ldd .menu_upload_command_ok_msg[15:8]
     lde .menu_upload_command_ok_msg[7:0]
     jsr ACIA_SEND_STRING
-    ldy 0x00
-    sty MAIN_MENU_STATUS
+    ; Check if OT header was detected (XMODEM_AUTO_ADDR == 2)
+    lda XMODEM_AUTO_ADDR
+    cmp 0x02
+    bne .menu_upload_done
+    ; Header found — update default address
+    lda XMODEM_LOAD_PTRP
+    sta MAIN_MENU_ADDR_PAGE
+    lda XMODEM_LOAD_PTRH
+    sta MAIN_MENU_ADDR_MSB
+    lda XMODEM_LOAD_PTR
+    sta MAIN_MENU_ADDR_LSB
+    ; Print new default address
+    ldd .menu_upload_addr_msg[15:8]
+    lde .menu_upload_addr_msg[7:0]
+    jsr ACIA_SEND_STRING
+    lda MAIN_MENU_ADDR_PAGE
+    jsr ACIA_SEND_HEX
+    lda MAIN_MENU_ADDR_MSB
+    jsr ACIA_SEND_HEX
+    lda MAIN_MENU_ADDR_LSB
+    jsr ACIA_SEND_HEX
+    jsr ACIA_SEND_NEWLINE
+    jmp .menu_upload_done
+.menu_upload_failed:
+    ldd .menu_upload_command_error_msg[15:8]
+    lde .menu_upload_command_error_msg[7:0]
+    jsr ACIA_SEND_STRING
+.menu_upload_done:
+    lda 0x00
+    sta MAIN_MENU_STATUS
     jmp .ready
 
 .menu_run_command:
@@ -411,184 +438,13 @@ main:
     jsr EDITOR_ENTRY
     jmp .ready
 
-.menu_pascal_command:
-    jsr .menu_read_address
-    bcs .menu_show_error
-    ldx 0x00
-    lda de,x
-    cmp 0x50
-    beq .menu_pascal_run
-    lde 0x09
-.menu_pascal_run:
-    jsr PM_ENTRY
-    jmp .ready
-
-.menu_disassembler_command:
-    jsr .menu_read_address
-    bcs .menu_show_error
-    jsr .menu_store_address
-    lda 0x00
-    sta MAIN_MENU_DUMP_COUNT
-
-; print address
-.menu_disassembler_command_dump_address:   
-    jsr .menu_load_address
-    jsr ACIA_SEND_NEWLINE
-
-    tya
-    jsr ACIA_SEND_HEX
-
-    tda
-    jsr ACIA_SEND_HEX
-
-    tea
-    jsr ACIA_SEND_HEX
-
-    lda 0x3a
-    jsr ACIA_SEND_CHAR
-
-    lda 0x20
-    jsr ACIA_SEND_CHAR
-
-.menu_disassembler_command_get_opcode:  
-    ldx 0x00
-    lda yde,x         ; get code
-    pha
-    
-    jsr ACIA_SEND_HEX   ; print it
-    lda 0x20
-    jsr ACIA_SEND_CHAR
-
-    jsr .menu_inc_address
-
-    ; get pointer to opcode description
-    plx
-    lda ISTRUCTIONS.OPCODE_MSB, x
-    tad
-    lda ISTRUCTIONS.OPCODE_LSB, x
-    tae
-
-    std MAIN_MENU_OPCODE_MSB
-    ste MAIN_MENU_OPCODE_LSB
-
-    ; get value length
-    ldx 0x00
-    lda de,x 
-    sta MAIN_MENU_OPCODE_LENGTH
-    inx
-    lda de,x 
-    sta MAIN_MENU_OPCODE_LENGTH_2
-
-    ; Restore pointer
-    jsr .menu_load_address
-    ldx 0x00
- 
- .menu_disassembler_command_dump_value:
-    cpx MAIN_MENU_OPCODE_LENGTH
-    beq .menu_disassembler_command_dump_value_end
-
-    lda yde,x         ; get code
-    phx
-    jsr ACIA_SEND_HEX   ; print it
-    lda 0x20
-    jsr ACIA_SEND_CHAR
-    plx
-    inx
-    jmp .menu_disassembler_command_dump_value
-
-.menu_disassembler_command_dump_value_end:
-    ldx 0x04
-.menu_disassembler_command_dump_value_end_loop:
-    cpx MAIN_MENU_OPCODE_LENGTH
-    beq .menu_disassembler_command_print_prefix
-    lda 0x20
-    jsr ACIA_SEND_CHAR
-    jsr ACIA_SEND_CHAR
-    jsr ACIA_SEND_CHAR
-    dex
-    jmp .menu_disassembler_command_dump_value_end_loop    
-
-.menu_disassembler_command_print_prefix:
-    ldd MAIN_MENU_OPCODE_MSB
-    lde MAIN_MENU_OPCODE_LSB  
-    ldx 0x02
-
-.menu_disassembler_command_print_prefix_get_char:
-    lda de,x          ; get char
-    beq .menu_disassembler_command_print_prefix_end
-    jsr ACIA_SEND_CHAR
-    inx
-    jmp .menu_disassembler_command_print_prefix_get_char
-
-.menu_disassembler_command_print_prefix_end:
-    inx
-    stx MAIN_MENU_OPCODE_PTR
-
-.menu_disassembler_command_print_value: 
-    lda MAIN_MENU_OPCODE_LENGTH_2
-    beq .menu_disassembler_command_print_suffix
-    
-    ; Restore pointer
-    jsr .menu_load_address
-    ldx 0x00
-    
-    lda 0x20
-    jsr ACIA_SEND_CHAR
-    lda "0"
-    jsr ACIA_SEND_CHAR
-    lda "x"
-    jsr ACIA_SEND_CHAR
-
- .menu_disassembler_command_print_value_loop:
-    cpx MAIN_MENU_OPCODE_LENGTH_2
-    beq .menu_disassembler_command_print_value_end
-
-    lda yde,x         ; get code
-    phx
-    jsr ACIA_SEND_HEX   ; print it
-    plx
-    inx
-    jmp .menu_disassembler_command_print_value_loop   
-
-.menu_disassembler_command_print_value_end:
-    lda 0x20
-    jsr ACIA_SEND_CHAR 
-
-.menu_disassembler_command_print_suffix:
-    ldd MAIN_MENU_OPCODE_MSB
-    lde MAIN_MENU_OPCODE_LSB  
-    ldx MAIN_MENU_OPCODE_PTR
-
-.menu_disassembler_command_print_suffix_get_char:
-    lda de,x          ; get char
-    beq .menu_disassembler_command_print_suffix_end
-    jsr ACIA_SEND_CHAR
-    inx
-    jmp .menu_disassembler_command_print_suffix_get_char    
-
-.menu_disassembler_command_print_suffix_end:
-    lda MAIN_MENU_OPCODE_LENGTH
-    beq .menu_disassembler_command_next
-    jsr .menu_inc_address
-    dec MAIN_MENU_OPCODE_LENGTH
-    jmp .menu_disassembler_command_print_suffix_end
-
-.menu_disassembler_command_next:
-    inc MAIN_MENU_DUMP_COUNT
-    lda MAIN_MENU_DUMP_COUNT
-    cmp 0x0a
-    beq .ready
-    jmp .menu_disassembler_command_dump_address
-
 .menu_help_msg:
     #d 0x0A, 0x0D, 0x0A, 0x0D
-    #d "Project OTTO Kernel - ", KERNEL_VERSION, " (", KERNEL_BUILDDATE, ")", 0x0A, 0x0D, 0x0A, 0x0D
-    #d "Valid commands (default address 0x8400):", 0x0A, 0x0D
-    #d "   ayyxxxx  - disAssemble memory ", 0x0A, 0x0D
+    #d "Project OTTO Kernel - ", KERNEL_VERSION, " (", KERNEL_BUILDDATE, ")", 0x0A, 0x0D
+    #d "Valid commands:", 0x0A, 0x0D
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
-    #d "   pyyxxxx  - run TinyPascal P-code program", 0x0A, 0x0D
     #d "   e        - TinyPascal editor/compiler", 0x0A, 0x0D
     #d "   h        - show Help", 0x0A, 0x0D
     #d 0x00
@@ -628,6 +484,14 @@ main:
 .menu_upload_command_ok_msg:
     #d 0x0A, 0x0D
     #d "INFO: Upload Successful!", 0x0A, 0x0D 
+    #d 0x00
+
+.menu_upload_addr_msg:
+    #d "INFO: Default address set to 0x"
+    #d 0x00
+
+.menu_default_addr_msg:
+    #d "   (default address: 0x"
     #d 0x00
 
 .menu_upload_command_start_msg:

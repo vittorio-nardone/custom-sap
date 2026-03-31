@@ -8,6 +8,8 @@
 ; Exit:  Returns via RTS. All registers restored.
 ; =========================================================
 
+#const TINYPASCAL_VERSION = "v0.2"
+
 EDITOR_ENTRY:
     pha
     phd
@@ -735,10 +737,10 @@ EDITOR_ENTRY:
 ; ── Strings ──────────────────────────────────────────────
 
 .ed_prompt:
-    #d "P> ", 0x00
+    #d "P>", 0x00
 
 .ed_welcome:
-    #d "TinyPascal for OTTO - v0.2", 0x0A, 0x0D
+    #d "Project OTTO TinyPascal editor/compiler - ", TINYPASCAL_VERSION, 0x0A, 0x0D
     #d "Type H for help.", 0x0A, 0x0D, 0x00
 
 .ed_help_msg:

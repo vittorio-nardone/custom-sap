@@ -117,9 +117,12 @@ XMODEM_RCV:
 	sty XMODEM_PTRP
 	std XMODEM_PTRH
 	ste XMODEM_PTR
+	sty XMODEM_LOAD_PTRP
+	std XMODEM_LOAD_PTRH
+	ste XMODEM_LOAD_PTR
 	lda	0x01
 	sta	XMODEM_BLK_NO				; set block # to 1
-	sta	XMODEM_BLOCK_FLAG			; set flag to get address from block 1
+	sta	XMODEM_BLOCK_FLAG			; set flag to detect OT header from block 1
 .StartCrc:
 	lda	"C"							; "C" start with CRC mode
 	jsr	ACIA_SEND_CHAR				; send it
@@ -214,24 +217,38 @@ XMODEM_RCV:
 	lda	XMODEM_NAK					;
 	jsr	ACIA_SEND_CHAR				; send NAK to resend block
 	jmp	.StartBlk					; start over, get the block again			
-;.GoodCrc:
-	; ldx	0x02		;
-	; lda	XMODEM_BLK_NO		; get the block number
-	; cmp	0x01		; 1st block?
-	; jmp CopyBlk
-	; bne	CopyBlk		; no, copy all 128 bytes
-	; lda	XMODEM_BLOCK_FLAG		; is it really block 1, not block 257, 513 etc.
-	; beq	CopyBlk		; no, copy all 128 bytes
-	; lda	XMODEM_RECEIVE_BUFFER,x		; get target address from 1st 2 bytes of blk 1
-	; sta	ptr			; save lo address
-	; inx				;
-	; lda	XMODEM_RECEIVE_BUFFER,x		; get hi address
-	; sta	ptr+1		; save it
-	; inx				; point to first byte of data
-	; dec	XMODEM_BLOCK_FLAG		; set the flag so we won't get another address		
 .CopyBlk:
 	ldx	0x00						; set offset to zero
 	ldy 0x02
+	; --- OT header detection (first block only) ---
+	lda XMODEM_BLOCK_FLAG
+	beq .CopyBlk3					; not first block, copy normally
+	lda 0x00
+	sta XMODEM_BLOCK_FLAG			; reset flag (don't repeat on block 257)
+	lda XMODEM_RECEIVE_BUFFER + 0x02	; first data byte in buffer
+	cmp 0x4F						; 'O'
+	bne .CopyBlk3
+	lda XMODEM_RECEIVE_BUFFER + 0x03
+	cmp 0x54						; 'T'
+	bne .CopyBlk3
+	; OT magic found — check if auto-detect address is enabled
+	lda XMODEM_AUTO_ADDR
+	beq .header_strip_only
+	; Auto-detect: update destination pointers from header
+	lda 0x02
+	sta XMODEM_AUTO_ADDR			; signal header found to kernel
+	lda XMODEM_RECEIVE_BUFFER + 0x05	; page (skip version byte at +0x04)
+	sta XMODEM_PTRP
+	sta XMODEM_LOAD_PTRP
+	lda XMODEM_RECEIVE_BUFFER + 0x06	; high
+	sta XMODEM_PTRH
+	sta XMODEM_LOAD_PTRH
+	lda XMODEM_RECEIVE_BUFFER + 0x07	; low
+	sta XMODEM_PTR
+	sta XMODEM_LOAD_PTR
+.header_strip_only:
+	ldy 0x08						; skip 6-byte OT header in buffer
+	; --- End OT header detection ---
 .CopyBlk3:
 	lda	XMODEM_RECEIVE_BUFFER,y		; get data byte from buffer
 	phy

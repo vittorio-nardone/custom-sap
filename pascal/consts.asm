@@ -117,6 +117,7 @@
 #const PM_CSP_WRITE_REAL    = 0x07  ; write(real) — pop float(4B), print decimal
 #const PM_CSP_WRITELN_REAL  = 0x08  ; writeln(real) — pop float(4B), print + newline
 #const PM_CSP_READLN_REAL   = 0x09  ; readln(real) — read float, push float(4B)
+#const PM_CSP_RANDOM        = 0x0A  ; random — push random integer (0..32767)
 
 ; ============================================================
 ; EDITOR CONSTANTS
@@ -272,7 +273,8 @@
 #const CC_TK_ORD      = 0x5D
 #const CC_TK_ABS      = 0x5E
 #const CC_TK_ODD      = 0x5F
-#const CC_TK_REAL     = 0x60
+#const CC_TK_RANDOM   = 0x60
+#const CC_TK_REAL     = 0x61
 
 ; Expansion RAM page 2 layout (compiler workspace)
 #const CC_WS_PAGE     = 0x02

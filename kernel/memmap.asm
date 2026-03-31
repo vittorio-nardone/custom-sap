@@ -15,11 +15,11 @@
 #const MAIN_MENU_ADDR_MSB            = 0x8003  ; 1 byte
 #const MAIN_MENU_ADDR_LSB            = 0x8004  ; 1 byte
 #const MAIN_MENU_DUMP_COUNT          = 0x8005  ; 1 byte
-#const MAIN_MENU_OPCODE_MSB          = 0x8006  ; 1 byte
-#const MAIN_MENU_OPCODE_LSB          = 0x8007  ; 1 byte
-#const MAIN_MENU_OPCODE_LENGTH       = 0x8008  ; 1 byte
-#const MAIN_MENU_OPCODE_LENGTH_2     = 0x8009  ; 1 byte
-#const MAIN_MENU_OPCODE_PTR          = 0x800A  ; 1 byte
+
+; --- 0x8006-0x8007: Serial read decimal (serial.asm) --------
+#const ACIA_RDEC_SIGN                = 0x8006  ; 1 byte - sign flag (not shared with MUL16S)
+#const ACIA_RDEC_COUNT               = 0x8007  ; 1 byte - digit count for backspace
+
 #const MAIN_MENU_INPUT_BUFFER        = 0x800B  ; 16 bytes (0x800B-0x801A)
 
 ; --- 0x80C0-0x80CB: Float Read temp (float.asm) --------------
@@ -83,13 +83,20 @@
 #const ITF_TMP        = 0x80F9  ; 2 bytes (0x80F9-0x80FA) - INT_TO_FLOAT temp
 #const FLOAT1         = 0x80FB  ; 4 bytes (0x80FB-0x80FE) - main float operand/result
 
+; --- 0x8100-0x8101: Random generator state (random.asm) ------
+#const RANDOM_STATE = 0x8100  ; 2 bytes (0x8100-0x8101) - LFSR 16-bit state (LSB, MSB)
+
 ; --- 0x8120-0x812F: VT100 buffer (vt100.asm) -----------------
 #const VT100_BUFFER = 0x8120  ; 16 bytes (0x8120-0x812F)
 
 ; --- 0x8200-0x8283: XMODEM receive buffer (xmodem.asm) -------
 #const XMODEM_RECEIVE_BUFFER = 0x8200  ; 132 bytes (0x8200-0x8283)
 
-; --- 0x8337-0x833F: XMODEM variables (xmodem.asm) ------------
+; --- 0x8333-0x833F: XMODEM variables (xmodem.asm) ------------
+#const XMODEM_AUTO_ADDR       = 0x8333  ; 1 byte  - auto-detect address from OT header (0=no, 1=yes)
+#const XMODEM_LOAD_PTRP       = 0x8334  ; 1 byte  - effective load address (page)
+#const XMODEM_LOAD_PTRH       = 0x8335  ; 1 byte  - effective load address (high)
+#const XMODEM_LOAD_PTR        = 0x8336  ; 1 byte  - effective load address (low)
 #const XMODEM_CRC             = 0x8337  ; 2 bytes (lo=+0, hi=+1)
 #const XMODEM_PTRP            = 0x8339  ; 1 byte  - data pointer (page)
 #const XMODEM_PTRH            = 0x833A  ; 1 byte  - data pointer (high)

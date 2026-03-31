@@ -1,3 +1,4 @@
+; @load-address 0x8400
 #include "../assembly/ruledef.asm"
 #include "../kernel/symbols.asm"
 

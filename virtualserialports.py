@@ -132,6 +132,9 @@ class VirtualSerialPorts:
                         continue
 
                     data = self._master_files[key.fileobj].read()
+                    if not data:
+                        continue
+
                     if self.debug:
                         print(self._slave_names[key.fileobj], data,
                               file=sys.stderr)

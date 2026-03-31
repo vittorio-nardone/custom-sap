@@ -32,28 +32,13 @@ fi
 python3.11 build-version.py --symbols symbols.txt kernel/kernel.asm roms/system/kernel-rom.bin
 python3.11 symbols.py
 
-# Extract pmachine.bin for simulator (bytes 16384+ of unified binary)
 UNIFIED_SIZE=$(stat -f%z roms/system/kernel-rom.bin)
 
-if [ "$UNIFIED_SIZE" -gt 16384 ]; then
-    dd if=roms/system/kernel-rom.bin of=roms/system/pmachine.bin bs=1 skip=16384 2>/dev/null
-else
-    # Debug build or no P-Machine: create empty pmachine.bin
-    dd if=/dev/zero of=roms/system/pmachine.bin bs=1 count=1 2>/dev/null
-fi
-
-# Truncate kernel-rom.bin to first 16 KB for simulator compatibility
-dd if=roms/system/kernel-rom.bin of=roms/system/kernel-rom-full.bin bs=1 count="$UNIFIED_SIZE" 2>/dev/null
-dd if=roms/system/kernel-rom-full.bin of=roms/system/kernel-rom.bin bs=16384 count=1 2>/dev/null
-
-# Intel HEX output (for EEPROM programmer) — full unified binary
+# Intel HEX output (for EEPROM programmer)
 customasm kernel/kernel.asm -f intelhex -o roms/system/kernel-rom.hex
 
-# Split full unified binary into 8 KB ROM chips
-split -b 8k -d ./roms/system/kernel-rom-full.bin ./roms/system/kernel-rom.bin.
-
-# Clean up
-rm -f roms/system/kernel-rom-full.bin
+# Split unified binary into 8 KB ROM chips for EEPROM programming
+split -b 8k -d ./roms/system/kernel-rom.bin ./roms/system/kernel-rom.bin.
 
 # ── Step 4: Verify ROM sizes against capacity ────────────────────────
 ROM_CAP=24576   # 24 KB (3 x 8 KB ROM chips)
@@ -68,8 +53,15 @@ fi
 
 # ── Step 5: Compile applications ─────────────────────────────────────
 APP_COUNT=0
+OT_COUNT=0
 for i in apps/*.asm; do
+    [ "$(basename $i)" = "istructions.asm" ] && continue
     customasm "apps/$(basename $i)" -f binary -o roms/apps/asm/"$(basename $i .asm)".bin
+    ADDR=$(awk '/@load-address/{print $3; exit}' "$i")
+    if [ -n "$ADDR" ]; then
+        python3.11 add_header.py roms/apps/asm/"$(basename $i .asm)".bin --address "$ADDR"
+        OT_COUNT=$((OT_COUNT + 1))
+    fi
     APP_COUNT=$((APP_COUNT + 1))
 done
 
@@ -85,7 +77,7 @@ done
 KERNEL_VER=$(grep -o '"v[0-9.]*"' kernel/kernel.asm | head -1 | tr -d '"')
 PMACHINE_VER=$(grep -o '"v[0-9.]*"' pascal/pmachine.asm | head -1 | tr -d '"')
 
-INSTR_COUNT=$(grep -c '^\.OPCODE_0x[0-9A-Fa-f][0-9A-Fa-f]:' kernel/istructions.asm)
+INSTR_COUNT=$(grep -c '^\.OPCODE_0x[0-9A-Fa-f][0-9A-Fa-f]:' apps/istructions.asm)
 INSTR_CAP=256  # 8-bit opcode space
 INSTR_PCT=$((INSTR_COUNT * 100 / INSTR_CAP))
 INSTR_FREE=$((INSTR_CAP - INSTR_COUNT))
@@ -94,6 +86,6 @@ echo ""
 echo "=== Build complete (${BUILD_MODE}) ==="
 echo "  ROM:       Kernel ${KERNEL_VER} + Pascal ${PMACHINE_VER} — ${UNIFIED_SIZE} / ${ROM_CAP} bytes (${ROM_PCT}%) — ${ROM_FREE} bytes free"
 echo "  CPU:       ${INSTR_COUNT} / ${INSTR_CAP} instructions (${INSTR_PCT}%) — ${INSTR_FREE} available"
-echo "  Apps:      ${APP_COUNT} compiled"
+echo "  Apps:      ${APP_COUNT} compiled (${OT_COUNT} with OT header)"
 echo "  Pascal:    ${PASCAL_COUNT} compiled"
 echo ""

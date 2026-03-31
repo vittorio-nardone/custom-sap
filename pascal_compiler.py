@@ -3,7 +3,7 @@
 Tiny Pascal Compiler for Project Otto P-Machine.
 
 Compiles a minimal subset of Pascal into P-code bytecode
-that runs on the Otto P-Machine interpreter (ROM #3).
+that runs on the Otto P-Machine interpreter.
 
 Supported (MS4.5): program structure, var declarations (integer, arrays),
 assignments, arithmetic expressions (+, -, *, div, mod, unary -),
@@ -92,12 +92,14 @@ CSP_WRITE_CHAR    = 0x06
 CSP_WRITE_REAL    = 0x07
 CSP_WRITELN_REAL  = 0x08
 CSP_READLN_REAL   = 0x09
+CSP_RANDOM        = 0x0A
 
 MAGIC = bytes([0x50, 0x4D])   # "PM"
 FORMAT_VERSION = 0x01
 PCODE_HEADER_SIZE = 7
 
 NATIVE_STUB_SIZE = 9
+OT_HEADER_SIZE = 6           # magic(2) + version(1) + address(3)
 PMACHINE_ADDR_DEFAULT = 0x4000
 
 def _read_pmachine_addr() -> int:
@@ -148,6 +150,7 @@ class TokenType(Enum):
     ORD            = auto()
     ABS            = auto()
     ODD            = auto()
+    RANDOM         = auto()
     ARRAY          = auto()
     OF             = auto()
     IDENTIFIER     = auto()
@@ -208,6 +211,7 @@ KEYWORDS = {
     'ord':       TokenType.ORD,
     'abs':       TokenType.ABS,
     'odd':       TokenType.ODD,
+    'random':    TokenType.RANDOM,
     'array':     TokenType.ARRAY,
     'of':        TokenType.OF,
 }
@@ -456,7 +460,11 @@ class AbsExpr:
 class OddExpr:
     arg: 'Expression'
 
-Expression = Union[NumberLiteral, FloatLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef, ChrExpr, AbsExpr, OddExpr]
+@dataclass
+class RandomExpr:
+    pass
+
+Expression = Union[NumberLiteral, FloatLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef, ChrExpr, AbsExpr, OddExpr, RandomExpr]
 
 @dataclass
 class ConstDecl:
@@ -1043,6 +1051,13 @@ class Parser:
             self._expect(TokenType.RPAREN)
             return OddExpr(arg=arg)
 
+        if tok.type == TokenType.RANDOM:
+            self.pos += 1
+            if self._current().type == TokenType.LPAREN:
+                self.pos += 1
+                self._expect(TokenType.RPAREN)
+            return RandomExpr()
+
         self._error(f"expected expression, got {tok.type.name} ('{tok.value}')")
 
 # ── Scope & subroutine info ─────────────────────────────────
@@ -1402,6 +1417,9 @@ class CodeGenerator:
             self._emit_lit16(2)
             self._emit(OP_MOD)
             return 'integer'
+        elif isinstance(expr, RandomExpr):
+            self._emit_csp(CSP_RANDOM)
+            return 'integer'
         elif isinstance(expr, CallExpr):
             return self._gen_call(expr.name, expr.args)
         return 'integer'
@@ -1439,6 +1457,8 @@ class CodeGenerator:
         if isinstance(expr, AbsExpr):
             return self._expr_type(expr.arg)
         if isinstance(expr, OddExpr):
+            return 'integer'
+        if isinstance(expr, RandomExpr):
             return 'integer'
         if isinstance(expr, CallExpr):
             sub = self._subroutines.get(expr.name.lower())
@@ -1801,6 +1821,15 @@ class CodeGenerator:
 
     # ── Binary generation ────────────────────────────────────
 
+    def _build_ot_header(self) -> bytes:
+        return bytes([
+            0x4F, 0x54,                          # magic "OT"
+            0x01,                                 # format version
+            (self.base >> 16) & 0xFF,             # page
+            (self.base >> 8) & 0xFF,              # high
+            self.base & 0xFF,                     # low
+        ])
+
     def _build_native_stub(self, pcode_addr: int) -> bytes:
         stub = bytearray()
         stub.extend([0xA5, (pcode_addr >> 8) & 0xFF])
@@ -1870,8 +1899,9 @@ class CodeGenerator:
         header.append((data_offset >> 8) & 0xFF)
 
         stub = self._build_native_stub(pcode_base)
+        ot_header = self._build_ot_header()
 
-        return bytes(stub) + bytes(header + self.code + data)
+        return ot_header + bytes(stub) + bytes(header + self.code + data)
 
 # ── Public API ──────────────────────────────────────────────
 
