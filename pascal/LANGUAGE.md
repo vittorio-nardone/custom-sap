@@ -353,6 +353,10 @@ Boolean operators work on integer values: any non-zero value is considered true,
 | `odd(x)` | `integer` | `integer` | 1 if x is odd, 0 if even |
 | `ord(c)` | char literal | `integer` | ASCII code of character (e.g., `ord('A')` = 65) |
 | `chr(x)` | `integer` | writes char | Output the character with ASCII code x |
+| `peek(page, addr)` | `integer`, `integer` | `integer` | Read byte from 24-bit address (page:addr) |
+| `poke(page, addr, val)` | `integer` x3 | — | Write low byte of val to 24-bit address |
+
+`peek` returns the byte value (0–255) at the 24-bit address formed by `page:addr`. `poke` is a statement (not a function) that writes the low byte of `val` to that address. The `page` parameter selects the 64 KB page: 0 = main memory (0x0000–0xFFFF), 1 = expansion RAM page 1 (0x010000–0x01FFFF), 2 = expansion RAM page 2 (0x020000–0x02FFFF). Use hexadecimal literals (`$HHHH`) for readable addresses.
 
 ```pascal
 writeln(abs(-5));        { 5 }
@@ -360,12 +364,19 @@ writeln(abs(-3.14));     { 3.14 }
 writeln(odd(7));         { 1 }
 writeln(ord('A'));       { 65 }
 write(chr(65));          { A }
+
+poke(0, $8100, 42);     { write 42 to main RAM $8100 }
+writeln(peek(0, $8100)); { read back: prints 42 }
+poke(1, $0000, 99);     { write 99 to expansion page 1 }
+writeln(peek(1, $0000)); { prints 99 }
 ```
 
 ### Integer Literals
 
-Decimal integers: `0`, `42`, `255`, `32767`.
+Decimal integers: `0`, `42`, `255`, `32767`, `65535`.
+Hexadecimal integers: `$00`, `$FF`, `$8000`, `$FFFF` (prefixed with `$`, case-insensitive digits A–F).
 Negative literals: `-1`, `-100` (parsed as unary minus applied to a positive literal).
+Range: 0 to 65535 (values above 32767 wrap to their signed 16-bit equivalent).
 
 ### Real Literals
 
@@ -634,6 +645,36 @@ begin
   writeln(b)     { 10 }
 end.
 ```
+
+### Direct Memory Access (peek/poke)
+
+```pascal
+program PeekPoke;
+var val: integer;
+begin
+  { Main RAM (page 0), address $8100 }
+  poke(0, $8100, 42);
+  val := peek(0, $8100);
+  write('peek $8100 -> ');
+  writeln(val);
+
+  poke(0, $8101, 99);
+  write('peek $8101 -> ');
+  writeln(peek(0, $8101));
+
+  { Expansion RAM page 1 }
+  poke(1, $0000, 77);
+  write('page 1 -> ');
+  writeln(peek(1, $0000));
+
+  { Expansion RAM page 2 }
+  poke(2, $0000, 88);
+  write('page 2 -> ');
+  writeln(peek(2, $0000))
+end.
+```
+
+Output: `peek $8100 -> 42`, `peek $8101 -> 99`, `page 1 -> 77`, `page 2 -> 88`
 
 ### Arrays (Bubble Sort)
 

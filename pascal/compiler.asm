@@ -390,6 +390,8 @@
     beq .cc_parse_readln
     cmp CC_TK_REPEAT
     beq .cc_parse_repeat
+    cmp CC_TK_POKE
+    beq .cc_parse_poke
 
 .cc_ps_done:
     rts
@@ -1122,6 +1124,43 @@
     lda .cc_e_undef
     jmp .cc_error_a
 
+; ── Poke: poke(page, addr, value) ────────────────────────
+
+.cc_parse_poke:
+    jsr .cc_next_token       ; consume 'poke'
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_poke_done
+    jsr .cc_parse_expression ; page
+    lda CC_ERROR
+    bne .cc_poke_done
+    jsr .cc_ensure_int
+    lda CC_TK_COMMA
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_poke_done
+    jsr .cc_parse_expression ; address
+    lda CC_ERROR
+    bne .cc_poke_done
+    jsr .cc_ensure_int
+    lda CC_TK_COMMA
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_poke_done
+    jsr .cc_parse_expression ; value
+    lda CC_ERROR
+    bne .cc_poke_done
+    jsr .cc_ensure_int
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_POKE
+    jsr .cc_emit
+.cc_poke_done:
+    rts
+
 ; ── Call arguments and CALL emission ────────────────────
 ; CC_FOUND_B10=code_lo, CC_FOUND_ARG1=code_hi,
 ; CC_FOUND_ARG2=param_count, CC_FOUND_ARG3=def_level.
@@ -1853,6 +1892,8 @@
     beq .cc_fc_odd
     cmp CC_TK_RANDOM
     beq .cc_fc_random
+    cmp CC_TK_PEEK
+    beq .cc_fc_peek
 
     ; Unexpected token
     lda .cc_e_expr
@@ -2121,6 +2162,34 @@
     sta CC_EXPR_TYPE         ; integer
     rts
 
+.cc_fc_peek:
+    jsr .cc_next_token       ; consume 'peek'
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_fc_done
+    jsr .cc_parse_expression ; page
+    lda CC_ERROR
+    bne .cc_fc_done
+    jsr .cc_ensure_int
+    lda CC_TK_COMMA
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_fc_done
+    jsr .cc_parse_expression ; addr
+    lda CC_ERROR
+    bne .cc_fc_done
+    jsr .cc_ensure_int
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_PEEK
+    jsr .cc_emit
+    lda 0x00
+    sta CC_EXPR_TYPE
+    rts
+
 .cc_fc_done:
     rts
 
@@ -2130,6 +2199,10 @@
     jsr .cc_skip_ws
     jsr .cc_peek_char
     beq .cc_nt_eof
+
+    ; '$' → hex number
+    cmp 0x24
+    beq .cc_nt_hex
 
     ; Digit → number
     cmp 0x30
@@ -2151,6 +2224,72 @@
 
 .cc_nt_eof:
     lda CC_TK_EOF
+    sta CC_TOKEN_TYPE
+    rts
+
+; ── Lexer: scan hex number ($HHHH) ───────────────────────
+
+.cc_nt_hex:
+    jsr .cc_next_char        ; consume '$'
+    lda 0x00
+    sta CC_TOKEN_NUM_LO
+    sta CC_TOKEN_NUM_HI
+
+.cc_nt_hex_loop:
+    jsr .cc_peek_char
+    ; Check 0-9
+    cmp 0x30
+    bcc .cc_nt_hex_done
+    cmp 0x3A
+    bcc .cc_nt_hex_digit09
+    ; Check A-F
+    cmp 0x41
+    bcc .cc_nt_hex_done
+    cmp 0x47
+    bcc .cc_nt_hex_digitAF
+    ; Check a-f
+    cmp 0x61
+    bcc .cc_nt_hex_done
+    cmp 0x67
+    bcc .cc_nt_hex_digitaf
+    jmp .cc_nt_hex_done
+
+.cc_nt_hex_digit09:
+    sec
+    sbc 0x30                 ; digit = ch - '0'
+    jmp .cc_nt_hex_accum
+.cc_nt_hex_digitAF:
+    sec
+    sbc 0x37                 ; digit = ch - 'A' + 10
+    jmp .cc_nt_hex_accum
+.cc_nt_hex_digitaf:
+    sec
+    sbc 0x57                 ; digit = ch - 'a' + 10
+
+.cc_nt_hex_accum:
+    pha                      ; save digit
+    ; Shift CC_TOKEN_NUM left 4 bits (4x ROL pair)
+    clc
+    rol CC_TOKEN_NUM_LO
+    rol CC_TOKEN_NUM_HI
+    clc
+    rol CC_TOKEN_NUM_LO
+    rol CC_TOKEN_NUM_HI
+    clc
+    rol CC_TOKEN_NUM_LO
+    rol CC_TOKEN_NUM_HI
+    clc
+    rol CC_TOKEN_NUM_LO
+    rol CC_TOKEN_NUM_HI
+    ; OR digit into low byte
+    pla
+    ora CC_TOKEN_NUM_LO
+    sta CC_TOKEN_NUM_LO
+    jsr .cc_next_char
+    jmp .cc_nt_hex_loop
+
+.cc_nt_hex_done:
+    lda CC_TK_NUMBER
     sta CC_TOKEN_TYPE
     rts
 
@@ -3581,6 +3720,8 @@
     #d "odd", 0x00, CC_TK_ODD
     #d "random", 0x00, CC_TK_RANDOM
     #d "real", 0x00, CC_TK_REAL
+    #d "peek", 0x00, CC_TK_PEEK
+    #d "poke", 0x00, CC_TK_POKE
     #d 0x00                  ; sentinel
 
 ; ── Compiler strings ─────────────────────────────────────

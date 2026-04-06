@@ -1145,6 +1145,10 @@ PM_ENTRY:
     beq .csp_readln_real
     cmp PM_CSP_RANDOM
     beq .csp_random
+    cmp PM_CSP_PEEK
+    beq .csp_peek
+    cmp PM_CSP_POKE
+    beq .csp_poke
 
     jmp .error_invalid
 
@@ -1260,6 +1264,47 @@ PM_ENTRY:
     jsr RANDOM_BYTE
     and 0x7F
     jsr .push_byte
+    jmp .fetch
+
+; CSP 11 — peek(page, addr): pop addr(16), pop page(16), read byte via Y:DE
+.csp_peek:
+    jsr .pop_byte            ; addr MSB
+    sta PM_TEMP
+    jsr .pop_byte            ; addr LSB
+    pha                      ; save addr LSB on Otto stack
+    jsr .pop_byte            ; page MSB (discard)
+    jsr .pop_byte            ; page LSB
+    tay
+    pla                      ; addr LSB
+    tae
+    lda PM_TEMP
+    tad
+    ldx 0x00
+    lda yde,x
+    jsr .push_byte           ; value LSB
+    lda 0x00
+    jsr .push_byte           ; value MSB (always 0)
+    jmp .fetch
+
+; CSP 12 — poke(page, addr, value): pop val(16), pop addr(16), pop page(16)
+.csp_poke:
+    jsr .pop_byte            ; value MSB (discard)
+    jsr .pop_byte            ; value LSB
+    sta PM_TEMP
+    jsr .pop_byte            ; addr MSB
+    sta PM_TEMP2
+    jsr .pop_byte            ; addr LSB
+    pha                      ; save addr LSB on Otto stack
+    jsr .pop_byte            ; page MSB (discard)
+    jsr .pop_byte            ; page LSB
+    tay
+    pla                      ; addr LSB
+    tae
+    lda PM_TEMP2
+    tad
+    ldx 0x00
+    lda PM_TEMP
+    sta yde,x
     jmp .fetch
 
 ; --- Float opcodes ----------------------------------------

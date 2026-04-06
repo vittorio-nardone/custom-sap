@@ -93,6 +93,8 @@ CSP_WRITE_REAL    = 0x07
 CSP_WRITELN_REAL  = 0x08
 CSP_READLN_REAL   = 0x09
 CSP_RANDOM        = 0x0A
+CSP_PEEK          = 0x0B
+CSP_POKE          = 0x0C
 
 MAGIC = bytes([0x50, 0x4D])   # "PM"
 FORMAT_VERSION = 0x01
@@ -151,6 +153,8 @@ class TokenType(Enum):
     ABS            = auto()
     ODD            = auto()
     RANDOM         = auto()
+    PEEK           = auto()
+    POKE           = auto()
     ARRAY          = auto()
     OF             = auto()
     IDENTIFIER     = auto()
@@ -212,6 +216,8 @@ KEYWORDS = {
     'abs':       TokenType.ABS,
     'odd':       TokenType.ODD,
     'random':    TokenType.RANDOM,
+    'peek':      TokenType.PEEK,
+    'poke':      TokenType.POKE,
     'array':     TokenType.ARRAY,
     'of':        TokenType.OF,
 }
@@ -326,6 +332,14 @@ class Lexer:
 
             if ch == "'":
                 tokens.append(Token(TokenType.STRING_LITERAL, self._read_string(), line, col))
+            elif ch == '$':
+                self._advance()
+                start = self.pos
+                while self.pos < len(self.source) and self.source[self.pos] in '0123456789abcdefABCDEF':
+                    self._advance()
+                if self.pos == start:
+                    self._error("expected hex digit after '$'")
+                tokens.append(Token(TokenType.NUMBER, str(int(self.source[start:self.pos], 16)), line, col))
             elif ch.isdigit():
                 num_str, is_float = self._read_number()
                 if is_float:
@@ -464,7 +478,12 @@ class OddExpr:
 class RandomExpr:
     pass
 
-Expression = Union[NumberLiteral, FloatLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef, ChrExpr, AbsExpr, OddExpr, RandomExpr]
+@dataclass
+class PeekExpr:
+    page: 'Expression'
+    addr: 'Expression'
+
+Expression = Union[NumberLiteral, FloatLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef, ChrExpr, AbsExpr, OddExpr, RandomExpr, PeekExpr]
 
 @dataclass
 class ConstDecl:
@@ -541,12 +560,18 @@ class ArrayAssignStmt:
     expr: Expression
 
 @dataclass
+class PokeStmt:
+    page: Expression
+    addr: Expression
+    value: Expression
+
+@dataclass
 class CompoundStmt:
     statements: List['Statement']
 
 Statement = Union[VarDecl, AssignStmt, WritelnStmt, WriteStmt, ReadlnStmt,
                   CallStmt, IfStmt, WhileStmt, ForStmt, RepeatStmt,
-                  CompoundStmt, ArrayAssignStmt]
+                  CompoundStmt, ArrayAssignStmt, PokeStmt]
 
 Declaration = Union[VarDecl, ArrayDecl]
 
@@ -799,6 +824,8 @@ class Parser:
             return self._parse_write()
         if tok.type == TokenType.READLN:
             return self._parse_readln()
+        if tok.type == TokenType.POKE:
+            return self._parse_poke()
         if tok.type == TokenType.IDENTIFIER:
             nxt = self._peek_next()
             if nxt.type == TokenType.ASSIGN:
@@ -854,6 +881,17 @@ class Parser:
         var_name = self._expect(TokenType.IDENTIFIER).value
         self._expect(TokenType.RPAREN)
         return ReadlnStmt(var_name=var_name)
+
+    def _parse_poke(self) -> PokeStmt:
+        self._expect(TokenType.POKE)
+        self._expect(TokenType.LPAREN)
+        page = self._parse_expression()
+        self._expect(TokenType.COMMA)
+        addr = self._parse_expression()
+        self._expect(TokenType.COMMA)
+        value = self._parse_expression()
+        self._expect(TokenType.RPAREN)
+        return PokeStmt(page=page, addr=addr, value=value)
 
     def _parse_writeln(self) -> WritelnStmt:
         self._expect(TokenType.WRITELN)
@@ -970,8 +1008,8 @@ class Parser:
         if tok.type == TokenType.NUMBER:
             self.pos += 1
             value = int(tok.value)
-            if value > 32767:
-                self._error(f"integer literal {value} exceeds 16-bit signed range")
+            if value > 65535:
+                self._error(f"integer literal {value} exceeds 16-bit range")
             return NumberLiteral(value=value)
 
         if tok.type == TokenType.FLOAT_LITERAL:
@@ -1050,6 +1088,15 @@ class Parser:
             arg = self._parse_expression()
             self._expect(TokenType.RPAREN)
             return OddExpr(arg=arg)
+
+        if tok.type == TokenType.PEEK:
+            self.pos += 1
+            self._expect(TokenType.LPAREN)
+            page = self._parse_expression()
+            self._expect(TokenType.COMMA)
+            addr = self._parse_expression()
+            self._expect(TokenType.RPAREN)
+            return PeekExpr(page=page, addr=addr)
 
         if tok.type == TokenType.RANDOM:
             self.pos += 1
@@ -1417,6 +1464,15 @@ class CodeGenerator:
             self._emit_lit16(2)
             self._emit(OP_MOD)
             return 'integer'
+        elif isinstance(expr, PeekExpr):
+            t = self._gen_expr(expr.page)
+            if t == 'real':
+                self._emit(OP_FTOI)
+            t = self._gen_expr(expr.addr)
+            if t == 'real':
+                self._emit(OP_FTOI)
+            self._emit_csp(CSP_PEEK)
+            return 'integer'
         elif isinstance(expr, RandomExpr):
             self._emit_csp(CSP_RANDOM)
             return 'integer'
@@ -1457,6 +1513,8 @@ class CodeGenerator:
         if isinstance(expr, AbsExpr):
             return self._expr_type(expr.arg)
         if isinstance(expr, OddExpr):
+            return 'integer'
+        if isinstance(expr, PeekExpr):
             return 'integer'
         if isinstance(expr, RandomExpr):
             return 'integer'
@@ -1651,6 +1709,18 @@ class CodeGenerator:
                     self._emit_csp(CSP_WRITE_REAL)
                 else:
                     self._emit_csp(CSP_WRITE_INT)
+
+        elif isinstance(stmt, PokeStmt):
+            t = self._gen_expr(stmt.page)
+            if t == 'real':
+                self._emit(OP_FTOI)
+            t = self._gen_expr(stmt.addr)
+            if t == 'real':
+                self._emit(OP_FTOI)
+            t = self._gen_expr(stmt.value)
+            if t == 'real':
+                self._emit(OP_FTOI)
+            self._emit_csp(CSP_POKE)
 
         elif isinstance(stmt, IfStmt):
             self._gen_if(stmt)
