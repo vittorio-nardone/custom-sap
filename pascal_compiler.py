@@ -67,6 +67,9 @@ OP_LOAD_REF  = 0x21
 OP_STORE_REF = 0x22
 OP_PUSH_ADDR = 0x23
 OP_PUSH_ADDR_L = 0x24
+OP_ENTER16 = 0x25
+OP_LOADW   = 0x26
+OP_STOREW  = 0x27
 OP_FLIT      = 0x30
 OP_FLOAD     = 0x31
 OP_FSTORE    = 0x32
@@ -95,6 +98,18 @@ CSP_READLN_REAL   = 0x09
 CSP_RANDOM        = 0x0A
 CSP_PEEK          = 0x0B
 CSP_POKE          = 0x0C
+CSP_VT100         = 0x0D
+CSP_WAIT_MS       = 0x0E
+CSP_READLN_STR    = 0x0F
+CSP_WRITE_STR     = 0x10
+CSP_WRITELN_STR   = 0x11
+CSP_STR_EQ        = 0x12
+CSP_STR_ASSIGN_LIT = 0x13
+CSP_STR_COPY      = 0x14
+CSP_LENGTH        = 0x15
+
+STRING_SIZE = 81   # len byte + 80 chars
+FRAME_MAX = 512
 
 MAGIC = bytes([0x50, 0x4D])   # "PM"
 FORMAT_VERSION = 0x01
@@ -155,6 +170,8 @@ class TokenType(Enum):
     RANDOM         = auto()
     PEEK           = auto()
     POKE           = auto()
+    STRING         = auto()
+    LENGTH         = auto()
     ARRAY          = auto()
     OF             = auto()
     IDENTIFIER     = auto()
@@ -218,6 +235,8 @@ KEYWORDS = {
     'random':    TokenType.RANDOM,
     'peek':      TokenType.PEEK,
     'poke':      TokenType.POKE,
+    'string':    TokenType.STRING,
+    'length':    TokenType.LENGTH,
     'array':     TokenType.ARRAY,
     'of':        TokenType.OF,
 }
@@ -483,7 +502,11 @@ class PeekExpr:
     page: 'Expression'
     addr: 'Expression'
 
-Expression = Union[NumberLiteral, FloatLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef, ChrExpr, AbsExpr, OddExpr, RandomExpr, PeekExpr]
+@dataclass
+class LengthExpr:
+    name: str
+
+Expression = Union[NumberLiteral, FloatLiteral, StringLiteral, VarRef, BinaryOp, UnaryOp, CallExpr, ArrayRef, ChrExpr, AbsExpr, OddExpr, RandomExpr, PeekExpr, LengthExpr]
 
 @dataclass
 class ConstDecl:
@@ -680,6 +703,9 @@ class Parser:
                 var_type = 'integer'
                 if self._current().type == TokenType.REAL:
                     var_type = 'real'
+                    self.pos += 1
+                elif self._current().type == TokenType.STRING:
+                    var_type = 'string'
                     self.pos += 1
                 else:
                     self._expect(TokenType.INTEGER)
@@ -1105,6 +1131,13 @@ class Parser:
                 self._expect(TokenType.RPAREN)
             return RandomExpr()
 
+        if tok.type == TokenType.LENGTH:
+            self.pos += 1
+            self._expect(TokenType.LPAREN)
+            name = self._expect(TokenType.IDENTIFIER).value
+            self._expect(TokenType.RPAREN)
+            return LengthExpr(name=name)
+
         self._error(f"expected expression, got {tok.type.name} ('{tok.value}')")
 
 # ── Scope & subroutine info ─────────────────────────────────
@@ -1144,6 +1177,7 @@ class CodeGenerator:
         self._scope: Optional[Scope] = None
         self._subroutines: dict[str, SubroutineInfo] = {}
         self._for_counter = 0
+        self._temp_str_id = 0
 
     # ── Scope management ─────────────────────────────────────
 
@@ -1202,7 +1236,15 @@ class CodeGenerator:
         offset = self._scope.next_offset
         self._scope.symbols[lower] = offset
         self._scope.var_types[lower] = var_type
-        size = 4 if var_type == 'real' else 2
+        if var_type == 'real':
+            size = 4
+        elif var_type == 'string':
+            size = STRING_SIZE
+        else:
+            size = 2
+        if offset + size > FRAME_MAX:
+            raise SyntaxError(
+                f"variable '{name}' exceeds frame size limit ({FRAME_MAX} bytes)")
         self._scope.next_offset += size
         return offset
 
@@ -1235,8 +1277,8 @@ class CodeGenerator:
             raise SyntaxError(f"invalid array bounds: [{low}..{high}]")
         byte_size = count * 2
         offset = self._scope.next_offset
-        if offset + byte_size > 256:
-            raise SyntaxError(f"array '{name}' exceeds frame size limit (256 bytes)")
+        if offset + byte_size > FRAME_MAX:
+            raise SyntaxError(f"array '{name}' exceeds frame size limit ({FRAME_MAX} bytes)")
         self._scope.symbols[lower] = offset
         self._scope.arrays[lower] = (low, high)
         self._scope.next_offset += byte_size
@@ -1292,6 +1334,22 @@ class CodeGenerator:
     def _emit_csp(self, proc: int):
         self._emit(OP_CSP, proc)
 
+    def _emit_load_offset(self, offset: int):
+        if offset < 0 or offset > 0xFFFF:
+            raise SyntaxError("invalid frame offset")
+        if offset <= 0xFF:
+            self._emit(OP_LOAD, offset & 0xFF)
+        else:
+            self._emit(OP_LOADW, offset & 0xFF, (offset >> 8) & 0xFF)
+
+    def _emit_store_offset(self, offset: int):
+        if offset < 0 or offset > 0xFFFF:
+            raise SyntaxError("invalid frame offset")
+        if offset <= 0xFF:
+            self._emit(OP_STORE, offset & 0xFF)
+        else:
+            self._emit(OP_STOREW, offset & 0xFF, (offset >> 8) & 0xFF)
+
     def _code_pos(self) -> int:
         return len(self.code)
 
@@ -1333,9 +1391,15 @@ class CodeGenerator:
             else:
                 self._emit(OP_FLOAD_L, level_diff, offset)
             return 'real'
+        if vtype == 'string':
+            raise SyntaxError(
+                f"string variable '{name}' cannot be used as a scalar expression")
         if level_diff == 0:
-            self._emit(OP_LOAD, offset)
+            self._emit_load_offset(offset)
         else:
+            if offset > 255:
+                raise SyntaxError(
+                    "frame offset > 255 in nested scope not supported for integers")
             self._emit(OP_LOAD_L, level_diff, offset)
         return 'integer'
 
@@ -1370,12 +1434,17 @@ class CodeGenerator:
                 self._emit(OP_FSTORE, offset)
             else:
                 self._emit(OP_FSTORE_L, level_diff, offset)
+        elif vtype == 'string':
+            raise SyntaxError("internal: use string assignment codegen")
         else:
             if value_type == 'real':
                 self._emit(OP_FTOI)
             if level_diff == 0:
-                self._emit(OP_STORE, offset)
+                self._emit_store_offset(offset)
             else:
+                if offset > 255:
+                    raise SyntaxError(
+                        "frame offset > 255 in nested scope not supported")
                 self._emit(OP_STORE_L, level_diff, offset)
 
     def _coerce_to_real(self, current_type: str) -> str:
@@ -1476,6 +1545,14 @@ class CodeGenerator:
         elif isinstance(expr, RandomExpr):
             self._emit_csp(CSP_RANDOM)
             return 'integer'
+        elif isinstance(expr, LengthExpr):
+            if self._resolve_var_type(expr.name) != 'string':
+                raise SyntaxError(f"length() requires a string variable, got '{expr.name}'")
+            level_diff, offset = self._resolve_var(expr.name)
+            if level_diff != 0:
+                raise SyntaxError("length() of outer-scope string not supported")
+            self._emit(OP_CSP, CSP_LENGTH, offset & 0xFF, (offset >> 8) & 0xFF)
+            return 'integer'
         elif isinstance(expr, CallExpr):
             return self._gen_call(expr.name, expr.args)
         return 'integer'
@@ -1499,6 +1576,9 @@ class CodeGenerator:
         if isinstance(expr, BinaryOp):
             lt = self._expr_type(expr.left)
             rt = self._expr_type(expr.right)
+            if expr.op in ('=', '<>'):
+                if lt == 'string' and rt == 'string':
+                    return 'integer'
             if expr.op in ('=', '<>', '<', '>', '<=', '>=', 'and', 'or', 'div', 'mod'):
                 return 'integer'
             if expr.op == '/':
@@ -1518,6 +1598,8 @@ class CodeGenerator:
             return 'integer'
         if isinstance(expr, RandomExpr):
             return 'integer'
+        if isinstance(expr, LengthExpr):
+            return 'integer'
         if isinstance(expr, CallExpr):
             sub = self._subroutines.get(expr.name.lower())
             if sub:
@@ -1525,9 +1607,58 @@ class CodeGenerator:
             return 'integer'
         return 'integer'
 
+    def _alloc_temp_string(self) -> int:
+        self._temp_str_id += 1
+        return self._add_var(f'_strtmp{self._temp_str_id}', 'string')
+
+    def _emit_str_assign_lit(self, frame_offset: int, str_index: int):
+        self._emit(OP_CSP, CSP_STR_ASSIGN_LIT)
+        self._emit(frame_offset & 0xFF, (frame_offset >> 8) & 0xFF)
+        self._fixups.append((len(self.code), str_index))
+        self._emit(0x00, 0x00)
+
+    def _emit_str_eq(self, off1: int, off2: int):
+        self._emit(OP_CSP, CSP_STR_EQ)
+        self._emit(off1 & 0xFF, (off1 >> 8) & 0xFF)
+        self._emit(off2 & 0xFF, (off2 >> 8) & 0xFF)
+
+    def _emit_str_copy(self, dst_off: int, src_off: int):
+        self._emit(OP_CSP, CSP_STR_COPY)
+        self._emit(dst_off & 0xFF, (dst_off >> 8) & 0xFF)
+        self._emit(src_off & 0xFF, (src_off >> 8) & 0xFF)
+
+    def _gen_string_compare(self, expr: BinaryOp) -> str:
+        if expr.op not in ('=', '<>'):
+            raise SyntaxError("invalid string operator")
+        lo = expr.left
+        ro = expr.right
+        if isinstance(lo, VarRef) and isinstance(ro, VarRef):
+            o1 = self._resolve_var(lo.name)[1]
+            o2 = self._resolve_var(ro.name)[1]
+            self._emit_str_eq(o1, o2)
+        elif isinstance(lo, VarRef) and isinstance(ro, StringLiteral):
+            t = self._alloc_temp_string()
+            self._emit_str_assign_lit(t, self._add_string(ro.value))
+            o1 = self._resolve_var(lo.name)[1]
+            self._emit_str_eq(o1, t)
+        elif isinstance(ro, VarRef) and isinstance(lo, StringLiteral):
+            t = self._alloc_temp_string()
+            self._emit_str_assign_lit(t, self._add_string(lo.value))
+            o2 = self._resolve_var(ro.name)[1]
+            self._emit_str_eq(t, o2)
+        else:
+            raise SyntaxError(
+                "string comparison needs a variable on at least one side")
+        if expr.op == '<>':
+            self._emit(OP_NOT)
+        return 'integer'
+
     def _gen_binary_op(self, expr: BinaryOp) -> str:
         lt_predicted = self._expr_type(expr.left)
         rt_predicted = self._expr_type(expr.right)
+
+        if expr.op in ('=', '<>') and lt_predicted == 'string' and rt_predicted == 'string':
+            return self._gen_string_compare(expr)
 
         # div and mod always operate on integers
         if expr.op in ('div', 'mod'):
@@ -1599,8 +1730,55 @@ class CodeGenerator:
 
     # ── Call codegen ─────────────────────────────────────────
 
+    def _eval_const_int_expr(self, e: Expression) -> int:
+        if isinstance(e, NumberLiteral):
+            return e.value & 0xFFFF
+        if isinstance(e, VarRef):
+            c = self._resolve_const(e.name)
+            if c is not None:
+                return c & 0xFFFF
+        raise SyntaxError("expression must be a compile-time constant integer")
+
     def _gen_call(self, name: str, args: list[Expression]) -> str:
         lower = name.lower()
+        if lower == 'delay':
+            if len(args) != 1:
+                raise SyntaxError("delay expects one argument (milliseconds)")
+            t = self._gen_expr(args[0])
+            if t == 'real':
+                self._emit(OP_FTOI)
+            self._emit_csp(CSP_WAIT_MS)
+            return 'integer'
+        if lower == 'vt100':
+            if len(args) != 1:
+                raise SyntaxError("vt100 expects one argument (subcode 0..40)")
+            sub = self._eval_const_int_expr(args[0])
+            if sub < 0 or sub > 255:
+                raise SyntaxError("vt100 subcode out of range")
+            self._emit(OP_CSP, CSP_VT100, sub & 0xFF)
+            return 'integer'
+        if lower == 'vt100_pos':
+            if len(args) != 2:
+                raise SyntaxError("vt100_pos expects row, col")
+            t = self._gen_expr(args[0])
+            if t == 'real':
+                self._emit(OP_FTOI)
+            t2 = self._gen_expr(args[1])
+            if t2 == 'real':
+                self._emit(OP_FTOI)
+            self._emit(OP_CSP, CSP_VT100, 0x02)
+            return 'integer'
+        if lower == 'vt100_scroll':
+            if len(args) != 2:
+                raise SyntaxError("vt100_scroll expects top, bottom")
+            t = self._gen_expr(args[0])
+            if t == 'real':
+                self._emit(OP_FTOI)
+            t2 = self._gen_expr(args[1])
+            if t2 == 'real':
+                self._emit(OP_FTOI)
+            self._emit(OP_CSP, CSP_VT100, 0x20)
+            return 'integer'
         sub_info = self._subroutines.get(lower)
         if sub_info is None:
             raise SyntaxError(f"undefined procedure/function: '{name}'")
@@ -1653,6 +1831,19 @@ class CodeGenerator:
         if isinstance(stmt, AssignStmt):
             if self._resolve_const(stmt.target) is not None:
                 raise SyntaxError(f"cannot assign to constant '{stmt.target}'")
+            if self._resolve_var_type(stmt.target) == 'string':
+                if isinstance(stmt.expr, StringLiteral):
+                    _, off = self._resolve_var(stmt.target)
+                    self._emit_str_assign_lit(off, self._add_string(stmt.expr.value))
+                elif isinstance(stmt.expr, VarRef) and self._resolve_var_type(
+                        stmt.expr.name) == 'string':
+                    _, dst = self._resolve_var(stmt.target)
+                    _, src = self._resolve_var(stmt.expr.name)
+                    self._emit_str_copy(dst, src)
+                else:
+                    raise SyntaxError(
+                        "string assignment expects a literal or string variable")
+                return
             t = self._gen_expr(stmt.expr)
             self._emit_store_var(stmt.target, t)
 
@@ -1665,14 +1856,20 @@ class CodeGenerator:
 
         elif isinstance(stmt, CallStmt):
             lower = stmt.name.lower()
-            sub_info = self._subroutines.get(lower)
-            if sub_info is None:
-                raise SyntaxError(f"undefined procedure: '{stmt.name}'")
-            self._gen_call(stmt.name, stmt.args)
+            if lower in ('delay', 'vt100', 'vt100_pos', 'vt100_scroll'):
+                self._gen_call(stmt.name, stmt.args)
+            else:
+                sub_info = self._subroutines.get(lower)
+                if sub_info is None:
+                    raise SyntaxError(f"undefined procedure: '{stmt.name}'")
+                self._gen_call(stmt.name, stmt.args)
 
         elif isinstance(stmt, ReadlnStmt):
             vtype = self._resolve_var_type(stmt.var_name)
-            if vtype == 'real':
+            if vtype == 'string':
+                _, off = self._resolve_var(stmt.var_name)
+                self._emit(OP_CSP, CSP_READLN_STR, off & 0xFF, (off >> 8) & 0xFF)
+            elif vtype == 'real':
                 self._emit_csp(CSP_READLN_REAL)
                 self._emit_store_var(stmt.var_name, 'real')
             else:
@@ -1682,6 +1879,10 @@ class CodeGenerator:
         elif isinstance(stmt, WritelnStmt):
             if stmt.arg is None:
                 self._emit_csp(CSP_WRITELN_NOARG)
+            elif isinstance(stmt.arg, VarRef) and self._resolve_var_type(
+                    stmt.arg.name) == 'string':
+                _, off = self._resolve_var(stmt.arg.name)
+                self._emit(OP_CSP, CSP_WRITELN_STR, off & 0xFF, (off >> 8) & 0xFF)
             elif self._is_string_expr(stmt.arg):
                 self._gen_expr(stmt.arg)
                 self._emit_csp(CSP_WRITELN)
@@ -1697,7 +1898,11 @@ class CodeGenerator:
                     self._emit_csp(CSP_WRITELN_INT)
 
         elif isinstance(stmt, WriteStmt):
-            if self._is_string_expr(stmt.arg):
+            if isinstance(stmt.arg, VarRef) and self._resolve_var_type(
+                    stmt.arg.name) == 'string':
+                _, off = self._resolve_var(stmt.arg.name)
+                self._emit(OP_CSP, CSP_WRITE_STR, off & 0xFF, (off >> 8) & 0xFF)
+            elif self._is_string_expr(stmt.arg):
                 self._gen_expr(stmt.arg)
                 self._emit_csp(CSP_WRITE)
             elif isinstance(stmt.arg, ChrExpr):
@@ -1874,7 +2079,7 @@ class CodeGenerator:
                     self._add_var(name, decl.var_type)
 
         enter_pos = self._code_pos()
-        self._emit(OP_ENTER, 0, nparams_slots, is_func_byte)
+        self._emit(OP_ENTER16, 0, 0, nparams_slots, is_func_byte)
 
         if sub.subroutines:
             jmp_body = self._emit_jmp()
@@ -1885,7 +2090,9 @@ class CodeGenerator:
         for s in sub.body.statements:
             self._gen_stmt(s)
 
-        self.code[enter_pos + 1] = self._scope.next_offset
+        sz = self._scope.next_offset
+        self.code[enter_pos + 1] = sz & 0xFF
+        self.code[enter_pos + 2] = (sz >> 8) & 0xFF
         self._emit(OP_RET, is_func_byte)
         self._pop_scope()
 
@@ -1931,16 +2138,19 @@ class CodeGenerator:
             self._patch_jump(jmp_main, self._code_pos())
 
         enter_pos = self._code_pos()
-        self._emit(OP_ENTER, 0, 0, 0)
+        self._emit(OP_ENTER16, 0, 0, 0, 0)
 
         for stmt in program.statements:
             self._gen_stmt(stmt)
 
-        self.code[enter_pos + 1] = self._scope.next_offset
+        sz = self._scope.next_offset
+        self.code[enter_pos + 1] = sz & 0xFF
+        self.code[enter_pos + 2] = (sz >> 8) & 0xFF
 
         self.code.append(OP_HALT)
         self._pop_scope()
 
+        # In RAM, OT header is stripped by loader; first byte at load addr is stub.
         pcode_base = self.base + NATIVE_STUB_SIZE
         code_offset = PCODE_HEADER_SIZE
         data_offset = PCODE_HEADER_SIZE + len(self.code)

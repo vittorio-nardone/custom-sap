@@ -30,10 +30,11 @@
 ;     Max 128 values.
 #const PM_EVAL_STACK = 0xB100
 
-; --- Variable frame (0xB200-0xB2FF, 256 bytes) ---------------
-;     2 bytes per variable (16-bit signed), max 128 variables.
-;     Indexed by byte offset (0, 2, 4, ...).
+; --- Variable frame (0xB200-0xB3FF, 512 bytes) ---------------
+;     Scalars: 2 bytes each. Strings: 81 bytes (len + 80 chars).
+;     Indexed by byte offset from FP (FP points into this region).
 #const PM_VAR_FRAME = 0xB200
+#const PM_VAR_FRAME_SIZE = 0x0200  ; 512 bytes
 
 ; --- Call info stack (0xBA00-0xBAFF, 256 bytes) ---------------
 ;     Each entry = 4 bytes: IP_MSB, IP_LSB, FP_MSB, FP_LSB.
@@ -86,6 +87,9 @@
 #const PM_OP_STORE_REF = 0x22  ; offset — store via reference
 #const PM_OP_PUSH_ADDR = 0x23  ; offset — push FP+offset as address
 #const PM_OP_PUSH_ADDR_L=0x24  ; depth, offset — push target_FP+offset via static chain
+#const PM_OP_ENTER16 = 0x25    ; frame_size_lo, frame_size_hi, nparams, is_function — large frames
+#const PM_OP_LOADW   = 0x26    ; offset16 LE — push 16-bit variable (FP-relative)
+#const PM_OP_STOREW  = 0x27    ; offset16 LE — pop 16-bit into variable (FP-relative)
 
 ; --- Float opcodes (0x30-0x3C) --------------------------------
 #const PM_OP_FLIT    = 0x30  ; push 4-byte IEEE 754 float literal
@@ -120,6 +124,15 @@
 #const PM_CSP_RANDOM        = 0x0A  ; random — push random integer (0..32767)
 #const PM_CSP_PEEK          = 0x0B  ; peek(addr) — pop addr, read byte, push 16-bit (0:byte)
 #const PM_CSP_POKE          = 0x0C  ; poke(addr,val) — pop val, pop addr, write low byte
+#const PM_CSP_VT100         = 0x0D  ; fetch subcode; optional pops — kernel VT100
+#const PM_CSP_WAIT_MS       = 0x0E  ; pop ms(16) — busy-wait delay
+#const PM_CSP_READLN_STR    = 0x0F  ; fetch FP offset — read line into string buffer
+#const PM_CSP_WRITE_STR     = 0x10  ; fetch FP offset — write string var
+#const PM_CSP_WRITELN_STR   = 0x11  ; fetch FP offset — writeln string var
+#const PM_CSP_STR_EQ        = 0x12  ; fetch off1, off2 — push 0/1
+#const PM_CSP_STR_ASSIGN_LIT= 0x13  ; fetch dst_off, src_lo, src_hi — copy from pool
+#const PM_CSP_STR_COPY      = 0x14  ; fetch dst_off, src_off — copy string var
+#const PM_CSP_LENGTH        = 0x15  ; fetch FP offset — push length as int
 
 ; ============================================================
 ; EDITOR CONSTANTS
@@ -174,7 +187,8 @@
 #const CC_FIX_SP      = 0xB10C  ; fixup stack pointer
 #const CC_STR_OFF_LO  = 0xB10D  ; string pool offset low
 #const CC_STR_OFF_HI  = 0xB10E  ; string pool offset high
-#const CC_FRAME_OFF   = 0xB10F  ; next free byte in frame
+#const CC_FRAME_OFF   = 0xB10F  ; next free byte in frame (LSB)
+#const CC_FRAME_OFF_HI = 0xB1A0 ; frame size MSB (512-byte frames; eval upper scratch)
 #const CC_TOTAL_LINES = 0xB110  ; total source lines
 #const CC_TEMP1       = 0xB111  ; temp
 #const CC_TEMP2       = 0xB112  ; temp
@@ -203,7 +217,7 @@
 #const CC_FOUND_B15   = 0xB170  ; byte 15 from cc_find_sym (var type: 0=int, 1=real; func ret: 0/2)
 #const CC_PARAM_VAR   = 0xB17C  ; temp: current param is var (during param parsing, reuses ED_CUR_LINE)
 #const CC_EXPR_TYPE   = 0xB17D  ; expression type: 0=integer, 1=real
-#const CC_VAR_TYPE    = 0xB17E  ; current var block type: 0=integer, 1=real
+#const CC_VAR_TYPE    = 0xB17E  ; current var block type: 0=integer, 1=real, 2=string
 #const CC_FUNC_RET    = 0xB17F  ; function return type: 0=integer, 2=real (matches is_func encoding)
 
 ; Symbol kind constants
@@ -279,6 +293,12 @@
 #const CC_TK_REAL     = 0x61
 #const CC_TK_PEEK     = 0x62
 #const CC_TK_POKE     = 0x63
+#const CC_TK_STRING_TYPE = 0x64  ; keyword "string" (var type)
+#const CC_TK_DELAY   = 0x65
+#const CC_TK_VT100    = 0x66
+#const CC_TK_VT100_POS = 0x67
+#const CC_TK_VT100_SCROLL = 0x68
+#const CC_TK_LENGTH   = 0x69
 
 ; Expansion RAM page 2 layout (compiler workspace)
 #const CC_WS_PAGE     = 0x02

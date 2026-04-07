@@ -10,6 +10,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler 
 import os
 import random as pyrandom
+import time
 
 class OttoCPU:
     def __init__(self):
@@ -644,12 +645,14 @@ if __name__ == "__main__":
 
                     while cpu.HLT == False:
                         cpu.step()
+                        time.sleep(0) # delay to optimize simulated serial port performance
             else:
                 while cpu.HLT == False:
                     while keyboard_hit():
                         key = ord(sys.stdin.read(1))
                         cpu.push_key(key)
                     cpu.step()
+                    time.sleep(0)
         except Exception as e:
             print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
 

@@ -207,3 +207,58 @@ BINDEC32:
         dey
         bpl .l4
         rts
+
+;================================================================================
+; WAIT_MS — busy-wait delay (MATH16_A = milliseconds, 16-bit LE)
+; @ 1 MHz: solo WAIT_10MS_APPROX (10 000 cyc = 10 ms). Residuo < 10 ms ignorato.
+;================================================================================
+WAIT_MS:
+        lda MATH16_A
+        ora MATH16_A+1
+        beq .wm_done
+.wm_loop:
+        lda MATH16_A+1
+        bne .wm_tens
+        lda MATH16_A
+        cmp 0x0A
+        bcc .wm_done
+.wm_tens:
+        jsr WAIT_10MS_APPROX
+        lda MATH16_A
+        sec
+        sbc 0x0A
+        sta MATH16_A
+        lda MATH16_A+1
+        sbc 0x00
+        sta MATH16_A+1
+        lda MATH16_A
+        ora MATH16_A+1
+        bne .wm_loop
+.wm_done:
+        rts
+
+; Exactly 10 000 CPU cycles from entry through RTS @ 1 MHz (= 10 ms)
+; (Calibrated with simulate.py: two DEY sweeps + DEX pads LDX#23 / LDX#255 + 3 NOP)
+WAIT_10MS_APPROX:
+        ldx 0x02
+.w10_1:
+        ldy 0x00
+.w10_2:
+        nop
+        nop
+        dey
+        bne .w10_2
+        dex
+        bne .w10_1
+        ldx 0x17
+.w10_p1:
+        dex
+        bne .w10_p1
+        ldx 0xFF
+.w10_p2:
+        dex
+        bne .w10_p2
+        nop
+        nop
+        nop
+        rts

@@ -21,8 +21,9 @@ The `var` block is optional. If present, it must appear between the `program` he
 |------|------|-------|-------------|
 | `integer` | 16-bit | -32768 to 32767 | Signed two's complement integer |
 | `real` | 32-bit | ±3.4×10³⁸ | IEEE 754 single-precision floating point |
+| `string` | 81 bytes in frame | 0–80 characters | Length-prefixed ASCII (`write`/`writeln`/`readln`; see below) |
 
-String literals can be used in `write`/`writeln` calls but there is no `string` variable type.
+String literals (in `'quotes'`) can be used in `write`/`writeln` and in assignments to `string` variables. Inside a literal, `''` encodes a single apostrophe.
 
 ### Type Coercion
 
@@ -60,7 +61,32 @@ var
   temp, avg: real;
 ```
 
-Multiple variables of the same type can be declared on one line, separated by commas. Each declaration line ends with a semicolon. `integer` and `real` variables can be mixed in the same `var` block. Maximum 128 variables per scope.
+Multiple variables of the same type can be declared on one line, separated by commas. Each declaration line ends with a semicolon. `integer`, `real`, and `string` variables can be mixed in the same `var` block. Maximum 128 variables per scope (subject to frame size; each `string` uses 81 bytes of the activation record).
+
+### String variables
+
+```pascal
+var
+  a, b: string;
+begin
+  a := 'Hello';
+  b := a;
+  if a = 'Hello' then writeln('ok');
+  if a <> b then writeln('differ');
+  writeln(length(a));
+  readln(a);
+  write(a)
+end.
+```
+
+- **Layout**: first byte is the length (0–80), followed by up to 80 character bytes.
+- **Assignment**: from a string literal or from another `string` variable only.
+- **Comparison**: `=` and `<>` only; at least one operand must be a **variable** (the other can be a literal).
+- **I/O**: `write(s)`, `writeln(s)`, `readln(s)` — line input ends at CR/LF, truncated to 80 characters.
+- **`length(s)`**: returns the current length as an integer (current scope only; not for strings in outer nested scopes).
+- **Not supported**: `array of string`, `string` parameters to procedures/functions, relational operators other than `=` / `<>`.
+
+The P-Machine uses a **512-byte** variable frame (`0xB200`–`0xB3FF`) and **`ENTER16`** in P-code so large procedures with several strings fit; the cross-compiler and on-board compiler emit `ENTER16` for the main program and subroutines.
 
 ## Arrays
 
@@ -231,22 +257,38 @@ variable := expression;
 write('text');           { print string, no newline }
 write(intExpr);          { print integer value, no newline }
 write(realExpr);         { print real value, no newline }
+write(strVar);           { print string variable, no newline }
 writeln('text');          { print string + newline }
 writeln(intExpr);        { print integer value + newline }
 writeln(realExpr);       { print real value + newline }
+writeln(strVar);         { print string variable + newline }
 writeln;                 { print newline only }
 ```
 
-The argument type (string literal, integer expression, or real expression) is detected automatically by the compiler. Real values are printed with two decimal places (e.g., `3.14`, `-0.50`).
+The argument type (string literal, string variable, integer expression, or real expression) is detected automatically by the compiler. Real values are printed with two decimal places (e.g., `3.14`, `-0.50`).
 
 ### readln
 
 ```pascal
 readln(intVar);          { read integer from serial input }
 readln(realVar);         { read real from serial input }
+readln(strVar);          { read line into string variable (max 80 chars) }
 ```
 
-Reads a value from the serial port and stores it in the given variable. The input is terminated by Enter (CR). For integers: signed decimal, range -32768 to 32767. For reals: decimal with optional fractional part (e.g., `3.14`, `-0.5`).
+Reads a value from the serial port and stores it in the given variable. The input is terminated by Enter (CR). For integers: signed decimal, range -32768 to 32767. For reals: decimal with optional fractional part (e.g., `3.14`, `-0.5`). For strings: raw bytes until CR/LF, length stored in the first byte of the buffer.
+
+### Terminal control (`vt100`, `vt100_pos`, `vt100_scroll`) and `delay`
+
+Built-in **procedures** (not in the standard Pascal library list — they map to P-Machine CSPs and kernel routines):
+
+| Call | Meaning |
+|------|---------|
+| `vt100(n)` | Execute VT100 helper number `n`. The argument must be a **compile-time constant** (decimal or hex, e.g. `$11`). Subcodes match the P-Machine dispatcher in `pascal/pmachine.asm` (e.g. `$00` erase screen, `$01` cursor home, `$03`–`$06` cursor arrows, `$0A`–`$0E` text attributes, `$0F`–`$16` foreground colors, `$17`–`$1E` background colors, `$1F` full scroll, `$21`/`$22` scroll down/up, `$23`/`$24` wrap on/off, `$25`/`$26` fonts, `$27` device reset, `$28` query cursor). |
+| `vt100_pos(row, col)` | Set cursor row/column (two integer expressions). |
+| `vt100_scroll(top, bottom)` | Set scroll region (two integer expressions). |
+| `delay(ms)` | Busy-wait approximately `ms` milliseconds (16-bit); uses kernel `WAIT_MS` (~1 MHz). Not precise; blocks the P-Machine until done. In the Python simulator each millisecond costs a large number of emulated cycles — use modest values in programs meant for `--autorun` / CI, or raise `--max-cycles`. |
+
+A fuller subcode table is in `pascal/PLAN_STRING_VT100_DELAY.md`. On a VT100-capable serial terminal, `vt100` sequences match the kernel’s `VT100_*` routines.
 
 ## Control Flow
 
@@ -406,10 +448,10 @@ Three comment styles are supported:
 
 ## Limitations (current version)
 
-- No `string` type — only string literals in write/writeln
 - No records or multi-dimensional arrays
 - Arrays cannot be passed as parameters to procedures/functions
-- No `readln` for strings or array elements — only scalar integer/real input
+- `string`: no arrays of strings, no `string` parameters, no `length` for outer-scope strings in nested procedures, string compares only `=` / `<>` with a variable on at least one side
+- `readln` for array elements not supported — use a temporary scalar, then assign into the array
 - No dedicated boolean type (integers are used: 0 = false, non-zero = true)
 - No runtime bounds checking for array indices
 - Integer overflow is silently truncated to 16 bits

@@ -31,6 +31,8 @@
     ; Frame offset starts at 2 (bytes 0-1 reserved for static link)
     lda 0x02
     sta CC_FRAME_OFF
+    lda 0x00
+    sta CC_FRAME_OFF_HI
 
     ; P-code header is 7 bytes: "PM" + version + code_off(2) + data_off(2)
     lda 0x07
@@ -86,19 +88,21 @@
     bne .cc_compile_end
     jsr .cc_parse_subs
 
-    ; Emit ENTER for main program (frame_size patched later)
-    ; P-Machine reads operands as: frame_size, nparams, is_function
+    ; Emit ENTER16 for main program (frame_size 16-bit patched later)
+    ; Operands: frame_lo, frame_hi, nparams, is_function
     lda CC_ERROR
     bne .cc_compile_end
-    lda PM_OP_ENTER
+    lda PM_OP_ENTER16
     jsr .cc_emit
-    ; save position of frame_size byte for patching
+    ; save position of frame_size word for patching
     lda CC_CODE_LO
     sta CC_ENTER_LO
     lda CC_CODE_HI
     sta CC_ENTER_HI
     lda 0x00
-    jsr .cc_emit         ; frame_size placeholder
+    jsr .cc_emit         ; frame_size lo placeholder
+    lda 0x00
+    jsr .cc_emit         ; frame_size hi placeholder
     lda 0x00
     jsr .cc_emit         ; nparams = 0
     lda 0x00
@@ -262,14 +266,21 @@
     cmp CC_TK_ARRAY
     beq .cc_pv_array
     cmp CC_TK_REAL
-    bne .cc_pv_not_real
+    beq .cc_pv_real
+    cmp CC_TK_STRING_TYPE
+    beq .cc_pv_string
+    lda CC_TK_INTEGER
+    jsr .cc_expect
+    jmp .cc_pv_after_type
+.cc_pv_real:
     lda CC_TEMP4
     jsr .cc_repatch_real
     jsr .cc_next_token       ; consume 'real'
     jmp .cc_pv_after_type
-.cc_pv_not_real:
-    lda CC_TK_INTEGER
-    jsr .cc_expect
+.cc_pv_string:
+    lda CC_TEMP4
+    jsr .cc_repatch_string
+    jsr .cc_next_token       ; consume 'string'
 .cc_pv_after_type:
     lda CC_TK_SEMI
     jsr .cc_expect
@@ -392,6 +403,14 @@
     beq .cc_parse_repeat
     cmp CC_TK_POKE
     beq .cc_parse_poke
+    cmp CC_TK_DELAY
+    beq .cc_parse_delay
+    cmp CC_TK_VT100
+    beq .cc_parse_vt100_kw
+    cmp CC_TK_VT100_POS
+    beq .cc_parse_vt100_pos
+    cmp CC_TK_VT100_SCROLL
+    beq .cc_parse_vt100_scroll
 
 .cc_ps_done:
     rts
@@ -466,6 +485,9 @@
     ; Check if var param
     lda CC_FOUND_B14
     bne .cc_pa_var_param
+    lda CC_FOUND_B15
+    cmp 0x02
+    beq .cc_pa_string
     lda CC_FOUND_B15         ; variable type (0=int, 1=real)
     pha                      ; save var type on stack
     lda CC_FOUND_B10         ; offset
@@ -514,6 +536,62 @@
     sta CC_TEMP2
     lda PM_OP_FSTORE
     jmp .cc_emit_scoped
+
+.cc_pa_string:
+    ; string var := literal | string var
+    jsr .cc_next_token       ; consume lhs ident
+    lda CC_FOUND_B10
+    sta CC_TEMP3
+    lda CC_FOUND_ARG1
+    sta CC_TEMP4
+    lda CC_TK_ASSIGN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_pa_str_err
+    jsr .cc_next_token
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_STRING
+    beq .cc_pa_str_lit
+    cmp CC_TK_IDENT
+    beq .cc_pa_str_copy
+    lda .cc_e_syntax
+    jmp .cc_error_a
+.cc_pa_str_lit:
+    jsr .cc_add_string_token
+    jsr .cc_next_token
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_STR_ASSIGN_LIT
+    jsr .cc_emit
+    lda CC_TEMP3
+    jsr .cc_emit
+    lda CC_TEMP4
+    jsr .cc_emit
+    jsr .cc_push_str_fixup
+    rts
+.cc_pa_str_copy:
+    jsr .cc_find_sym
+    bcs .cc_pa_undef
+    lda CC_FOUND_B15
+    cmp 0x02
+    bne .cc_pa_undef
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_STR_COPY
+    jsr .cc_emit
+    lda CC_TEMP3
+    jsr .cc_emit
+    lda CC_TEMP4
+    jsr .cc_emit
+    lda CC_FOUND_B10
+    jsr .cc_emit
+    lda CC_FOUND_ARG1
+    jsr .cc_emit
+    jsr .cc_next_token
+    rts
+.cc_pa_str_err:
+    rts
+
 .cc_pa_var_param:
     lda CC_FOUND_B10         ; offset
     pha
@@ -933,7 +1011,36 @@
     beq .cc_write_str
     cmp CC_TK_CHR
     beq .cc_write_chr
-
+    cmp CC_TK_IDENT
+    bne .cc_write_expr
+    jsr .cc_find_sym
+    bcs .cc_write_expr
+    lda CC_FOUND_B15
+    cmp 0x02
+    bne .cc_write_expr_pop
+    lda PM_OP_CSP
+    jsr .cc_emit
+    pla
+    pha
+    bne .cc_wstr_nl
+    lda PM_CSP_WRITE_STR
+    jmp .cc_wstr_emit
+.cc_wstr_nl:
+    lda PM_CSP_WRITELN_STR
+.cc_wstr_emit:
+    jsr .cc_emit
+    lda CC_FOUND_B10
+    jsr .cc_emit
+    lda CC_FOUND_ARG1
+    jsr .cc_emit
+    jsr .cc_next_token
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_COMMA
+    beq .cc_write_str_cont
+    jmp .cc_write_close
+.cc_write_expr_pop:
+    ; Not a string var: put ident token back — fall through to expression
+.cc_write_expr:
     ; Expression (integer or real)
     jsr .cc_parse_expression
     lda CC_ERROR
@@ -1085,14 +1192,20 @@
     bne .cc_rdln_err
     jsr .cc_find_sym
     bcs .cc_rdln_undef
-    sta CC_TEMP1             ; offset
+    sta CC_TEMP1             ; offset lo
     lda CC_FOUND_B15
     sta CC_TEMP2             ; var type
 
     jsr .cc_next_token       ; consume ident
 
     lda CC_TEMP2
-    bne .cc_rdln_real
+    beq .cc_rdln_int
+    cmp 0x01
+    beq .cc_rdln_real
+    cmp 0x02
+    beq .cc_rdln_str
+    jmp .cc_rdln_err
+.cc_rdln_int:
     ; Integer readln
     lda PM_OP_CSP
     jsr .cc_emit
@@ -1101,6 +1214,16 @@
     lda PM_OP_STORE
     jsr .cc_emit
     lda CC_TEMP1
+    jsr .cc_emit
+    jmp .cc_rdln_close
+.cc_rdln_str:
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_READLN_STR
+    jsr .cc_emit
+    lda CC_TEMP1
+    jsr .cc_emit
+    lda CC_FOUND_ARG1
     jsr .cc_emit
     jmp .cc_rdln_close
 .cc_rdln_real:
@@ -1159,6 +1282,117 @@
     lda PM_CSP_POKE
     jsr .cc_emit
 .cc_poke_done:
+    rts
+
+; ── delay(ms) ───────────────────────────────────────────
+
+.cc_parse_delay:
+    jsr .cc_next_token
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_del_done
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_del_done
+    jsr .cc_ensure_int
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_WAIT_MS
+    jsr .cc_emit
+.cc_del_done:
+    rts
+
+; ── vt100(subcode) — subcode must be numeric literal ────
+
+.cc_parse_vt100_kw:
+    jsr .cc_next_token
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_vt_done
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_NUMBER
+    bne .cc_vt_err
+    lda CC_TOKEN_NUM_LO
+    pha
+    jsr .cc_next_token
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_VT100
+    jsr .cc_emit
+    pla
+    jsr .cc_emit
+.cc_vt_done:
+    rts
+.cc_vt_err:
+    lda .cc_e_syntax
+    jmp .cc_error_a
+
+; ── vt100_pos(row, col) ─────────────────────────────────
+
+.cc_parse_vt100_pos:
+    jsr .cc_next_token
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_vp_done
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_vp_done
+    jsr .cc_ensure_int
+    lda CC_TK_COMMA
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_vp_done
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_vp_done
+    jsr .cc_ensure_int
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_VT100
+    jsr .cc_emit
+    lda 0x02
+    jsr .cc_emit
+.cc_vp_done:
+    rts
+
+; ── vt100_scroll(top, bottom) ───────────────────────────
+
+.cc_parse_vt100_scroll:
+    jsr .cc_next_token
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_vs_done
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_vs_done
+    jsr .cc_ensure_int
+    lda CC_TK_COMMA
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_vs_done
+    jsr .cc_parse_expression
+    lda CC_ERROR
+    bne .cc_vs_done
+    jsr .cc_ensure_int
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_VT100
+    jsr .cc_emit
+    lda 0x20
+    jsr .cc_emit
+.cc_vs_done:
     rts
 
 ; ── Call arguments and CALL emission ────────────────────
@@ -1381,6 +1615,8 @@
     pha
     lda CC_FRAME_OFF
     pha
+    lda CC_FRAME_OFF_HI
+    pha
     lda CC_ENTER_LO
     pha
     lda CC_ENTER_HI
@@ -1415,6 +1651,8 @@
     lda 0x02                 ; 2 static link only
 .cc_sub_frame_set:
     sta CC_FRAME_OFF
+    lda 0x00
+    sta CC_FRAME_OFF_HI
 
     jsr .cc_next_token       ; consume name
 
@@ -1498,6 +1736,9 @@
     clc
     adc 0x02
     sta CC_FRAME_OFF
+    lda CC_FRAME_OFF_HI
+    adc 0x00
+    sta CC_FRAME_OFF_HI
     ; Patch the symbol table entry byte 15 for this function
     lda CC_SAVED_SYMCNT
     jsr .cc_sym_addr
@@ -1531,15 +1772,17 @@
     jsr .cc_parse_var
 .cc_sub_no_lvar:
 
-    ; Emit ENTER
-    lda PM_OP_ENTER
+    ; Emit ENTER16
+    lda PM_OP_ENTER16
     jsr .cc_emit
     lda CC_CODE_LO
     sta CC_ENTER_LO
     lda CC_CODE_HI
     sta CC_ENTER_HI
     lda 0x00
-    jsr .cc_emit             ; frame_size placeholder
+    jsr .cc_emit             ; frame_size lo placeholder
+    lda 0x00
+    jsr .cc_emit             ; frame_size hi placeholder
     lda CC_FOUND_ARG2
     jsr .cc_emit             ; nparams
     lda CC_IS_FUNC
@@ -1574,6 +1817,8 @@
     sta CC_ENTER_HI
     pla
     sta CC_ENTER_LO
+    pla
+    sta CC_FRAME_OFF_HI
     pla
     sta CC_FRAME_OFF
     pla
@@ -1894,6 +2139,8 @@
     beq .cc_fc_random
     cmp CC_TK_PEEK
     beq .cc_fc_peek
+    cmp CC_TK_LENGTH
+    beq .cc_fc_length
 
     ; Unexpected token
     lda .cc_e_expr
@@ -1928,6 +2175,39 @@
     jsr .cc_next_token
     rts
 
+.cc_fc_str_err:
+    lda .cc_e_expr
+    jmp .cc_error_a
+
+.cc_fc_length:
+    jsr .cc_next_token
+    lda CC_TK_LPAREN
+    jsr .cc_expect
+    lda CC_ERROR
+    bne .cc_fc_done
+    lda CC_TOKEN_TYPE
+    cmp CC_TK_IDENT
+    bne .cc_fc_str_err
+    jsr .cc_find_sym
+    bcs .cc_fc_undef
+    lda CC_FOUND_B15
+    cmp 0x02
+    bne .cc_fc_str_err
+    lda PM_OP_CSP
+    jsr .cc_emit
+    lda PM_CSP_LENGTH
+    jsr .cc_emit
+    lda CC_FOUND_B10
+    jsr .cc_emit
+    lda CC_FOUND_ARG1
+    jsr .cc_emit
+    jsr .cc_next_token
+    lda CC_TK_RPAREN
+    jsr .cc_expect
+    lda 0x00
+    sta CC_EXPR_TYPE
+    rts
+
 .cc_fc_ident:
     jsr .cc_find_sym
     bcs .cc_fc_undef
@@ -1938,6 +2218,9 @@
     beq .cc_fc_func_call
     cmp CC_KIND_ARRAY
     beq .cc_fc_arr
+    lda CC_FOUND_B15
+    cmp 0x02
+    beq .cc_fc_str_err
     ; Check if var param (byte 14)
     lda CC_FOUND_B14
     bne .cc_fc_var_param
@@ -2522,10 +2805,33 @@
     jsr .cc_emit             ; offset
     rts
 .cc_es_local:
+    pla
+    sta CC_TEMP3             ; offset lo
+    lda CC_FOUND_ARG1
+    bne .cc_es_loc_16
     lda CC_TEMP1
     jsr .cc_emit
-    pla
-    jsr .cc_emit             ; offset
+    lda CC_TEMP3
+    jsr .cc_emit
+    rts
+.cc_es_loc_16:
+    lda CC_TEMP1
+    cmp PM_OP_LOAD
+    bne .cc_es_stw
+    lda PM_OP_LOADW
+    jsr .cc_emit
+    lda CC_TEMP3
+    jsr .cc_emit
+    lda CC_FOUND_ARG1
+    jsr .cc_emit
+    rts
+.cc_es_stw:
+    lda PM_OP_STOREW
+    jsr .cc_emit
+    lda CC_TEMP3
+    jsr .cc_emit
+    lda CC_FOUND_ARG1
+    jsr .cc_emit
     rts
 
 ; ── Type coercion helpers ───────────────────────────────
@@ -2599,7 +2905,7 @@
     rts
 
 .cc_patch_enter:
-    ; Patch ENTER frame_size at CC_ENTER_LO:HI with CC_FRAME_OFF
+    ; Patch ENTER16 frame size (16-bit LE) at CC_ENTER_LO:HI
     lda CC_ENTER_LO
     clc
     adc PM_PCODE_BASE[7:0]
@@ -2609,6 +2915,9 @@
     tad
     lda CC_FRAME_OFF
     ldx 0x00
+    sta de,x
+    inx
+    lda CC_FRAME_OFF_HI
     sta de,x
     rts
 
@@ -3039,10 +3348,10 @@
     sta yde,x                ; byte 9: kind
     inx
     lda CC_FRAME_OFF
-    sta yde,x                ; byte 10: offset
+    sta yde,x                ; byte 10: offset lo
     inx
-    lda 0x00
-    sta yde,x                ; byte 11: unused
+    lda CC_FRAME_OFF_HI
+    sta yde,x                ; byte 11: offset hi
     inx
     sta yde,x                ; byte 12: unused
     inx
@@ -3057,18 +3366,37 @@
     lda CC_PARAM_VAR
     bne .cc_av_ptr
     lda CC_VAR_TYPE
-    bne .cc_av_real
+    cmp 0x01
+    beq .cc_av_real
+    cmp 0x02
+    beq .cc_av_string
 .cc_av_ptr:
     lda CC_FRAME_OFF
     clc
     adc 0x02
-    jmp .cc_av_set
+    sta CC_FRAME_OFF
+    lda CC_FRAME_OFF_HI
+    adc 0x00
+    sta CC_FRAME_OFF_HI
+    jmp .cc_av_done
 .cc_av_real:
     lda CC_FRAME_OFF
     clc
     adc 0x04
-.cc_av_set:
     sta CC_FRAME_OFF
+    lda CC_FRAME_OFF_HI
+    adc 0x00
+    sta CC_FRAME_OFF_HI
+    jmp .cc_av_done
+.cc_av_string:
+    lda CC_FRAME_OFF
+    clc
+    adc 0x51
+    sta CC_FRAME_OFF
+    lda CC_FRAME_OFF_HI
+    adc 0x00
+    sta CC_FRAME_OFF_HI
+.cc_av_done:
     inc CC_SYM_COUNT
     rts
 
@@ -3195,7 +3523,10 @@
     jsr .cc_sym_addr
     ldx 0x0A
     lda CC_TEMP1
-    sta yde,x                ; byte 10: new offset
+    sta yde,x                ; byte 10: new offset lo
+    inx
+    lda 0x00
+    sta yde,x                ; byte 11: offset hi
     ldx 0x0F
     lda 0x01
     sta yde,x                ; byte 15: type = real
@@ -3210,6 +3541,57 @@
 .cc_rpr_done:
     lda CC_TEMP1
     sta CC_FRAME_OFF
+    lda 0x00
+    sta CC_FRAME_OFF_HI
+    rts
+
+; Re-patch a batch of variables (from index A) as string: 81 bytes each, type=2
+
+.cc_repatch_string:
+    sta CC_TEMP3
+    lda CC_SYM_COUNT
+    sec
+    sbc CC_TEMP3
+    asl a
+    sta CC_TEMP1
+    lda CC_FRAME_OFF
+    sec
+    sbc CC_TEMP1
+    sta CC_TEMP1
+    lda CC_FRAME_OFF_HI
+    sbc 0x00
+    sta CC_TEMP2
+    lda CC_TEMP3
+.cc_rps_loop:
+    cmp CC_SYM_COUNT
+    bcs .cc_rps_done
+    pha
+    jsr .cc_sym_addr
+    ldx 0x0A
+    lda CC_TEMP1
+    sta yde,x
+    inx
+    lda CC_TEMP2
+    sta yde,x
+    ldx 0x0F
+    lda 0x02
+    sta yde,x
+    lda CC_TEMP1
+    clc
+    adc 0x51
+    sta CC_TEMP1
+    lda CC_TEMP2
+    adc 0x00
+    sta CC_TEMP2
+    pla
+    clc
+    adc 0x01
+    jmp .cc_rps_loop
+.cc_rps_done:
+    lda CC_TEMP1
+    sta CC_FRAME_OFF
+    lda CC_TEMP2
+    sta CC_FRAME_OFF_HI
     rts
 
 .cc_find_sym:
@@ -3722,6 +4104,12 @@
     #d "real", 0x00, CC_TK_REAL
     #d "peek", 0x00, CC_TK_PEEK
     #d "poke", 0x00, CC_TK_POKE
+    #d "string", 0x00, CC_TK_STRING_TYPE
+    #d "delay", 0x00, CC_TK_DELAY
+    #d "vt100_pos", 0x00, CC_TK_VT100_POS
+    #d "vt100_scroll", 0x00, CC_TK_VT100_SCROLL
+    #d "vt100", 0x00, CC_TK_VT100
+    #d "length", 0x00, CC_TK_LENGTH
     #d 0x00                  ; sentinel
 
 ; ── Compiler strings ─────────────────────────────────────

@@ -1,8 +1,8 @@
 #once
 #bank kernel
 
-#const PMACHINE_VERSION = "v0.4.37"
-#const PMACHINE_BUILDDATE = "03/25/2026"
+#const PMACHINE_VERSION = "v0.4.39"
+#const PMACHINE_BUILDDATE = "04/06/2026"
 
 #include "consts.asm"
 
@@ -109,8 +109,10 @@ PM_ENTRY:
     #d .op_load_a[7:0], .op_store_a[7:0], .op_load_al[7:0], .op_store_al[7:0]
     ; 0x20 ABS     0x21 LOAD_REF 0x22 STORE_REF 0x23 PUSH_ADDR
     #d .op_abs[7:0], .op_load_ref[7:0], .op_store_ref[7:0], .op_push_addr[7:0]
-    ; 0x24 PUSH_ADDR_L  0x25-0x2F unused (→ error)
+    ; 0x24 PUSH_ADDR_L  0x25 ENTER16  0x26 LOADW  0x27 STOREW
     #d .op_push_addr_l[7:0]
+    #d .op_enter16[7:0]
+    #d .op_loadw[7:0], .op_storew[7:0]
     #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
     #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
     #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
@@ -144,7 +146,11 @@ PM_ENTRY:
     ; 0x20-0x24
     #d .op_abs[15:8], .op_load_ref[15:8], .op_store_ref[15:8], .op_push_addr[15:8]
     #d .op_push_addr_l[15:8]
-    ; 0x25-0x2F unused
+    ; 0x25 ENTER16
+    #d .op_enter16[15:8]
+    ; 0x26-0x27 LOADW, STOREW
+    #d .op_loadw[15:8], .op_storew[15:8]
+    ; 0x28-0x2F unused
     #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
     #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
     #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
@@ -230,6 +236,62 @@ PM_ENTRY:
     sta de,x
     inx
     pla                     ; MSB
+    sta de,x
+    jmp .fetch
+
+; --- LOADW: push 16-bit variable at FP + offset16 (LE) ---
+
+.op_loadw:
+    jsr .fetch_byte
+    sta PM_TEMP             ; off lo
+    jsr .fetch_byte
+    sta PM_TEMP2            ; off hi
+    lda PM_FP_LSB
+    clc
+    adc PM_TEMP
+    tae
+    lda PM_FP_MSB
+    adc PM_TEMP2
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    lda de,x
+    sta PM_TEMP
+    inx
+    lda de,x
+    pha
+    lda PM_TEMP
+    jsr .push_byte
+    pla
+    jsr .push_byte
+    jmp .fetch
+
+; --- STOREW: pop 16-bit into variable at FP + offset16 (LE)
+
+.op_storew:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pop_byte
+    pha
+    jsr .pop_byte
+    pha
+    lda PM_TEMP
+    clc
+    adc PM_FP_LSB
+    tae
+    lda PM_TEMP2
+    adc PM_FP_MSB
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    ldx 0x00
+    pla
+    sta de,x
+    inx
+    pla
     sta de,x
     jmp .fetch
 
@@ -538,10 +600,24 @@ PM_ENTRY:
     jmp .set_ip_from_offset
 
 ; --- ENTER: set up activation record --------------------
+;     frame_size in MATH16_A (8- or 16-bit); OP_ENTER zero-extends.
 
 .op_enter:
-    jsr .fetch_byte         ; frame_size
-    sta PM_TEMP3
+    jsr .fetch_byte
+    sta MATH16_A
+    lda 0x00
+    sta MATH16_A+1
+    jmp .enter_body
+
+; --- ENTER16: large frame (frame_size 16-bit LE) --------
+
+.op_enter16:
+    jsr .fetch_byte
+    sta MATH16_A
+    jsr .fetch_byte
+    sta MATH16_A+1
+
+.enter_body:
     jsr .fetch_byte         ; nparams
     sta PM_TEMP
     jsr .fetch_byte         ; is_function (0=proc, 1=int func, 2=real func)
@@ -644,13 +720,13 @@ PM_ENTRY:
     bne .enter_copy_loop
 
 .enter_set_ftop:
-    ; FRAME_TOP = FP + frame_size
+    ; FRAME_TOP = FP + frame_size (16-bit)
     lda PM_FP_LSB
     clc
-    adc PM_TEMP3
+    adc MATH16_A
     sta PM_FTOP_LSB
     lda PM_FP_MSB
-    adc 0x00
+    adc MATH16_A+1
     sta PM_FTOP_MSB
     jmp .fetch
 
@@ -1149,6 +1225,24 @@ PM_ENTRY:
     beq .csp_peek
     cmp PM_CSP_POKE
     beq .csp_poke
+    cmp PM_CSP_VT100
+    beq .csp_vt100
+    cmp PM_CSP_WAIT_MS
+    beq .csp_wait_ms
+    cmp PM_CSP_READLN_STR
+    beq .csp_readln_str
+    cmp PM_CSP_WRITE_STR
+    beq .csp_write_str
+    cmp PM_CSP_WRITELN_STR
+    beq .csp_writeln_str
+    cmp PM_CSP_STR_EQ
+    beq .csp_str_eq
+    cmp PM_CSP_STR_ASSIGN_LIT
+    beq .csp_str_assign_lit
+    cmp PM_CSP_STR_COPY
+    beq .csp_str_copy
+    cmp PM_CSP_LENGTH
+    beq .csp_length
 
     jmp .error_invalid
 
@@ -1305,6 +1399,461 @@ PM_ENTRY:
     ldx 0x00
     lda PM_TEMP
     sta yde,x
+    jmp .fetch
+
+; DE = PM_VAR_FRAME + FP + 16-bit offset in PM_TEMP (lo), PM_TEMP2 (hi)
+.pm_fp_addr16:
+    lda PM_FP_LSB
+    clc
+    adc PM_TEMP
+    tae
+    lda PM_FP_MSB
+    adc PM_TEMP2
+    clc
+    adc PM_VAR_FRAME[15:8]
+    tad
+    rts
+
+; --- CSP: VT100 (subcode byte follows CSP) ----------------
+
+.csp_vt100:
+    jsr .fetch_byte
+    cmp 0x02
+    beq .vt100_cursor_pos
+    cmp 0x20
+    beq .vt100_scroll_region
+    cmp 0x00
+    beq .vt100_jsr_erase
+    cmp 0x01
+    beq .vt100_jsr_home
+    cmp 0x03
+    beq .vt100_jsr_up
+    cmp 0x04
+    beq .vt100_jsr_down
+    cmp 0x05
+    beq .vt100_jsr_right
+    cmp 0x06
+    beq .vt100_jsr_left
+    cmp 0x07
+    beq .vt100_jsr_cle
+    cmp 0x08
+    beq .vt100_jsr_cls
+    cmp 0x09
+    beq .vt100_jsr_cel
+    cmp 0x0A
+    beq .vt100_jsr_tr
+    cmp 0x0B
+    beq .vt100_jsr_tb
+    cmp 0x0C
+    beq .vt100_jsr_tu
+    cmp 0x0D
+    beq .vt100_jsr_tblk
+    cmp 0x0E
+    beq .vt100_jsr_trev
+    cmp 0x0F
+    beq .vt100_jsr_fg_black
+    cmp 0x10
+    beq .vt100_jsr_fg_red
+    cmp 0x11
+    beq .vt100_jsr_fg_green
+    cmp 0x12
+    beq .vt100_jsr_fg_yellow
+    cmp 0x13
+    beq .vt100_jsr_fg_blue
+    cmp 0x14
+    beq .vt100_jsr_fg_magenta
+    cmp 0x15
+    beq .vt100_jsr_fg_cyan
+    cmp 0x16
+    beq .vt100_jsr_fg_white
+    cmp 0x17
+    beq .vt100_jsr_bg_black
+    cmp 0x18
+    beq .vt100_jsr_bg_red
+    cmp 0x19
+    beq .vt100_jsr_bg_green
+    cmp 0x1A
+    beq .vt100_jsr_bg_yellow
+    cmp 0x1B
+    beq .vt100_jsr_bg_blue
+    cmp 0x1C
+    beq .vt100_jsr_bg_magenta
+    cmp 0x1D
+    beq .vt100_jsr_bg_cyan
+    cmp 0x1E
+    beq .vt100_jsr_bg_white
+    cmp 0x1F
+    beq .vt100_jsr_scr_full
+    cmp 0x21
+    beq .vt100_jsr_scr_down
+    cmp 0x22
+    beq .vt100_jsr_scr_up
+    cmp 0x23
+    beq .vt100_jsr_wrap_on
+    cmp 0x24
+    beq .vt100_jsr_wrap_off
+    cmp 0x25
+    beq .vt100_jsr_font0
+    cmp 0x26
+    beq .vt100_jsr_font1
+    cmp 0x27
+    beq .vt100_jsr_dev_reset
+    cmp 0x28
+    beq .vt100_jsr_query_cur
+    jmp .fetch
+
+.vt100_cursor_pos:
+    jsr .pop_byte
+    jsr .pop_byte
+    tae
+    jsr .pop_byte
+    jsr .pop_byte
+    tad
+    jsr VT100_CURSOR_POSITION
+    jmp .fetch
+
+.vt100_scroll_region:
+    jsr .pop_byte
+    jsr .pop_byte
+    tae
+    jsr .pop_byte
+    jsr .pop_byte
+    tad
+    jsr VT100_SCROLL_SCREEN_REGION
+    jmp .fetch
+
+.vt100_jsr_erase:    jsr VT100_ERASE_SCREEN
+    jmp .fetch
+.vt100_jsr_home:     jsr VT100_CURSOR_HOME
+    jmp .fetch
+.vt100_jsr_up:       jsr VT100_CURSOR_UP
+    jmp .fetch
+.vt100_jsr_down:     jsr VT100_CURSOR_DOWN
+    jmp .fetch
+.vt100_jsr_right:    jsr VT100_CURSOR_RIGHT
+    jmp .fetch
+.vt100_jsr_left:     jsr VT100_CURSOR_LEFT
+    jmp .fetch
+.vt100_jsr_cle:     jsr VT100_CLEAR_LINE_END
+    jmp .fetch
+.vt100_jsr_cls:     jsr VT100_CLEAR_LINE_START
+    jmp .fetch
+.vt100_jsr_cel:     jsr VT100_CLEAR_ENTIRE_LINE
+    jmp .fetch
+.vt100_jsr_tr:      jsr VT100_TEXT_RESET
+    jmp .fetch
+.vt100_jsr_tb:      jsr VT100_TEXT_BOLD
+    jmp .fetch
+.vt100_jsr_tu:      jsr VT100_TEXT_UNDERLINE
+    jmp .fetch
+.vt100_jsr_tblk:    jsr VT100_TEXT_BLINK
+    jmp .fetch
+.vt100_jsr_trev:    jsr VT100_TEXT_REVERSE
+    jmp .fetch
+.vt100_jsr_fg_black: jsr VT100_FG_BLACK
+    jmp .fetch
+.vt100_jsr_fg_red:   jsr VT100_FG_RED
+    jmp .fetch
+.vt100_jsr_fg_green: jsr VT100_FG_GREEN
+    jmp .fetch
+.vt100_jsr_fg_yellow: jsr VT100_FG_YELLOW
+    jmp .fetch
+.vt100_jsr_fg_blue:  jsr VT100_FG_BLUE
+    jmp .fetch
+.vt100_jsr_fg_magenta: jsr VT100_FG_MAGENTA
+    jmp .fetch
+.vt100_jsr_fg_cyan:  jsr VT100_FG_CYAN
+    jmp .fetch
+.vt100_jsr_fg_white: jsr VT100_FG_WHITE
+    jmp .fetch
+.vt100_jsr_bg_black: jsr VT100_BG_BLACK
+    jmp .fetch
+.vt100_jsr_bg_red:   jsr VT100_BG_RED
+    jmp .fetch
+.vt100_jsr_bg_green: jsr VT100_BG_GREEN
+    jmp .fetch
+.vt100_jsr_bg_yellow: jsr VT100_BG_YELLOW
+    jmp .fetch
+.vt100_jsr_bg_blue:  jsr VT100_BG_BLUE
+    jmp .fetch
+.vt100_jsr_bg_magenta: jsr VT100_BG_MAGENTA
+    jmp .fetch
+.vt100_jsr_bg_cyan:  jsr VT100_BG_CYAN
+    jmp .fetch
+.vt100_jsr_bg_white: jsr VT100_BG_WHITE
+    jmp .fetch
+.vt100_jsr_scr_full: jsr VT100_SCROLL_SCREEN_FULL
+    jmp .fetch
+.vt100_jsr_scr_down: jsr VT100_SCROLL_DOWN
+    jmp .fetch
+.vt100_jsr_scr_up:   jsr VT100_SCROLL_UP
+    jmp .fetch
+.vt100_jsr_wrap_on:  jsr VT100_ENABLE_WRAP
+    jmp .fetch
+.vt100_jsr_wrap_off: jsr VT100_DISABLE_WRAP
+    jmp .fetch
+.vt100_jsr_font0:   jsr VT100_FONT_DEFAULT
+    jmp .fetch
+.vt100_jsr_font1:   jsr VT100_FONT_ALTERNATE
+    jmp .fetch
+.vt100_jsr_dev_reset: jsr VT100_DEVICE_RESET
+    jmp .fetch
+.vt100_jsr_query_cur: jsr VT100_QUERY_CURSOR_POSITION
+    jmp .fetch
+
+; --- CSP: WAIT_MS -----------------------------------------
+
+.csp_wait_ms:
+    jsr .pop_byte
+    sta MATH16_A+1
+    jsr .pop_byte
+    sta MATH16_A
+    jsr WAIT_MS
+    jmp .fetch
+
+; --- CSP: READLN_STR ------------------------------------
+
+.csp_readln_str:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ldx 0x00
+.rln_loop:
+    jsr ACIA_READ_CHAR
+    cmp 0x0D
+    beq .rln_fin
+    cmp 0x0A
+    beq .rln_fin
+    cpx 0x50
+    bcs .rln_loop
+    inx
+    sta de,x
+    jmp .rln_loop
+.rln_fin:
+    txa
+    pha
+    ldx 0x00
+    pla
+    sta de,x
+    jmp .fetch
+
+; --- CSP: WRITE_STR / WRITELN_STR -------------------------
+
+.csp_write_str:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ldx 0x00
+    lda de,x
+    tay
+    beq .wrs_done
+    ldx 0x01
+.wrs_loop:
+    lda de,x
+    jsr ACIA_SEND_CHAR
+    inx
+    dey
+    bne .wrs_loop
+.wrs_done:
+    jmp .fetch
+
+.csp_writeln_str:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ldx 0x00
+    lda de,x
+    tay
+    beq .wln_only_nl
+    ldx 0x01
+.wln_lp:
+    lda de,x
+    jsr ACIA_SEND_CHAR
+    inx
+    dey
+    bne .wln_lp
+.wln_only_nl:
+    jsr ACIA_SEND_NEWLINE
+    jmp .fetch
+
+; --- CSP: STR_EQ ------------------------------------------
+
+.csp_str_eq:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ste FLOAT1+0
+    tda
+    sta FLOAT1+1
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ste FLOAT1+2
+    tda
+    sta FLOAT1+3
+    ldd FLOAT1+1
+    lde FLOAT1+0
+    ldx 0x00
+    lda de,x
+    sta PM_TEMP3
+    ldd FLOAT1+3
+    lde FLOAT1+2
+    ldx 0x00
+    lda de,x
+    cmp PM_TEMP3
+    bne .seq_push0
+    ldx PM_TEMP3
+    beq .seq_push1
+    ldx 0x01
+.seq_clp:
+    ldd FLOAT1+1
+    lde FLOAT1+0
+    lda de,x
+    sta PM_TEMP2
+    ldd FLOAT1+3
+    lde FLOAT1+2
+    lda de,x
+    cmp PM_TEMP2
+    bne .seq_push0
+    cpx PM_TEMP3
+    beq .seq_push1
+    inx
+    jmp .seq_clp
+.seq_push1:
+    lda 0x01
+    jsr .push_byte
+    lda 0x00
+    jsr .push_byte
+    jmp .fetch
+.seq_push0:
+    lda 0x00
+    jsr .push_byte
+    jsr .push_byte
+    jmp .fetch
+
+; --- CSP: STR_ASSIGN_LIT (pool address 16-bit LE) ---------
+;     PM_TEMP/PM_TEMP2 = pool ptr; FLOAT1 = dest abs ptr.
+;     Use LDA/STA DE,X (16-bit addr) so Y is not required — kernel VT100 may leave Y dirty.
+
+.csp_str_assign_lit:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ste FLOAT1+0
+    tda
+    sta FLOAT1+1
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    lda 0x00
+    sta PM_TEMP3
+.sal_loop:
+    lda PM_TEMP3
+    cmp 0x50
+    bcs .sal_done
+    clc
+    adc PM_TEMP
+    tae
+    lda PM_TEMP2
+    adc 0x00
+    tad
+    ldx 0x00
+    lda de,x
+    beq .sal_done
+    pha
+    ldx PM_TEMP3
+    inx
+    ldd FLOAT1+1
+    lde FLOAT1+0
+    pla
+    sta de,x
+    inc PM_TEMP3
+    jmp .sal_loop
+.sal_done:
+    ldx 0x00
+    lda PM_TEMP3
+    ldd FLOAT1+1
+    lde FLOAT1+0
+    sta de,x
+    jmp .fetch
+
+; --- CSP: STR_COPY (dst FP off, src FP off) --------------
+
+.csp_str_copy:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ste FLOAT1+0
+    tda
+    sta FLOAT1+1
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ste FLOAT1+2
+    tda
+    sta FLOAT1+3
+    ldd FLOAT1+3
+    lde FLOAT1+2
+    ldx 0x00
+    lda de,x
+    tay
+    beq .scpy_zlen
+    ldx 0x01
+.scpy_loop:
+    ldd FLOAT1+3
+    lde FLOAT1+2
+    lda de,x
+    pha
+    ldd FLOAT1+1
+    lde FLOAT1+0
+    pla
+    sta de,x
+    inx
+    dey
+    bne .scpy_loop
+.scpy_zlen:
+    ldd FLOAT1+3
+    lde FLOAT1+2
+    ldx 0x00
+    lda de,x
+    pha
+    ldd FLOAT1+1
+    lde FLOAT1+0
+    pla
+    ldx 0x00
+    sta de,x
+    jmp .fetch
+
+; --- CSP: LENGTH -----------------------------------------
+
+.csp_length:
+    jsr .fetch_byte
+    sta PM_TEMP
+    jsr .fetch_byte
+    sta PM_TEMP2
+    jsr .pm_fp_addr16
+    ldx 0x00
+    lda de,x
+    jsr .push_byte
+    lda 0x00
+    jsr .push_byte
     jmp .fetch
 
 ; --- Float opcodes ----------------------------------------
