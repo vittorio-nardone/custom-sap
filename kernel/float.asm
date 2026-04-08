@@ -817,6 +817,19 @@ FLOAT_MUL:
     BCS .fmul_overflow
 
 .fmul_pack:
+    ; --- Round to nearest: check guard bit (FML_RES+3 bit 7) ---
+    LDA FML_RES + 3
+    BPL .fmul_no_round
+    INC FML_RES + 2
+    BNE .fmul_no_round
+    INC FML_RES + 1
+    BNE .fmul_no_round
+    INC FML_RES
+    BNE .fmul_no_round
+    LDA 0x80
+    STA FML_RES
+    INC FML_EXP
+.fmul_no_round:
     ; --- Remove implicit leading 1 and pack into IEEE 754 ---
     ; Shift left to remove implicit 1 from R5 bit 7
     ASL FML_RES + 2
@@ -1369,6 +1382,34 @@ FLOAT_DIV:
     DEY
     BNE .fdiv_div_loop
 
+    ; --- Round to nearest: if 2*remainder >= M2, round up quotient ---
+    ; After the loop, R = 2 * actual remainder (last shift was extra)
+    LDA FDV_CARRY
+    BNE .fdiv_round_up
+    LDA FDV_R
+    CMP FDV_M2
+    BCC .fdiv_no_round
+    BNE .fdiv_round_up
+    LDA FDV_R + 1
+    CMP FDV_M2 + 1
+    BCC .fdiv_no_round
+    BNE .fdiv_round_up
+    LDA FDV_R + 2
+    CMP FDV_M2 + 2
+    BCC .fdiv_no_round
+.fdiv_round_up:
+    INC FDV_Q + 2
+    BNE .fdiv_no_round
+    INC FDV_Q + 1
+    BNE .fdiv_no_round
+    INC FDV_Q
+    BNE .fdiv_no_round
+    ; Q overflowed to 0x01000000: shift right, increment exponent
+    LDA 0x80
+    STA FDV_Q
+    INC FDV_EXP
+.fdiv_no_round:
+
     ; --- Check if quotient needs normalization ---
     ; If Q bit 23 is set → normalized. If not → shift left, decrement exp
     LDA FDV_Q
@@ -1704,7 +1745,59 @@ FLOAT_PRINT:
     STA FLOAT1 + 3
 
 .fpr_positive:
-    ; Save positive float
+    ; Add rounding increment 0.5 × 10^(-n) before extracting digits
+    LDA FP_DECIMALS
+    BEQ .fpr_skip_round
+    ; Save original float on stack
+    LDA FLOAT1 + 3
+    PHA
+    LDA FLOAT1 + 2
+    PHA
+    LDA FLOAT1 + 1
+    PHA
+    LDA FLOAT1
+    PHA
+    ; FLOAT1 = 5.0 (IEEE 754 LE: 00 00 A0 40)
+    LDA 0x00
+    STA FLOAT1
+    STA FLOAT1 + 1
+    LDA 0xA0
+    STA FLOAT1 + 2
+    LDA 0x40
+    STA FLOAT1 + 3
+    ; FLOAT2 = 10.0 (IEEE 754 LE: 00 00 20 41)
+    LDA 0x00
+    STA FLOAT2
+    STA FLOAT2 + 1
+    LDA 0x20
+    STA FLOAT2 + 2
+    LDA 0x41
+    STA FLOAT2 + 3
+    ; Divide 5.0 by 10.0 (n+1) times → 0.5 × 10^(-n)
+    LDA FP_DECIMALS
+    CLC
+    ADC 0x01
+    STA FP_TEMP
+.fpr_round_div:
+    JSR FLOAT_DIV
+    DEC FP_TEMP
+    BNE .fpr_round_div
+    ; FLOAT1 = rounding increment; move to FLOAT2
+    JSR FLOAT_COPY_TO_F2
+    ; Restore original float
+    PLA
+    STA FLOAT1
+    PLA
+    STA FLOAT1 + 1
+    PLA
+    STA FLOAT1 + 2
+    PLA
+    STA FLOAT1 + 3
+    ; Add rounding increment
+    JSR FLOAT_ADD
+.fpr_skip_round:
+
+    ; Save rounded float
     LDA FLOAT1
     STA FP_SAVE
     LDA FLOAT1 + 1

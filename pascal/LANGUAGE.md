@@ -398,7 +398,7 @@ Boolean operators work on integer values: any non-zero value is considered true,
 | `peek(page, addr)` | `integer`, `integer` | `integer` | Read byte from 24-bit address (page:addr) |
 | `poke(page, addr, val)` | `integer` x3 | — | Write low byte of val to 24-bit address |
 
-`peek` returns the byte value (0–255) at the 24-bit address formed by `page:addr`. `poke` is a statement (not a function) that writes the low byte of `val` to that address. The `page` parameter selects the 64 KB page: 0 = main memory (0x0000–0xFFFF), 1 = expansion RAM page 1 (0x010000–0x01FFFF), 2 = expansion RAM page 2 (0x020000–0x02FFFF). Use hexadecimal literals (`$HHHH`) for readable addresses.
+`peek` returns the byte value (0–255) at the 24-bit address formed by `page:addr`. `poke` is a statement (not a function) that writes the low byte of `val` to that address. The `page` parameter selects the 64 KB page: 0 = main memory (0x0000–0xFFFF), 1 = expansion RAM page 1 (0x010000–0x01FFFF), 2 = expansion RAM page 2 (0x020000–0x02FFFF). Use hexadecimal literals (`$HHHH`) for readable addresses. On the device, expansion page 1 also holds the on-board TinyPascal editor source (low addresses) and compiler symbol/string workspace (from about `$6000` up) when using the IDE loaded at page 2.
 
 ```pascal
 writeln(abs(-5));        { 5 }

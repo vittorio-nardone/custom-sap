@@ -838,8 +838,9 @@ class Parser:
             stmt = self._parse_statement()
             if stmt is not None:
                 stmts.append(stmt)
-            if self._current().type == TokenType.SEMICOLON:
-                self.pos += 1
+            if self._current().type in (TokenType.END, TokenType.EOF):
+                break
+            self._expect(TokenType.SEMICOLON)
         return stmts
 
     def _parse_statement(self):
@@ -979,8 +980,9 @@ class Parser:
             stmt = self._parse_statement()
             if stmt is not None:
                 stmts.append(stmt)
-            if self._current().type == TokenType.SEMICOLON:
-                self.pos += 1
+            if self._current().type in (TokenType.UNTIL, TokenType.EOF):
+                break
+            self._expect(TokenType.SEMICOLON)
         self._expect(TokenType.UNTIL)
         condition = self._parse_expression()
         return RepeatStmt(statements=stmts, condition=condition)

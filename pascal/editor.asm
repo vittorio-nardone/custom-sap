@@ -4,7 +4,7 @@
 ; Line editor for creating/editing Pascal source code.
 ; Source is stored in Expansion RAM page 1 (0x010000+).
 ;
-; Entry: JSR to EDITOR_ENTRY (via jump table at 0x4003)
+; Entry: JSR to EDITOR_ENTRY (load tinypascal_ide.bin at 0x020000, then kernel "r020000")
 ; Exit:  Returns via RTS. All registers restored.
 ; =========================================================
 
@@ -18,16 +18,18 @@ EDITOR_ENTRY:
     phy
 
     jsr ACIA_SEND_NEWLINE
+    ldy .ed_welcome[23:16]
     ldd .ed_welcome[15:8]
     lde .ed_welcome[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
 
 ; ── Main loop ────────────────────────────────────────────
 
 .ed_main_loop:
+    ldy .ed_prompt[23:16]
     ldd .ed_prompt[15:8]
     lde .ed_prompt[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
 
     ldd ED_CMD_BUF[15:8]
     lde ED_CMD_BUF[7:0]
@@ -92,17 +94,19 @@ EDITOR_ENTRY:
 ; ── HELP ─────────────────────────────────────────────────
 
 .ed_cmd_help:
+    ldy .ed_help_msg[23:16]
     ldd .ed_help_msg[15:8]
     lde .ed_help_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
     jmp .ed_main_loop
 
 ; ── ERROR ────────────────────────────────────────────────
 
 .ed_cmd_error:
+    ldy .ed_error_msg[23:16]
     ldd .ed_error_msg[15:8]
     lde .ed_error_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
     jmp .ed_main_loop
 
 ; ── NEW ──────────────────────────────────────────────────
@@ -110,33 +114,37 @@ EDITOR_ENTRY:
 .ed_cmd_new:
     lda 0x00
     jsr .ed_set_line_count
+    ldy .ed_new_msg[23:16]
     ldd .ed_new_msg[15:8]
     lde .ed_new_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
     jmp .ed_main_loop
 
 ; ── RUN (placeholder for Phase 2) ───────────────────────
 
 .ed_cmd_run:
     jsr ACIA_SEND_NEWLINE
+    ldy .ed_compiling_msg[23:16]
     ldd .ed_compiling_msg[15:8]
     lde .ed_compiling_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
     jsr .cc_compile
     bne .ed_run_err
 
     ; Print "OK (N bytes)"
+    ldy .ed_comp_ok_msg[23:16]
     ldd .ed_comp_ok_msg[15:8]
     lde .ed_comp_ok_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
     lda CC_CODE_LO
     sta MATH16_A
     lda CC_CODE_HI
     sta MATH16_A+1
     jsr ACIA_SEND_DECIMAL16S
+    ldy .ed_comp_bytes_msg[23:16]
     ldd .ed_comp_bytes_msg[15:8]
     lde .ed_comp_bytes_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
     jsr ACIA_SEND_NEWLINE
 
     ; Execute P-code
@@ -216,9 +224,10 @@ EDITOR_ENTRY:
     jmp .ed_main_loop
 
 .ed_list_empty:
+    ldy .ed_empty_msg[23:16]
     ldd .ed_empty_msg[15:8]
     lde .ed_empty_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
     jmp .ed_main_loop
 
 ; ── INSERT ───────────────────────────────────────────────
@@ -255,7 +264,7 @@ EDITOR_ENTRY:
 
     ldd ED_LINE_BUF2[15:8]
     lde ED_LINE_BUF2[7:0]
-    lda ED_LINE_SIZE
+    lda ED_LINE_INPUT_MAX
     jsr .ed_read_line
 
     lda ED_RL_LEN
@@ -385,7 +394,7 @@ EDITOR_ENTRY:
 
     ldd ED_LINE_BUF[15:8]
     lde ED_LINE_BUF[7:0]
-    lda ED_LINE_SIZE
+    lda ED_LINE_INPUT_MAX
     jsr .ed_read_line
 
     lda ED_RL_LEN
@@ -398,22 +407,27 @@ EDITOR_ENTRY:
 ; ── LOAD ─────────────────────────────────────────────────
 
 .ed_cmd_load:
+    ldy .ed_load_msg[23:16]
     ldd .ed_load_msg[15:8]
     lde .ed_load_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
 
     lda 0x00
     jsr .ed_set_line_count
     sta ED_LINE_COUNT
+    sta ED_NUM2              ; consecutive empty lines (need 2 to end paste)
 
 .ed_load_loop:
     ldd ED_LINE_BUF[15:8]
     lde ED_LINE_BUF[7:0]
-    lda ED_LINE_SIZE
+    lda ED_LINE_INPUT_MAX
     jsr .ed_read_line
 
     lda ED_RL_LEN
-    beq .ed_load_done
+    beq .ed_load_empty_line
+
+    lda 0x00
+    sta ED_NUM2
 
     lda ED_LINE_COUNT
     cmp ED_MAX_LINES
@@ -428,12 +442,20 @@ EDITOR_ENTRY:
 
     jmp .ed_load_loop
 
+.ed_load_empty_line:
+    inc ED_NUM2
+    lda ED_NUM2
+    cmp 0x02
+    beq .ed_load_done
+    jmp .ed_load_loop
+
 .ed_load_done:
     lda ED_LINE_COUNT
     jsr ACIA_SEND_DECIMAL
+    ldy .ed_loaded_msg[23:16]
     ldd .ed_loaded_msg[15:8]
     lde .ed_loaded_msg[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING24
     jmp .ed_main_loop
 
 ; ── Helper: read_line ────────────────────────────────────
@@ -751,7 +773,7 @@ EDITOR_ENTRY:
     #d "   i [n]    - Insert at line", 0x0A, 0x0D
     #d "   d n[-m]  - Delete line(s)", 0x0A, 0x0D
     #d "   e n      - Edit line", 0x0A, 0x0D
-    #d "   lo       - Load (paste source)", 0x0A, 0x0D
+    #d "   lo       - Load (paste, two empty lines end)", 0x0A, 0x0D
     #d "   r        - Run (compile & execute)", 0x0A, 0x0D
     #d "   q        - Quit to kernel", 0x0A, 0x0D
     #d 0x00
@@ -775,7 +797,7 @@ EDITOR_ENTRY:
     #d " bytes)", 0x00
 
 .ed_load_msg:
-    #d "Paste source, end with empty line:", 0x0A, 0x0D, 0x00
+    #d "Paste source, end with two empty lines:", 0x0A, 0x0D, 0x00
 
 .ed_loaded_msg:
     #d " lines loaded.", 0x0A, 0x0D, 0x00

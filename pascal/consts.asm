@@ -164,6 +164,8 @@
 
 ; Source storage parameters
 #const ED_LINE_SIZE   = 80
+; Max chars per .ed_read_line into ED_LINE_BUF (room for NUL before ED_RL_LEN at 0xB170)
+#const ED_LINE_INPUT_MAX = 79
 #const ED_MAX_LINES   = 255
 #const ED_SRC_PAGE    = 0x01
 
@@ -195,7 +197,8 @@
 #const CC_TEMP3       = 0xB113  ; temp
 #const CC_TEMP4       = 0xB114  ; temp
 #const CC_SUB_COUNT   = 0xB115  ; subroutine count (Phase 3)
-#const CC_FOR_VAR     = 0xB116  ; for loop variable offset
+#const CC_FOR_VAR     = 0xB116  ; for loop variable offset / str copy index lo
+#const CC_FOR_VAR_HI  = 0xB1E5  ; str copy index hi (16-bit extension, finalize only)
 #const CC_SCOPE_SP    = 0xB117  ; scope stack pointer (Phase 3)
 #const CC_FOR_LIMIT   = 0xB118  ; for loop limit temp offset
 #const CC_FOR_DIR     = 0xB119  ; for loop direction (0=to, 1=downto)
@@ -204,21 +207,46 @@
 #const CC_STR_FIX_SP  = 0xB11C  ; string fixup stack pointer
 #const CC_ENTER_LO    = 0xB11D  ; ENTER frame_size patch position low
 #const CC_ENTER_HI    = 0xB11E  ; ENTER frame_size patch position high
+; Bytes 10/15 from cc_find_sym — must not overlap ED_LINE_BUF (0xB120..0xB16F) or ED_RL_LEN (0xB170)
+#const CC_FOUND_B10   = 0xB1CE
+#const CC_FOUND_B15   = 0xB1CF
 ; Reuse editor parse vars (unused during compilation) at 0xB174+
 #const CC_FOUND_KIND  = 0xB174  ; result from cc_find_sym: kind
 #const CC_FOUND_SCOPE = 0xB175  ; result from cc_find_sym: scope_level
-#const CC_FOUND_ARG1  = 0xB176  ; extra: code_hi/array_low
+#const CC_FOUND_ARG1  = 0xB176  ; extra: code_hi/array_low / offset hi (aliases ED_HAS_NUM1)
 #const CC_FOUND_ARG2  = 0xB177  ; extra: param_count/array_high
 #const CC_FOUND_ARG3  = 0xB178  ; extra: definition_level
 #const CC_IS_FUNC     = 0xB179  ; current subroutine is function flag
 #const CC_SAVED_SYMCNT= 0xB17A  ; saved symbol count before entering sub scope
-#const CC_FOUND_B10   = 0xB11F  ; byte 10 from cc_find_sym (before ED_LINE_BUF)
 #const CC_FOUND_B14   = 0xB17B  ; byte 14 from cc_find_sym (var param flag, reuses ED_LINE_COUNT)
-#const CC_FOUND_B15   = 0xB170  ; byte 15 from cc_find_sym (var type: 0=int, 1=real; func ret: 0/2)
 #const CC_PARAM_VAR   = 0xB17C  ; temp: current param is var (during param parsing, reuses ED_CUR_LINE)
-#const CC_EXPR_TYPE   = 0xB17D  ; expression type: 0=integer, 1=real
+#const CC_EXPR_TYPE   = 0xB17D  ; expression type: 0=integer, 1=real, 2=string (relational only)
 #const CC_VAR_TYPE    = 0xB17E  ; current var block type: 0=integer, 1=real, 2=string
 #const CC_FUNC_RET    = 0xB17F  ; function return type: 0=integer, 2=real (matches is_func encoding)
+; String compare temps (compile-only; top of 0xB100 eval stack region, unused while PM idle)
+#const CC_STR_REL_PASS = 0xB1F4 ; 0=normal expr, 1=left op of str rel, 2=right op (if/while/until)
+#const CC_SREL_O1_LO  = 0xB1F5
+#const CC_SREL_O1_HI  = 0xB1F6
+#const CC_SREL_O2_LO  = 0xB1F7
+#const CC_SREL_O2_HI  = 0xB1F8
+
+; Saved param names while parsing (ident[,ident]: type); up to 4 names × 8 bytes
+; 0xB1D0-0xB1EF: CC_PARAM_NAME_TMP slots (overlaps call-site temps, safe during decl)
+#const CC_PARAM_NAME_TMP = 0xB1D0
+#const CC_PARAM_NAME_CNT = 0xB1F0 ; how many names collected before ': type'
+#const CC_FOUND_SYM_IDX  = 0xB1D8  ; index from last cc_find_sym
+#const CC_CALLEE_SYM_IDX = 0xB1D9  ; callee proc/func symbol index during cc_call_args
+#const CC_CALLEE_NPARAM  = 0xB1DA  ; callee param count (byte 12) saved at call start
+#const CC_CALL_ARG_IDX   = 0xB1DB  ; which formal (0..n-1) while emitting call args
+#const CC_STR_POOL_START_LO = 0xB1DC ; pool offset for literal matched to next str fixup
+#const CC_STR_POOL_START_HI = 0xB1DD
+#const CC_SREL_OP        = 0xB1DE ; saved EQ/NE while emitting STR_EQ (compile-only)
+#const CC_SREL_EMIT_LO   = 0xB1DF ; STR_EQ operand snapshot (not CC_KW_PTR — keyword scan clobbers it)
+#const CC_SREL_EMIT_HI   = 0xB1E0
+#const CC_STR_EQ_TMP_LO  = 0xB1E1 ; STR_ASSIGN_LIT dst for string-compare temp (emit STR_EQ)
+#const CC_STR_EQ_TMP_HI  = 0xB1E2
+#const CC_ES_ARG1_SAVE   = 0xB1E3 ; saved CC_FOUND_ARG1 (offset hi) for .cc_emit_scoped
+#const CC_PARAM_TYPE_MASK= 0xB1E4 ; bitmask: bit N=1 → param N is real (for callee type lookup)
 
 ; Symbol kind constants
 #const CC_KIND_SCALAR = 0x00
@@ -300,11 +328,13 @@
 #const CC_TK_VT100_SCROLL = 0x68
 #const CC_TK_LENGTH   = 0x69
 
-; Expansion RAM page 2 layout (compiler workspace)
-#const CC_WS_PAGE     = 0x02
-#const CC_SYM_BASE    = 0x0000  ; symbol table at 0x020000
+; Expansion RAM page 1 — compiler workspace (above editor source, see ED_SRC_PAGE)
+; Page 2 (0x020000) reserved for TinyPascal IDE code loaded via XMODEM.
+#const CC_WS_PAGE     = 0x01
+#const CC_SYM_BASE    = 0x6000  ; symbol table at 0x016000
 #const CC_SYM_ENTRY   = 16      ; bytes per symbol entry
-#const CC_FIX_BASE    = 0x0C40  ; jump fixup table at 0x020C40
+#const CC_FIX_BASE    = 0x6C40  ; jump fixup table at 0x016C40 (64 entries max × 2B = 128B)
 #const CC_FIX_ENTRY   = 2       ; bytes per fixup entry
-#const CC_STR_FIX_BASE= 0x0D40  ; string fixup table at 0x020D40
-#const CC_STR_BASE    = 0x0E00  ; string pool at 0x020E00
+#const CC_STR_FIX_BASE= 0x6CC0  ; string fixup table: 4 B/entry, 80 max (320B to 0x6E00)
+#const CC_STR_FIX_MAX = 80      ; max string fixup entries
+#const CC_STR_BASE    = 0x6E00  ; string pool at 0x016E00

@@ -10,9 +10,9 @@ The CPU is built from 7400-series TTL ICs, not a commercial microprocessor.
 - **Build all (release)**: `source .venv/bin/activate && ./generate-all.sh`
   - Regenerates microcode ROMs, lookup tables, unified ROM binary (kernel + P-Machine), symbols, all apps in `apps/`, and all Pascal examples in `pascal/examples/`
   - **Always run this after modifying kernel or P-Machine files** to ensure symbols.asm stays in sync with kernel addresses
-  - Release mode: no boot tests, includes TinyPascal (P-Machine + editor + compiler)
+  - Release mode: no boot tests, includes TinyPascal P-Machine in ROM; on-board editor/compiler built as `apps/tinypascal_ide.asm` (load at 0x020000 via XMODEM)
 - **Build all (debug)**: `source .venv/bin/activate && ./generate-all.sh --debug`
-  - Debug mode: includes boot tests (CPU instruction + math + float tests), also includes TinyPascal
+  - Debug mode: includes boot tests (CPU instruction + math + float tests), TinyPascal P-Machine in ROM (IDE same as release)
 - **Compile single app**: `customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin`
 - **Compile Pascal program**: `python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin`
 - **Simulator (interactive)**: `python simulate.py --program roms/apps/asm/myapp.bin`
@@ -21,11 +21,11 @@ The CPU is built from 7400-series TTL ICs, not a commercial microprocessor.
 
 ### Unified ROM Build
 
-The three ROM chips (24 KB total) are built as a single compilation unit. The kernel, P-Machine, editor, and compiler share the same address space (0x0000-0x5FFF) and are compiled together. This allows the P-Machine to use free space from the kernel banks and vice versa.
+The three ROM chips (24 KB total) are built as a single compilation unit. The kernel and P-Machine share the same address space (0x0000-0x5FFF) and are compiled together. This allows the P-Machine to use free space from the kernel banks and vice versa.
 
 Build configuration is controlled by `kernel/build_config.asm` (set automatically by `generate-all.sh`):
-- `BUILD_DEBUG = 0` (release): boot tests excluded, ~5.5 KB free for development
-- `BUILD_DEBUG = 1` (debug): boot tests included, ~2.7 KB free
+- `BUILD_DEBUG = 0` (release): boot tests excluded, ~11 KB free for development (varies with build)
+- `BUILD_DEBUG = 1` (debug): boot tests included, ~8 KB free (varies with build)
 
 **Important customasm limitation**: `#include` inside `#if` blocks scopes labels to the `#if` block. Always put `#if` guards INSIDE included files, never wrap `#include` with `#if`.
 
@@ -74,7 +74,7 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 0x000000-0x005FFF  (24 KB) ROM #1-3 (unified kernel + P-Machine)
   0x0000-0x00FE            Boot code
   0x00FF                   Interrupt handler entry point
-  0x0200+                  Kernel routines, P-Machine, editor, compiler
+  0x0200+                  Kernel routines, P-Machine
   Split into 3 x 8 KB ROM chips: .bin.00, .bin.01, .bin.02
 
 0x006000-0x0067FF  (2 KB)  Device I/O
@@ -875,7 +875,7 @@ See `pascal/LANGUAGE.md` for full language reference.
 
 ### On-board Editor/Compiler
 
-ROM #3 also contains a line editor and single-pass Pascal compiler, accessible via the kernel `e` command. This allows writing and running Pascal programs directly on Otto without a host PC.
+The line editor and single-pass Pascal compiler are **not** in ROM: build output is `roms/apps/asm/tinypascal_ide.bin`. Upload with **`u020000`** (XMODEM + OT header) and run with **`r020000`**. Compiler workspace lives on expansion RAM page 1 from about `0x016000` (see `pascal/consts.asm`); editor source remains on page 1 from `0x010000`.
 
 #### Editor Commands
 
@@ -891,18 +891,54 @@ ROM #3 also contains a line editor and single-pass Pascal compiler, accessible v
 | `h` | Help |
 | `q` | Quit to kernel |
 
-Source is stored in Expansion RAM page 1 (0x010000+), up to 255 lines × 80 characters.
+Source is stored in expansion RAM page 1 (0x010000+), up to 255 lines with 80 bytes per stored line. When pasting with **`lo`**, keep each line **≤ 79 characters** (`ED_LINE_INPUT_MAX`): an 80-character line plus a null terminator overwrote `ED_RL_LEN` and broke load with “0 lines loaded”. Compiler tables use the same page from higher addresses (`CC_SYM_BASE`, etc.).
 
 #### Testing the On-board Editor/Compiler in Simulator
 
 ```bash
 source .venv/bin/activate
 
-# Use --input to feed commands to the simulator (headless mode)
-# 'e' enters editor, 'lo' starts LOAD, then paste lines, empty line ends paste, 'r' runs
-python simulate.py --headless --max-cycles 5000000 --input \
-  "e\rlo\rprogram T;\rbegin\rwriteln(42)\rend.\r\r\rr\rq\rq\r"
+# Load IDE at 0x020000, autorun kernel with r020000, then drive the editor (q = quit to kernel)
+python simulate.py --autorun --program roms/apps/asm/tinypascal_ide.bin --address 0x020000 \
+  --max-cycles 5000000 --input $'lo\rprogram T;\rbegin\rwriteln(42)\rend.\r\r\rr\rq\r'
 ```
+
+#### TinyPascal regression suite (`tinypascal_suite.pas`)
+
+Use `pascal/examples/tinypascal_suite.pas` as a minimal regression suite so the **Python cross-compiler** (`pascal_compiler.py`) and the **on-board compiler** (TinyPascal IDE) stay aligned after changes to `pascal/compiler.asm`, `pascal/pmachine.asm`, `pascal/editor.asm`, `pascal/consts.asm`, `symbols.txt`, or the Python compiler.
+
+- Keep each source line **≤ 79 characters** and under the editor line cap (~255).
+- After edits to those files or the kernel, run `source .venv/bin/activate && ./generate-all.sh` (see **Build & Tools** above).
+- **Known limitation:** the on-board compiler currently miscompiles some programs that use **`string` variable assignments** (and related string-expression cases) in small test programs. The suite therefore uses only **`writeln('...')` string literals** for the string smoke check. Full on-board coverage for `string`, `length`, and comparisons will need a fix in `pascal/compiler.asm`.
+
+**Cross-compiler (Python) + P-Machine @ 0x8400:**
+
+```bash
+source .venv/bin/activate
+python pascal_compiler.py pascal/examples/tinypascal_suite.pas \
+  -o roms/apps/pascal/tinypascal_suite.bin
+python simulate.py --autorun --program roms/apps/pascal/tinypascal_suite.bin \
+  --max-cycles 4000000 --quiet
+```
+
+Expected output includes `--- suite ---`, numeric lines, `proc_ok`, `str_lit`, `not_ok`, `--- done ---`, exit code `0`.
+
+**On-board IDE @ 0x020000 with `lo` + `r`:** `apps/tinypascal_ide.asm` builds to `roms/apps/asm/tinypascal_ide.bin`. Load it at **0x020000** in the simulator; autorun sends `r020000` and starts the IDE.
+
+Automated paste + compile + run:
+
+```bash
+source .venv/bin/activate
+python pascal/tools/run_tinypascal_suite.py
+```
+
+Also run the Python cross path in the same check:
+
+```bash
+python pascal/tools/run_tinypascal_suite.py --cross
+```
+
+**Success criteria (on-board):** after `Compiling...` you see **`OK (`** and no **`Err L`**. For the same input sequence as the script, see `pascal/tools/run_tinypascal_suite.py` (`n`, `lo`, source lines, empty line, `r`, `q`).
 
 The on-board compiler supports the full Tiny Pascal language including procedures, functions, arrays, recursion, and nested scopes.
 

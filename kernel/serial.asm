@@ -93,6 +93,36 @@ ACIA_SEND_STRING:
     rts
 
 ; **********************************************************
+; SUBROUTINE: ACIA_SEND_STRING24
+;
+; DESCRIPTION: Null-terminated string via serial; 24-bit pointer (Y=page, D:E=low 16).
+;   Use for apps linked above 0xFFFF (e.g. expansion RAM). ACIA_SEND_STRING is DE-only.
+;
+; INPUTS:
+;   Y D E  pointer to string
+;
+; OUTPUTS:
+;
+; DESTROY:
+;   X A
+;
+; **********************************************************
+
+ACIA_SEND_STRING24:
+    ldx 0x00
+.send_char24:
+    lda yde,x
+    beq .send_end24
+    jsr ACIA_WAIT_SEND_CLEAR
+    sta ACIA_RW_DATA_ADDR
+    inx
+    bne .send_char24
+    ind
+    jmp .send_char24
+.send_end24:
+    rts
+
+; **********************************************************
 ; SUBROUTINE: ACIA_SEND_STRING_NO_WAIT
 ;
 ; DESCRIPTION:
@@ -248,14 +278,22 @@ ACIA_SEND_HEX:
 ; **********************************************************
 
 ACIA_SEND_DECIMAL:
+    ; BINDEC: X/Y are hundreds/tens ASCII only when used; otherwise 0.
+    ; Always send A (ones). Do not emit NUL for skipped places.
     jsr BINDEC
+    cpx 0x00
+    beq .asd_no_hundreds
     jsr ACIA_WAIT_SEND_CLEAR
     stx ACIA_RW_DATA_ADDR
+.asd_no_hundreds:
+    cpy 0x00
+    beq .asd_no_tens
     jsr ACIA_WAIT_SEND_CLEAR
     sty ACIA_RW_DATA_ADDR
+.asd_no_tens:
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
-    rts    
+    rts
 
 ; **********************************************************
 ; SUBROUTINE: ACIA_SEND_NEWLINE

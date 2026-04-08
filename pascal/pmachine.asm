@@ -113,7 +113,7 @@ PM_ENTRY:
     #d .op_push_addr_l[7:0]
     #d .op_enter16[7:0]
     #d .op_loadw[7:0], .op_storew[7:0]
-    #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
+    ; 0x28-0x2F: exactly 8 slots (was 11 — shifted FLIT.. so float literals failed)
     #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
     #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
     #d .error_invalid[7:0], .error_invalid[7:0]
@@ -150,8 +150,7 @@ PM_ENTRY:
     #d .op_enter16[15:8]
     ; 0x26-0x27 LOADW, STOREW
     #d .op_loadw[15:8], .op_storew[15:8]
-    ; 0x28-0x2F unused
-    #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
+    ; 0x28-0x2F: exactly 8 slots (match .dispatch_lo)
     #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
     #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
     #d .error_invalid[15:8], .error_invalid[15:8]
@@ -2276,7 +2275,4 @@ PM_ENTRY:
     #d 0x0A, 0x0D
     #d "P-Machine: invalid P-code.", 0x0A, 0x0D, 0x00
 
-; =========================================================
-; On-board Pascal Editor
-; =========================================================
-#include "editor.asm"
+; TinyPascal editor/compiler: load apps/tinypascal_ide.bin to 0x020000 via XMODEM, then run.

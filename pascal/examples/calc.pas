@@ -4,7 +4,7 @@ var
 begin
   a := 100;
   b := 25;
-  result := a div b
+  result := a div b;
   write('Result: ');
   writeln(result)
 end.

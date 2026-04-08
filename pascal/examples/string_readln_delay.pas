@@ -1,7 +1,4 @@
-{ Demo: tipo string, readln su stringa, delay (busy-wait ms).
-  Compilazione: python pascal_compiler.py pascal/examples/string_readln_delay.pas -o roms/apps/pascal/string_readln_delay.bin
-  Simulatore:  python simulate.py --autorun --program roms/apps/pascal/string_readln_delay.bin --max-cycles 8000000 --quiet --input "Otto\r"
-  (readln non fa echo su seriale: il terminale puo' avere "local echo" attivo.) }
+{ Demo: string, readln(string), delay(ms). }
 program StringReadlnDelay;
 var
   a, b: string;

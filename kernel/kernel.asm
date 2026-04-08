@@ -52,8 +52,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.122"
-#const KERNEL_BUILDDATE = "04/07/2026"
+#const KERNEL_VERSION = "v1.2.134"
+#const KERNEL_BUILDDATE = "04/08/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -160,8 +160,6 @@ main:
     beq .menu_run_command
     cmp "h"
     beq .menu_help_command
-    cmp "e"
-    beq .menu_editor_command
 .menu_show_error:
     ldd .menu_error_msg[15:8]
     lde .menu_error_msg[7:0]
@@ -424,18 +422,14 @@ main:
     bcs .menu_show_error
     jsr .menu_store_address
 
-.menu_run_command_start:    
-    ;jsr (MAIN_MENU_ADDR_PAGE)
-    #d 0x93, 0x00, MAIN_MENU_ADDR_PAGE[15:8],  MAIN_MENU_ADDR_PAGE[7:0]
+.menu_run_command_start:
+    ; JSR indirect: pointer to 24-bit target at MAIN_MENU_ADDR_PAGE..+2 (big-endian page,hi,lo)
+    #d 0x93, 0x00, MAIN_MENU_ADDR_PAGE[15:8], MAIN_MENU_ADDR_PAGE[7:0]
 
     ldd .menu_run_command_end_msg[15:8]
     lde .menu_run_command_end_msg[7:0]
     jsr ACIA_SEND_STRING
 
-    jmp .ready
-
-.menu_editor_command:
-    jsr EDITOR_ENTRY
     jmp .ready
 
 .menu_help_msg:
@@ -445,7 +439,6 @@ main:
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
-    #d "   e        - TinyPascal editor/compiler", 0x0A, 0x0D
     #d "   h        - show Help", 0x0A, 0x0D
     #d 0x00
 
@@ -455,7 +448,8 @@ main:
     #d "   d        - dump the contents of memory at the default address", 0x0A, 0x0D
     #d "   d8000    - dump the contents of memory starting from location 0x8000", 0x0A, 0x0D
     #d "   u010000  - upload an application and store it at location 0x010000", 0x0A, 0x0D
-    #d "   r010000  - run the application at location 0x020000", 0x0A, 0x0D
+    #d "   u020000  - upload TinyPascal IDE (tinypascal_ide.bin) to expansion RAM page 2", 0x0A, 0x0D
+    #d "   r020000  - run TinyPascal IDE (after u020000)", 0x0A, 0x0D
     #d 0x0A, 0x0D  
     #d "Memory map:", 0x0A, 0x0D     
     #d "   0x0000-0x5FFF      - ROM", 0x0A, 0x0D
