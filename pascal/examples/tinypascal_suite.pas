@@ -1,4 +1,4 @@
-{ Regression: Python + IDE (lo). See CLAUDE.md (TinyPascal regression suite).
+{ Regression: Python + IDE (lo). See AGENTS.md (TinyPascal regression suite).
   Lines <= 79 chars; ~255 max. }
 program TinyPascalSuite;
 const

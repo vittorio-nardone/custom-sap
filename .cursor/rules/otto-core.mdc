@@ -1,0 +1,47 @@
+---
+description: Project Otto — build, architecture essentials, 6502 differences
+alwaysApply: true
+---
+
+# Project Otto — Core
+
+Custom 8-bit TTL homebrew CPU (6502-inspired, not identical). Full reference: `AGENTS.md`.
+
+## Build (always activate venv first)
+
+```bash
+source .venv/bin/activate
+./generate-all.sh              # release — run after ANY kernel or P-Machine change
+./generate-all.sh --debug      # debug — includes boot tests
+customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin
+python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
+```
+
+**CustomASM gotcha**: `#include` inside `#if` scopes labels to that block. Put `#if` guards **inside** included files; never wrap `#include` with `#if`.
+
+Unified ROM (kernel + P-Machine) shares 0x0000–0x5FFF. `kernel/build_config.asm` is set by `generate-all.sh`.
+
+## Memory map (essentials)
+
+| Region | Range | Notes |
+|--------|-------|-------|
+| ROM | 0x0000–0x5FFF | Kernel + P-Machine |
+| I/O | 0x6000–0x67FF | Keyboard 0x6000, ACIA 0x6020/0x6021 |
+| App RAM | 0x8400–0xEFFF | Apps load here (27 KB) |
+| Stack | 0xF000–0xFFFF | Grows down from 0xFFFF |
+| Expansion | 0x010000+, 0x020000+ | IDE @ 0x020000, editor source @ 0x010000 |
+
+## Not 6502 — critical differences
+
+1. Branches use **absolute** targets, not relative offsets
+2. "Zero page" = 16-bit addr; "absolute" = 24-bit addr
+3. Extra registers **D**, **E**; **D:E** is a 16-bit pointer (`LDA DE,X`, `LDA YDE,X`)
+4. Overflow flag ≠ 6502 (internal indexing; equals carry)
+5. `JSR` is always 4 bytes (opcode + 3-byte address)
+6. `INW`/`DEW` for 16-bit memory inc/dec; `SBX` subtracts E from X
+
+## Registers
+
+A, X, Y, D, E (8-bit); OUT (display); PC (24-bit); SP (16-bit, init 0xFFFF).
+
+Flags: N (bit 7), Z, C. Use `CLC` before `ADC`, `SEC` before `SBC`.

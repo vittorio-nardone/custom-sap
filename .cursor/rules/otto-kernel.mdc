@@ -1,0 +1,40 @@
+---
+description: Otto kernel development — build, interrupts, API
+globs: kernel/**
+alwaysApply: false
+---
+
+# Otto Kernel
+
+Kernel lives in unified ROM build with P-Machine (0x0000–0x5FFF). RAM map: `kernel/memmap.asm`.
+
+## After every kernel change
+
+```bash
+source .venv/bin/activate && ./generate-all.sh
+```
+
+Regenerates ROMs, **symbols.asm**, and all apps. Never hand-edit `kernel/symbols.asm`.
+
+## Interrupt handlers (pointers in kernel RAM)
+
+| Source | Pointer addr |
+|--------|----------------|
+| INT1 | 0x83F8–0x83F9 |
+| INT2 (serial) | 0x83FA–0x83FB |
+| TIMER (10 Hz) | 0x83FC–0x83FD |
+| KEYBOARD | 0x83FE–0x83FF |
+
+Mask bits: EXT1=0x01, EXT2=0x02, TIMER=0x04, KEYBOARD=0x08. Setup: write handler MSB/LSB, `TIA`/`ORA`/`TAI`, `CLI`.
+
+## Key kernel API (call via `JSR`, include `symbols.asm`)
+
+**Serial**: `ACIA_INIT`, `ACIA_SEND_CHAR` (A), `ACIA_SEND_STRING` (D:E), `ACIA_READ_CHAR`, `ACIA_PULL_FROM_BUFFER`
+
+**VT100**: `VT100_ERASE_SCREEN`, `VT100_CURSOR_POSITION` (D=row, E=col), `VT100_TEXT_RESET`
+
+**Math**: `MULTIPLY_INT`, `DIVIDE_INT`, `MUL16S`, `DIV16S`, `MOD16S`, `CMP16S` (use `MATH16_A`/`MATH16_B`)
+
+**Transfer**: `XMODEM_RCV`
+
+Full symbol table and addresses: `kernel/symbols.asm` and `AGENTS.md`.

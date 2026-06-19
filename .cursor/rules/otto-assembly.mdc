@@ -1,0 +1,46 @@
+---
+description: Otto assembly app conventions and template
+globs: **/*.asm
+alwaysApply: false
+---
+
+# Otto Assembly Apps
+
+Include paths relative to file location. Use `kernel/symbols.asm` for kernel API addresses.
+
+## App template
+
+```assembly
+#include "../assembly/ruledef.asm"
+#include "../kernel/symbols.asm"
+
+#bankdef ram { #addr 0x8400, #size 0x6C00, #outp 0 }
+#bank ram
+
+    ldd .msg[15:8]
+    lde .msg[7:0]
+    jsr ACIA_SEND_STRING
+    rts
+
+.msg:
+    #d "Hello, Otto!", 0x0A, 0x0D, 0x00
+```
+
+## Conventions
+
+- Entry at first instruction after `#bank ram`; load address **0x8400**
+- End with **`RTS`** (return to kernel) or **`HLT`**
+- Pass 16-bit pointers in **D** (MSB) + **E** (LSB): `label[15:8]`, `label[7:0]`
+- Local labels start with `.` (e.g. `.loop`, `.msg`)
+- Strings: null-terminated; newline = `0x0A, 0x0D`
+- Data: `#d` directive
+- Save/restore registers on stack (`PHA`/`PLA`, etc.)
+
+## Build & test
+
+```bash
+customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin
+python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet
+```
+
+Hardware upload via kernel XMODEM menu. Full instruction set and kernel API: `AGENTS.md`.

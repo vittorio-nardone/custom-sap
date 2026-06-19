@@ -1,0 +1,41 @@
+---
+description: Otto CPU simulator — headless testing and CI workflow
+globs: simulate.py,microcode.py
+alwaysApply: false
+---
+
+# Otto Simulator (`simulate.py`)
+
+Python 3.10+; always `source .venv/bin/activate` first. Emulates full Otto hardware from `microcode.py` + kernel ROM.
+
+## Headless / automated testing
+
+```bash
+python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet
+echo $?   # 0=success, 1=timeout, 2=error
+```
+
+| Flag | Effect |
+|------|--------|
+| `--autorun` | Headless; pre-sends `r`+CR to run program at load address |
+| `--quiet` | Suppress kernel boot output; show app output only |
+| `--max-cycles N` | Safety limit (0=unlimited) |
+| `--address 0xADDR` | Load address (default 0x8400) |
+| `--input '...'` | Scripted keyboard input |
+| `--dump-regs FILE` | JSON register dump on exit |
+
+Programs ending with **`RTS`** or **`HLT`** exit cleanly in autorun mode.
+
+## Interactive / dev
+
+```bash
+python simulate.py --program roms/apps/asm/myapp.bin   # hot-reloads on recompile
+python simulate.py --simulate-serial                    # virtual serial port
+```
+
+## Simulator-only
+
+- `DMP` (0xF7) dumps registers to console — no effect on real hardware
+- `OUT` register can serve as halt return code
+
+Memory regions and I/O details: `AGENTS.md`.

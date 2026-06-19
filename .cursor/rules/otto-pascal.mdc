@@ -1,0 +1,49 @@
+---
+description: Tiny Pascal — P-Machine, compiler, on-board IDE
+globs: pascal/**
+alwaysApply: false
+---
+
+# Tiny Pascal / P-Machine
+
+P-Machine in ROM (unified build). Python cross-compiler: `pascal_compiler.py`. Language ref: `pascal/LANGUAGE.md`.
+
+## Compile & run (cross-compiler)
+
+```bash
+source .venv/bin/activate
+python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
+python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
+```
+
+Binaries load at **0x8400** with native stub → `JSR PM_ENTRY`. Kernel `p` command runs raw P-code at 0x8400.
+
+## P-Machine RAM
+
+- State: 0xB000–0xB00B
+- Eval stack: 0xB100–0xB1FF (16-bit values, grows up)
+- Variable frame: 0xB200–0xB3FF
+- Call stack: 0xBA00–0xBAFF
+
+## On-board IDE (not in ROM)
+
+Build: `apps/tinypascal_ide.asm` → `roms/apps/asm/tinypascal_ide.bin`
+
+- Upload: **`u020000`**; run: **`r020000`**
+- Editor source: expansion RAM 0x010000+; compiler workspace ~0x016000 (`pascal/consts.asm`)
+- **`lo` paste**: lines **≤ 79 characters** (80 chars + null breaks loader)
+- Editor: `n` new, `lo` load, `r` run, `q` quit
+
+## Regression
+
+After changes to `pascal/compiler.asm`, `pmachine.asm`, `editor.asm`, or Python compiler:
+
+```bash
+./generate-all.sh
+python pascal/tools/run_tinypascal_suite.py
+python pascal/tools/run_tinypascal_suite.py --cross
+```
+
+**Known limitation**: on-board compiler miscompiles some `string` variable assignments; suite uses string literals only.
+
+Full P-code opcodes and syntax: `AGENTS.md`.
