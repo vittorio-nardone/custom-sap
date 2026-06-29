@@ -23,6 +23,8 @@ echo $?   # 0=success, 1=timeout, 2=error
 | `--address 0xADDR` | Load address (default 0x8400) |
 | `--input '...'` | Scripted keyboard input |
 | `--dump-regs FILE` | JSON register dump on exit |
+| `--serial-device PATH` | Real serial port for ACIA (e.g. FTDI → VGA32) |
+| `--serial-baud N` | Baud for `--serial-device` (default 115200) |
 
 Programs ending with **`RTS`** or **`HLT`** exit cleanly in autorun mode.
 
@@ -30,7 +32,8 @@ Programs ending with **`RTS`** or **`HLT`** exit cleanly in autorun mode.
 
 ```bash
 python simulate.py --program roms/apps/asm/myapp.bin   # hot-reloads on recompile
-python simulate.py --simulate-serial                    # virtual serial port
+python simulate.py --simulate-serial                    # virtual serial port (minicom)
+python simulate.py --serial-device /dev/cu.usbserial-XXX  # real port (VGA32 / FTDI)
 ```
 
 ## Simulator-only

@@ -11,6 +11,7 @@
 ; --- 0x8000-0x801A: Main Menu (kernel.asm) -------------------
 #const MAIN_MENU_STATUS              = 0x8000  ; 1 byte
 #const MAIN_MENU_INPUT_BUFFER_COUNT  = 0x8001  ; 1 byte
+#const MAIN_MENU_INPUT_CURSOR        = 0x8008  ; 1 byte - cursor position in input buffer
 #const MAIN_MENU_ADDR_PAGE           = 0x8002  ; 1 byte
 #const MAIN_MENU_ADDR_MSB            = 0x8003  ; 1 byte
 #const MAIN_MENU_ADDR_LSB            = 0x8004  ; 1 byte

@@ -356,6 +356,62 @@ ACIA_READ_CHAR:
     rts
 
 ; **********************************************************
+; SUBROUTINE: ACIA_READ_ESCAPE_KEY
+;
+; DESCRIPTION:
+;   Parse an ANSI/VT escape sequence already started with ESC (0x1B).
+;   Consumes all sequence bytes without echo.
+;
+; INPUTS:
+;   (ESC byte already read by caller)
+;
+; OUTPUTS:
+;   A = final key byte (e.g. 'C' right, 'D' left) or 0 if not recognized
+;
+; DESTROY:
+;   A
+;
+; FLAGS AFFECTED:
+;
+; USAGE:
+;   Kernel menu uses arrow keys; other sequences are discarded.
+;
+; AUTHOR: VN
+; LAST UPDATE: 04/08/2026
+; **********************************************************
+
+ACIA_READ_ESCAPE_KEY:
+    jsr ACIA_READ_CHAR
+    cmp "["
+    beq .csi
+    cmp "O"
+    beq .ss3
+    lda 0x00
+    rts
+
+.ss3:
+    jsr ACIA_READ_CHAR
+    rts
+
+.csi:
+    jsr ACIA_READ_CHAR
+.csi_loop:
+    cmp 0x40
+    bcc .csi_more
+    cmp 0x7F
+    bcs .csi_more
+    rts
+
+.csi_more:
+    jsr ACIA_READ_CHAR
+    jmp .csi_loop
+
+; Alias: discard escape sequence without using the key
+ACIA_CONSUME_ESCAPE:
+    jsr ACIA_READ_ESCAPE_KEY
+    rts
+
+; **********************************************************
 ; SUBROUTINE: ACIA_READ_TO_BUFFER
 ;
 ; DESCRIPTION:

@@ -119,6 +119,22 @@ The simulator can also communicate through a virtual serial port, allowing you t
 python ./simulate.py --simulate-serial
 ```
 
+Alternatively, map the emulated ACIA to a **real serial device** (e.g. a USB–FTDI adapter connected to a VGA32 AdvancedTerminal). Kernel I/O goes over that port instead of stdin/stdout:
+
+```bash
+# Interactive kernel menu on the external terminal (PS/2 keyboard → serial → Otto)
+python ./simulate.py --serial-device /dev/cu.usbserial-A50285BI
+
+# Load a program and use the kernel menu on the external terminal
+python ./simulate.py --serial-device /dev/cu.usbserial-A50285BI --program roms/apps/asm/helloworld.bin
+
+# Autorun: send 'r'+CR on the serial line and exit when the app returns
+python ./simulate.py --serial-device /dev/cu.usbserial-A50285BI \
+  --autorun --program roms/apps/asm/helloworld.bin --max-cycles 1000000
+```
+
+Use `ls /dev/cu.*` to find your adapter. `--serial-device` and `--simulate-serial` are mutually exclusive. Baud rate defaults to 115200 (`--serial-baud` to override). Omit `--quiet` when using the interactive kernel menu on an external display. See `devices/vga32/README.md` for VGA32 wiring.
+
 The simulator can also load a specific binary file in the memory and monitor it for updates.
 ```bash
 python ./simulate.py --program roms/apps/asm/_test_.bin
@@ -138,6 +154,10 @@ Available flags:
 * `--max-cycles N` - Safety limit on CPU cycles to prevent infinite loops
 * `--quiet` - Suppress kernel output, show only application output
 * `--dump-regs <file>` - Save CPU registers, flags, cycle count and stop reason to a JSON file on exit
+* `--serial-device <path>` - Use a real serial port for ACIA I/O (e.g. `/dev/cu.usbserial-A50285BI`)
+* `--serial-baud N` - Baud rate for `--serial-device` (default: 115200)
+* `--simulate-serial` - Create a virtual serial port pair for minicom
+* `--input '...'` - Pre-load keyboard/serial input after boot (use `\r` for CR)
 
 Exit codes: `0` = program completed, `1` = timeout, `2` = execution error. Use `--dump-regs` to inspect the full CPU state (including `OUT` register value) after execution.
 

@@ -70,9 +70,17 @@ class OttoCPU:
             else:
                 print(f"-> warning: instruction 0x{value['c']:02X} - {key[:3]} not implemented")
     
-    def set_serial_port(self, serial_port):
-        """Set the serial port for I/O simulation"""
-        self.serial_io = Serial(serial_port, 115200, timeout=0)
+    def set_serial_port(self, serial_port, baud=115200):
+        """Attach a pyserial port (device path or Serial instance) for ACIA I/O."""
+        if isinstance(serial_port, Serial):
+            self.serial_io = serial_port
+        else:
+            self.serial_io = Serial(serial_port, baud, timeout=0)
+
+    def close_serial_port(self):
+        if self.serial_io is not None:
+            self.serial_io.close()
+            self.serial_io = None
 
     def push(self, value):
         """Push a value onto the stack"""
@@ -463,6 +471,7 @@ class OttoCPU:
                     elif address == 0x6021:
                         if self.serial_io != None:
                             self.serial_io.write(bytes([value]))
+                            self.serial_io.flush()
                         else:
                             print(f"{chr(value)}", end="")
                             sys.stdout.flush()
@@ -488,6 +497,47 @@ def load_program(cpu, program, start_address=0x8000):
 def keyboard_hit():
     return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
 
+
+def autorun_command_bytes(load_address):
+    if load_address == 0x8400:
+        return b"r\r"
+    addr_hex = f"{load_address:06x}" if load_address > 0xFFFF else f"{load_address:04x}"
+    return f"r{addr_hex}\r".encode()
+
+
+def push_input(cpu, data):
+    """Queue input for the kernel menu: serial port or simulated keyboard buffer."""
+    if cpu.serial_io is not None:
+        cpu.serial_io.write(data)
+        cpu.serial_io.flush()
+    else:
+        for byte in data:
+            cpu.push_key(byte)
+
+
+def run_cpu_loop(cpu, args):
+    """Run the CPU until HLT or autorun completion. Returns (exit_code, stop_reason)."""
+    exit_code = 0
+    stop_reason = "completed"
+    try:
+        while cpu.HLT == False:
+            cpu.step()
+            if args.autorun and cpu._app_started and not cpu._app_running:
+                break
+            if args.max_cycles > 0 and cpu.cycles >= args.max_cycles:
+                print(f"\n-> max cycles reached ({args.max_cycles}), stopping simulator")
+                stop_reason = "timeout"
+                exit_code = 1
+                break
+    except Exception as e:
+        print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
+        stop_reason = "error"
+        exit_code = 2
+
+    if cpu.HLT:
+        stop_reason = "halted"
+    return exit_code, stop_reason
+
 # Helper class to reload a program into memory when the file changes
 class FileChangeHandler(FileSystemEventHandler): 
     def __init__(self, cpu, filepath, address): 
@@ -508,7 +558,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Project OTTO - Simulator")
     parser.add_argument("--program", type=str, help="Path to the binary program file to load")
     parser.add_argument("--address", type=lambda x: int(x, 0), default=None, help="Memory address to load the program (default: auto-detect from OT header, fallback 0x8400)")
-    parser.add_argument("--simulate-serial", action="store_true", help="Simulate serial ports instead of using stdin/stdout")
+    parser.add_argument("--simulate-serial", action="store_true", help="Create a virtual serial port pair (connect minicom to the printed device)")
+    parser.add_argument("--serial-device", type=str, default=None, metavar="PATH", help="Use a real serial device for ACIA I/O (e.g. FTDI to VGA32: /dev/cu.usbserial-...)")
+    parser.add_argument("--serial-baud", type=int, default=115200, help="Baud rate for --serial-device (default: 115200)")
     parser.add_argument("--headless", action="store_true", help="Run without TTY (no stdin, no termios). Compatible with batch/CI usage")
     parser.add_argument("--autorun", action="store_true", help="Automatically run the loaded program after kernel boot (implies --headless)")
     parser.add_argument("--max-cycles", type=int, default=0, help="Maximum CPU cycles before forced exit (0 = unlimited)")
@@ -517,11 +569,14 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, default=None, help="Pre-load keyboard buffer with this string (use \\r for CR)")
     args = parser.parse_args()
 
+    if args.simulate_serial and args.serial_device:
+        parser.error("cannot use both --simulate-serial and --serial-device")
+
     # --autorun implies --headless
     if args.autorun:
         args.headless = True
 
-    print("\nProject OTTO - Simulator v1.3.0")
+    print("\nProject OTTO - Simulator v1.4.0")
     # Create a new OttoCPU instance
     cpu = OttoCPU()
 
@@ -543,10 +598,14 @@ if __name__ == "__main__":
         cpu._app_started = False
         cpu._app_sp = 0
         cpu._app_address = effective_address
+        cpu._app_track_enabled = not args.autorun
         _original_step = cpu.step
         def _tracking_step():
-            if not cpu._app_running and not cpu._app_started \
-                    and cpu.PC >= cpu._app_address and len(cpu.KEY) == 0:
+            if args.autorun and not cpu._app_track_enabled:
+                if cpu.serial_io is not None or len(cpu.KEY) == 0:
+                    cpu._app_track_enabled = True
+            if cpu._app_track_enabled and not cpu._app_running and not cpu._app_started \
+                    and cpu.PC >= cpu._app_address:
                 cpu._app_running = True
                 cpu._app_started = True
                 cpu._app_sp = cpu.SP
@@ -571,95 +630,75 @@ if __name__ == "__main__":
             observer.schedule(event_handler, path=os.path.dirname(args.program), recursive=False)
             observer.start()
 
-    # In autorun mode, pre-load keyboard buffer with 'r' + CR to trigger program execution
-    if args.autorun:
-        if effective_address == 0x8400:
-            cpu.KEY = [ord('r'), 0x0D]
-        else:
-            addr_hex = f"{effective_address:06x}" if effective_address > 0xFFFF else f"{effective_address:04x}"
-            cpu.KEY = [ord('r')] + [ord(c) for c in addr_hex] + [0x0D]
+    if args.serial_device:
+        cpu.set_serial_port(args.serial_device, baud=args.serial_baud)
+        print(f"-> ACIA on serial {args.serial_device} @ {args.serial_baud} 8N1")
 
-    # Pre-load additional keyboard input if provided
+    # In autorun mode, send 'r' + CR (or rADDR) to run the loaded program
+    if args.autorun:
+        push_input(cpu, autorun_command_bytes(effective_address))
+
+    # Pre-load additional keyboard/serial input if provided
     if args.input:
         input_bytes = args.input.encode().decode('unicode_escape')
-        cpu.KEY.extend([ord(c) for c in input_bytes])
+        push_input(cpu, bytes(ord(c) for c in input_bytes))
 
     # Run the simulator
     print("-> system boot")
     exit_code = 0
+    stop_reason = "completed"
 
-    if args.headless:
-        # Headless mode: no TTY, no stdin reading
-        stop_reason = "completed"
-        try:
+    try:
+        if args.headless:
+            exit_code, stop_reason = run_cpu_loop(cpu, args)
+        elif args.simulate_serial:
+            with VirtualSerialPorts(2, False, False) as ports:
+                cpu.set_serial_port(ports[0])
+                print(f"-> use serial port {ports[1]} to communicate with the CPU")
+                sys.stdout.flush()
+                while cpu.HLT == False:
+                    cpu.step()
+                    time.sleep(0)
+        elif args.serial_device:
             while cpu.HLT == False:
                 cpu.step()
-                # In autorun mode, exit cleanly when the app returns via RTS
-                if args.autorun and cpu._app_started and not cpu._app_running:
-                    break
-                if args.max_cycles > 0 and cpu.cycles >= args.max_cycles:
-                    print(f"\n-> max cycles reached ({args.max_cycles}), stopping simulator")
-                    stop_reason = "timeout"
-                    exit_code = 1
-                    break
-        except Exception as e:
-            print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
-            stop_reason = "error"
-            exit_code = 2
-
-        if cpu.HLT:
-            stop_reason = "halted"
-
-        print(f"\nSystem halted. OUT registry: 0x{cpu.OUT:02X} (cycles: {cpu.cycles})")
-
-        # Dump registers to file if requested
-        if args.dump_regs:
-            import json
-            regs = {
-                "A": cpu.A, "X": cpu.X, "Y": cpu.Y,
-                "D": cpu.D, "E": cpu.E, "OUT": cpu.OUT,
-                "PC": cpu.PC, "SP": cpu.SP,
-                "flags": {"Z": cpu.Z, "N": cpu.N, "C": cpu.C, "I": cpu.I, "O": cpu.O},
-                "cycles": cpu.cycles,
-                "stop_reason": stop_reason
-            }
-            with open(args.dump_regs, 'w') as f:
-                json.dump(regs, f, indent=2)
-            print(f"-> registers dumped to {args.dump_regs}")
-
-        sys.exit(exit_code)
-    else:
-        # Interactive mode: original behavior with TTY
-        old_settings = termios.tcgetattr(sys.stdin)
-        try:
-            tty.setcbreak(sys.stdin.fileno())
-
-            if args.simulate_serial:
-                with VirtualSerialPorts(2, False, False) as ports:
-                    cpu.set_serial_port(ports[0])
-                    print(f"-> use serial port {ports[1]} to communicate with the CPU")
-
-                    # Flush stdout, in case the ports are being read in a pipe. Else
-                    # Python will buffer it and block.
-                    sys.stdout.flush()
-
-                    while cpu.HLT == False:
-                        cpu.step()
-                        time.sleep(0) # delay to optimize simulated serial port performance
-            else:
+                time.sleep(0)
+        else:
+            old_settings = termios.tcgetattr(sys.stdin)
+            try:
+                tty.setcbreak(sys.stdin.fileno())
                 while cpu.HLT == False:
                     while keyboard_hit():
                         key = ord(sys.stdin.read(1))
                         cpu.push_key(key)
                     cpu.step()
                     time.sleep(0)
-        except Exception as e:
-            print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
+            finally:
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+    except Exception as e:
+        print(f"\nError executing opcode 0x{cpu.IR:02X}: {e}", end="")
+        stop_reason = "error"
+        exit_code = 2
 
-        finally:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+    print(f"\nSystem halted. OUT registry: 0x{cpu.OUT:02X} (cycles: {cpu.cycles})")
 
-        print(f"\nSystem halted. OUT registry: 0x{cpu.OUT:02X}")
+    if args.dump_regs:
+        import json
+        regs = {
+            "A": cpu.A, "X": cpu.X, "Y": cpu.Y,
+            "D": cpu.D, "E": cpu.E, "OUT": cpu.OUT,
+            "PC": cpu.PC, "SP": cpu.SP,
+            "flags": {"Z": cpu.Z, "N": cpu.N, "C": cpu.C, "I": cpu.I, "O": cpu.O},
+            "cycles": cpu.cycles,
+            "stop_reason": stop_reason
+        }
+        with open(args.dump_regs, 'w') as f:
+            json.dump(regs, f, indent=2)
+        print(f"-> registers dumped to {args.dump_regs}")
+
+    cpu.close_serial_port()
+    if args.headless:
+        sys.exit(exit_code)
             
  
     

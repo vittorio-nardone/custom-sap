@@ -52,8 +52,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.134"
-#const KERNEL_BUILDDATE = "04/08/2026"
+#const KERNEL_VERSION = "v1.2.136"
+#const KERNEL_BUILDDATE = "06/29/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -116,6 +116,7 @@ main:
     jsr ACIA_SEND_NEWLINE
     lda 0x00
     sta MAIN_MENU_INPUT_BUFFER_COUNT
+    sta MAIN_MENU_INPUT_CURSOR
     lda 0x3E
     jsr ACIA_SEND_CHAR
 
@@ -131,20 +132,80 @@ main:
     beq .backspace
     cmp 0x08
     beq .backspace
+    cmp 0x1B
+    beq .escape
     jsr ACIA_SEND_CHAR
-    ldx MAIN_MENU_INPUT_BUFFER_COUNT
+    ldx MAIN_MENU_INPUT_CURSOR
     sta MAIN_MENU_INPUT_BUFFER,x
-    inc MAIN_MENU_INPUT_BUFFER_COUNT
+    inx
+    stx MAIN_MENU_INPUT_CURSOR
+    cpx MAIN_MENU_INPUT_BUFFER_COUNT
+    bcc .insert_skip_count
+    stx MAIN_MENU_INPUT_BUFFER_COUNT
+.insert_skip_count:
     cpx 0x0F
     beq .menu_show_error
     jmp .loop
 
-.backspace:
-    lda MAIN_MENU_INPUT_BUFFER_COUNT
+.escape:
+    jsr ACIA_READ_ESCAPE_KEY
+    cmp "D"
+    beq .cursor_left
+    cmp "C"
+    beq .cursor_right
+    jmp .loop
+
+.cursor_left:
+    lda MAIN_MENU_INPUT_CURSOR
     beq .loop
+    dec MAIN_MENU_INPUT_CURSOR
+    jsr VT100_CURSOR_LEFT
+    jmp .loop
+
+.cursor_right:
+    lda MAIN_MENU_INPUT_CURSOR
+    cmp MAIN_MENU_INPUT_BUFFER_COUNT
+    bcs .loop
+    inc MAIN_MENU_INPUT_CURSOR
+    jsr VT100_CURSOR_RIGHT
+    jmp .loop
+
+.backspace:
+    lda MAIN_MENU_INPUT_CURSOR
+    beq .loop
+    dec MAIN_MENU_INPUT_CURSOR
+    ldx MAIN_MENU_INPUT_CURSOR
+.backspace_shift:
+    inx
+    cpx MAIN_MENU_INPUT_BUFFER_COUNT
+    bcs .backspace_shift_done
+    lda MAIN_MENU_INPUT_BUFFER,x
+    dex
+    sta MAIN_MENU_INPUT_BUFFER,x
+    inx
+    jmp .backspace_shift
+.backspace_shift_done:
     dec MAIN_MENU_INPUT_BUFFER_COUNT
     jsr VT100_CURSOR_LEFT
     jsr VT100_CLEAR_LINE_END
+    ldx MAIN_MENU_INPUT_CURSOR
+.backspace_echo:
+    cpx MAIN_MENU_INPUT_BUFFER_COUNT
+    bcs .backspace_repos
+    lda MAIN_MENU_INPUT_BUFFER,x
+    jsr ACIA_SEND_CHAR
+    inx
+    jmp .backspace_echo
+.backspace_repos:
+    lda MAIN_MENU_INPUT_BUFFER_COUNT
+    sec
+    sbc MAIN_MENU_INPUT_CURSOR
+    beq .loop
+    tay
+.backspace_cursor_left:
+    jsr VT100_CURSOR_LEFT
+    dey
+    bne .backspace_cursor_left
     jmp .loop
 
 .cmd_entered:
