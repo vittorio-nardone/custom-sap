@@ -35,6 +35,7 @@
 */
 
 #include "fabgl.h"
+#include "otto_bridge.h"
 
 
 fabgl::BitmappedDisplayController * DisplayController;
@@ -44,9 +45,13 @@ fabgl::SerialPort                   SerialPort;
 fabgl::SerialPortTerminalConnector  SerialPortTerminalConnector;
 
 
-// RTS/CTS hardware flow gpios
-#define UART_RTS 13
-#define UART_CTS 35
+// Otto UART on PS/2 mouse port (TX=27 RX=26) by default — GPIO 2 stays SD MISO only.
+// OTIO pauses UART callbacks during SD access on PICO-D4 boards.
+#define UART_RTS -1
+#define UART_CTS -1
+
+// TTGO VGA32 onboard SD chip-select (HSPI, same as FabGL FileBrowser)
+#define OTIO_SD_CS 13
 
 
 // settings reset control
@@ -66,7 +71,10 @@ fabgl::SerialPortTerminalConnector  SerialPortTerminalConnector;
 
 
 #include "confdialog.h"
+#include "sdbrowserdialog.h"
 
+// Filled by boot SD probe (before UART init), shown in boot banner.
+static char s_bootSdStatus[96] = "not probed";
 
 void setup()
 {
@@ -104,8 +112,20 @@ void setup()
 
   ConfDialogApp::setupDisplay();
 
+  // Probe the SD card BEFORE the UART claims GPIO 2 (shared SD MISO on
+  // PICO-D4). This mirrors the standalone SdCardTest sketch conditions and
+  // avoids a UART/SD pin conflict that crashed the board at boot.
+  OttoBridge::instance().probeBootSd(OTIO_SD_CS, s_bootSdStatus, sizeof(s_bootSdStatus));
+
   ConfDialogApp::loadConfiguration();
-  
+
+  // OTIO UART tap before boot banner — serial is live after loadConfiguration()
+  OttoBridge::instance().begin(&SerialPort, &Terminal, &SerialPortTerminalConnector,
+                               TERMVERSION_MAJ, TERMVERSION_MIN, OTIO_SD_CS,
+                               ConfDialogApp::setupUartHardware);
+  if (strncmp(s_bootSdStatus, "OK", 2) == 0)
+    OttoBridge::instance().markSdKnownFromBoot();
+
   #if FABGLIB_TERMINAL_DEBUG_REPORT
   Terminal.setLogStream(Serial);  // debug only
   #endif
@@ -124,12 +144,14 @@ void setup()
     //Terminal.printf("Free Memory        : %d bytes\r\n", heap_caps_get_free_size(MALLOC_CAP_32BIT));
     Terminal.printf("Serial Port        : %s\r\n", UARTPORT_STR[ConfDialogApp::getUARTPortIndex()]);
     Terminal.printf("Serial Parameters  : %s\r\n", ConfDialogApp::getSerParamStr());
+    Terminal.printf("SD Card            : %s\r\n", s_bootSdStatus);
 
-    Terminal.write("\r\nPress F12 to change terminal configuration and CTRL-ALT-F12 to reset settings\r\n\n");
+    Terminal.write("\r\nPress F11 for SD browser, F12 for configuration, CTRL-ALT-F12 to reset settings\r\n\n");
   } else if (ConfDialogApp::getBootInfo() == BOOTINFO_TEMPDISABLED) {
     preferences.putInt(PREF_BOOTINFO, BOOTINFO_ENABLED);
   } else if (ConfDialogApp::getBootInfo() == BOOTINFO_DISABLED) {
     Terminal.printf("AdvancedTerminal for Project OTTO - v%d.%d\r\n", TERMVERSION_MAJ, TERMVERSION_MIN);
+    Terminal.printf("SD Card            : %s\r\n", s_bootSdStatus);
   }
 
   // onVirtualKey is triggered whenever a key is pressed or released
@@ -161,6 +183,21 @@ void setup()
         // it has been requested to install a demo program?
         if (progToInstall > -1)
           installProgram(progToInstall);
+        vkItem->vk = VirtualKey::VK_NONE;
+      }
+    } else if (vkItem->vk == VirtualKey::VK_F11) {
+      if (!vkItem->CTRL && !vkItem->LALT && !vkItem->RALT && !vkItem->down) {
+        Terminal.deactivate();
+        if (PS2Controller.mouse())
+          PS2Controller.mouse()->emptyQueue();
+        auto sdApp = new SdBrowserDialogApp;
+        runSdBrowserDialog(sdApp);
+        Terminal.canvas()->reset();
+        Terminal.canvas()->setBrushColor(ConfDialogApp::getBGColor());
+        Terminal.canvas()->fillRectangle(sdApp->frameRect);
+        delete sdApp;
+        Terminal.keyboard()->emptyVirtualKeyQueue();
+        Terminal.activate();
         vkItem->vk = VirtualKey::VK_NONE;
       }
     } else if (vkItem->vk == VirtualKey::VK_BREAK && !vkItem->down) {

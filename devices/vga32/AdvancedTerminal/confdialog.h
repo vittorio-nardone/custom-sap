@@ -38,7 +38,7 @@ Preferences preferences;
 
 
 #define TERMVERSION_MAJ 2
-#define TERMVERSION_MIN 3
+#define TERMVERSION_MIN 15
 
 
 static const char * BAUDRATES_STR[]  = { "110",
@@ -192,7 +192,7 @@ constexpr int       BOOTINFO_TEMPDISABLED = 2;
 //                       NOTE2: espefuse.py is downloadable from https://github.com/espressif/esptool
 static const char *  UARTPORT_STR[]       = { "FabGL Terminal: TX=2 RX=34",
                                               "USB: TX=1 RX=3",
-                                              "PS/2 Mouse: TX=27 RX=26" };
+                                              "Otto PS/2: TX=27 RX=26" };
 static const uint8_t UARTPORT_TX[]        = { 2,
                                               1,
                                               27 };
@@ -586,8 +586,9 @@ struct ConfDialogApp : public uiApp {
   }
 
 
+  // Default 2 = Otto on PS/2 mouse port (TX=27 RX=26). GPIO 2 stays SD MISO only.
   static int getUARTPortIndex() {
-    return preferences.getInt(PREF_UARTPORT, 0);
+    return preferences.getInt(PREF_UARTPORT, 2);
   }
 
 
@@ -665,6 +666,10 @@ struct ConfDialogApp : public uiApp {
     Terminal.setForegroundColor(getFGColor());
     
     // configure serial port
+    setupUartHardware();
+  }
+
+  static void setupUartHardware() {
     auto uidx = getUARTPortIndex();
     SerialPort.setSignals(UARTPORT_RX[uidx], UARTPORT_TX[uidx], UART_RTS, UART_CTS);
     SerialPort.setup(2, BAUDRATES_INT[getBaudRateIndex()], DATALENS_INT[getDataLenIndex()], PARITY_CHAR[getParityIndex()], STOPBITS_FLOAT[getStopBitsIndex()], getFlowCtrl());

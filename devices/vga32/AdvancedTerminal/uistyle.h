@@ -27,7 +27,7 @@
 #pragma once
 
 
-enum { STYLE_NONE, STYLE_FRAME, STYLE_LABEL, STYLE_STATICLABEL, STYLE_LABELHELP, STYLE_LABELHELP2, STYLE_BUTTON, STYLE_COMBOBOX, STYLE_CHECKBOX, STYLE_LABELBUTTON };
+enum { STYLE_NONE, STYLE_FRAME, STYLE_LABEL, STYLE_STATICLABEL, STYLE_LABELHELP, STYLE_LABELHELP2, STYLE_BUTTON, STYLE_COMBOBOX, STYLE_CHECKBOX, STYLE_LABELBUTTON, STYLE_LISTBOX };
 
 
 #define BACKGROUND_COLOR RGB888(64, 64, 64)
@@ -37,7 +37,11 @@ struct DialogStyle : uiStyle {
   void setStyle(uiObject * object, uint32_t styleClassID) {
     switch (styleClassID) {
       case STYLE_FRAME:
-        ((uiFrame*)object)->windowStyle().activeBorderColor         = RGB888(128, 128, 255);
+        ((uiFrame*)object)->windowStyle().borderColor            = RGB888(128, 128, 128);
+        ((uiFrame*)object)->windowStyle().activeBorderColor      = RGB888(128, 128, 255);
+        ((uiFrame*)object)->windowStyle().focusedBorderColor     = RGB888(128, 128, 255);
+        ((uiFrame*)object)->windowStyle().borderSize             = 3;
+        ((uiFrame*)object)->windowStyle().focusedBorderSize      = 3;
         ((uiFrame*)object)->frameStyle().activeTitleBackgroundColor = RGB888(128, 128, 255);
         ((uiFrame*)object)->frameStyle().backgroundColor            = BACKGROUND_COLOR;
         break;
@@ -78,6 +82,14 @@ struct DialogStyle : uiStyle {
         break;
       case STYLE_CHECKBOX:
         ((uiCheckBox*)object)->windowStyle().borderColor            = RGB888(255, 255, 255);
+        break;
+      case STYLE_LISTBOX:
+        ((uiCustomListBox*)object)->listBoxStyle().textFont          = &fabgl::FONT_std_12;
+        ((uiCustomListBox*)object)->listBoxStyle().itemHeight        = 14;
+        ((uiCustomListBox*)object)->listBoxStyle().backgroundColor    = RGB888(48, 48, 48);
+        ((uiCustomListBox*)object)->listBoxStyle().focusedBackgroundColor = RGB888(64, 64, 64);
+        ((uiCustomListBox*)object)->listBoxStyle().textColor         = RGB888(255, 255, 255);
+        ((uiCustomListBox*)object)->listBoxStyle().selectedTextColor = RGB888(255, 255, 255);
         break;
     }
   }

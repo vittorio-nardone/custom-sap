@@ -166,6 +166,29 @@ ACIA_SEND_STRING_NO_WAIT:
     rts    
 
 ; **********************************************************
+; SUBROUTINE: ACIA_FLUSH_RX
+;
+; Discard all pending UART RX bytes (hardware + irq buffer).
+; **********************************************************
+
+ACIA_FLUSH_RX:
+    lda 0xFD
+    sta 0x6012
+    lda 0x00
+    sta ACIA_1_RX_BUFFER_PULL_INDEX
+    sta ACIA_1_RX_BUFFER_PUSH_INDEX
+    lda 0xFF
+    sta ACIA_1_RX_BUFFER_AVAILABLE
+.acia_flush_hw:
+    lda ACIA_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
+    beq .acia_flush_done
+    lda ACIA_RW_DATA_ADDR
+    jmp .acia_flush_hw
+.acia_flush_done:
+    rts
+
+; **********************************************************
 ; SUBROUTINE: ACIA_WAIT_SEND_CLEAR
 ;
 ; DESCRIPTION:

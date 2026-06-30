@@ -30,6 +30,13 @@ class OttoCPU:
         # I/O simulation
         self.KEY = []  # Keyboard input queue (FIFO)
         self.serial_io = None  # Serial port
+        self.otio_stub = None
+        self._timer_cycle_debt = 0
+
+        # Kernel INT_TIMER_COUNTER @ 10 Hz (see kernel/interrupt.asm)
+        self.TIMER_COUNTER_LSB = 0x83F7
+        self.TIMER_COUNTER_MSB = 0x83F6
+        self.CYCLES_PER_TIMER_TICK = 100_000
 
         # Initialize flags
         self.Z = False  # Zero flag
@@ -75,7 +82,15 @@ class OttoCPU:
         if isinstance(serial_port, Serial):
             self.serial_io = serial_port
         else:
-            self.serial_io = Serial(serial_port, baud, timeout=0)
+            # dsrdtr=False: do not toggle DTR on open (would reset ESP32 / VGA32)
+            self.serial_io = Serial(
+                serial_port, baud, timeout=0,
+                dsrdtr=False, rtscts=False,
+            )
+            self.serial_io.dtr = False
+            self.serial_io.rts = False
+            self.serial_io.reset_input_buffer()
+            self.serial_io.reset_output_buffer()
 
     def close_serial_port(self):
         if self.serial_io is not None:
@@ -155,6 +170,12 @@ class OttoCPU:
         self.PC = 0x0000
         self.SP = 0xFFFF
     
+    def _tick_sim_timer(self):
+        lsb = self.memory[self.TIMER_COUNTER_LSB] + 1
+        self.memory[self.TIMER_COUNTER_LSB] = lsb & 0xFF
+        if lsb > 0xFF:
+            self.memory[self.TIMER_COUNTER_MSB] = (self.memory[self.TIMER_COUNTER_MSB] + 1) & 0xFF
+
     def step(self):
         """Execute one instruction"""
         # Fetch
@@ -164,9 +185,15 @@ class OttoCPU:
         self.true_condition = False
         if opcode in self.instructions:
             exec(self.instructions[opcode]['sim'])
-            self.cycles += self.instructions[opcode]['cycles_true'] if self.true_condition else self.instructions[opcode]['cycles']
+            added = self.instructions[opcode]['cycles_true'] if self.true_condition else self.instructions[opcode]['cycles']
+            self.cycles += added
+            self._timer_cycle_debt += added
         else:
             raise Exception(f"Unknown opcode: 0x{opcode:02X}")
+        while self._timer_cycle_debt >= self.CYCLES_PER_TIMER_TICK:
+            self._timer_cycle_debt -= self.CYCLES_PER_TIMER_TICK
+            if not self.I:
+                self._tick_sim_timer()
     
     def update_zero_flag(self, value):
         """Update Zero flag based on result"""
@@ -423,6 +450,11 @@ class OttoCPU:
                 raise ValueError(f"Invalid operand registries: {registries}")
     
     # Memory access methods
+    def flush_serial_rx(self):
+        """Drain pending bytes on the real serial port (OTIO garbage)."""
+        if self.serial_io is not None:
+            self.serial_io.reset_input_buffer()
+
     def read_byte(self, address):
         """Read a byte from memory"""
         address &= 0xFFFFFF  # 24-bit address bus
@@ -437,20 +469,25 @@ class OttoCPU:
                     elif address == 0x6012:
                         return 0x00
                     elif address == 0x6021:
+                        if getattr(self, 'otio_stub', None) is not None:
+                            if self.otio_stub.pending():
+                                return self.otio_stub.read()
+                        # Serial OTIO responses must win over queued --input keys.
                         if self.serial_io != None:
                             if self.serial_io.in_waiting > 0:
                                 return self.serial_io.read(1)[0]
-                            else:
-                                return 0x00
-                        elif len(self.KEY) == 0:
-                            return 0x00
-                        else:
+                        if len(self.KEY) > 0:
                             return self.KEY.pop(0)
+                        return 0x00
                     elif address == 0x6020:
+                        if getattr(self, 'otio_stub', None) is not None:
+                            if self.otio_stub.pending():
+                                return 0x03
                         if self.serial_io != None:
                             return 0x03 if self.serial_io.in_waiting > 0 else 0x02
-                        else:
-                            return 0x03 if len(self.KEY) > 0 else 0x02
+                        if len(self.KEY) > 0:
+                            return 0x03
+                        return 0x02
                     
         raise Exception(f"Invalid memory read at {hex(address)}")
     
@@ -467,9 +504,12 @@ class OttoCPU:
                     self.memory[address] = value
                 else:
                     if address == 0x6012:
-                        pass
+                        if value == 0xFD:
+                            self.flush_serial_rx()
                     elif address == 0x6021:
-                        if self.serial_io != None:
+                        if getattr(self, 'otio_stub', None) is not None:
+                            self.otio_stub.on_tx(value)
+                        elif self.serial_io != None:
                             self.serial_io.write(bytes([value]))
                             self.serial_io.flush()
                         else:
@@ -506,13 +546,33 @@ def autorun_command_bytes(load_address):
 
 
 def push_input(cpu, data):
-    """Queue input for the kernel menu: serial port or simulated keyboard buffer."""
-    if cpu.serial_io is not None:
-        cpu.serial_io.write(data)
-        cpu.serial_io.flush()
-    else:
-        for byte in data:
-            cpu.push_key(byte)
+    """Queue bytes as Otto ACIA RX (keyboard / peer → Otto), not TX to the display."""
+    for byte in data:
+        cpu.push_key(byte)
+
+
+def otio_state_from_cpu(cpu):
+    """Kernel OTIO variables after menu commands (see kernel/memmap.asm)."""
+    m = cpu.memory
+    caps = m[0x8286]
+    return {
+        "peer_cfg": m[0x8284],
+        "peer_status": m[0x8285],
+        "caps": caps,
+        "caps_sd": bool(caps & 0x01),
+        "caps_folders": bool(caps & 0x02),
+    }
+
+
+def validate_otio_kernel(cpu) -> list[str]:
+    """Return human-readable errors after kernel OTIO menu command (e.g. t)."""
+    otio = otio_state_from_cpu(cpu)
+    errs: list[str] = []
+    if otio["peer_status"] != 1:
+        errs.append(f"peer not detected (peer_status={otio['peer_status']})")
+    if not otio["caps_folders"]:
+        errs.append("folders capability bit not set")
+    return errs
 
 
 def run_cpu_loop(cpu, args):
@@ -567,7 +627,26 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true", help="Suppress kernel output, show only application output (address >= 0x8400)")
     parser.add_argument("--dump-regs", type=str, default=None, help="Dump CPU registers to a file on exit (JSON format)")
     parser.add_argument("--input", type=str, default=None, help="Pre-load keyboard buffer with this string (use \\r for CR)")
+    parser.add_argument("--otio-stub", action="store_true", help="Emulate OTIO VGA32 peer on stdout (no hardware)")
+    parser.add_argument("--otio-stub-no-sd", action="store_true", help="Like --otio-stub but SD not available")
+    parser.add_argument("--otio-root", type=str, default="roms", help="Root folder for --otio-stub (maps to SD /otto/; use apps/asm/... paths)")
+    parser.add_argument(
+        "--otio-test",
+        action="store_true",
+        help="Headless kernel OTIO test via --serial-device (VGA32). Sends 't'+CR unless --input is set; checks OTIO RAM on exit",
+    )
     args = parser.parse_args()
+
+    if args.otio_stub and args.otio_stub_no_sd:
+        parser.error("use only one of --otio-stub and --otio-stub-no-sd")
+    if (args.otio_stub or args.otio_stub_no_sd) and args.serial_device:
+        parser.error("cannot combine --otio-stub with --serial-device")
+    if args.otio_test and not args.serial_device:
+        parser.error("--otio-test requires --serial-device (FTDI to VGA32 Otto UART)")
+    if args.otio_test and args.autorun:
+        parser.error("cannot combine --otio-test with --autorun")
+    if args.otio_test and (args.otio_stub or args.otio_stub_no_sd):
+        parser.error("cannot combine --otio-test with --otio-stub")
 
     if args.simulate_serial and args.serial_device:
         parser.error("cannot use both --simulate-serial and --serial-device")
@@ -575,10 +654,22 @@ if __name__ == "__main__":
     # --autorun implies --headless
     if args.autorun:
         args.headless = True
+    if args.otio_test:
+        args.headless = True
+        if args.max_cycles == 0:
+            args.max_cycles = 30_000_000
+        if not args.input:
+            args.input = "t\r"
 
     print("\nProject OTTO - Simulator v1.4.0")
     # Create a new OttoCPU instance
     cpu = OttoCPU()
+
+    if args.otio_stub or args.otio_stub_no_sd:
+        from otio_stub import OtioStub
+        sd_present = bool(args.otio_stub) and not args.otio_stub_no_sd
+        cpu.otio_stub = OtioStub(args.otio_root, sd_present=sd_present)
+        print(f"-> OTIO stub enabled (root={args.otio_root}, SD={'yes' if sd_present else 'no'})")
 
     # Load unified ROM (kernel + P-Machine) into memory
     print("-> loading ROM into memory")
@@ -682,6 +773,21 @@ if __name__ == "__main__":
 
     print(f"\nSystem halted. OUT registry: 0x{cpu.OUT:02X} (cycles: {cpu.cycles})")
 
+    if args.otio_test:
+        otio = otio_state_from_cpu(cpu)
+        print(
+            f"-> OTIO peer_status={otio['peer_status']} "
+            f"caps_sd={otio['caps_sd']} caps_folders={otio['caps_folders']}"
+        )
+        otio_errs = validate_otio_kernel(cpu)
+        if otio_errs:
+            for msg in otio_errs:
+                print(f"-> OTIO test FAIL: {msg}", file=sys.stderr)
+            exit_code = 1
+        else:
+            print("-> OTIO test passed")
+            exit_code = 0
+
     if args.dump_regs:
         import json
         regs = {
@@ -690,7 +796,8 @@ if __name__ == "__main__":
             "PC": cpu.PC, "SP": cpu.SP,
             "flags": {"Z": cpu.Z, "N": cpu.N, "C": cpu.C, "I": cpu.I, "O": cpu.O},
             "cycles": cpu.cycles,
-            "stop_reason": stop_reason
+            "stop_reason": stop_reason,
+            "otio": otio_state_from_cpu(cpu),
         }
         with open(args.dump_regs, 'w') as f:
             json.dump(regs, f, indent=2)
