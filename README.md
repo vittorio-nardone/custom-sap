@@ -29,6 +29,10 @@ Summarizing the technical characteristics, Otto is configured as follows:
 * 2x serial/USB interface
 * 3x maskable interrupt lines and 10Hz timer interrupt
 
+**Display and I/O (in use):** a [LilyGO TTGO VGA32](devices/vga32/README.md) board runs FabGL **AdvancedTerminal** as Otto's console — VGA monitor + PS/2 keyboard, with a microSD card for program storage. The CPU talks to it over UART (115200 8N1) via a level shifter; see `devices/vga32/README.md` for wiring (default: PS/2 mouse port on the VGA32).
+
+**OTIO (in development):** [OTIO v1](devices/vga32/OTIO.md) (*Otto Terminal I/O*) is a binary protocol on that serial link for SD file listing and loading (`t`, `l`, `g`, `c` kernel menu commands). Firmware and kernel support are present but the end-to-end path with real Otto hardware is still being validated.
+
 # Repository Contents
 
 This repository houses the complete design files and software components for the Otto retro computer project, including PCB designs, firmware, and development tools.
@@ -69,6 +73,8 @@ This repository houses the complete design files and software components for the
   * **examples/** - Pascal example programs
 * **pascal_compiler.py** - Tiny Pascal cross-compiler (Python, produces P-code binaries)
 * **forth/** - FORTH language interpreter (deprecated, files retained but excluded from build)
+* **devices/vga32/** - VGA32 AdvancedTerminal firmware, build scripts, and OTIO documentation
+* **otio_stub.py** - OTIO peer stub for the simulator (no VGA32 hardware)
 * **roms/** - Binary files
   * **system/** - Microcode EEPROMs, unified kernel ROM (kernel + P-Machine + editor + compiler)
   * **apps/asm/** - Assembly app binaries (compiled from `apps/*.asm`)
@@ -109,35 +115,40 @@ This repository houses the complete design files and software components for the
 ## Otto simulator
 
 Otto Simulator is a Python application that emulates Otto's hardware architecture. The simulator uses the same kernel and implements the identical instruction set as the physical device.
-To run the simulator, use the following command:
+
+**Terminal options:**
+
+| Mode | Command |
+|------|---------|
+| Local stdin/stdout | `python simulate.py` |
+| Virtual serial (minicom) | `python simulate.py --simulate-serial` |
+| **VGA32 AdvancedTerminal** (recommended) | `python simulate.py --serial-device /dev/cu.usbserial-XXXX` |
+
+With `--serial-device`, the emulated ACIA is mapped to a USB serial adapter connected to the VGA32 Otto UART. The kernel menu, VT100 output, and PS/2 keyboard on the VGA board behave like a real Otto session. Flash firmware with `devices/vga32/build.sh upload` and read `devices/vga32/README.md` for wiring and F12/F11 settings.
+
+**Mac-as-Otto (no CPU board):** the same flag lets you develop against a real VGA32 while the kernel runs only in the simulator — useful before the level shifter and Otto serial are wired.
+
 ```bash
-python ./simulate.py
-```
+source .venv/bin/activate
 
-The simulator can also communicate through a virtual serial port, allowing you to use terminal emulators like minicom - just as you would with the actual Otto hardware:
-```bash
-python ./simulate.py --simulate-serial
-```
+# Interactive kernel on the VGA display
+python simulate.py --serial-device /dev/cu.usbserial-XXXX
 
-Alternatively, map the emulated ACIA to a **real serial device** (e.g. a USB–FTDI adapter connected to a VGA32 AdvancedTerminal). Kernel I/O goes over that port instead of stdin/stdout:
-
-```bash
-# Interactive kernel menu on the external terminal (PS/2 keyboard → serial → Otto)
-python ./simulate.py --serial-device /dev/cu.usbserial-A50285BI
-
-# Load a program and use the kernel menu on the external terminal
-python ./simulate.py --serial-device /dev/cu.usbserial-A50285BI --program roms/apps/asm/helloworld.bin
+# Load a program; use 'r' + Enter on the VGA keyboard to run it
+python simulate.py --serial-device /dev/cu.usbserial-XXXX \
+  --program roms/apps/asm/helloworld.bin
 
 # Autorun: send 'r'+CR on the serial line and exit when the app returns
-python ./simulate.py --serial-device /dev/cu.usbserial-A50285BI \
+python simulate.py --serial-device /dev/cu.usbserial-XXXX \
   --autorun --program roms/apps/asm/helloworld.bin --max-cycles 1000000
 ```
 
-Use `ls /dev/cu.*` to find your adapter. `--serial-device` and `--simulate-serial` are mutually exclusive. Baud rate defaults to 115200 (`--serial-baud` to override). Omit `--quiet` when using the interactive kernel menu on an external display. See `devices/vga32/README.md` for VGA32 wiring.
+Use `ls /dev/cu.*` to find your adapter. `--serial-device` and `--simulate-serial` are mutually exclusive. Baud rate defaults to 115200 (`--serial-baud` to override).
 
-The simulator can also load a specific binary file in the memory and monitor it for updates.
+The simulator can also load a binary and watch the file for changes (interactive local mode):
+
 ```bash
-python ./simulate.py --program roms/apps/asm/_test_.bin
+python simulate.py --program roms/apps/asm/_test_.bin
 ```
 
 ### Headless mode
@@ -151,15 +162,31 @@ python ./simulate.py --autorun --program roms/apps/asm/helloworld.bin --max-cycl
 Available flags:
 * `--headless` - Run without TTY (no stdin, no termios)
 * `--autorun` - Automatically execute the loaded program after kernel boot (implies `--headless`)
-* `--max-cycles N` - Safety limit on CPU cycles to prevent infinite loops
+* `--max-cycles N` - Safety limit on CPU cycles to prevent infinite loops (0 = unlimited)
 * `--quiet` - Suppress kernel output, show only application output
-* `--dump-regs <file>` - Save CPU registers, flags, cycle count and stop reason to a JSON file on exit
-* `--serial-device <path>` - Use a real serial port for ACIA I/O (e.g. `/dev/cu.usbserial-A50285BI`)
-* `--serial-baud N` - Baud rate for `--serial-device` (default: 115200)
-* `--simulate-serial` - Create a virtual serial port pair for minicom
+* `--dump-regs <file>` - Save CPU registers, flags, cycle count, stop reason, and OTIO kernel variables to JSON on exit
 * `--input '...'` - Pre-load keyboard/serial input after boot (use `\r` for CR)
+* `--serial-device <path>` - Real serial port for ACIA I/O (VGA32 Otto UART)
+* `--serial-baud N` - Baud rate for `--serial-device` (default: 115200)
+* `--simulate-serial` - Virtual serial port pair for minicom
+* `--otio-stub` - Emulate the VGA32 OTIO peer on stdout (no hardware; SD layout from `--otio-root`)
+* `--otio-stub-no-sd` - Like `--otio-stub` but peer reports no SD card
+* `--otio-root <dir>` - Host folder mapped to SD `/otto/` for the stub (default: `roms`)
+* `--otio-test` - Headless OTIO check: requires `--serial-device`, sends `t`+CR (unless `--input` is set), validates OTIO state in kernel RAM after VGA32 responds
 
-Exit codes: `0` = program completed, `1` = timeout, `2` = execution error. Use `--dump-regs` to inspect the full CPU state (including `OUT` register value) after execution.
+Exit codes: `0` = success (or OTIO test passed), `1` = timeout / OTIO test failed, `2` = execution error.
+
+**OTIO testing (work in progress):**
+
+```bash
+# Software only — stub answers PING/LIST/GET from roms/apps/...
+python simulate.py --otio-stub --input $'t\r'
+
+# Simulator kernel + real VGA32 over FTDI (VGA32 must be booted first)
+python simulate.py --otio-test --serial-device /dev/cu.usbserial-XXXX
+```
+
+On real Otto hardware (when wired): kernel menu `t` (ping), `l apps/asm` (list), `g helloworld.bin` (load). Protocol details: `devices/vga32/OTIO.md`.
 
 <img src="media/otto-kernel.png" width="600">
 
@@ -281,7 +308,9 @@ pip install watchdog
 
 # Serial communication
 
-I use minicom to communicate with Otto and upload files using XMODEM protocol.
+**Console:** day-to-day development uses the VGA32 AdvancedTerminal (`devices/vga32/`). A second USB serial adapter (FTDI) on the VGA32 Otto UART is used for simulator `--serial-device` / `--otio-test`, or will connect Otto CPU ↔ VGA32 once the level shifter is installed.
+
+For direct Otto CPU upload and minicom (kernel ROM workflow, XMODEM):
 
 ```sh
 ls /dev/cu*
