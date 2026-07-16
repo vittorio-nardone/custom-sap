@@ -22,7 +22,7 @@
 #   PORT          USB serial port for upload (default: /dev/cu.usbserial-5B212326931)
 #
 # SdCardTest uses FabGL FileBrowser (works with ESP32 core 1.0.6 and 2.x).
-# Project default is 2.0.17 (AdvancedTerminal / OTIO). For SD-only experiments
+# Project default is 2.0.17 (AdvancedTerminal). For SD-only experiments
 # on stubborn boards, optional: arduino-cli core install esp32:esp32@1.0.6
 
 set -euo pipefail

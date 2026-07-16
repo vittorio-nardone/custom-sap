@@ -107,20 +107,7 @@
 #const XMODEM_RETRY_COUNTER2  = 0x833E  ; 1 byte
 #const XMODEM_BLOCK_FLAG      = 0x833F  ; 1 byte
 
-; --- 0x8283-0x82FE: OTIO protocol (otio.asm) -----------------
-#const OTIO_FRAME_PATH_LEN    = 0x8283  ; list path bytes in FRAME_BUFFER
-#const OTIO_PEER_CFG         = 0x8284  ; 0=auto 1=off 2=on
-#const OTIO_PEER_STATUS      = 0x8285  ; 0=none 1=otio
-#const OTIO_CAPS              = 0x8286  ; bit0=SD bit1=folders
-#const OTIO_FILE_HANDLE       = 0x8287  ; 1 byte
-#const OTIO_FILE_SIZE         = 0x8288  ; 4 bytes LE (8288-828b)
-#const OTIO_FILE_OFFSET       = 0x828C  ; 4 bytes LE (828c-828f)
-#const OTIO_CHUNK_SEQ        = 0x8290  ; 1 byte (shares first byte of chunk buf)
-#const OTIO_CHUNK_BUFFER      = 0x8290  ; 64 bytes (8290-82cf)
-#const OTIO_CWD               = 0x82D0  ; 47 bytes + null (82d0-82fe)
-; --- 0x834E-0x837C: OTIO path line input (otio.asm) ----------
-#const OTIO_PATH_INPUT        = 0x834E  ; 47 bytes (834e-837c)
-#const OTIO_FRAME_BUFFER      = 0x837D  ; 121 bytes (837d-83f5)
+; --- 0x8284-0x83F5: free (formerly OTIO) ----------------------
 
 ; --- 0x8340-0x834D: Utility variables (utils.asm) ------------
 #const BINDEC32_VALUE  = 0x8340  ; 4 bytes (0x8340-0x8343)

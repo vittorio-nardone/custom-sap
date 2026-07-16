@@ -1,21 +1,23 @@
 /*
- * OTIO SD storage under /otto/
+ * VGA32 microSD (FabGL HSPI). Disabled when OTTO_SD_ENABLED=0 in otto_config.h.
  */
 #pragma once
 
 #include <stddef.h>
 #include <stdint.h>
-#include "otto_proto.h"
 
-#define OTIO_SD_ROOT "/SD/otto"
+#define VGA_SD_ROOT "/SD/vga"
 
-#define OTIO_LIST_TYPE_FILE 1
-#define OTIO_LIST_TYPE_DIR  2
+#define VGA_SD_NAME_MAX 24
+#define VGA_SD_PATH_MAX 47
 
-struct OttoListEntry {
+#define VGA_SD_LIST_TYPE_FILE 1
+#define VGA_SD_LIST_TYPE_DIR  2
+
+struct VgaSdListEntry {
   uint8_t type;
   uint8_t nameLen;
-  char    name[OTIO_NAME_MAX + 1];
+  char    name[VGA_SD_NAME_MAX + 1];
 };
 
 class OttoSd {
@@ -31,10 +33,9 @@ public:
   bool probePresent();
   void release();
 
-  /** When true, release() is a no-op (SD browser UI holds the mount). */
   static void setUiHold(bool hold);
 
-  bool list(char const * relPath, uint16_t offset, OttoListEntry * out, int maxOut, int * outCount, bool * eof);
+  bool list(char const * relPath, uint16_t offset, VgaSdListEntry * out, int maxOut, int * outCount, bool * eof);
   bool open(char const * relPath, uint8_t * handle, uint32_t * size);
   bool read(uint8_t handle, uint32_t offset, uint8_t * buf, uint8_t len, uint8_t * outLen);
   void close(uint8_t handle);
@@ -43,7 +44,7 @@ private:
   bool ensureMounted();
 
   bool     m_mounted   = false;
-  bool     m_sdKnown   = false;
+  bool     m_sdKnown     = false;
   int      m_csPin     = 13;
   static constexpr int MAX_HANDLES = 2;
 
@@ -57,5 +58,5 @@ private:
   bool validatePath(char const * relPath) const;
   bool buildAbs(char const * rel, char * out, size_t outLen) const;
   int  findFreeHandle();
-  static int strcasecmp_otio(char const * a, char const * b);
+  static int strcasecmp_path(char const * a, char const * b);
 };

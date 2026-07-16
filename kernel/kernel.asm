@@ -52,8 +52,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.158"
-#const KERNEL_BUILDDATE = "06/29/2026"
+#const KERNEL_VERSION = "v1.2.162"
+#const KERNEL_BUILDDATE = "07/16/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -67,7 +67,6 @@
 #include "interrupt.asm"
 #include "random.asm"
 #include "xmodem.asm"
-#include "otio.asm"
 #include "vt100.asm"
 #include "../pascal/pmachine.asm"
 
@@ -104,13 +103,6 @@ main:
     ; Seed random number generator
     jsr RANDOM_SEED
 
-    lda OTIO_PEER_AUTO
-    sta OTIO_PEER_CFG
-    lda 0x00
-    sta OTIO_PEER_STATUS
-
-    ; OTIO peer probe deferred — first PING on t/l/g (OTIO_CHECK_PEER).
-
 .init:
     lda 0x00
     sta MAIN_MENU_STATUS
@@ -120,7 +112,7 @@ main:
     lda 0x00
     sta MAIN_MENU_ADDR_LSB
 
-.ready:
+menu_ready:
     jsr ACIA_SEND_NEWLINE
     lda 0x00
     sta MAIN_MENU_INPUT_BUFFER_COUNT
@@ -229,19 +221,11 @@ main:
     beq .menu_run_command
     cmp "h"
     beq .menu_help_command
-    cmp "l"
-    beq .menu_otio_list_command
-    cmp "c"
-    beq .menu_otio_cd_command
-    cmp "g"
-    beq .menu_otio_get_command
-    cmp "t"
-    beq .menu_otio_term_command
 .menu_show_error:
     ldd .menu_error_msg[15:8]
     lde .menu_error_msg[7:0]
     jsr ACIA_SEND_STRING
-    jmp .ready    
+    jmp menu_ready    
 
 .menu_show_help:
     ldd .menu_help_msg[15:8]
@@ -260,7 +244,7 @@ main:
     lda ")"
     jsr ACIA_SEND_CHAR
     jsr ACIA_SEND_NEWLINE
-    jmp .ready
+    jmp menu_ready
 
 .menu_help_command:
     ldd .menu_help_msg[15:8]
@@ -269,212 +253,7 @@ main:
     ldd .menu_adv_help_msg[15:8]
     lde .menu_adv_help_msg[7:0]
     jsr ACIA_SEND_STRING
-    lda OTIO_PEER_STATUS
-    beq .menu_help_done
-    ldd .menu_otio_help_msg[15:8]
-    lde .menu_otio_help_msg[7:0]
-    jsr ACIA_SEND_STRING
-.menu_help_done:
-    jmp .ready
-
-.menu_otio_term_command:
-    ldx MAIN_MENU_INPUT_BUFFER_COUNT
-    cpx 0x01
-    beq .menu_otio_term_probe
-    cpx 0x02
-    bne .menu_show_error
-    lda MAIN_MENU_INPUT_BUFFER + 1
-    cmp "0"
-    beq .menu_otio_term_off
-    cmp "1"
-    beq .menu_otio_term_auto
-    cmp "2"
-    beq .menu_otio_term_on
-    jmp .menu_show_error
-.menu_otio_term_off:
-    lda OTIO_PEER_OFF
-    sta OTIO_PEER_CFG
-    lda 0x00
-    sta OTIO_PEER_STATUS
-    jmp .menu_otio_term_show
-.menu_otio_term_auto:
-    lda OTIO_PEER_AUTO
-    sta OTIO_PEER_CFG
-    jsr OTIO_PING
-    cmp 0x01
-    bne .menu_otio_term_no
-    lda OTIO_PEER_OTIO
-    sta OTIO_PEER_STATUS
-    jmp .menu_otio_term_show
-.menu_otio_term_on:
-    lda OTIO_PEER_ON
-    sta OTIO_PEER_CFG
-    lda OTIO_PEER_OTIO
-    sta OTIO_PEER_STATUS
-    jsr OTIO_PING
-    jmp .menu_otio_term_show
-.menu_otio_term_no:
-    lda 0x00
-    sta OTIO_PEER_STATUS
-.menu_otio_term_probe:
-    jsr OTIO_INIT_PEER
-.menu_otio_term_show:
-    ldd .menu_otio_term_msg[15:8]
-    lde .menu_otio_term_msg[7:0]
-    jsr ACIA_SEND_STRING
-    lda OTIO_PEER_CFG
-    beq .menu_otio_term_auto_l
-    cmp OTIO_PEER_OFF
-    beq .menu_otio_term_off_l
-    ldd .menu_otio_term_on_lbl[15:8]
-    lde .menu_otio_term_on_lbl[7:0]
-    jmp .menu_otio_term_sd
-.menu_otio_term_auto_l:
-    ldd .menu_otio_term_auto_lbl[15:8]
-    lde .menu_otio_term_auto_lbl[7:0]
-    jmp .menu_otio_term_sd
-.menu_otio_term_off_l:
-    ldd .menu_otio_term_off_lbl[15:8]
-    lde .menu_otio_term_off_lbl[7:0]
-.menu_otio_term_sd:
-    jsr ACIA_SEND_STRING
-    lda OTIO_PEER_STATUS
-    beq .menu_otio_term_nopeer
-    ldd .menu_otio_peer_yes[15:8]
-    lde .menu_otio_peer_yes[7:0]
-    jsr ACIA_SEND_STRING
-    lda OTIO_CAPS
-    and OTIO_CAP_SD
-    beq .menu_otio_term_sdno
-    ldd .menu_otio_sd_yes[15:8]
-    lde .menu_otio_sd_yes[7:0]
-    jmp .menu_otio_term_sdprt
-.menu_otio_term_nopeer:
-    ldd .menu_otio_peer_no[15:8]
-    lde .menu_otio_peer_no[7:0]
-    jmp .menu_otio_term_sdprt
-.menu_otio_term_sdno:
-    ldd .menu_otio_sd_no[15:8]
-    lde .menu_otio_sd_no[7:0]
-.menu_otio_term_sdprt:
-    jsr ACIA_SEND_STRING
-    jmp .ready
-
-.menu_otio_list_command:
-    jsr OTIO_CHECK_SD
-    bcs .ready
-    lda 0x00
-    sta OTIO_PATH_INPUT
-    lda 0x01
-    sta MATH16_WORK + 1
-    lda 0x00
-    sta MATH16_WORK
-.menu_otio_list_copy:
-    ldx MATH16_WORK + 1
-    cpx MAIN_MENU_INPUT_BUFFER_COUNT
-    bcs .menu_otio_list_go
-    lda MAIN_MENU_INPUT_BUFFER,x
-    pha
-    ldx MATH16_WORK
-    pla
-    sta OTIO_PATH_INPUT,x
-    inc MATH16_WORK
-    inc MATH16_WORK + 1
-    jmp .menu_otio_list_copy
-.menu_otio_list_go:
-    ldx MATH16_WORK
-    lda 0x00
-    sta OTIO_PATH_INPUT,x
-    jsr OTIO_SET_CWD
-    jsr OTIO_FRAME_PATH_FROM_MENU
-    jsr OTIO_PRINT_LIST_HDR
-    jsr OTIO_LIST_PRINT
-    jsr ACIA_FLUSH_RX
-    jmp .ready
-
-.menu_otio_cd_command:
-    jsr OTIO_CHECK_PEER
-    bcs .ready
-    lda 0x00
-    sta OTIO_PATH_INPUT
-    ldx MAIN_MENU_INPUT_BUFFER_COUNT
-    cpx 0x01
-    beq .menu_otio_cd_set
-    ldx 0x00
-.menu_otio_cd_copy:
-    inx
-    cpx MAIN_MENU_INPUT_BUFFER_COUNT
-    bcs .menu_otio_cd_set
-    lda MAIN_MENU_INPUT_BUFFER,x
-    dex
-    sta OTIO_PATH_INPUT,x
-    inx
-    jmp .menu_otio_cd_copy
-.menu_otio_cd_set:
-    jsr OTIO_SET_CWD
-    jmp .ready
-
-.menu_otio_get_command:
-    jsr OTIO_CHECK_SD
-    bcs .ready
-    jsr .menu_read_address
-    bcs .menu_show_error
-    lda 0x00
-    sta OTIO_PATH_INPUT
-    ldx MAIN_MENU_INPUT_BUFFER_COUNT
-    cpx 0x01
-    beq .menu_otio_get_prompt
-    cpx 0x05
-    bcc .menu_otio_get_short
-    cpx 0x07
-    bcc .menu_otio_get_mid
-.menu_otio_get_long:
-    lda 0x05
-    sta MATH16_WORK + 1
-    lda 0x00
-    sta MATH16_WORK
-    jmp .menu_otio_get_copy
-.menu_otio_get_mid:
-    lda 0x05
-    sta MATH16_WORK + 1
-    lda 0x00
-    sta MATH16_WORK
-    jmp .menu_otio_get_copy
-.menu_otio_get_short:
-    lda 0x01
-    sta MATH16_WORK + 1
-    lda 0x00
-    sta MATH16_WORK
-.menu_otio_get_copy:
-    ldx MATH16_WORK + 1
-    cpx MAIN_MENU_INPUT_BUFFER_COUNT
-    bcs .menu_otio_get_prompt
-    lda MAIN_MENU_INPUT_BUFFER,x
-    pha
-    ldx MATH16_WORK
-    pla
-    sta OTIO_PATH_INPUT,x
-    inc MATH16_WORK
-    inc MATH16_WORK + 1
-    ldx MATH16_WORK
-    cpx OTIO_PATH_MAX
-    bcc .menu_otio_get_copy
-    lda 0x00
-    sta OTIO_PATH_INPUT,x
-    jmp .menu_otio_get_load
-.menu_otio_get_prompt:
-    lda OTIO_PATH_INPUT
-    bne .menu_otio_get_load
-    ldd .menu_otio_file_prompt[15:8]
-    lde .menu_otio_file_prompt[7:0]
-    jsr ACIA_SEND_STRING
-    jsr OTIO_READ_LINE
-.menu_otio_get_load:
-    sty MAIN_MENU_ADDR_PAGE
-    std MAIN_MENU_ADDR_MSB
-    ste MAIN_MENU_ADDR_LSB
-    jsr OTIO_LOAD_FILE
-    jmp .ready
+    jmp menu_ready
 
 ; --------------------------------------
 
@@ -486,12 +265,8 @@ main:
     beq .menu_read_address_len5
     cmp 0x07
     beq .menu_read_address_len7
-    cmp 0x06
-    bcc .menu_show_error
-    lda MAIN_MENU_INPUT_BUFFER
-    cmp "g"
-    bne .menu_show_error
-    jmp .menu_read_address_len5
+    sec
+    rts
 
 .menu_read_address_len7:
     lda MAIN_MENU_INPUT_BUFFER + 1
@@ -626,7 +401,7 @@ main:
     inc MAIN_MENU_DUMP_COUNT
     lda MAIN_MENU_DUMP_COUNT
     cmp 0x10
-    beq .ready
+    beq menu_ready
     
     tea
     clc
@@ -701,7 +476,7 @@ main:
 .menu_upload_done:
     lda 0x00
     sta MAIN_MENU_STATUS
-    jmp .ready
+    jmp menu_ready
 
 .menu_run_command:
     jsr .menu_read_address
@@ -716,7 +491,7 @@ main:
     lde .menu_run_command_end_msg[7:0]
     jsr ACIA_SEND_STRING
 
-    jmp .ready
+    jmp menu_ready
 
 .menu_help_msg:
     #d 0x0A, 0x0D, 0x0A, 0x0D
@@ -726,33 +501,7 @@ main:
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
     #d "   h        - show Help", 0x0A, 0x0D
-    #d "   t        - Terminal/OTIO config", 0x0A, 0x0D
     #d 0x00
-
-.menu_otio_help_msg:
-    #d "   l[path]  - List SD directory", 0x0A, 0x0D
-    #d "   c[path]  - Change SD directory", 0x0A, 0x0D
-    #d "   g[path]  - Get file from SD", 0x0A, 0x0D
-    #d 0x00
-
-.menu_otio_term_msg:
-    #d 0x0A, 0x0D, "Terminal: ", 0x00
-.menu_otio_term_auto_lbl:
-    #d "auto", 0x00
-.menu_otio_term_off_lbl:
-    #d "off", 0x00
-.menu_otio_term_on_lbl:
-    #d "otio", 0x00
-.menu_otio_peer_yes:
-    #d " (OTIO: yes)", 0x00
-.menu_otio_peer_no:
-    #d " (OTIO: no)", 0x0A, 0x0D, 0x00
-.menu_otio_sd_yes:
-    #d " SD: yes", 0x0A, 0x0D, 0x00
-.menu_otio_sd_no:
-    #d " SD: no", 0x0A, 0x0D, 0x00
-.menu_otio_file_prompt:
-    #d "File? ", 0x00
 
 .menu_adv_help_msg:    
     #d 0x0A, 0x0D

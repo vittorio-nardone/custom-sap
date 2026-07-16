@@ -1,4 +1,5 @@
 #include "otto_sd.h"
+#include "otto_config.h"
 #include "fabgl.h"
 #include <cstring>
 #include <dirent.h>
@@ -6,7 +7,9 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-#define OTIO_VFS_MOUNT "/SD"
+#define VGA_SD_VFS_MOUNT "/SD"
+
+#if OTTO_SD_ENABLED
 
 namespace {
 
@@ -44,7 +47,7 @@ static const PinCfg PIN_FALLBACKS[] = {
   { 16, 12, 14, 13 },
 };
 
-static int strcasecmp_otio(char const * a, char const * b) {
+static int strcasecmp_path(char const * a, char const * b) {
   while (*a && *b) {
     char ca = *a;
     char cb = *b;
@@ -105,12 +108,16 @@ bool OttoSd::ensureMounted() {
     spi_bus_free(HSPI_HOST);
 
     if (fabgl::FileBrowser::mountSDCard(
-            false, OTIO_VFS_MOUNT, 4, 16 * 1024,
+            false, VGA_VFS_MOUNT, 4, 16 * 1024,
             tries[i].miso, tries[i].mosi, tries[i].clk, tries[i].cs)) {
       s_workingPins = tries[i];
       s_pinsKnown     = true;
       m_mounted       = true;
+#if OTTO_UART_ON_HEADER
+      fabgl::FileBrowser::setSDCardMaxFreqKHz(4000);
+#else
       fabgl::FileBrowser::setSDCardMaxFreqKHz(10000);
+#endif
       return true;
     }
   }
@@ -128,7 +135,7 @@ bool OttoSd::tryMount() {
 bool OttoSd::checkSdReady() {
   if (!tryMount())
     return false;
-  DIR * dir = opendir(OTIO_SD_ROOT);
+  DIR * dir = opendir(VGA_SD_ROOT);
   bool ok = (dir != nullptr);
   if (dir)
     closedir(dir);
@@ -154,7 +161,7 @@ void OttoSd::release() {
 bool OttoSd::probePresent() {
   if (!ensureMounted())
     return false;
-  DIR * dir = opendir(OTIO_SD_ROOT);
+  DIR * dir = opendir(VGA_SD_ROOT);
   bool ok = (dir != nullptr);
   if (dir)
     closedir(dir);
@@ -162,7 +169,7 @@ bool OttoSd::probePresent() {
   return ok;
 }
 
-int OttoSd::strcasecmp_otio(char const * a, char const * b) {
+int OttoSd::strcasecmp_path(char const * a, char const * b) {
   while (*a && *b) {
     char ca = *a;
     char cb = *b;
@@ -183,7 +190,7 @@ static void sortListItems(ListItem * items, int n, int start) {
           items[i] = items[j];
           items[j] = t;
         }
-      } else if (strcasecmp_otio(items[i].name, items[j].name) > 0) {
+      } else if (strcasecmp_path(items[i].name, items[j].name) > 0) {
         ListItem t = items[i];
         items[i] = items[j];
         items[j] = t;
@@ -194,14 +201,14 @@ static void sortListItems(ListItem * items, int n, int start) {
 bool OttoSd::validatePath(char const * relPath) const {
   if (!relPath)
     return false;
-  if (strlen(relPath) > OTIO_PATH_MAX)
+  if (strlen(relPath) > VGA_SD_PATH_MAX)
     return false;
   int depth = 0;
   int segLen = 0;
   for (char const * p = relPath; ; ++p) {
     char c = *p;
     if (c == 0 || c == '/') {
-      if (segLen > OTIO_NAME_MAX)
+      if (segLen > VGA_SD_NAME_MAX)
         return false;
       if (segLen > 0)
         ++depth;
@@ -222,9 +229,9 @@ bool OttoSd::validatePath(char const * relPath) const {
 bool OttoSd::buildAbs(char const * rel, char * out, size_t outLen) const {
   if (!validatePath(rel ? rel : ""))
     return false;
-  if (strlen(OTIO_SD_ROOT) + 1 + strlen(rel ? rel : "") >= outLen)
+  if (strlen(VGA_SD_ROOT) + 1 + strlen(rel ? rel : "") >= outLen)
     return false;
-  strcpy(out, OTIO_SD_ROOT);
+  strcpy(out, VGA_SD_ROOT);
   if (rel && rel[0]) {
     strcat(out, "/");
     strcat(out, rel);
@@ -239,7 +246,7 @@ int OttoSd::findFreeHandle() {
   return -1;
 }
 
-bool OttoSd::list(char const * relPath, uint16_t offset, OttoListEntry * out, int maxOut, int * outCount, bool * eof) {
+bool OttoSd::list(char const * relPath, uint16_t offset, VgaSdListEntry * out, int maxOut, int * outCount, bool * eof) {
   *outCount = 0;
   *eof = true;
   if (!ensureMounted())
@@ -290,10 +297,10 @@ bool OttoSd::list(char const * relPath, uint16_t offset, OttoListEntry * out, in
 
   int added = 0;
   while (idx < n && added < maxOut) {
-    out[added].type = s_listItems[idx].isDir ? OTIO_LIST_TYPE_DIR : OTIO_LIST_TYPE_FILE;
+    out[added].type = s_listItems[idx].isDir ? VGA_SD_LIST_TYPE_DIR : VGA_SD_LIST_TYPE_FILE;
     out[added].nameLen = (uint8_t)strlen(s_listItems[idx].name);
-    strncpy(out[added].name, s_listItems[idx].name, OTIO_NAME_MAX);
-    out[added].name[OTIO_NAME_MAX] = 0;
+    strncpy(out[added].name, s_listItems[idx].name, VGA_SD_NAME_MAX);
+    out[added].name[VGA_SD_NAME_MAX] = 0;
     ++added;
     ++idx;
   }
@@ -361,3 +368,42 @@ void OttoSd::close(uint8_t handle) {
   if (handle < MAX_HANDLES)
     m_handles[handle].used = false;
 }
+
+#else
+
+void OttoSd::begin(int) {
+  m_mounted  = false;
+  m_sdKnown  = false;
+}
+
+bool OttoSd::sdSharesUartTx() {
+  return fabgl::getChipPackage() == fabgl::ChipPackage::ESP32PICOD4;
+}
+
+void OttoSd::setUartHooks(void (*)( ), void (*)( )) {}
+
+bool OttoSd::tryMount() { return false; }
+
+bool OttoSd::checkSdReady() { return false; }
+
+bool OttoSd::probePresent() { return false; }
+
+void OttoSd::setUiHold(bool) {}
+
+void OttoSd::release() {}
+
+bool OttoSd::list(char const *, uint16_t, VgaSdListEntry *, int, int *, bool *) {
+  return false;
+}
+
+bool OttoSd::open(char const *, uint8_t *, uint32_t *) {
+  return false;
+}
+
+bool OttoSd::read(uint8_t, uint32_t, uint8_t *, uint8_t, uint8_t *) {
+  return false;
+}
+
+void OttoSd::close(uint8_t) {}
+
+#endif

@@ -29,6 +29,7 @@
 #include <Preferences.h>
 
 #include "fabui.h"
+#include "otto_config.h"
 #include "uistyle.h"
 #include "progsdialog.h"
 #include "restartdialog.h"
@@ -38,7 +39,7 @@ Preferences preferences;
 
 
 #define TERMVERSION_MAJ 2
-#define TERMVERSION_MIN 15
+#define TERMVERSION_MIN 20
 
 
 static const char * BAUDRATES_STR[]  = { "110",
@@ -588,7 +589,7 @@ struct ConfDialogApp : public uiApp {
 
   // Default 2 = Otto on PS/2 mouse port (TX=27 RX=26). GPIO 2 stays SD MISO only.
   static int getUARTPortIndex() {
-    return preferences.getInt(PREF_UARTPORT, 2);
+    return preferences.getInt(PREF_UARTPORT, OTTO_UART_PORT_DEFAULT);
   }
 
 

@@ -26,9 +26,65 @@ Other Otto serial signals (for reference):
 | RTS | Not connected |
 | DCD | Tie to GND if not used |
 
-## Level shifter → ESP32 (FabGL UART) — default: PS/2 mouse port
+### Wrong silkscreen on the 2×4 serial header (some boards)
 
-Firmware default (F12 → Serial port): **`PS/2 Mouse: TX=27 RX=26`**. Otto uses the **mouse** mini-DIN on the VGA32 board so **GPIO 2 stays free for the SD card** (MISO on PICO-D4 boards).
+On some TTGO VGA32 boards the **2×4 pin header** (two rows of four pins) has silkscreen that does **not** match the physical rows: the **labels apply to the opposite row** from where they are printed. A pin marked `3V3` on the top row may be on the bottom row electrically, and vice versa for `GND`, `IO2`, `IO34`, etc.
+
+Symptoms:
+
+- Multimeter shows **inverted polarity** between the pins marked 3V3 and GND (if you probe the row the silkscreen points at)
+- Level shifter wired “by the labels” → Otto silent (local VGA echo only, no `>` prompt, OUT unchanged)
+- Otto works fine on a PC with minicom (Otto itself is OK)
+
+**Do not trust row position or silkscreen — verify every pin with a meter.**
+
+```
+Silkscreen (wrong row association on some boards):
+
+     [ 3V3 ] [ IO2 ] [ IO34 ] [ ... ]   ← labels printed here
+     [ GND ] [ ... ] [ ...  ] [ ... ]   ← but signals may be on THIS row instead
+```
+
+With the board powered via USB (black COM probe on USB shell / programming-port GND):
+
+| Find | Reading |
+|------|---------|
+| **GND** | **0 V** |
+| **3V3** (LV shifter) | **+3.3 V** |
+| **GPIO 2** (UART TX) | idles **high (~3.3 V)** — signal, not a power rail |
+| **GPIO 34** (UART RX) | input; often low or floating until Otto sends data |
+
+Probe **each physical pin** on **both rows**; mark the correct ones on the PCB (tape + pen). F12 must still be `FabGL Terminal: TX=2 RX=34` — only the **header pins** you solder to change, not the GPIO assignment.
+
+## Level shifter → ESP32 (FabGL UART)
+
+Firmware build flag in `AdvancedTerminal/otto_config.h`:
+
+| `OTTO_SD_ENABLED` | UART default (F12) | Use case |
+|-------------------|-------------------|----------|
+| **0** (current) | `FabGL Terminal: TX=2 RX=34` | Terminal only — Otto on the 6-pin header; **no SD probe** (avoids GPIO 2 conflict) |
+| **1** | `PS/2 Mouse: TX=27 RX=26` | Experimental SD — Otto on mouse port; GPIO 2 free for SD MISO |
+
+### Terminal-only (`OTTO_SD_ENABLED 0`) — 6-pin header
+
+| Direction | Otto (5 V) | Shifter | ESP32 header |
+|-----------|------------|---------|--------------|
+| Otto → display | Pin **2** TX | HV1 ↔ LV1 | GPIO **34** (RX) |
+| Keyboard → Otto | Pin **3** RX | HV2 ↔ LV2 | GPIO **2** (TX) |
+| Ground | Pin **6** GND | GND | **real GND** (0 V vs USB — ignore wrong silkscreen) |
+
+```
+Otto pin 2 (TX)  ─── HV1 ─── LV1 ─── GPIO 34 (RX)
+Otto pin 3 (RX)  ─── HV2 ─── LV2 ─── GPIO 2  (TX)
+Otto pin 6 (GND) ─── GND ─────────── real GND on header (verify with meter)
+TTGO 3.3 V       ─── LV  ─────────── real +3.3 V pin (verify with meter)
+```
+
+After reflash, confirm F12 → **FabGL Terminal: TX=2 RX=34**, 115200 8N1, **ANSI**. F11 SD browser is disabled in this build.
+
+### Experimental SD (`OTTO_SD_ENABLED 1`) — PS/2 mouse port
+
+Otto uses the **mouse** mini-DIN so **GPIO 2 stays free for the SD card** (MISO on PICO-D4 boards).
 
 | Direction | Otto (5 V) | Shifter | ESP32 PS/2 mouse |
 |-----------|------------|---------|------------------|
@@ -46,14 +102,7 @@ TTGO 3.3 V       ─── LV
 
 PS/2 mouse pinout (socket on PCB, front view): **1** = DATA (27), **3** = GND, **5** = CLK (26). Do not use pin **4** (+5 V from the board) for the level shifter — power HV from Otto 5 V.
 
-### Legacy: 6-pin header (GPIO 2 / 34)
-
-| Direction | ESP32 |
-|-----------|--------|
-| Otto TX → ESP32 RX | GPIO **34** |
-| Otto RX ← ESP32 TX | GPIO **2** (shares SD MISO — avoid for OTIO + SD) |
-
-Select `FabGL Terminal: TX=2 RX=34` in F12 only for temporary FTDI/simulator use without SD access.
+Set `#define OTTO_SD_ENABLED 1` in `otto_config.h`, reflash, copy **`roms/apps/`** → **`otto/apps/`** on the microSD (FAT32).
 
 ## FabGL terminal settings
 
@@ -66,8 +115,8 @@ Press **F12** on the VGA display (or use defaults after **CTRL+ALT+F12** reset):
 | Columns / Rows | **Max** (fill viewport) |
 | Terminal type | **ANSI** (native VT100/CSI — best match for Otto) |
 | Keyboard layout | **Italian** |
-| Serial port | **`PS/2 Mouse: TX=27 RX=26`** (Otto default) |
-| SD browser | **F11** — read-only browse of `otto/` on microSD |
+| Serial port | **`FabGL Terminal: TX=2 RX=34`** (terminal-only build) or **`PS/2 Mouse: TX=27 RX=26`** (SD build) |
+| SD browser | **F11** — only when `OTTO_SD_ENABLED 1` in `otto_config.h` |
 | Baud rate | 115200 |
 | Data / parity / stop | 8 / None / 1 |
 | Flow control | None |
@@ -129,7 +178,7 @@ On TTGO VGA32, the SD card uses **HSPI** via FabGL:
 | CLK | **14** | |
 | MISO | **2** or **35** | **2** on ESP32-PICO-D4 (most TTGO VGA32 boards); **35** on ESP32-D0WDQ5 WROVER |
 
-FabGL picks MISO from the chip package (eFuse). If your board reports `MISO=2`, you have **PICO-D4** wiring — that is correct. **GPIO 2 is also UART TX to Otto**; OTIO must pause UART before mounting SD and restore it before sending OTIO replies. Do not call `SD.begin(cs)` on the default VSPI bus (shares VGA pins 18/19/23).
+FabGL picks MISO from the chip package (eFuse). If your board reports `MISO=2`, you have **PICO-D4** wiring — that is correct. **GPIO 2 is also UART TX to Otto**; when SD is enabled, firmware pauses UART before mounting SD and restores it afterward. Do not call `SD.begin(cs)` on the default VSPI bus (shares VGA pins 18/19/23).
 
 ### SD card vs UART on GPIO 2 (critical on TTGO VGA32)
 
@@ -142,9 +191,9 @@ On PICO-D4 boards, **GPIO 2 = SD MISO and UART TX** (Otto / FTDI on pin 34+2).
 
 For **SdCardTest** or **FabGL HardwareTest**, disconnect or power off the **second** USB serial adapter (FTDI) on GPIO 2/34 before testing the microSD. The TTGO programming port (GPIO 1/3) is unrelated.
 
-When running **OTIO** with Otto attached, AdvancedTerminal pauses UART on GPIO 2 during `l` / `g`; if the external adapter still drives the line, SD may still fail — prefer Otto + shifter without a parallel FTDI on the same pins, or power down the debug adapter during SD access.
+When SD is enabled with Otto on GPIO 2, disconnect or power off any parallel FTDI on the same pins during F11 browser use.
 
-Card layout on SD (FAT32): copy **`roms/apps/`** to **`otto/apps/`** at the card root (mounted as `/SD/otto` on the ESP32). The simulator `--otio-stub` uses the same paths with default root `roms/`.
+Card layout on SD (FAT32, experimental): use `/SD/vga/` on the card (F11 browser root). Otto program transfer is planned via CH376S on Otto serial 2, not via VGA32 SD.
 
 
 ## Simulator + VGA32 (Mac as Otto)
@@ -163,7 +212,7 @@ Use a **second** USB serial adapter (not the TTGO programming port on GPIO 1/3).
 
 **Simulator tip:** `simulate.py --serial-device` opens the port with `dsrdtr=False` so the Mac does not reset the VGA32 via DTR when the simulator starts. Start AdvancedTerminal first, then the simulator.
 
-**SD + simulator:** While testing the microSD (SdCardTest, HardwareTest, or kernel `l` over OTIO), **disconnect or power off the FTDI** on GPIO 2/34. With the adapter active, SD mount fails even if pins and cards are correct.
+**SD + simulator:** While testing the microSD (SdCardTest or F11 with `OTTO_SD_ENABLED 1`), **disconnect or power off the FTDI** on GPIO 2/34. With the adapter active, SD mount fails even if pins and cards are correct.
 
 
 ```bash
@@ -176,27 +225,17 @@ python simulate.py --serial-device /dev/cu.usbserial-XXXX
 python simulate.py --serial-device /dev/cu.usbserial-XXXX \
   --autorun --program roms/apps/asm/helloworld.bin
 
-# Scripted input after boot (example: help, then quit)
+# Scripted input after boot (example: help)
 python simulate.py --serial-device /dev/cu.usbserial-XXXX \
-  --input $'h\rq\r'
-
-# Automated OTIO test (kernel `t` — VGA32 must be booted first)
-python simulate.py --otio-test --serial-device /dev/cu.usbserial-XXXX
-
-# Other kernel OTIO commands (custom input)
-python simulate.py --headless --max-cycles 50000000 \
-  --serial-device /dev/cu.usbserial-XXXX \
-  --input $'l apps/asm\r'
+  --input $'h\r'
 ```
 
 Replace `/dev/cu.usbserial-XXXX` with your adapter (`ls /dev/cu.*`). Do **not** combine `--serial-device` with `--simulate-serial` (virtual PTY pair for minicom).
 
-For **software-only** OTIO (no VGA32): `python simulate.py --otio-stub --input $'t\r'` (see `otio_stub.py`).
-
-`SdCardTest` is a minimal sketch (no Otto UART) to verify the microSD mounts and list `otto/` on the VGA screen:
+`SdCardTest` is a minimal sketch (no Otto UART) to verify the microSD mounts on the VGA screen:
 
 ```bash
 ./devices/vga32/build.sh upload-sd-test
 ```
 
-Expected on screen: `mountSDCard: OK` and directory listings. If mount fails, fix the SD card (FAT32, inserted) before OTIO. Re-flash AdvancedTerminal when done: `./devices/vga32/build.sh upload`.
+Expected on screen: `mountSDCard: OK` and directory listings. Re-flash AdvancedTerminal when done: `./devices/vga32/build.sh upload`.

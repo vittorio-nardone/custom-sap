@@ -35,7 +35,8 @@
 */
 
 #include "fabgl.h"
-#include "otto_bridge.h"
+#include "otto_config.h"
+#include "otto_sd_host.h"
 
 
 fabgl::BitmappedDisplayController * DisplayController;
@@ -45,13 +46,9 @@ fabgl::SerialPort                   SerialPort;
 fabgl::SerialPortTerminalConnector  SerialPortTerminalConnector;
 
 
-// Otto UART on PS/2 mouse port (TX=27 RX=26) by default — GPIO 2 stays SD MISO only.
-// OTIO pauses UART callbacks during SD access on PICO-D4 boards.
+// UART defaults: see otto_config.h (terminal-only vs SD+PS/2 mouse port).
 #define UART_RTS -1
 #define UART_CTS -1
-
-// TTGO VGA32 onboard SD chip-select (HSPI, same as FabGL FileBrowser)
-#define OTIO_SD_CS 13
 
 
 // settings reset control
@@ -71,10 +68,14 @@ fabgl::SerialPortTerminalConnector  SerialPortTerminalConnector;
 
 
 #include "confdialog.h"
+#if OTTO_SD_ENABLED
 #include "sdbrowserdialog.h"
+#endif
 
+#if OTTO_SD_ENABLED
 // Filled by boot SD probe (before UART init), shown in boot banner.
 static char s_bootSdStatus[96] = "not probed";
+#endif
 
 void setup()
 {
@@ -112,19 +113,15 @@ void setup()
 
   ConfDialogApp::setupDisplay();
 
+#if OTTO_SD_ENABLED
   // Probe the SD card BEFORE the UART claims GPIO 2 (shared SD MISO on
   // PICO-D4). This mirrors the standalone SdCardTest sketch conditions and
   // avoids a UART/SD pin conflict that crashed the board at boot.
-  OttoBridge::instance().probeBootSd(OTIO_SD_CS, s_bootSdStatus, sizeof(s_bootSdStatus));
+  OttoSdHost::probeBoot(VGA_SD_CS, s_bootSdStatus, sizeof(s_bootSdStatus));
+#endif
 
   ConfDialogApp::loadConfiguration();
-
-  // OTIO UART tap before boot banner — serial is live after loadConfiguration()
-  OttoBridge::instance().begin(&SerialPort, &Terminal, &SerialPortTerminalConnector,
-                               TERMVERSION_MAJ, TERMVERSION_MIN, OTIO_SD_CS,
-                               ConfDialogApp::setupUartHardware);
-  if (strncmp(s_bootSdStatus, "OK", 2) == 0)
-    OttoBridge::instance().markSdKnownFromBoot();
+  ottoSdHostSetSerial(&SerialPort);
 
   #if FABGLIB_TERMINAL_DEBUG_REPORT
   Terminal.setLogStream(Serial);  // debug only
@@ -144,14 +141,19 @@ void setup()
     //Terminal.printf("Free Memory        : %d bytes\r\n", heap_caps_get_free_size(MALLOC_CAP_32BIT));
     Terminal.printf("Serial Port        : %s\r\n", UARTPORT_STR[ConfDialogApp::getUARTPortIndex()]);
     Terminal.printf("Serial Parameters  : %s\r\n", ConfDialogApp::getSerParamStr());
+#if OTTO_SD_ENABLED
     Terminal.printf("SD Card            : %s\r\n", s_bootSdStatus);
-
     Terminal.write("\r\nPress F11 for SD browser, F12 for configuration, CTRL-ALT-F12 to reset settings\r\n\n");
+#else
+    Terminal.write("\r\nPress F12 for configuration, CTRL-ALT-F12 to reset settings\r\n\n");
+#endif
   } else if (ConfDialogApp::getBootInfo() == BOOTINFO_TEMPDISABLED) {
     preferences.putInt(PREF_BOOTINFO, BOOTINFO_ENABLED);
   } else if (ConfDialogApp::getBootInfo() == BOOTINFO_DISABLED) {
     Terminal.printf("AdvancedTerminal for Project OTTO - v%d.%d\r\n", TERMVERSION_MAJ, TERMVERSION_MIN);
+#if OTTO_SD_ENABLED
     Terminal.printf("SD Card            : %s\r\n", s_bootSdStatus);
+#endif
   }
 
   // onVirtualKey is triggered whenever a key is pressed or released
@@ -185,6 +187,7 @@ void setup()
           installProgram(progToInstall);
         vkItem->vk = VirtualKey::VK_NONE;
       }
+#if OTTO_SD_ENABLED
     } else if (vkItem->vk == VirtualKey::VK_F11) {
       if (!vkItem->CTRL && !vkItem->LALT && !vkItem->RALT && !vkItem->down) {
         Terminal.deactivate();
@@ -200,6 +203,7 @@ void setup()
         Terminal.activate();
         vkItem->vk = VirtualKey::VK_NONE;
       }
+#endif
     } else if (vkItem->vk == VirtualKey::VK_BREAK && !vkItem->down) {
       // BREAK (CTRL PAUSE) -> short break (TX low for 3.5 s)
       // SHIFT BREAK (SHIFT CTRL PAUSE) -> long break (TX low for 0.233 ms)

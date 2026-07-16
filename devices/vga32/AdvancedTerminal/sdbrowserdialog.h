@@ -9,8 +9,9 @@
 #include <freertos/task.h>
 
 #include "fabui.h"
-#include "otto_bridge.h"
+#include "otto_sd_host.h"
 #include "otto_sd.h"
+#include "confdialog.h"
 #include "uistyle.h"
 
 extern fabgl::BitmappedDisplayController * DisplayController;
@@ -24,7 +25,7 @@ public:
   uiFrame * frame = nullptr;
 
   ~SdBrowserDialogApp() {
-    OttoBridge::instance().endUiSdSession();
+    OttoSdHost::endUiSession(ConfDialogApp::setupUartHardware);
   }
 
   void closeDialog() {
@@ -36,7 +37,7 @@ public:
 
     rootWindow()->frameProps().fillBackground = false;
 
-    bool const sdOk = OttoBridge::instance().beginUiSdSession();
+    bool const sdOk = OttoSdHost::beginUiSession(ConfDialogApp::setupUartHardware);
 
     frame = new uiFrame(rootWindow(), "SD Card Browser", UIWINDOW_PARENTCENTER, Size(400, 270), true, STYLE_FRAME);
     frameRect = frame->rect(fabgl::uiOrigin::Screen);
@@ -71,13 +72,13 @@ public:
         if (key.VK == VirtualKey::VK_ESCAPE)
           closeDialog();
       };
-      browser->setDirectory(OTIO_SD_ROOT);
+      browser->setDirectory(VGA_SD_ROOT);
       frame->onShow = [&, browser]() {
         setFocusedWindow(browser);
       };
     } else {
       new uiStaticLabel(frame, "SD card not available.", Point(10, y + 20), true, STYLE_STATICLABEL);
-      new uiStaticLabel(frame, "Use FAT32 with otto/apps/ on the card.", Point(10, y + 36), true, STYLE_STATICLABEL);
+      new uiStaticLabel(frame, "Use FAT32 with vga/ on the card.", Point(10, y + 36), true, STYLE_STATICLABEL);
     }
 
     y += 172;
