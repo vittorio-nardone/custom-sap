@@ -59,6 +59,41 @@ static volatile bool   s_uiBusy         = false;  // F1 help or F10 menu open
 static volatile bool   s_serialToTerm   = true;   // Otto UART -> Terminal (filtered)
 static volatile bool   s_muteSerialSend = false;  // block Terminal->Otto during FabGL queries
 
+#if OTTO_USB_MIRROR
+static QueueHandle_t   s_usbMirrorQueue = nullptr;
+
+static void ottoUsbMirrorInit()
+{
+  if (!s_usbMirrorQueue)
+    s_usbMirrorQueue = xQueueCreate(512, sizeof(uint8_t));
+  Serial.begin(OTTO_USB_MIRROR_BAUD);
+  Serial.setTxBufferSize(1024);
+}
+
+static void ottoUsbMirrorPush(uint8_t value, bool fromISR)
+{
+  if (!s_usbMirrorQueue)
+    return;
+  if (fromISR) {
+    BaseType_t woken = pdFALSE;
+    xQueueSendFromISR(s_usbMirrorQueue, &value, &woken);
+    if (woken)
+      portYIELD_FROM_ISR();
+  } else {
+    xQueueSend(s_usbMirrorQueue, &value, 0);
+  }
+}
+
+static void ottoUsbMirrorPump()
+{
+  if (!s_usbMirrorQueue)
+    return;
+  uint8_t b = 0;
+  while (xQueueReceive(s_usbMirrorQueue, &b, 0) == pdTRUE)
+    Serial.write(b);
+}
+#endif
+
 static int termCols() { return DisplayController.getColumns(); }
 static int termRows() { return DisplayController.getRows(); }
 
@@ -256,6 +291,9 @@ static bool ottoParseKernelVersionFromSerial(char * out, size_t outLen)
 static void ottoSerialRx(void * /*args*/, uint8_t value, bool fromISR)
 {
   ottoSerialRingPush(value);
+#if OTTO_USB_MIRROR
+  ottoUsbMirrorPush(value, fromISR);
+#endif
   if (!s_serialToTerm)
     return;
   ottoFilterVtToTerminal(value, fromISR);
@@ -1834,6 +1872,10 @@ void setup()
   delay(100);
   disableCore1WDT();
 
+#if OTTO_USB_MIRROR
+  ottoUsbMirrorInit();
+#endif
+
   Terminal.keyboardReaderTaskStackSize = 4096;
 
   PS2Controller.begin(PS2Preset::KeyboardPort0);
@@ -1901,6 +1943,9 @@ void loop()
 {
   static uint32_t last = 0;
   uint32_t const now = millis();
+#if OTTO_USB_MIRROR
+  ottoUsbMirrorPump();
+#endif
   // Repaint periodically: Otto \e[2J clears the footer; FabGL may scroll it away.
   // Keep interval modest — each paint briefly pauses Otto RX for getCursorPos.
   if (!s_uiBusy && (now - last > 3000)) {

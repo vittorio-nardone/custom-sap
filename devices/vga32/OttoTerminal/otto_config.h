@@ -49,3 +49,11 @@
 #ifndef OTTO_XFER_DEBUG
 #define OTTO_XFER_DEBUG 0
 #endif
+
+// Mirror Otto ACIA #1 RX to USB Serial (minicom on TTGO USB port). 0 to disable.
+#ifndef OTTO_USB_MIRROR
+#define OTTO_USB_MIRROR 1
+#endif
+#ifndef OTTO_USB_MIRROR_BAUD
+#define OTTO_USB_MIRROR_BAUD 115200
+#endif

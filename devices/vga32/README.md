@@ -58,6 +58,15 @@ Otto MC68B50 (5 V) through a **bidirectional level shifter** (BSS138 recommended
 
 Verify header pin labels with a meter — some TTGO boards have incorrect silkscreen.
 
+**USB mirror (OttoTerminal 1.0.10+):** bytes from Otto ACIA #1 are also forwarded to the
+TTGO USB serial port at 115200 8N1. Use minicom on the same port as firmware upload:
+
+```bash
+minicom -D /dev/cu.usbserial-XXXX -b 115200
+```
+
+Output is raw (includes VT100 escapes). Disable with `OTTO_USB_MIRROR 0` in `otto_config.h`.
+
 ## Build / flash
 
 Requires Arduino ESP32 core **2.0.17**, FabGL, `arduino-cli`. Partition: **huge_app**.
