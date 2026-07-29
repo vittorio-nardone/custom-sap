@@ -3,8 +3,8 @@
 ; ACIA #2 echo test (hardware smoke test)
 ; =====================================================
 ; Serial 2: control/status 0x6022, data 0x6023 (115200 8N1).
-; Echoes every byte received on port 2. NUL (0x00) ends the app.
-; Status on serial 1 (kernel console) only.
+; Echoes every byte received on port 2 back to port 2 and serial 1 (Otto).
+; Byte value 0x00 ends the app (Ctrl+@ on minicom).
 ; =====================================================
 
 #include "../assembly/ruledef.asm"
@@ -30,8 +30,10 @@
 
 .loop:
     jsr .acia2_read_char
+    cmp 0x00
     beq .done
     jsr .acia2_send_char
+    jsr ACIA_SEND_CHAR
     jmp .loop
 
 .done:
@@ -65,4 +67,4 @@
     rts
 
 .banner:
-    #d 0x0A, 0x0D, "ACIA2 echo on 0x6022/0x6023 (115200). Send NUL to exit.", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "ACIA2 echo (115200). Bytes echoed on Otto + port 2. Send 0x00 to exit.", 0x0A, 0x0D, 0x00
