@@ -1,3 +1,8 @@
+from pathlib import Path
+import sys
+
+_ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(_ROOT / "scripts" / "python"))
 from microcode import INSTRUCTIONS_SET, verifyInstructionSet
 from serial import Serial
 from virtualserialports import VirtualSerialPorts

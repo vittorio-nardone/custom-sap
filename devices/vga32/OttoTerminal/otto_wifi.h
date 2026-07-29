@@ -10,11 +10,16 @@
 #include "otto_config.h"
 
 static constexpr int OTTO_WIFI_MAX_APPS   = 24;
+static constexpr int OTTO_WIFI_MAX_TARGETS = 8;
 static constexpr int OTTO_WIFI_NAME_MAX  = 32;
 static constexpr int OTTO_WIFI_URL_MAX   = 192;
 static constexpr int OTTO_WIFI_SSID_MAX  = 33;   // 32 + NUL
 static constexpr int OTTO_WIFI_PASS_MAX  = 65;   // 64 + NUL
 static constexpr int OTTO_WIFI_MAX_SCAN  = 24;
+static constexpr int OTTO_WIFI_TARGET_ID_MAX = 16;
+static constexpr int OTTO_WIFI_KERNEL_VER_MAX = 16;
+static constexpr int OTTO_WIFI_LABEL_MAX = 24;
+static constexpr int OTTO_WIFI_PATH_MAX = 64;
 
 struct OttoWifiApp {
   char name[OTTO_WIFI_NAME_MAX];
@@ -24,6 +29,19 @@ struct OttoWifiApp {
 struct OttoWifiCatalog {
   int         count;
   OttoWifiApp apps[OTTO_WIFI_MAX_APPS];
+};
+
+struct OttoWifiTarget {
+  char id[OTTO_WIFI_TARGET_ID_MAX];
+  char kernel_version[OTTO_WIFI_KERNEL_VER_MAX];
+  char label[OTTO_WIFI_LABEL_MAX];
+  char catalog_path[OTTO_WIFI_PATH_MAX];
+};
+
+struct OttoWifiTargetList {
+  int           count;
+  char          default_target_id[OTTO_WIFI_TARGET_ID_MAX];
+  OttoWifiTarget targets[OTTO_WIFI_MAX_TARGETS];
 };
 
 struct OttoWifiNetwork {
@@ -112,4 +130,14 @@ OttoWifiResult ottoWifiDownload(char const * url, uint8_t ** outData, size_t * o
 
 void ottoWifiFree(void * p);
 
+/** Last F10 kernel target id (NVS), e.g. "v1.2.101" or "current". */
+void ottoWifiGetLastAppTarget(char * out, size_t outLen);
+void ottoWifiSetLastAppTarget(char const * targetId);
+
+OttoWifiResult ottoWifiFetchTargets(OttoWifiTargetList * out);
+
+/** Fetch app catalog from GitHub Contents API path (e.g. roms/apps/v1.2.101/asm). */
+OttoWifiResult ottoWifiFetchCatalogPath(char const * catalogPath, OttoWifiCatalog * out);
+
+/** Legacy: fetch default roms/apps/current/asm catalog. */
 OttoWifiResult ottoWifiFetchCatalog(OttoWifiCatalog * out);

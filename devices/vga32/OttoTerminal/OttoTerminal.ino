@@ -52,6 +52,9 @@ fabgl::SerialPort                  SerialPort;
 fabgl::SerialPortTerminalConnector SerialPortTerminalConnector;
 
 static OttoWifiCatalog s_catalog{};
+static OttoWifiTargetList s_targets{};
+static int             s_selectedTarget = 0;
+static char            s_detectedKernel[OTTO_WIFI_KERNEL_VER_MAX] = "";
 static volatile bool   s_uiBusy         = false;  // F1 help or F10 menu open
 static volatile bool   s_serialToTerm   = true;   // Otto UART -> Terminal (filtered)
 static volatile bool   s_muteSerialSend = false;  // block Terminal->Otto during FabGL queries
@@ -206,8 +209,53 @@ static void ottoFilterVtToTerminal(uint8_t c, bool fromISR)
   priv = false;
 }
 
+static constexpr size_t kOttoSerialRingSize = 512;
+static char            s_ottoSerialRing[kOttoSerialRingSize];
+static size_t          s_ottoSerialRingLen = 0;
+
+static void ottoSerialRingPush(uint8_t value)
+{
+  uint8_t c = value;
+  if (c == '\r')
+    c = '\n';
+  if (!(c == '\n' || (c >= 32 && c < 127)))
+    return;
+
+  if (s_ottoSerialRingLen >= kOttoSerialRingSize - 1) {
+    size_t const keep = kOttoSerialRingSize / 2;
+    memmove(s_ottoSerialRing, s_ottoSerialRing + s_ottoSerialRingLen - keep, keep);
+    s_ottoSerialRingLen = keep;
+    s_ottoSerialRing[s_ottoSerialRingLen] = '\0';
+  }
+  s_ottoSerialRing[s_ottoSerialRingLen++] = (char)c;
+  s_ottoSerialRing[s_ottoSerialRingLen] = '\0';
+}
+
+static bool ottoParseKernelVersionFromSerial(char * out, size_t outLen)
+{
+  if (!out || outLen == 0)
+    return false;
+  out[0] = '\0';
+
+  char const * p = strstr(s_ottoSerialRing, "Kernel - v");
+  if (!p)
+    p = strstr(s_ottoSerialRing, "KERNEL - v");
+  if (!p)
+    return false;
+  p += 9;  /* points at 'v' in "Kernel - v1.2.x" */
+
+  size_t i = 0;
+  while (p[i] && p[i] != ' ' && p[i] != '(' && p[i] != '\n' && i < outLen - 1) {
+    out[i] = p[i];
+    ++i;
+  }
+  out[i] = '\0';
+  return out[0] == 'v' && i > 1;
+}
+
 static void ottoSerialRx(void * /*args*/, uint8_t value, bool fromISR)
 {
+  ottoSerialRingPush(value);
   if (!s_serialToTerm)
     return;
   ottoFilterVtToTerminal(value, fromISR);
@@ -489,8 +537,98 @@ static void leaveUiToOtto()
 
 // --- Menu -------------------------------------------------------------------
 
-static int listTopRow() { return 4; }
+static int listTopRow() { return 5; }
 static int listBottomRow() { return termRows() - 1; }
+
+static int menuFindTargetById(char const * id)
+{
+  if (!id || !id[0])
+    return -1;
+  for (int i = 0; i < s_targets.count; ++i) {
+    if (strcmp(s_targets.targets[i].id, id) == 0)
+      return i;
+  }
+  return -1;
+}
+
+static int menuFindTargetByKernel(char const * kernelVer)
+{
+  if (!kernelVer || !kernelVer[0])
+    return -1;
+  for (int i = 0; i < s_targets.count; ++i) {
+    if (strcmp(s_targets.targets[i].kernel_version, kernelVer) == 0)
+      return i;
+  }
+  return -1;
+}
+
+static void menuInitFallbackTargets()
+{
+  s_targets.count = 1;
+  s_targets.default_target_id[0] = '\0';
+  OttoWifiTarget & t = s_targets.targets[0];
+  strncpy(t.id, "current", sizeof(t.id) - 1);
+  strncpy(t.kernel_version, "latest", sizeof(t.kernel_version) - 1);
+  strncpy(t.label, "Latest", sizeof(t.label) - 1);
+  strncpy(t.catalog_path, "roms/apps/current/asm", sizeof(t.catalog_path) - 1);
+  strncpy(s_targets.default_target_id, "current", sizeof(s_targets.default_target_id) - 1);
+}
+
+static void menuResolveTarget(bool useAutoDetect)
+{
+  if (useAutoDetect)
+    ottoParseKernelVersionFromSerial(s_detectedKernel, sizeof(s_detectedKernel));
+  else if (!s_detectedKernel[0])
+    ottoParseKernelVersionFromSerial(s_detectedKernel, sizeof(s_detectedKernel));
+
+  int idx = -1;
+  if (s_detectedKernel[0])
+    idx = menuFindTargetByKernel(s_detectedKernel);
+  if (idx < 0) {
+    char last[OTTO_WIFI_TARGET_ID_MAX];
+    ottoWifiGetLastAppTarget(last, sizeof(last));
+    if (last[0])
+      idx = menuFindTargetById(last);
+  }
+  if (idx < 0 && s_targets.default_target_id[0])
+    idx = menuFindTargetById(s_targets.default_target_id);
+  if (idx < 0 && s_targets.count > 0)
+    idx = 0;
+  if (idx >= 0)
+    s_selectedTarget = idx;
+}
+
+static bool menuFetchCatalogForTarget(char * msg, size_t msgLen)
+{
+  if (s_targets.count <= 0 || s_selectedTarget < 0 || s_selectedTarget >= s_targets.count) {
+    snprintf(msg, msgLen, "No kernel target");
+    return false;
+  }
+
+  OttoWifiTarget const & t = s_targets.targets[s_selectedTarget];
+  OttoWifiResult const r = ottoWifiFetchCatalogPath(t.catalog_path, &s_catalog);
+  char detail[96];
+  ottoWifiGetLastDetail(detail, sizeof(detail));
+  snprintf(msg, msgLen, "%s - %s", ottoWifiResultStr(r), detail);
+  if (r == OttoWifiResult::Ok)
+    ottoWifiSetLastAppTarget(t.id);
+  if (s_selectedApp >= s_catalog.count)
+    s_selectedApp = s_catalog.count > 0 ? s_catalog.count - 1 : 0;
+  return r == OttoWifiResult::Ok;
+}
+
+static void menuCycleTarget(int delta)
+{
+  if (s_targets.count <= 1)
+    return;
+  s_selectedTarget = (s_selectedTarget + delta + s_targets.count) % s_targets.count;
+  char msg[80];
+  setMenuMsg("Fetching catalog...");
+  refreshMenuFooter();
+  menuFetchCatalogForTarget(msg, sizeof(msg));
+  setMenuMsg(msg);
+  redrawMenu();
+}
 
 /** Paint overlay body rows 1..(last-1) with page UI colors (footer row untouched). */
 static void fillUiPageBackground()
@@ -516,12 +654,30 @@ static void drawMenuChrome()
   wrapOff();
 
   moveAbs(1, 1); colorUiTitle();
-  writePadded(" Apps Repository - roms/apps/asm ", C);
+  writePadded(" Apps Repository ", C);
 
   moveAbs(2, 1); colorUiMuted();
+  char targetLine[96];
+  if (s_targets.count > 0 && s_selectedTarget >= 0 && s_selectedTarget < s_targets.count) {
+    OttoWifiTarget const & t = s_targets.targets[s_selectedTarget];
+    if (s_detectedKernel[0]) {
+      bool const match = strcmp(t.kernel_version, s_detectedKernel) == 0;
+      snprintf(targetLine, sizeof(targetLine),
+               " Kernel target: < %s >  Otto: %s%s",
+               t.label, s_detectedKernel, match ? " (match)" : "");
+    } else {
+      snprintf(targetLine, sizeof(targetLine), " Kernel target: < %s >  (%s)",
+               t.label, t.kernel_version);
+    }
+  } else {
+    snprintf(targetLine, sizeof(targetLine), " Kernel target: (not loaded - press R)");
+  }
+  writePadded(targetLine, C);
+
+  moveAbs(3, 1); colorUiMuted();
   char info[80];
   if (online) {
-    snprintf(info, sizeof(info), " WiFi OK   %d app(s) cached   %s",
+    snprintf(info, sizeof(info), " WiFi OK   %d app(s)   %s",
              s_catalog.count, ottoWifiSsid());
   } else if (ottoWifiHasCredentials()) {
     snprintf(info, sizeof(info), " WiFi offline (%s) - use F11 Settings", ottoWifiSsid());
@@ -530,7 +686,7 @@ static void drawMenuChrome()
   }
   writePadded(info, C);
 
-  moveAbs(3, 1); colorUi(); writePadded("", C);
+  moveAbs(4, 1); colorUi(); writePadded("", C);
 
   wrapOn();
 }
@@ -592,7 +748,8 @@ static void redrawMenu()
   if (s_menuMsg[0])
     setUiFooterHints(s_menuMsg, "ESC to exit");
   else if (ottoWifiIsConnected())
-    setUiFooterHints("On Otto: u+Enter, then pick app", "Enter upload  R refresh  ESC exit");
+    setUiFooterHints("On Otto: u+Enter, then pick app",
+                     "Enter upload  Tab target  A auto  R refresh  ESC");
   else
     setUiFooterHints("WiFi required", "F11 Settings  ESC exit");
   drawTerminalFooter(false);
@@ -628,17 +785,20 @@ static void menuRefresh()
 {
   if (!requireWifiForApps())
     return;
+
+  setMenuMsg("Fetching targets...");
+  refreshMenuFooter();
+  OttoWifiResult tr = ottoWifiFetchTargets(&s_targets);
+  if (tr != OttoWifiResult::Ok)
+    menuInitFallbackTargets();
+
+  menuResolveTarget(true);
+
+  char msg[80];
   setMenuMsg("Fetching catalog...");
   refreshMenuFooter();
-  OttoWifiResult r = ottoWifiFetchCatalog(&s_catalog);
-
-  char detail[96];
-  ottoWifiGetLastDetail(detail, sizeof(detail));
-  char msg[80];
-  snprintf(msg, sizeof(msg), "%s - %s", ottoWifiResultStr(r), detail);
+  menuFetchCatalogForTarget(msg, sizeof(msg));
   setMenuMsg(msg);
-  if (s_selectedApp >= s_catalog.count)
-    s_selectedApp = s_catalog.count > 0 ? s_catalog.count - 1 : 0;
   redrawMenu();
 }
 
@@ -845,7 +1005,7 @@ static void runWifiMenu()
   redrawMenu();
   waitTerminalInputDrained();
 
-  if (ottoWifiIsConnected() && s_catalog.count <= 0)
+  if (ottoWifiIsConnected())
     menuRefresh();
 
   for (;;) {
@@ -867,11 +1027,25 @@ static void runWifiMenu()
         s_selectedApp = (s_selectedApp + 1) % s_catalog.count;
         drawAppList();
       }
+    } else if (vk == VirtualKey::VK_TAB) {
+      menuCycleTarget(+1);
     } else if (vk == VirtualKey::VK_RETURN || vk == VirtualKey::VK_KP_ENTER) {
       if (menuUpload())
         break;
     } else if (vk == VirtualKey::VK_r || vk == VirtualKey::VK_R) {
       menuRefresh();
+    } else if (item.ASCII == '[') {
+      menuCycleTarget(-1);
+    } else if (item.ASCII == ']') {
+      menuCycleTarget(+1);
+    } else if (item.ASCII == 'a' || item.ASCII == 'A') {
+      menuResolveTarget(true);
+      char msg[80];
+      setMenuMsg("Fetching catalog...");
+      refreshMenuFooter();
+      menuFetchCatalogForTarget(msg, sizeof(msg));
+      setMenuMsg(msg);
+      redrawMenu();
     }
   }
 
@@ -1570,11 +1744,12 @@ static void drawHelpPage()
   helpWriteLine(row++, "   Credentials     NVS (F11 WiFi); optional seed otto_secrets.h");
   helpWriteLine(row++, "   Display         Font height sets rows; columns always 80");
   helpWriteLine(row++, "   UI colors       Footer bar and F1/F10/F11 pages (F11)");
-  helpWriteLine(row++, "   Catalog         Apps Repository (HTTPS) roms/apps/asm/*.bin");
+  helpWriteLine(row++, "   Catalog         HTTPS catalog.json + per-kernel app folders");
+  helpWriteLine(row++, "   Kernel target   Tab or [ ] cycle; A auto-detect from Otto serial");
   helpWriteLine(row++, "   Upload (F10)    1) On Otto: u + Enter (XMODEM receive)");
   helpWriteLine(row++, "                   2) F10, pick app, Enter to send");
   helpWriteLine(row++, "                   u020000 on Otto for apps outside 0x8400");
-  helpWriteLine(row++, "   Apps menu       Up/Dn  Enter upload  R refresh  Esc exit");
+  helpWriteLine(row++, "   Apps menu       Up/Dn  Enter upload  Tab target  A auto  R refresh");
   helpWriteLine(row++, "");
 
   snprintf(line, sizeof(line), " Memory           DRAM %u KB free   DMA %u KB free",

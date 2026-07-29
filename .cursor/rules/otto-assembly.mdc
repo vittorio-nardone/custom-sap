@@ -39,8 +39,8 @@ Include paths relative to file location. Use `kernel/symbols.asm` for kernel API
 ## Build & test
 
 ```bash
-customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin
-python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet
+customasm apps/myapp.asm -f binary -o roms/apps/current/asm/myapp.bin
+python simulate.py --autorun --program roms/apps/current/asm/myapp.bin --max-cycles 1000000 --quiet
 ```
 
 Hardware upload via kernel XMODEM menu. Full instruction set and kernel API: `AGENTS.md`.

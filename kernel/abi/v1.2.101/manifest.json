@@ -1,0 +1,14 @@
+{
+  "kernel_version": "v1.2.101",
+  "kernel_build_date": "03/27/2026",
+  "build_debug": 0,
+  "git_commit": "96a0726b9efef1a8648a54e11580bff7cbe7e671",
+  "saved_at": "2026-03-27T18:11:30Z",
+  "rom_size": 16384,
+  "note": "Recovered from git commit 96a0726 (pre-unified 16 KB ROM layout)",
+  "files": {
+    "symbols_txt": "symbols.txt",
+    "symbols_asm": "symbols.asm",
+    "kernel_rom": "kernel-rom.bin"
+  }
+}

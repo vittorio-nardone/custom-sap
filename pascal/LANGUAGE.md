@@ -465,13 +465,13 @@ Three comment styles are supported:
 
 ```bash
 # Compile
-python pascal_compiler.py program.pas -o roms/apps/pascal/program.bin
+python pascal_compiler.py program.pas -o roms/apps/current/pascal/program.bin
 
 # Run in simulator
-python simulate.py --autorun --program roms/apps/pascal/program.bin --max-cycles 1000000 --quiet
+python simulate.py --autorun --program roms/apps/current/pascal/program.bin --max-cycles 1000000 --quiet
 
 # Or load interactively and use 'r' (run) or 'p' (Pascal) from kernel menu
-python simulate.py --program roms/apps/pascal/program.bin
+python simulate.py --program roms/apps/current/pascal/program.bin
 ```
 
 ### On-board editor/compiler

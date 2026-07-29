@@ -13,9 +13,13 @@ Custom 8-bit TTL homebrew CPU (6502-inspired, not identical). Full reference: `A
 source .venv/bin/activate
 ./generate-all.sh              # release — run after ANY kernel or P-Machine change
 ./generate-all.sh --debug      # debug — includes boot tests
-customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin
-python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
+./scripts/build-apps.sh --pascal       # apps only (no ROM rebuild)
+./scripts/build-apps.sh --abi v1.2.101 # apps for older kernel EEPROM
+customasm apps/myapp.asm -f binary -o roms/apps/current/asm/myapp.bin
+python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/current/pascal/hello.bin
 ```
+
+Build implementation: `scripts/` (see `scripts/README.md`). Kernel ABI: `kernel/abi/README.md`.
 
 **CustomASM gotcha**: `#include` inside `#if` scopes labels to that block. Put `#if` guards **inside** included files; never wrap `#include` with `#if`.
 

@@ -21,6 +21,7 @@ char s_lastDetail[96] = "";
 constexpr char const * kNvsNs   = "otto_wifi";
 constexpr char const * kNvsSsid = "ssid";
 constexpr char const * kNvsPass = "pass";
+constexpr char const * kNvsAppTarget = "app_tgt";
 
 void setLastDetail(char const * fmt, ...) {
   va_list ap;
@@ -138,6 +139,120 @@ bool copyJsonString(char const * start, char const * end, char * out, size_t out
   return true;
 }
 
+void buildGithubContentsUrl(char const * catalogPath, char * out, size_t outLen) {
+  if (!catalogPath || !out || outLen == 0)
+    return;
+  snprintf(out, outLen,
+           "https://api.github.com/repos/%s/contents/%s?ref=%s",
+           OTTO_GITHUB_REPO_SLUG, catalogPath, OTTO_GITHUB_REF);
+}
+
+bool parseGithubCatalogJson(char * text, OttoWifiCatalog * out) {
+  if (!text || !out)
+    return false;
+  out->count = 0;
+
+  char * cursor = text;
+  while (out->count < OTTO_WIFI_MAX_APPS) {
+    char const * nameEnd = nullptr;
+    char const * nameVal = findJsonStringValue(cursor, "name", &nameEnd);
+    if (!nameVal)
+      break;
+
+    char name[OTTO_WIFI_NAME_MAX + 8];
+    if (!copyJsonString(nameVal, nameEnd, name, sizeof(name))) {
+      cursor = const_cast<char *>(nameEnd + 1);
+      continue;
+    }
+
+    char const * nextName = strstr(nameEnd + 1, "\"name\"");
+    char * saved = nullptr;
+    char savedCh = 0;
+    if (nextName) {
+      saved = const_cast<char *>(nextName);
+      savedCh = *saved;
+      *saved = '\0';
+    }
+
+    char const * urlEnd = nullptr;
+    char const * urlVal = findJsonStringValue(nameVal, "download_url", &urlEnd);
+    if (saved)
+      *saved = savedCh;
+
+    if (endsWithBin(name) && name[0] != '_' && urlVal) {
+      OttoWifiApp & app = out->apps[out->count];
+      copyDisplayName(name, app.name, sizeof(app.name));
+      if (copyJsonString(urlVal, urlEnd, app.url, sizeof(app.url)))
+        out->count++;
+    }
+
+    cursor = const_cast<char *>(nameEnd + 1);
+  }
+
+  return out->count > 0;
+}
+
+bool parseTargetObject(char const * objStart, char const * objEnd, OttoWifiTarget * target) {
+  if (!objStart || !objEnd || !target || objEnd <= objStart)
+    return false;
+
+  char const * end = nullptr;
+  char const * v = findJsonStringValue(objStart, "id", &end);
+  if (!v || end > objEnd)
+    return false;
+  if (!copyJsonString(v, end, target->id, sizeof(target->id)))
+    return false;
+
+  v = findJsonStringValue(objStart, "kernel_version", &end);
+  if (!v || end > objEnd || !copyJsonString(v, end, target->kernel_version, sizeof(target->kernel_version)))
+    return false;
+
+  v = findJsonStringValue(objStart, "label", &end);
+  if (!v || end > objEnd || !copyJsonString(v, end, target->label, sizeof(target->label)))
+    strncpy(target->label, target->kernel_version, sizeof(target->label) - 1);
+
+  v = findJsonStringValue(objStart, "catalog_path", &end);
+  if (!v || end > objEnd || !copyJsonString(v, end, target->catalog_path, sizeof(target->catalog_path)))
+    return false;
+
+  return target->id[0] != '\0' && target->catalog_path[0] != '\0';
+}
+
+bool parseCatalogIndexJson(char * text, OttoWifiTargetList * out) {
+  if (!text || !out)
+    return false;
+  out->count = 0;
+  out->default_target_id[0] = '\0';
+
+  char const * defEnd = nullptr;
+  char const * defVal = findJsonStringValue(text, "default_target", &defEnd);
+  if (defVal)
+    copyJsonString(defVal, defEnd, out->default_target_id, sizeof(out->default_target_id));
+
+  char const * targetsKey = strstr(text, "\"targets\"");
+  if (!targetsKey)
+    return false;
+  char const * arr = strchr(targetsKey, '[');
+  if (!arr)
+    return false;
+
+  char const * p = arr + 1;
+  while (out->count < OTTO_WIFI_MAX_TARGETS && p && *p) {
+    char const * objStart = strchr(p, '{');
+    if (!objStart)
+      break;
+    char const * objEnd = strchr(objStart, '}');
+    if (!objEnd)
+      break;
+    OttoWifiTarget & t = out->targets[out->count];
+    if (parseTargetObject(objStart, objEnd, &t))
+      out->count++;
+    p = objEnd + 1;
+  }
+
+  return out->count > 0;
+}
+
 int wifiScanRaw() {
   prepareWifiRadio();
   WiFi.setSleep(false);
@@ -184,6 +299,28 @@ void ottoWifiGetLastDetail(char * out, size_t outLen) {
     return;
   strncpy(out, s_lastDetail, outLen - 1);
   out[outLen - 1] = '\0';
+}
+
+void ottoWifiGetLastAppTarget(char * out, size_t outLen) {
+  if (!out || outLen == 0)
+    return;
+  out[0] = '\0';
+  if (!s_prefs.begin(kNvsNs, true))
+    return;
+  String const v = s_prefs.getString(kNvsAppTarget, "");
+  s_prefs.end();
+  if (v.length() > 0)
+    strncpy(out, v.c_str(), outLen - 1);
+  out[outLen - 1] = '\0';
+}
+
+void ottoWifiSetLastAppTarget(char const * targetId) {
+  if (!targetId || !targetId[0])
+    return;
+  if (!s_prefs.begin(kNvsNs, false))
+    return;
+  s_prefs.putString(kNvsAppTarget, targetId);
+  s_prefs.end();
 }
 
 void ottoWifiInit() {
@@ -607,14 +744,17 @@ OttoWifiResult ottoWifiDownload(char const * url, uint8_t ** outData, size_t * o
   return OttoWifiResult::Ok;
 }
 
-OttoWifiResult ottoWifiFetchCatalog(OttoWifiCatalog * out) {
-  if (!out)
+OttoWifiResult ottoWifiFetchCatalogPath(char const * catalogPath, OttoWifiCatalog * out) {
+  if (!out || !catalogPath || !catalogPath[0])
     return OttoWifiResult::ParseFailed;
   out->count = 0;
 
+  char apiUrl[OTTO_WIFI_URL_MAX];
+  buildGithubContentsUrl(catalogPath, apiUrl, sizeof(apiUrl));
+
   uint8_t * data = nullptr;
   size_t len = 0;
-  OttoWifiResult const dr = ottoWifiDownload(OTTO_WIFI_APPS_API_URL, &data, &len);
+  OttoWifiResult const dr = ottoWifiDownload(apiUrl, &data, &len);
   if (dr != OttoWifiResult::Ok)
     return dr;
 
@@ -626,51 +766,48 @@ OttoWifiResult ottoWifiFetchCatalog(OttoWifiCatalog * out) {
   }
   text[len] = '\0';
 
-  // GitHub Contents API: JSON array of objects with name + download_url.
-  char * cursor = text;
-  while (out->count < OTTO_WIFI_MAX_APPS) {
-    char const * nameEnd = nullptr;
-    char const * nameVal = findJsonStringValue(cursor, "name", &nameEnd);
-    if (!nameVal)
-      break;
-
-    char name[OTTO_WIFI_NAME_MAX + 8];
-    if (!copyJsonString(nameVal, nameEnd, name, sizeof(name))) {
-      cursor = const_cast<char *>(nameEnd + 1);
-      continue;
-    }
-
-    // download_url appears after name in the same object; stop before next "name"
-    char const * nextName = strstr(nameEnd + 1, "\"name\"");
-    char * saved = nullptr;
-    char savedCh = 0;
-    if (nextName) {
-      saved = const_cast<char *>(nextName);
-      savedCh = *saved;
-      *saved = '\0';
-    }
-
-    char const * urlEnd = nullptr;
-    char const * urlVal = findJsonStringValue(nameVal, "download_url", &urlEnd);
-    if (saved)
-      *saved = savedCh;
-
-    if (endsWithBin(name) && name[0] != '_' && urlVal) {
-      OttoWifiApp & app = out->apps[out->count];
-      copyDisplayName(name, app.name, sizeof(app.name));
-      if (copyJsonString(urlVal, urlEnd, app.url, sizeof(app.url)))
-        out->count++;
-    }
-
-    cursor = const_cast<char *>(nameEnd + 1);
+  if (!parseGithubCatalogJson(text, out)) {
+    freeDownloadBuf(text);
+    setLastDetail("0 apps in %s", catalogPath);
+    return OttoWifiResult::ParseFailed;
   }
 
   freeDownloadBuf(text);
+  setLastDetail("%d apps (%s) DRAM=%u", out->count, catalogPath, (unsigned)freeInternalHeap());
+  return OttoWifiResult::Ok;
+}
 
-  if (out->count == 0) {
-    setLastDetail("0 apps DRAM=%u", (unsigned)freeInternalHeap());
+OttoWifiResult ottoWifiFetchTargets(OttoWifiTargetList * out) {
+  if (!out)
+    return OttoWifiResult::ParseFailed;
+  out->count = 0;
+  out->default_target_id[0] = '\0';
+
+  uint8_t * data = nullptr;
+  size_t len = 0;
+  OttoWifiResult const dr = ottoWifiDownload(OTTO_WIFI_CATALOG_INDEX_URL, &data, &len);
+  if (dr != OttoWifiResult::Ok)
+    return dr;
+
+  char * text = static_cast<char *>(reallocDownloadBuf(data, len + 1));
+  if (!text) {
+    freeDownloadBuf(data);
+    setLastDetail("OOM index DRAM=%u", (unsigned)freeInternalHeap());
+    return OttoWifiResult::NoMemory;
+  }
+  text[len] = '\0';
+
+  if (!parseCatalogIndexJson(text, out)) {
+    freeDownloadBuf(text);
+    setLastDetail("bad catalog.json");
     return OttoWifiResult::ParseFailed;
   }
-  setLastDetail("%d apps DRAM=%u", out->count, (unsigned)freeInternalHeap());
+
+  freeDownloadBuf(text);
+  setLastDetail("%d targets DRAM=%u", out->count, (unsigned)freeInternalHeap());
   return OttoWifiResult::Ok;
+}
+
+OttoWifiResult ottoWifiFetchCatalog(OttoWifiCatalog * out) {
+  return ottoWifiFetchCatalogPath("roms/apps/current/asm", out);
 }

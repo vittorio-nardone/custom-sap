@@ -13,11 +13,18 @@ The CPU is built from 7400-series TTL ICs, not a commercial microprocessor.
   - Release mode: no boot tests, includes TinyPascal P-Machine in ROM; on-board editor/compiler built as `apps/tinypascal_ide.asm` (load at 0x020000 via XMODEM)
 - **Build all (debug)**: `source .venv/bin/activate && ./generate-all.sh --debug`
   - Debug mode: includes boot tests (CPU instruction + math + float tests), TinyPascal P-Machine in ROM (IDE same as release)
-- **Compile single app**: `customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin`
-- **Compile Pascal program**: `python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin`
-- **Simulator (interactive)**: `python simulate.py --program roms/apps/asm/myapp.bin`
-- **Simulator (headless/test)**: `python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet`
-- **Microcode generation**: `python microcode.py`
+- **Build apps only** (no ROM rebuild): `./scripts/build-apps.sh` or `./scripts/build-apps.sh --pascal`
+- **Kernel ABI** (apps for older EEPROM hardware): see `kernel/abi/README.md`
+  - Save snapshot after flash: `./scripts/save-kernel-abi.sh` or `./generate-all.sh --save-abi`
+  - Build for saved kernel: `./scripts/build-apps.sh --abi v1.2.101` (add `--pascal` for Pascal examples)
+  - List saved ABIs: `./scripts/save-kernel-abi.sh --list`
+- **Compile single app**: `customasm apps/myapp.asm -f binary -o roms/apps/current/asm/myapp.bin`
+- **Compile Pascal program**: `python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/current/pascal/hello.bin`
+- **Simulator (interactive)**: `python simulate.py --program roms/apps/current/asm/myapp.bin`
+- **Simulator (headless/test)**: `python simulate.py --autorun --program roms/apps/current/asm/myapp.bin --max-cycles 1000000 --quiet`
+- **Microcode generation** (included in `./generate-all.sh`): `python scripts/python/microcode.py`
+
+Build scripts live under `scripts/`. Root `./generate-all.sh` orchestrates the full build. See `scripts/README.md`.
 
 ### Unified ROM Build
 
@@ -538,7 +545,7 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 - Local labels start with `.` (e.g., `.loop`, `.msg`)
 - DE register pair is the standard way to pass 16-bit pointers (D=MSB, E=LSB)
 - Data directives: `#d` for bytes/strings
-- Compile: `customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin`
+- Compile: `customasm apps/myapp.asm -f binary -o roms/apps/current/asm/myapp.bin`
 - Upload to hardware via XMODEM protocol (kernel menu) or load in simulator
 
 ### Arithmetic Notes
@@ -565,10 +572,10 @@ source .venv/bin/activate   # Always activate before running simulator
 python simulate.py
 
 # Load a program binary at default address (0x8400)
-python simulate.py --program roms/apps/asm/myapp.bin
+python simulate.py --program roms/apps/current/asm/myapp.bin
 
 # Load at a specific address
-python simulate.py --program roms/apps/asm/myapp.bin --address 0x8400
+python simulate.py --program roms/apps/current/asm/myapp.bin --address 0x8400
 
 # Virtual serial port mode (use minicom or other terminal emulator)
 python simulate.py --simulate-serial
@@ -580,10 +587,10 @@ The simulator supports a headless mode for batch/CI usage and automated testing 
 
 ```bash
 # Autorun: kernel boots, auto-executes program at 0x8400, no TTY needed
-python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000
+python simulate.py --autorun --program roms/apps/current/asm/myapp.bin --max-cycles 1000000
 
 # With --quiet: suppress kernel output, show only application output
-python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet
+python simulate.py --autorun --program roms/apps/current/asm/myapp.bin --max-cycles 1000000 --quiet
 ```
 
 **Flags**:
@@ -605,7 +612,7 @@ python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000
 **Register dump** (`--dump-regs <file>`): saves all CPU registers, flags, cycle count, and stop reason to a JSON file on exit. Use this to verify program results in CI/CD pipelines:
 
 ```bash
-python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet --dump-regs /tmp/regs.json
+python simulate.py --autorun --program roms/apps/current/asm/myapp.bin --max-cycles 1000000 --quiet --dump-regs /tmp/regs.json
 ```
 
 Output JSON contains: `A`, `X`, `Y`, `D`, `E`, `OUT`, `PC`, `SP`, `flags` (Z/N/C/I/O), `cycles`, `stop_reason` ("completed", "halted", "timeout", "error").
@@ -616,10 +623,10 @@ Output JSON contains: `A`, `X`, `Y`, `D`, `E`, `OUT`, `PC`, `SP`, `flags` (Z/N/C
 source .venv/bin/activate
 
 # 1. Compile
-customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin
+customasm apps/myapp.asm -f binary -o roms/apps/current/asm/myapp.bin
 
 # 2. Run in simulator and check output
-python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet
+python simulate.py --autorun --program roms/apps/current/asm/myapp.bin --max-cycles 1000000 --quiet
 
 # 3. Check exit code
 echo $?   # 0 = success
@@ -635,7 +642,7 @@ The simulator (`OttoCPU` class in `simulate.py`) faithfully emulates:
 - **All flags**: Z, N, C, I, O, HLT
 - **Full 24-bit address space**: 192 KB (`bytearray(0x030000)`)
 - **Memory regions** with read-only enforcement for ROM
-- **Instruction execution** via `exec()` on microcode-defined simulation strings from `microcode.py`
+- **Instruction execution** via `exec()` on microcode-defined simulation strings from `scripts/python/microcode.py`
 - **Cycle counting**: tracks total cycles, distinguishing branch taken/not-taken
 
 ### Memory Regions in Simulator
@@ -672,10 +679,10 @@ For interactive development with hot-reload:
 source .venv/bin/activate
 
 # Terminal 1: Start simulator with the program
-python simulate.py --program roms/apps/asm/myapp.bin
+python simulate.py --program roms/apps/current/asm/myapp.bin
 
 # Terminal 2: Edit and recompile (auto-reloaded by simulator)
-customasm apps/myapp.asm -f binary -o roms/apps/asm/myapp.bin
+customasm apps/myapp.asm -f binary -o roms/apps/current/asm/myapp.bin
 ```
 
 The simulator runs the kernel first (boots from ROM at 0x0000), which initializes the system. In the kernel menu, type `r` + Enter to execute the loaded program. The program runs until `RTS` (returns to kernel) or `HLT` (halts CPU, exits simulator).
@@ -708,7 +715,7 @@ pip install intelhex     # Intel HEX file format support
 
 ### Key Implementation Details
 
-- Instructions are loaded from `microcode.py`'s `INSTRUCTIONS_SET` dictionary
+- Instructions are loaded from `scripts/python/microcode.py`'s `INSTRUCTIONS_SET` dictionary
 - Each instruction has a `sim` field (Python code string executed via `exec()`) and cycle counts
 - The simulator calls `verifyInstructionSet()` at startup to validate opcodes
 - Unimplemented instructions produce a warning at startup
@@ -799,10 +806,10 @@ Standard Procedures (CSP):
 source .venv/bin/activate
 
 # 1. Compile Pascal to self-executing binary
-python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
+python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/current/pascal/hello.bin
 
 # 2. Run in simulator (works with standard --autorun)
-python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
+python simulate.py --autorun --program roms/apps/current/pascal/hello.bin --max-cycles 1000000 --quiet
 
 # 3. Check exit code
 echo $?   # 0 = success
@@ -875,7 +882,7 @@ See `pascal/LANGUAGE.md` for full language reference.
 
 ### On-board Editor/Compiler
 
-The line editor and single-pass Pascal compiler are **not** in ROM: build output is `roms/apps/asm/tinypascal_ide.bin`. Upload with **`u020000`** (XMODEM + OT header) and run with **`r020000`**. Compiler workspace lives on expansion RAM page 1 from about `0x016000` (see `pascal/consts.asm`); editor source remains on page 1 from `0x010000`.
+The line editor and single-pass Pascal compiler are **not** in ROM: build output is `roms/apps/current/asm/tinypascal_ide.bin`. Upload with **`u020000`** (XMODEM + OT header) and run with **`r020000`**. Compiler workspace lives on expansion RAM page 1 from about `0x016000` (see `pascal/consts.asm`); editor source remains on page 1 from `0x010000`.
 
 #### Editor Commands
 
@@ -899,7 +906,7 @@ Source is stored in expansion RAM page 1 (0x010000+), up to 255 lines with 80 by
 source .venv/bin/activate
 
 # Load IDE at 0x020000, autorun kernel with r020000, then drive the editor (q = quit to kernel)
-python simulate.py --autorun --program roms/apps/asm/tinypascal_ide.bin --address 0x020000 \
+python simulate.py --autorun --program roms/apps/current/asm/tinypascal_ide.bin --address 0x020000 \
   --max-cycles 5000000 --input $'lo\rprogram T;\rbegin\rwriteln(42)\rend.\r\r\rr\rq\r'
 ```
 
@@ -916,14 +923,14 @@ Use `pascal/examples/tinypascal_suite.pas` as a minimal regression suite so the 
 ```bash
 source .venv/bin/activate
 python pascal_compiler.py pascal/examples/tinypascal_suite.pas \
-  -o roms/apps/pascal/tinypascal_suite.bin
-python simulate.py --autorun --program roms/apps/pascal/tinypascal_suite.bin \
+  -o roms/apps/current/pascal/tinypascal_suite.bin
+python simulate.py --autorun --program roms/apps/current/pascal/tinypascal_suite.bin \
   --max-cycles 4000000 --quiet
 ```
 
 Expected output includes `--- suite ---`, numeric lines, `proc_ok`, `str_lit`, `not_ok`, `--- done ---`, exit code `0`.
 
-**On-board IDE @ 0x020000 with `lo` + `r`:** `apps/tinypascal_ide.asm` builds to `roms/apps/asm/tinypascal_ide.bin`. Load it at **0x020000** in the simulator; autorun sends `r020000` and starts the IDE.
+**On-board IDE @ 0x020000 with `lo` + `r`:** `apps/tinypascal_ide.asm` builds to `roms/apps/current/asm/tinypascal_ide.bin`. Load it at **0x020000** in the simulator; autorun sends `r020000` and starts the IDE.
 
 Automated paste + compile + run:
 
@@ -947,8 +954,17 @@ The on-board compiler supports the full Tiny Pascal language including procedure
 ```
 .venv/                   - Python 3.11 virtual environment
 assembly/ruledef.asm     - Instruction set definitions for CustomASM
+generate-all.sh          - Full build (ROM + apps)
+simulate.py              - CPU simulator
+pascal_compiler.py       - Tiny Pascal to P-code compiler
+scripts/                 - Build implementation (see scripts/README.md)
+  build-apps.sh          - App compiler
+  save-kernel-abi.sh     - Kernel ABI snapshot
+  lib/kernel-abi.sh      - Shared ABI helpers
+  python/                - microcode, lookup_tables, symbols, build_version, …
 kernel/
   kernel.asm             - Main kernel (includes P-Machine in unified build)
+  abi/                   - Saved kernel ABI snapshots (v<version>/)
   banks.asm              - ROM/RAM bank definitions (24 KB unified)
   build_config.asm       - Build configuration (BUILD_DEBUG flag)
   memmap.asm             - Kernel RAM allocation map (0x8000-0x83FF)
@@ -978,10 +994,10 @@ pascal/
 roms/                    - Compiled binaries
   system/                - Kernel, P-Machine, microcode, 7-segment ROMs
   apps/
-    asm/                 - Assembly app binaries (from apps/*.asm)
-    pascal/              - Pascal app binaries (from pascal/examples/*.pas)
-microcode.py             - Microcode ROM generator
-simulate.py              - CPU simulator
-pascal_compiler.py       - Tiny Pascal to P-code compiler
+    catalog.json         - OttoTerminal F10 index (per-kernel targets)
+    current/             - Latest kernel apps
+      asm/               - Assembly app binaries
+      pascal/            - Pascal app binaries
+    v<version>/          - Apps for saved kernel ABI (e.g. v1.2.101/)
 istructions.csv          - Instruction reference (CSV)
 ```

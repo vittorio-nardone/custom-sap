@@ -1,17 +1,17 @@
 ---
 description: Otto CPU simulator — headless testing and CI workflow
-globs: simulate.py,microcode.py
+globs: simulate.py,scripts/python/microcode.py
 alwaysApply: false
 ---
 
 # Otto Simulator (`simulate.py`)
 
-Python 3.10+; always `source .venv/bin/activate` first. Emulates full Otto hardware from `microcode.py` + kernel ROM.
+Python 3.10+; always `source .venv/bin/activate` first. Emulates full Otto hardware from `scripts/python/microcode.py` + kernel ROM.
 
 ## Headless / automated testing
 
 ```bash
-python simulate.py --autorun --program roms/apps/asm/myapp.bin --max-cycles 1000000 --quiet
+python simulate.py --autorun --program roms/apps/current/asm/myapp.bin --max-cycles 1000000 --quiet
 echo $?   # 0=success, 1=timeout, 2=error
 ```
 
@@ -31,7 +31,7 @@ Programs ending with **`RTS`** or **`HLT`** exit cleanly in autorun mode.
 ## Interactive / dev
 
 ```bash
-python simulate.py --program roms/apps/asm/myapp.bin   # hot-reloads on recompile
+python simulate.py --program roms/apps/current/asm/myapp.bin   # hot-reloads on recompile
 python simulate.py --simulate-serial                    # virtual serial port (minicom)
 python simulate.py --serial-device /dev/cu.usbserial-XXX  # real port (VGA32 / FTDI)
 ```

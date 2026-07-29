@@ -119,10 +119,10 @@ NATIVE_STUB_SIZE = 9
 OT_HEADER_SIZE = 6           # magic(2) + version(1) + address(3)
 PMACHINE_ADDR_DEFAULT = 0x4000
 
-def _read_pmachine_addr() -> int:
-    symbols_path = os.path.join(os.path.dirname(__file__) or '.', 'kernel', 'symbols.asm')
+def read_pmachine_addr(symbols_path: str | None = None) -> int:
+    path = symbols_path or os.path.join(os.path.dirname(__file__) or '.', 'kernel', 'symbols.asm')
     try:
-        with open(symbols_path, 'r') as f:
+        with open(path, 'r') as f:
             for line in f:
                 m = re.match(r'#const\s+PM_ENTRY\s*=\s*(0x[0-9A-Fa-f]+)', line)
                 if m:
@@ -131,7 +131,7 @@ def _read_pmachine_addr() -> int:
         pass
     return PMACHINE_ADDR_DEFAULT
 
-PMACHINE_ADDR = _read_pmachine_addr()
+PMACHINE_ADDR = read_pmachine_addr()
 
 # ── Token types ─────────────────────────────────────────────
 
@@ -1171,8 +1171,9 @@ class SubroutineInfo:
 # ── Code generator ──────────────────────────────────────────
 
 class CodeGenerator:
-    def __init__(self, base_address: int = 0x8400):
+    def __init__(self, base_address: int = 0x8400, pmachine_addr: int | None = None):
         self.base = base_address
+        self.pmachine_addr = PMACHINE_ADDR if pmachine_addr is None else pmachine_addr
         self.code = bytearray()
         self.strings: List[str] = []
         self._fixups: List[tuple[int, int]] = []
@@ -2114,8 +2115,8 @@ class CodeGenerator:
         stub.extend([0xA5, (pcode_addr >> 8) & 0xFF])
         stub.extend([0xA6, pcode_addr & 0xFF])
         stub.extend([0x20,
-                      (PMACHINE_ADDR >> 8) & 0xFF,
-                      PMACHINE_ADDR & 0xFF,
+                      (self.pmachine_addr >> 8) & 0xFF,
+                      self.pmachine_addr & 0xFF,
                       0x00])
         stub.append(0x60)
         return bytes(stub)
@@ -2187,10 +2188,12 @@ class CodeGenerator:
 
 # ── Public API ──────────────────────────────────────────────
 
-def compile_pascal(source: str, base_address: int = 0x8400) -> bytes:
+def compile_pascal(source: str, base_address: int = 0x8400,
+                   symbols_path: str | None = None) -> bytes:
     tokens = Lexer(source).tokenize()
     program = Parser(tokens).parse()
-    return CodeGenerator(base_address).generate(program)
+    pmachine_addr = read_pmachine_addr(symbols_path)
+    return CodeGenerator(base_address, pmachine_addr).generate(program)
 
 # ── CLI ─────────────────────────────────────────────────────
 
@@ -2202,13 +2205,15 @@ def main():
                     help="Output P-code binary file")
     ap.add_argument("--base", type=lambda x: int(x, 0), default=0x8400,
                     help="Base RAM address (default: 0x8400)")
+    ap.add_argument("--symbols", metavar="PATH",
+                    help="Kernel symbols.asm for PM_ENTRY (default: kernel/symbols.asm)")
     args = ap.parse_args()
 
     with open(args.source, 'r') as f:
         source = f.read()
 
     try:
-        binary = compile_pascal(source, args.base)
+        binary = compile_pascal(source, args.base, args.symbols)
     except SyntaxError as e:
         print(f"Compilation error: {e}", file=sys.stderr)
         sys.exit(1)

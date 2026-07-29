@@ -12,11 +12,13 @@ P-Machine in ROM (unified build). Python cross-compiler: `pascal_compiler.py`. L
 
 ```bash
 source .venv/bin/activate
-python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
-python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
+python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/current/pascal/hello.bin
+python simulate.py --autorun --program roms/apps/current/pascal/hello.bin --max-cycles 1000000 --quiet
 ```
 
 Binaries load at **0x8400** with native stub → `JSR PM_ENTRY`. Kernel `p` command runs raw P-code at 0x8400.
+
+For older kernel EEPROMs: `./scripts/build-apps.sh --abi v1.2.101 --pascal` (uses `PM_ENTRY` from `kernel/abi/v1.2.101/symbols.asm`).
 
 ## P-Machine RAM
 
@@ -27,7 +29,7 @@ Binaries load at **0x8400** with native stub → `JSR PM_ENTRY`. Kernel `p` comm
 
 ## On-board IDE (not in ROM)
 
-Build: `apps/tinypascal_ide.asm` → `roms/apps/asm/tinypascal_ide.bin`
+Build: `apps/tinypascal_ide.asm` → `roms/apps/current/asm/tinypascal_ide.bin`
 
 - Upload: **`u020000`**; run: **`r020000`**
 - Editor source: expansion RAM 0x010000+; compiler workspace ~0x016000 (`pascal/consts.asm`)

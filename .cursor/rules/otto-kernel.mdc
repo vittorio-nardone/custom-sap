@@ -16,6 +16,15 @@ source .venv/bin/activate && ./generate-all.sh
 
 Regenerates ROMs, **symbols.asm**, and all apps. Never hand-edit `kernel/symbols.asm`.
 
+After flashing EEPROMs, snapshot symbols for hardware targets:
+
+```bash
+./scripts/save-kernel-abi.sh              # or ./generate-all.sh --save-abi
+./scripts/build-apps.sh --abi v1.2.101    # apps for older kernel on hardware
+```
+
+Snapshots live in `kernel/abi/v<version>/`. Helpers in `scripts/lib/kernel-abi.sh`. See `kernel/abi/README.md`.
+
 ## Interrupt handlers (pointers in kernel RAM)
 
 | Source | Pointer addr |

@@ -55,9 +55,11 @@ This repository houses the complete design files and software components for the
 * **assembly/** - Instruction set architecture definitions
   * Compatible with [CustomASM](https://github.com/hlorenzi/customasm)
   * Defines Otto's complete instruction set
-* **microcode.py** - Core microcode generation toolchain
-* **7seg.py** - EEPROM content generator for 7-segment displays
-* **generate-all.sh** - One-click build script for all components
+* **scripts/** - Build toolchain (kernel ROM, apps, ABI snapshots, catalog)
+  * See `scripts/README.md` for layout and commands
+  * Python sources in `scripts/python/` (microcode, lookup tables, symbols, …)
+* **generate-all.sh** - One-click full build
+* **scripts/build-apps.sh** / **scripts/save-kernel-abi.sh** - App builds and kernel ABI snapshots
 
 ### System Software
 * **kernel/** - Operating system kernel source code
@@ -74,8 +76,10 @@ This repository houses the complete design files and software components for the
 * **devices/vga32/** - optional VGA32 console firmware (`OttoTerminal`) and build script
 * **roms/** - Binary files
   * **system/** - Microcode EEPROMs, unified kernel ROM (kernel + P-Machine + editor + compiler)
-  * **apps/asm/** - Assembly app binaries (compiled from `apps/*.asm`)
-  * **apps/pascal/** - Pascal app binaries (compiled from `pascal/examples/*.pas`)
+  * **apps/** - Application binaries and OttoTerminal catalog
+    * **catalog.json** - F10 app index (per-kernel targets)
+    * **current/asm/**, **current/pascal/** - Latest kernel builds
+    * **v\<version\>/asm/**, **v\<version\>/pascal/** - Apps for saved kernel ABI
 
 ### Documentation
 * **instruction.csv** - Complete assembly instruction reference
@@ -87,8 +91,18 @@ This repository houses the complete design files and software components for the
 
 1. To build all components, run:
 ```bash
+source .venv/bin/activate
 ./generate-all.sh
 ```
+
+Build apps only (no ROM rebuild), or for an older kernel EEPROM:
+
+```bash
+./scripts/build-apps.sh --pascal
+./scripts/build-apps.sh --abi v1.2.101 --pascal
+```
+
+See `kernel/abi/README.md` and `scripts/README.md` for kernel ABI snapshots and script layout.
 
 2. For hardware manufacturing:
    * Import EasyEDA files for circuit and PCB design review
@@ -102,8 +116,8 @@ This repository houses the complete design files and software components for the
 4. For Tiny Pascal development:
    ```bash
    # Cross-compile on host PC
-   python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
-   python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
+   python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/current/pascal/hello.bin
+   python simulate.py --autorun --program roms/apps/current/pascal/hello.bin --max-cycles 1000000 --quiet
 
    # Or use the on-board editor (kernel menu: 'e')
    python simulate.py   # then type 'e' to enter editor
@@ -133,11 +147,11 @@ python simulate.py --serial-device /dev/cu.usbserial-XXXX
 
 # Load a program; use 'r' + Enter on the VGA keyboard to run it
 python simulate.py --serial-device /dev/cu.usbserial-XXXX \
-  --program roms/apps/asm/helloworld.bin
+  --program roms/apps/current/asm/helloworld.bin
 
 # Autorun: send 'r'+CR on the serial line and exit when the app returns
 python simulate.py --serial-device /dev/cu.usbserial-XXXX \
-  --autorun --program roms/apps/asm/helloworld.bin --max-cycles 1000000
+  --autorun --program roms/apps/current/asm/helloworld.bin --max-cycles 1000000
 ```
 
 Use `ls /dev/cu.*` to find your adapter. `--serial-device` and `--simulate-serial` are mutually exclusive. Baud rate defaults to 115200 (`--serial-baud` to override).
@@ -145,7 +159,7 @@ Use `ls /dev/cu.*` to find your adapter. `--serial-device` and `--simulate-seria
 The simulator can also load a binary and watch the file for changes (interactive local mode):
 
 ```bash
-python simulate.py --program roms/apps/asm/_test_.bin
+python simulate.py --program roms/apps/current/asm/_test_.bin
 ```
 
 ### Headless mode
@@ -153,7 +167,7 @@ python simulate.py --program roms/apps/asm/_test_.bin
 The simulator supports a headless mode for automated testing and CI/CD pipelines. In this mode, no interactive terminal is required: the kernel boots, automatically executes the loaded program, and exits when the program completes (either via `RTS` or `HLT`).
 
 ```bash
-python ./simulate.py --autorun --program roms/apps/asm/helloworld.bin --max-cycles 1000000 --quiet
+python ./simulate.py --autorun --program roms/apps/current/asm/helloworld.bin --max-cycles 1000000 --quiet
 ```
 
 Available flags:
@@ -190,8 +204,8 @@ See `pascal/LANGUAGE.md` for the full language reference.
 ### Cross-compilation (host PC)
 
 ```bash
-python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/pascal/hello.bin
-python simulate.py --autorun --program roms/apps/pascal/hello.bin --max-cycles 1000000 --quiet
+python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/current/pascal/hello.bin
+python simulate.py --autorun --program roms/apps/current/pascal/hello.bin --max-cycles 1000000 --quiet
 ```
 
 ### On-board editor (on Otto or in simulator)
@@ -252,8 +266,11 @@ Compiling..OK(90B)
 > **Note**: The FORTH interpreter (`forth/`) has been deprecated and is no longer included in the build process or kernel menu. Its source files are retained in the repository for reference.
 
 ## Control words ROM generation
+
+Included in `./generate-all.sh`. To run the microcode step alone (from repo root):
+
 ```sh
-python microcode.py
+python scripts/python/microcode.py
 ```
 
 ## ROM generation

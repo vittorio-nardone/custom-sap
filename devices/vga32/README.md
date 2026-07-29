@@ -17,7 +17,7 @@ Text mode keeps enough DRAM for WiFi, HTTPS, and XMODEM upload alongside the ter
 | Context | Keys |
 |---------|------|
 | Idle footer | F1 Help · F10 Upload · F11 Settings |
-| F10 Apps Repository | ↑↓ select · **Enter** upload · **R** refresh · **ESC** exit |
+| F10 Apps Repository | ↑↓ select · **Enter** upload · **Tab** / **[ ]** kernel target · **A** auto-detect · **R** refresh · **ESC** exit |
 | F11 / sub-pages | ↑↓ · **Enter** · **ESC** exit |
 | Upload | On Otto first: **`u` + Enter** (XMODEM receive), then F10 → pick app → Enter |
 
@@ -37,7 +37,9 @@ cp devices/vga32/OttoTerminal/otto_secrets.h.example \
 # edit SSID / password — file is gitignored
 ```
 
-Apps catalog URL: `OTTO_WIFI_APPS_API_URL` in `otto_config.h`.
+Apps catalog: `roms/apps/catalog.json` on GitHub (per-kernel trees under `roms/apps/v*/`).
+Regenerate locally with `python3.11 scripts/python/update_app_catalog.py` after building apps.
+Configure repo URL in `otto_config.h` (`OTTO_WIFI_CATALOG_INDEX_URL`).
 
 ## Wiring (Otto serial 1 → ESP32)
 

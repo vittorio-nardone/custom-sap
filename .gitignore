@@ -2,6 +2,7 @@
 __pycache__
 .venv/
 .claude/
+.otto-build-apps.summary
 
 # Local WiFi credentials (see otto_secrets.h.example)
 devices/vga32/**/otto_secrets.h
