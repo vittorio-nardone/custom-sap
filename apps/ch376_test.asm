@@ -240,33 +240,31 @@
     jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
-    ; Ch376msc listDir: SET_FILE_NAME("*") then FILE_OPEN (no "/" prelude).
-    ldd .fn_star[15:8]
-    lde .fn_star[7:0]
+    ; Ch376msc cd("/"): open root, then wildcard in root (CommDef: "/*").
+    ldd .fn_root_slash[15:8]
+    lde .fn_root_slash[7:0]
     jsr ch376_cmd_set_file_name
     lda CH376_CMD_FILE_OPEN
     jsr ch376_cmd_interrupt
     bcc .list_root_fail
 
-    lda CH376_LAST_STATUS
-    cmp CH376_ERR_MISS_FILE
-    beq .list_root_done
-    cmp CH376_INT_DISK_READ
-    bne .list_root_fail
-    jsr .read_print_entry
+    ldd .fn_star_slash[15:8]
+    lde .fn_star_slash[7:0]
+    jsr ch376_cmd_set_file_name
+    lda CH376_CMD_FILE_OPEN
+    jsr ch376_cmd_interrupt
     bcc .list_root_fail
+    jsr .list_dispatch_int
+    bcc .list_root_fail
+    beq .list_root_done
 
 .list_root_enum:
     lda CH376_CMD_FILE_ENUM_GO
     jsr ch376_cmd_interrupt
     bcc .list_root_fail
-    lda CH376_LAST_STATUS
-    cmp CH376_ERR_MISS_FILE
-    beq .list_root_done
-    cmp CH376_INT_DISK_READ
-    bne .list_root_fail
-    jsr .read_print_entry
+    jsr .list_dispatch_int
     bcc .list_root_fail
+    beq .list_root_done
     jmp .list_root_enum
 
 .list_root_done:
@@ -282,17 +280,43 @@
     clc
     rts
 
-.read_print_entry:
+; After FILE_OPEN / FILE_ENUM_GO: handle 0x42 end, 0x1D/0x14 + data pull.
+; A=0 listing done, A=1 entry printed (call ENUM_GO), fail = clc.
+.list_dispatch_int:
+    lda CH376_LAST_STATUS
+    cmp CH376_ERR_MISS_FILE
+    beq .ldi_done
+    cmp CH376_INT_DISK_READ
+    beq .ldi_pull
+    cmp CH376_INT_SUCCESS
+    bne .ldi_fail
+.ldi_pull:
     jsr ch376_rd_usb_data0
-    beq .read_print_fail
+    bne .ldi_got_data
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    bne .ldi_fail
+    jsr ch376_cmd_dir_info_read
+    beq .ldi_done
+.ldi_got_data:
     cmp CH376_DIR_INFO_SIZE
-    bcc .read_print_fail
+    bcc .ldi_fail
+    lda CH376_BUF
+    beq .ldi_done
+    cmp 0xE5
+    beq .ldi_more
     jsr .print_direntry
     jsr ch376_print_nl
     inc CH376_FILE_COUNT
+.ldi_more:
+    lda 0x01
     sec
     rts
-.read_print_fail:
+.ldi_done:
+    lda 0x00
+    sec
+    rts
+.ldi_fail:
     clc
     rts
 
@@ -336,9 +360,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v12 (listdir fix)", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v13 (ST14 pull)", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v12 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v13 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -366,11 +390,13 @@
 .msg_list_fail:
     #d "List fail ST ", 0x00
 .msg_listing:
-    #d "Root listing (*):", 0x00
+    #d "Root listing (/*):", 0x00
 .msg_entries:
     #d "Entries: ", 0x00
-.fn_star:
-    #d "*", 0x00
+.fn_root_slash:
+    #d "/", 0x00
+.fn_star_slash:
+    #d "/*", 0x00
 .tag_dir:
     #d " <DIR>", 0x00
 

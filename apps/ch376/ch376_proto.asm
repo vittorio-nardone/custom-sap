@@ -128,6 +128,22 @@ ch376_cmd_set_file_name:
     jsr ch376_uart_cmd
     jmp ch376_uart_send_str
 
+; Ch376msc dirInfoRead: DIR_INFO_READ 0xFF then RD_USB_DATA0.
+; Returns A = data length (0 on fail). C=1 if command byte received.
+ch376_cmd_dir_info_read:
+    jsr ch376_uart_sync
+    lda CH376_CMD_DIR_INFO_READ
+    jsr ch376_uart_cmd
+    lda 0xFF
+    jsr ch376_uart_param
+    jsr ch376_wait_byte
+    bcc ch376_dir_info_fail
+    sta CH376_LAST_STATUS
+    jmp ch376_rd_usb_data0
+ch376_dir_info_fail:
+    lda 0x00
+    rts
+
 ch376_rd_usb_data0:
     phx
     jsr ch376_uart_sync
