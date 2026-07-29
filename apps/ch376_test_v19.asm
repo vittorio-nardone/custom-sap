@@ -300,6 +300,14 @@
     lda CH376_RD_LEN
     jsr ch376_print_hex8
     jsr ch376_print_nl
+    ldd .msg_pull[15:8]
+    lde .msg_pull[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_PULL_MODE
+    beq .list_no_pull
+    jsr ACIA_SEND_CHAR
+.list_no_pull:
+    jsr ch376_print_nl
 .list_root_done:
     ldd .msg_entries[15:8]
     lde .msg_entries[7:0]
@@ -393,9 +401,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v18", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v19", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v18 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v19 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -426,6 +434,8 @@
     #d "OPEN ST ", 0x00
 .msg_rd_len:
     #d "RD len ", 0x00
+.msg_pull:
+    #d "pull ", 0x00
 .msg_listing:
     #d "Root listing (*):", 0x00
 .msg_entries:
@@ -446,6 +456,8 @@ CH376_SCRATCH:
 CH376_OPEN_ST:
     #d 0x00
 CH376_RD_LEN:
+    #d 0x00
+CH376_PULL_MODE:
     #d 0x00
 CH376_ENUM_LEFT:
     #d 0x00

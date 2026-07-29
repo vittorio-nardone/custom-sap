@@ -99,6 +99,17 @@ ch376_usb_timeout_off:
     sta CH376_TMO+1
     rts
 
+; C=1 if ACIA2 RX holds a byte.
+ch376_uart_rx_pending:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
+    beq ch376_uart_rx_no
+    sec
+    rts
+ch376_uart_rx_no:
+    clc
+    rts
+
 ch376_print_nl:
     jmp ACIA_SEND_NEWLINE
 

@@ -150,75 +150,103 @@ ch376_dir_info_fail:
     lda 0x00
     rts
 
-; RD_USB_DATA0 for a FAT directory entry (max 32 B). Retries with USB timeout.
-; Returns A = bytes stored (0 on fail).
-ch376_rd_dir_entry:
+; Read USB payload after ST 0x14/0x1D.
+; If UART already has bytes (inline length), skip RD_USB_DATA0 command.
+; Sets CH376_PULL_MODE to 'I' inline or 'R' command path.
+; Returns A = bytes stored in CH376_BUF (0 on fail), C=1 on success.
+ch376_read_usb_payload:
     phx
     phy
     jsr ch376_usb_timeout_on
-    lda 0x08
-    sta CH376_SCRATCH
-ch376_rd_dir_retry:
-    jsr ch376_delay_long
-    jsr ch376_rd_usb_data0_once
-    bne ch376_rd_dir_done
-    dec CH376_SCRATCH
-    bne ch376_rd_dir_retry
     lda 0x00
-ch376_rd_dir_done:
+    sta CH376_PULL_MODE
+
+    jsr ch376_uart_rx_pending
+    bcs ch376_rup_inline_len
+    jsr ch376_delay_long
+    jsr ch376_uart_rx_pending
+    bcs ch376_rup_inline_len
+    jmp ch376_rup_rd_cmd
+
+ch376_rup_inline_len:
+    jsr ch376_wait_byte
+    bcc ch376_rup_fail
+    sta CH376_RD_LEN
+    beq ch376_rup_rd_cmd
+    lda 0x49
+    sta CH376_PULL_MODE
+    jmp ch376_rup_read_body
+
+ch376_rup_rd_cmd:
+    jsr ch376_uart_sync
+    lda CH376_CMD_RD_USB_DATA0
+    jsr ch376_uart_cmd
+    jsr ch376_wait_byte
+    bcc ch376_rup_fail
+    sta CH376_RD_LEN
+    beq ch376_rup_fail
+    lda 0x52
+    sta CH376_PULL_MODE
+
+ch376_rup_read_body:
+    ldx 0x00
+    ldy 0x00
+ch376_rup_loop:
+    cpx CH376_RD_LEN
+    bcs ch376_rup_done
+    jsr ch376_wait_byte
+    bcc ch376_rup_fail
+    cpy CH376_DIR_INFO_SIZE
+    bcs ch376_rup_skip_store
+    sta CH376_BUF,y
+    iny
+ch376_rup_skip_store:
+    inx
+    jmp ch376_rup_loop
+ch376_rup_done:
+    tya
     pha
     jsr ch376_usb_timeout_off
     pla
     ply
     plx
-    rts
-
-; Single RD_USB_DATA0 attempt. Stores up to CH376_DIR_INFO_SIZE bytes in CH376_BUF.
-; Uses CH376_RD_LEN for device packet length (does not clobber CH376_SCRATCH).
-; Returns A = stored length (0 on fail), C=1 on success.
-ch376_rd_usb_data0_once:
-    phx
-    phy
-    jsr ch376_uart_sync
-    lda CH376_CMD_RD_USB_DATA0
-    jsr ch376_uart_cmd
-    jsr ch376_wait_byte
-    bcc ch376_rd_once_fail
-    sta CH376_RD_LEN
-    beq ch376_rd_once_fail
-    ldx 0x00
-    ldy 0x00
-ch376_rd_once_loop:
-    jsr ch376_wait_byte
-    bcc ch376_rd_once_fail
-    cpy CH376_DIR_INFO_SIZE
-    bcs ch376_rd_once_skip
-    sta CH376_BUF,y
-    iny
-ch376_rd_once_skip:
-    inx
-    cpx CH376_RD_LEN
-    bne ch376_rd_once_loop
-    tya
-    ply
-    plx
     sec
     rts
-ch376_rd_once_fail:
+ch376_rup_fail:
     lda 0x00
+    pha
+    jsr ch376_usb_timeout_off
+    pla
     ply
     plx
     clc
     rts
 
-; Discard pending FAT data after FILE_OPEN (RD_USB_DATA0 only, like DISK_QUERY).
+; FAT directory entry read (retries). Returns A = stored length.
+ch376_rd_dir_entry:
+    phx
+    lda 0x04
+    sta CH376_SCRATCH
+ch376_rd_dir_retry:
+    jsr ch376_read_usb_payload
+    bne ch376_rd_dir_done
+    dec CH376_SCRATCH
+    bne ch376_rd_dir_retry
+    lda 0x00
+ch376_rd_dir_done:
+    plx
+    rts
+
+; Legacy single-shot RD command path (used by tests).
+ch376_rd_usb_data0_once:
+    jmp ch376_read_usb_payload
+
+; Discard pending FAT data after FILE_OPEN.
 ch376_consume_pending:
     lda CH376_LAST_STATUS
     cmp CH376_INT_SUCCESS
     beq ch376_consume_pull
     cmp CH376_INT_DISK_READ
-    beq ch376_consume_pull
-    cmp 0x20
     beq ch376_consume_pull
     rts
 ch376_consume_pull:
@@ -226,34 +254,6 @@ ch376_consume_pull:
 
 ch376_rd_usb_data0:
     phx
-    jsr ch376_usb_timeout_on
-    jsr ch376_delay_long
-    jsr ch376_uart_sync
-    lda CH376_CMD_RD_USB_DATA0
-    jsr ch376_uart_cmd
-    jsr ch376_wait_byte
-    bcc ch376_rd_fail
-    sta CH376_RD_LEN
-    beq ch376_rd_done_len
-    ldx 0x00
-ch376_rd_loop:
-    jsr ch376_wait_byte
-    bcc ch376_rd_fail
-    sta CH376_BUF,x
-    inx
-    cpx CH376_RD_LEN
-    bne ch376_rd_loop
-ch376_rd_done_len:
-    lda CH376_RD_LEN
-    pha
-    jsr ch376_usb_timeout_off
-    pla
-    plx
-    rts
-ch376_rd_fail:
-    lda 0x00
-    pha
-    jsr ch376_usb_timeout_off
-    pla
+    jsr ch376_read_usb_payload
     plx
     rts
