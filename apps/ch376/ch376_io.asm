@@ -66,6 +66,39 @@ ch376_delay_outer:
     plx
     rts
 
+; ~300ms busy-wait at 1 MHz — USB stick may need time before RD_USB_DATA0.
+ch376_delay_long:
+    phx
+    phy
+    ldx 0x00
+    ldy 0x08
+ch376_delay_long_outer:
+    dex
+    bne ch376_delay_long_outer
+    dey
+    bne ch376_delay_long_outer
+    ply
+    plx
+    rts
+
+; Save/restore CH376_TMO around slow USB reads (Ch376msc ANSWTIMEOUT ~1s).
+ch376_usb_timeout_on:
+    lda CH376_TMO
+    sta CH376_TMO_SAVE
+    lda CH376_TMO+1
+    sta CH376_TMO_SAVE+1
+    lda 0xFF
+    sta CH376_TMO
+    sta CH376_TMO+1
+    rts
+
+ch376_usb_timeout_off:
+    lda CH376_TMO_SAVE
+    sta CH376_TMO
+    lda CH376_TMO_SAVE+1
+    sta CH376_TMO+1
+    rts
+
 ch376_print_nl:
     jmp ACIA_SEND_NEWLINE
 

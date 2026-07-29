@@ -150,20 +150,25 @@ ch376_dir_info_fail:
     lda 0x00
     rts
 
-; RD_USB_DATA0 for a FAT directory entry (max 32 B). Retries on timeout.
+; RD_USB_DATA0 for a FAT directory entry (max 32 B). Retries with USB timeout.
 ; Returns A = bytes stored (0 on fail).
 ch376_rd_dir_entry:
     phx
     phy
-    ldy 0x03
+    jsr ch376_usb_timeout_on
+    lda 0x08
+    sta CH376_SCRATCH
 ch376_rd_dir_retry:
-    jsr ch376_delay_short
+    jsr ch376_delay_long
     jsr ch376_rd_usb_data0_once
     bne ch376_rd_dir_done
-    dey
+    dec CH376_SCRATCH
     bne ch376_rd_dir_retry
     lda 0x00
 ch376_rd_dir_done:
+    pha
+    jsr ch376_usb_timeout_off
+    pla
     ply
     plx
     rts
@@ -221,6 +226,8 @@ ch376_consume_pull:
 
 ch376_rd_usb_data0:
     phx
+    jsr ch376_usb_timeout_on
+    jsr ch376_delay_long
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
     jsr ch376_uart_cmd
@@ -238,9 +245,15 @@ ch376_rd_loop:
     bne ch376_rd_loop
 ch376_rd_done_len:
     lda CH376_RD_LEN
+    pha
+    jsr ch376_usb_timeout_off
+    pla
     plx
     rts
 ch376_rd_fail:
     lda 0x00
+    pha
+    jsr ch376_usb_timeout_off
+    pla
     plx
     rts

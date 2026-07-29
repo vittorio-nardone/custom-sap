@@ -393,9 +393,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v17", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v18", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v17 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v18 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -438,6 +438,8 @@
     #d " <DIR>", 0x00
 
 CH376_TMO:
+    #d 0x00, 0x00
+CH376_TMO_SAVE:
     #d 0x00, 0x00
 CH376_SCRATCH:
     #d 0x00
