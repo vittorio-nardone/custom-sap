@@ -92,6 +92,21 @@ ch376_wait_status_fail:
     clc
     rts
 
+; Like ch376_cmd_wait_status but does not flush RX (file enum chain).
+ch376_cmd_interrupt:
+    pha
+    jsr ch376_uart_sync
+    pla
+    jsr ch376_uart_cmd
+    jsr ch376_wait_byte
+    bcc ch376_interrupt_fail
+    sta CH376_LAST_STATUS
+    sec
+    rts
+ch376_interrupt_fail:
+    clc
+    rts
+
 ch376_cmd_set_file_name:
     jsr ch376_uart_flush
     jsr ch376_uart_sync

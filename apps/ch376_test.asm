@@ -213,12 +213,19 @@
     rts
 
 .read_disk_id:
+    lda CH376_CMD_DISK_QUERY
+    jsr ch376_cmd_interrupt
+    bcc .read_disk_id_done
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    bne .read_disk_id_done
     jsr ch376_rd_usb_data0
     beq .read_disk_id_done
+    pha
     ldd .msg_disk_id[15:8]
     lde .msg_disk_id[7:0]
     jsr ACIA_SEND_STRING
-    lda CH376_BUF
+    pla
     jsr ch376_print_hex8
     jsr ch376_print_nl
 .read_disk_id_done:
@@ -233,42 +240,51 @@
     jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
-    ldd .fn_root_all[15:8]
-    lde .fn_root_all[7:0]
+    ldd .fn_star[15:8]
+    lde .fn_star[7:0]
     jsr ch376_cmd_set_file_name
 
     lda CH376_CMD_FILE_OPEN
-    jsr ch376_cmd_wait_status
+    jsr ch376_cmd_interrupt
     bcc .list_root_fail
     lda CH376_LAST_STATUS
     jsr ch376_print_status
+    jmp .list_root_dispatch
 
+.list_root_loop:
+    lda CH376_CMD_FILE_ENUM_GO
+    jsr ch376_cmd_interrupt
+    bcc .list_root_fail
+    jmp .list_root_dispatch
+
+.list_root_dispatch:
     lda CH376_LAST_STATUS
     cmp CH376_ERR_MISS_FILE
     beq .list_root_done
-    cmp CH376_ERR_OPEN_DIR
-    beq .list_root_enum
     cmp CH376_INT_DISK_READ
-    bne .list_root_check_open
-    jsr .read_print_entry
-    jmp .list_root_enum
-
-.list_root_check_open:
-    lda CH376_LAST_STATUS
+    beq .list_root_read
     cmp CH376_INT_SUCCESS
-    bne .list_root_fail
+    beq .list_root_enum_once
+    cmp CH376_ERR_OPEN_DIR
+    beq .list_root_enum_once
+    jmp .list_root_fail
 
-.list_root_enum:
+.list_root_enum_once:
     lda CH376_CMD_FILE_ENUM_GO
-    jsr ch376_cmd_wait_status
+    jsr ch376_cmd_interrupt
     bcc .list_root_fail
     lda CH376_LAST_STATUS
     cmp CH376_ERR_MISS_FILE
     beq .list_root_done
     cmp CH376_INT_DISK_READ
-    bne .list_root_fail
+    beq .list_root_read
+    cmp CH376_INT_SUCCESS
+    beq .list_root_done
+    jmp .list_root_fail
+
+.list_root_read:
     jsr .read_print_entry
-    jmp .list_root_enum
+    jmp .list_root_loop
 
 .list_root_done:
     ldd .msg_entries[15:8]
@@ -332,9 +348,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v7 (re-upload!)", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v8 (re-upload!)", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v7 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v8 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -362,11 +378,11 @@
 .msg_list_fail:
     #d "List fail ST ", 0x00
 .msg_listing:
-    #d "Root listing (/*):", 0x00
+    #d "Root listing (*):", 0x00
 .msg_entries:
     #d "Entries: ", 0x00
-.fn_root_all:
-    #d "/", "*", 0x00
+.fn_star:
+    #d "*", 0x00
 .tag_dir:
     #d " <DIR>", 0x00
 
