@@ -19,6 +19,12 @@ ch376_uart_send_str:
 ch376_uart_send_str_loop:
     lda de,x
     beq ch376_uart_send_str_term
+    cmp 0x61
+    bcc ch376_uart_send_str_put
+    cmp 0x7B
+    bcs ch376_uart_send_str_put
+    sbc 0x1F
+ch376_uart_send_str_put:
     jsr ch376_uart_putc
     inx
     bne ch376_uart_send_str_loop

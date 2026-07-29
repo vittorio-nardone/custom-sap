@@ -1,5 +1,5 @@
 ; CH376S constants (serial UART mode, 115200 8N1 on ACIA #2).
-; Shared by ch376_test.asm; intended for future kernel/storage module.
+; Shared by ch376_test_v*.asm; intended for future kernel/storage module.
 
 #const CH376_SYNC1 = 0x57
 #const CH376_SYNC2 = 0xAB
