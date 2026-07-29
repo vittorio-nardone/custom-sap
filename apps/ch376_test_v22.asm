@@ -293,7 +293,14 @@
     jsr .set_timeout_long
     jsr ch376_rd_usb_data0
     jsr .set_timeout
-    beq .read_disk_id_done
+    bne .read_disk_id_ok
+    ldd .msg_disk_rd_fail[15:8]
+    lde .msg_disk_rd_fail[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_print_nl
+    jsr .print_rd_tail
+    jmp .read_disk_id_done
+.read_disk_id_ok:
     pha
     ldd .msg_disk_id[15:8]
     lde .msg_disk_id[7:0]
@@ -303,6 +310,19 @@
     jsr ch376_print_nl
 .read_disk_id_done:
     rts
+
+.print_rd_tail:
+    ldd .msg_gst[15:8]
+    lde .msg_gst[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_LAST_GST
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    ldd .msg_rd_tail[15:8]
+    lde .msg_rd_tail[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_drain_count
+    jmp ch376_print_hex8
 
 .list_root:
     lda 0x00
@@ -360,6 +380,18 @@
     lde .msg_rd_len[7:0]
     jsr ACIA_SEND_STRING
     lda CH376_RD_LEN
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    ldd .msg_gst[15:8]
+    lde .msg_gst[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_LAST_GST
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    ldd .msg_rd_tail[15:8]
+    lde .msg_rd_tail[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_drain_count
     jsr ch376_print_hex8
     jsr ch376_print_nl
     ldd .msg_int_pin[15:8]
@@ -469,9 +501,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v21", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v22", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v21 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v22 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -494,6 +526,8 @@
     #d "DISK_MOUNT: ", 0x00
 .msg_disk_id:
     #d "Disk id len: ", 0x00
+.msg_disk_rd_fail:
+    #d "Disk RD fail", 0x00
 .msg_disk_q:
     #d "DISK_QUERY ST ", 0x00
 .msg_acia2_st:
@@ -516,6 +550,10 @@
     #d "OPEN ST ", 0x00
 .msg_rd_len:
     #d "RD len ", 0x00
+.msg_gst:
+    #d "GST ", 0x00
+.msg_rd_tail:
+    #d "RD tail ", 0x00
 .msg_pull:
     #d "pull ", 0x00
 .msg_listing:
@@ -534,6 +572,8 @@ CH376_TMO_SAVE:
 CH376_SCRATCH:
     #d 0x00
 CH376_OPEN_ST:
+    #d 0x00
+CH376_LAST_GST:
     #d 0x00
 CH376_DRAIN_CNT:
     #d 0x00
