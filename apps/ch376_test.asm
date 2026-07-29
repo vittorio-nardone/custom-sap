@@ -127,6 +127,15 @@
     ldd .msg_usb_mode[15:8]
     lde .msg_usb_mode[7:0]
     jsr ACIA_SEND_STRING
+
+    ldd .msg_usb_reset[15:8]
+    lde .msg_usb_reset[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_USB_MODE_HOST_RESET
+    jsr ch376_cmd_set_usb_mode
+    bcc .test_usb_to
+    jsr ch376_print_status
+
     lda CH376_USB_MODE_HOST
     jsr ch376_cmd_set_usb_mode
     bcc .test_usb_to
@@ -138,27 +147,39 @@
     jsr ch376_print_status
 
     jsr ch376_drain_rx
+    jsr ch376_delay_short
 
     ldd .msg_mount[15:8]
     lde .msg_mount[7:0]
     jsr ACIA_SEND_STRING
     jsr .set_timeout_long
-    lda 0x05
+    lda 0x08
     sta CH376_SCRATCH
 .test_disk_mount_loop:
     lda CH376_CMD_DISK_MOUNT
     jsr ch376_cmd_wait_status
-    bcs .test_disk_mount_got
+    bcs .test_disk_mount_check
     dec CH376_SCRATCH
-    bne .test_disk_mount_loop
+    beq .test_disk_mount_done
+    jsr ch376_delay_short
+    jmp .test_disk_mount_loop
+.test_disk_mount_check:
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    beq .test_disk_mount_done
+    dec CH376_SCRATCH
+    beq .test_disk_mount_done
+    jsr ch376_delay_short
+    jmp .test_disk_mount_loop
+.test_disk_mount_done:
     jsr .set_timeout
-    jmp .test_usb_to
-.test_disk_mount_got:
-    jsr .set_timeout
+    lda CH376_LAST_STATUS
+    beq .test_usb_to
     jsr ch376_print_status
     cmp CH376_INT_SUCCESS
     bne .test_usb_fail
 
+    jsr .read_disk_id
     jsr .list_root
     bcc .test_usb_fail
     sec
@@ -171,7 +192,25 @@
     clc
     rts
 .test_usb_fail:
+    ldd .msg_fail_st[15:8]
+    lde .msg_fail_st[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_LAST_STATUS
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
     clc
+    rts
+
+.read_disk_id:
+    jsr ch376_rd_usb_data0
+    beq .read_disk_id_done
+    ldd .msg_disk_id[15:8]
+    lde .msg_disk_id[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_BUF
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+.read_disk_id_done:
     rts
 
 .list_root:
@@ -276,9 +315,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v5 (re-upload!)", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v6 (re-upload!)", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v5 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v6 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -295,8 +334,14 @@
     #d "OK", 0x00
 .msg_usb_mode:
     #d "SET_USB_MODE host: ", 0x00
+.msg_usb_reset:
+    #d "SET_USB_MODE reset: ", 0x00
 .msg_mount:
     #d "DISK_MOUNT: ", 0x00
+.msg_disk_id:
+    #d "Disk id len: ", 0x00
+.msg_fail_st:
+    #d "USB fail ST ", 0x00
 .msg_listing:
     #d "Root listing (/*):", 0x00
 .msg_entries:

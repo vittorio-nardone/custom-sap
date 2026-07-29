@@ -51,6 +51,21 @@ ch376_drain_rx:
     jsr ch376_uart_flush
     rts
 
+; Rough ~50ms busy-wait at 1 MHz (tune if needed).
+ch376_delay_short:
+    phx
+    phy
+    ldx 0x00
+    ldy 0xC0
+ch376_delay_outer:
+    dex
+    bne ch376_delay_outer
+    dey
+    bne ch376_delay_outer
+    ply
+    plx
+    rts
+
 ch376_print_nl:
     jmp ACIA_SEND_NEWLINE
 

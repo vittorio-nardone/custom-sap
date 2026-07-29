@@ -83,7 +83,14 @@ ch376_cmd_wait_status:
     jsr ch376_uart_sync
     pla
     jsr ch376_uart_cmd
-    jmp ch376_wait_byte
+    jsr ch376_wait_byte
+    bcc ch376_wait_status_fail
+    sta CH376_LAST_STATUS
+    sec
+    rts
+ch376_wait_status_fail:
+    clc
+    rts
 
 ch376_cmd_set_file_name:
     jsr ch376_uart_flush
