@@ -489,9 +489,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v24", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v25", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v24 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v25 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:

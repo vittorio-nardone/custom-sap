@@ -140,12 +140,13 @@ ch376_cmd_set_file_name:
 ; Ch376msc dirInfoRead: DIR_INFO_READ 0xFF then RD_USB_DATA0.
 ; Returns A = data length (0 on fail). C=1 if command byte received.
 ch376_cmd_dir_info_read:
+    jsr ch376_drain_rx
     jsr ch376_uart_sync
     lda CH376_CMD_DIR_INFO_READ
     jsr ch376_uart_cmd
     lda 0xFF
     jsr ch376_uart_param
-    jsr ch376_wait_byte
+    jsr ch376_wait_response_byte
     bcc ch376_dir_info_fail
     sta CH376_LAST_STATUS
     jmp ch376_rd_dir_entry
@@ -153,9 +154,9 @@ ch376_dir_info_fail:
     lda 0x00
     rts
 
-; Read USB payload after ST 0x14/0x1D (Ch376msc rdFatInfo UART — RD only).
-; UART already delivered interrupt status with the prior command; do not
-; send GET_STATUS here (breaks ST 0x1D directory reads on this link).
+; Read USB payload after ST 0x14/0x1D.
+; ST 0x1D may stream length+data on UART before RD_USB_DATA0 (ST 0x14 needs RD cmd).
+; Wait briefly, then inline length if RX pending, else Ch376msc RD_USB_DATA0.
 ; Returns A = bytes stored in CH376_BUF (0 on fail), C=1 on success.
 ch376_read_usb_payload:
     phx
@@ -163,6 +164,14 @@ ch376_read_usb_payload:
     jsr ch376_usb_timeout_on
     lda 0x00
     sta CH376_PULL_MODE
+
+    ldx 0x0C
+ch376_rup_wait_rx:
+    jsr ch376_uart_rx_pending
+    bcs ch376_rup_inline_len
+    jsr ch376_delay_short
+    dex
+    bne ch376_rup_wait_rx
 
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
@@ -172,6 +181,15 @@ ch376_read_usb_payload:
     sta CH376_RD_LEN
     beq ch376_rup_fail
     lda 0x52
+    sta CH376_PULL_MODE
+    jmp ch376_rup_read_body
+
+ch376_rup_inline_len:
+    jsr ch376_wait_response_byte
+    bcc ch376_rup_fail
+    sta CH376_RD_LEN
+    beq ch376_rup_fail
+    lda 0x49
     sta CH376_PULL_MODE
 
 ch376_rup_read_body:
@@ -214,6 +232,7 @@ ch376_rd_dir_entry:
     lda 0x04
     sta CH376_SCRATCH
 ch376_rd_dir_retry:
+    jsr ch376_delay_long
     jsr ch376_read_usb_payload
     bne ch376_rd_dir_done
     dec CH376_SCRATCH
