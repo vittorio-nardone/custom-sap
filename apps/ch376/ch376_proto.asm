@@ -154,11 +154,26 @@ ch376_dir_info_fail:
     lda 0x00
     rts
 
-; Read USB payload after ST 0x14/0x1D.
-; ST 0x1D may stream length+data on UART before RD_USB_DATA0 (ST 0x14 needs RD cmd).
-; Wait briefly, then inline length if RX pending, else Ch376msc RD_USB_DATA0.
-; Returns A = bytes stored in CH376_BUF (0 on fail), C=1 on success.
-ch376_read_usb_payload:
+; RD_USB_DATA0 only (after ST 0x14 disk query — Ch376msc rdDiskInfo).
+ch376_read_usb_payload_rd:
+    phx
+    phy
+    jsr ch376_usb_timeout_on
+    lda 0x00
+    sta CH376_PULL_MODE
+    jsr ch376_uart_sync
+    lda CH376_CMD_RD_USB_DATA0
+    jsr ch376_uart_cmd
+    jsr ch376_wait_response_byte
+    bcc ch376_rup_fail
+    sta CH376_RD_LEN
+    beq ch376_rup_fail
+    lda 0x52
+    sta CH376_PULL_MODE
+    jmp ch376_rup_read_body
+
+; After ST 0x1D: poll UART for inline length, else RD_USB_DATA0.
+ch376_read_usb_payload_dir:
     phx
     phy
     jsr ch376_usb_timeout_on
@@ -166,12 +181,12 @@ ch376_read_usb_payload:
     sta CH376_PULL_MODE
 
     ldx 0x0C
-ch376_rup_wait_rx:
+ch376_rupd_wait_rx:
     jsr ch376_uart_rx_pending
-    bcs ch376_rup_inline_len
+    bcs ch376_rupd_inline_len
     jsr ch376_delay_short
     dex
-    bne ch376_rup_wait_rx
+    bne ch376_rupd_wait_rx
 
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
@@ -184,13 +199,14 @@ ch376_rup_wait_rx:
     sta CH376_PULL_MODE
     jmp ch376_rup_read_body
 
-ch376_rup_inline_len:
+ch376_rupd_inline_len:
     jsr ch376_wait_response_byte
     bcc ch376_rup_fail
     sta CH376_RD_LEN
     beq ch376_rup_fail
     lda 0x49
     sta CH376_PULL_MODE
+    jmp ch376_rup_read_body
 
 ch376_rup_read_body:
     ldx 0x00
@@ -232,8 +248,7 @@ ch376_rd_dir_entry:
     lda 0x04
     sta CH376_SCRATCH
 ch376_rd_dir_retry:
-    jsr ch376_delay_long
-    jsr ch376_read_usb_payload
+    jsr ch376_read_usb_payload_dir
     bne ch376_rd_dir_done
     dec CH376_SCRATCH
     bne ch376_rd_dir_retry
@@ -244,7 +259,7 @@ ch376_rd_dir_done:
 
 ; Legacy single-shot RD command path (used by tests).
 ch376_rd_usb_data0_once:
-    jmp ch376_read_usb_payload
+    jmp ch376_read_usb_payload_rd
 
 ; Discard pending FAT data after FILE_OPEN.
 ch376_consume_pending:
@@ -259,6 +274,6 @@ ch376_consume_pull:
 
 ch376_rd_usb_data0:
     phx
-    jsr ch376_read_usb_payload
+    jsr ch376_read_usb_payload_rd
     plx
     rts

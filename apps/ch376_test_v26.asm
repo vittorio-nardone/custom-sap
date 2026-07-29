@@ -309,6 +309,17 @@
     jsr ch376_print_hex8
     jsr ch376_print_nl
 .read_disk_id_done:
+    jsr ch376_drain_count
+    sta CH376_DRAIN_CNT
+    lda CH376_DRAIN_CNT
+    beq .read_disk_id_out
+    ldd .msg_post_disk[15:8]
+    lde .msg_post_disk[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_DRAIN_CNT
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+.read_disk_id_out:
     rts
 
 .print_rd_tail:
@@ -333,6 +344,7 @@
     ldd .fn_star[15:8]
     lde .fn_star[7:0]
     jsr ch376_cmd_set_file_name
+    jsr ch376_drain_rx
     lda CH376_CMD_FILE_OPEN
     jsr ch376_cmd_interrupt
     bcc .list_root_fail
@@ -489,9 +501,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v25", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v26", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v25 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v26 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -530,6 +542,8 @@
     #d "Link test fail", 0x00
 .msg_post_mount:
     #d "Post-mount drain ", 0x00
+.msg_post_disk:
+    #d "Post-disk drain ", 0x00
 .msg_fail_st:
     #d "USB fail ST ", 0x00
 .msg_list_fail:
