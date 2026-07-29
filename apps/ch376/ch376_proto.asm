@@ -136,19 +136,13 @@ ch376_interrupt_fail:
     clc
     rts
 
-; SET_FILE_NAME: D:E -> null-terminated name. Waits for UART status (datasheet: IRQ when done).
+; SET_FILE_NAME: D:E -> null-terminated name. No UART status (Ch376msc sendFilename).
 ch376_cmd_set_file_name:
     jsr ch376_uart_sync
     lda CH376_CMD_SET_FILE_NAME
     jsr ch376_uart_cmd
     jsr ch376_uart_send_str
-    jsr ch376_wait_response_byte
-    bcc ch376_set_fname_fail
-    sta CH376_LAST_STATUS
     sec
-    rts
-ch376_set_fname_fail:
-    clc
     rts
 
 ; Ch376msc dirInfoRead: DIR_INFO_READ 0xFF then RD_USB_DATA0.
