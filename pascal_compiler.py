@@ -1171,9 +1171,11 @@ class SubroutineInfo:
 # ── Code generator ──────────────────────────────────────────
 
 class CodeGenerator:
-    def __init__(self, base_address: int = 0x8400, pmachine_addr: int | None = None):
+    def __init__(self, base_address: int = 0x8400, pmachine_addr: int | None = None,
+                 ot_header: bool = True):
         self.base = base_address
         self.pmachine_addr = PMACHINE_ADDR if pmachine_addr is None else pmachine_addr
+        self.ot_header = ot_header
         self.code = bytearray()
         self.strings: List[str] = []
         self._fixups: List[tuple[int, int]] = []
@@ -2182,18 +2184,18 @@ class CodeGenerator:
         header.append((data_offset >> 8) & 0xFF)
 
         stub = self._build_native_stub(pcode_base)
-        ot_header = self._build_ot_header()
+        ot_prefix = self._build_ot_header() if self.ot_header else b''
 
-        return ot_header + bytes(stub) + bytes(header + self.code + data)
+        return ot_prefix + bytes(stub) + bytes(header + self.code + data)
 
 # ── Public API ──────────────────────────────────────────────
 
 def compile_pascal(source: str, base_address: int = 0x8400,
-                   symbols_path: str | None = None) -> bytes:
+                   symbols_path: str | None = None, ot_header: bool = True) -> bytes:
     tokens = Lexer(source).tokenize()
     program = Parser(tokens).parse()
     pmachine_addr = read_pmachine_addr(symbols_path)
-    return CodeGenerator(base_address, pmachine_addr).generate(program)
+    return CodeGenerator(base_address, pmachine_addr, ot_header=ot_header).generate(program)
 
 # ── CLI ─────────────────────────────────────────────────────
 
@@ -2207,13 +2209,16 @@ def main():
                     help="Base RAM address (default: 0x8400)")
     ap.add_argument("--symbols", metavar="PATH",
                     help="Kernel symbols.asm for PM_ENTRY (default: kernel/symbols.asm)")
+    ap.add_argument("--no-ot-header", action="store_true",
+                    help="Omit 6-byte OT upload header (kernels before XMODEM_AUTO_ADDR)")
     args = ap.parse_args()
 
     with open(args.source, 'r') as f:
         source = f.read()
 
     try:
-        binary = compile_pascal(source, args.base, args.symbols)
+        binary = compile_pascal(source, args.base, args.symbols,
+                                ot_header=not args.no_ot_header)
     except SyntaxError as e:
         print(f"Compilation error: {e}", file=sys.stderr)
         sys.exit(1)

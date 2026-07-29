@@ -13,7 +13,12 @@ for that kernel:
 | `symbols.txt` | Raw symbol map from the kernel build |
 | `symbols.asm` | `#const` definitions included by apps |
 | `kernel-rom.bin` | Matching ROM image (simulator / reference) |
-| `manifest.json` | Version, build date, git commit, ROM size |
+| `kernel-rom.bin` | Matching ROM image (simulator / reference) |
+| `manifest.json` | Version, build date, git commit, ROM size, `ot_header` |
+
+`ot_header` in `manifest.json` indicates whether built app binaries include the
+6-byte OT upload prefix (kernels with `XMODEM_AUTO_ADDR` in symbols.asm).
+Legacy kernels (e.g. v1.2.101) use raw binaries without the OT header.
 
 Built app binaries live under `roms/apps/` (not in `kernel/abi/`):
 

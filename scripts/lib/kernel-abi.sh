@@ -50,6 +50,34 @@ otto_abi_manifest_path() {
     echo "$(otto_abi_version_dir "$1")/manifest.json"
 }
 
+# Return 0 if OT upload header (6-byte "OT" prefix) is supported by the target kernel.
+otto_abi_ot_header_supported() {
+    local version="${1:-}"
+    local repo symbols_asm manifest
+
+    repo="$(otto_repo_root)"
+
+    if [ -z "$version" ]; then
+        symbols_asm="${repo}/kernel/symbols.asm"
+    else
+        manifest="$(otto_abi_manifest_path "$version")"
+        if [ -f "$manifest" ]; then
+            if grep -qE '"ot_header"[[:space:]]*:[[:space:]]*false' "$manifest"; then
+                return 1
+            fi
+            if grep -qE '"ot_header"[[:space:]]*:[[:space:]]*true' "$manifest"; then
+                return 0
+            fi
+        fi
+        symbols_asm="$(otto_abi_symbols_asm "$version")"
+    fi
+
+    if [ -f "$symbols_asm" ] && grep -qE '^#const XMODEM_AUTO_ADDR' "$symbols_asm"; then
+        return 0
+    fi
+    return 1
+}
+
 otto_abi_symbols_asm() {
     echo "$(otto_abi_version_dir "$1")/symbols.asm"
 }
@@ -131,12 +159,17 @@ otto_abi_save() {
     saved_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
     rom_size="$(stat -f%z "$kernel_rom" 2>/dev/null || stat -c%s "$kernel_rom")"
     build_debug="$(otto_build_debug_from_symbols "$symbols_txt")"
+    local ot_header=0
+    if grep -qE '^#const XMODEM_AUTO_ADDR' "$symbols_asm"; then
+        ot_header=1
+    fi
 
     cat > "${dest}/manifest.json" <<EOF
 {
   "kernel_version": "v${version}",
   "kernel_build_date": "${build_date}",
   "build_debug": ${build_debug},
+  "ot_header": $([ "$ot_header" -eq 1 ] && echo true || echo false),
   "git_commit": "${git_commit}",
   "saved_at": "${saved_at}",
   "rom_size": ${rom_size},

@@ -100,6 +100,11 @@ ASM_OUT="$(otto_abi_output_dir "$KERNEL_ABI")"
 PASCAL_OUT="$(otto_abi_pascal_output_dir "$KERNEL_ABI")"
 mkdir -p "$ASM_OUT" "$PASCAL_OUT"
 
+ADD_OT_HEADER=0
+if otto_abi_ot_header_supported "$KERNEL_ABI"; then
+    ADD_OT_HEADER=1
+fi
+
 if [ ${#APP_FILES[@]} -eq 0 ]; then
     for app in "${REPO_ROOT}/apps"/*.asm; do
         [ -e "$app" ] || continue
@@ -122,7 +127,7 @@ for app in "${APP_FILES[@]}"; do
         continue
     fi
     addr="$(awk '/@load-address/{print $3; exit}' "$app")"
-    if [ -n "$addr" ]; then
+    if [ -n "$addr" ] && [ "$ADD_OT_HEADER" = "1" ]; then
         python3.11 "${SCRIPTS_DIR}/python/add_header.py" "${ASM_OUT}/${base}.bin" --address "$addr"
         OT_COUNT=$((OT_COUNT + 1))
     fi
@@ -130,7 +135,10 @@ for app in "${APP_FILES[@]}"; do
 done
 
 if [ "$BUILD_PASCAL" = "1" ]; then
-    PASCAL_COUNT=0
+    PASCAL_OT_ARG=""
+    if [ "$ADD_OT_HEADER" != "1" ]; then
+        PASCAL_OT_ARG="--no-ot-header"
+    fi
     SYMBOLS_ARG=""
     if [ -n "$KERNEL_ABI" ]; then
         SYMBOLS_ARG="--symbols $(otto_abi_symbols_asm "$KERNEL_ABI")"
@@ -139,7 +147,7 @@ if [ "$BUILD_PASCAL" = "1" ]; then
         [ -e "$pas" ] || continue
         base="$(basename "$pas" .pas)"
         # shellcheck disable=SC2086
-        if ! python3.11 "${REPO_ROOT}/pascal_compiler.py" $SYMBOLS_ARG \
+        if ! python3.11 "${REPO_ROOT}/pascal_compiler.py" $SYMBOLS_ARG $PASCAL_OT_ARG \
             "$pas" -o "${PASCAL_OUT}/${base}.bin"; then
             echo "WARN: skipped ${base} (pascal build failed for this kernel ABI)" >&2
             continue

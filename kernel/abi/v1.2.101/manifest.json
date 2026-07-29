@@ -2,6 +2,7 @@
   "kernel_version": "v1.2.101",
   "kernel_build_date": "03/27/2026",
   "build_debug": 0,
+  "ot_header": false,
   "git_commit": "96a0726b9efef1a8648a54e11580bff7cbe7e671",
   "saved_at": "2026-03-27T18:11:30Z",
   "rom_size": 16384,

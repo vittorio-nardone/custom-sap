@@ -1005,8 +1005,15 @@ static void runWifiMenu()
   redrawMenu();
   waitTerminalInputDrained();
 
-  if (ottoWifiIsConnected())
-    menuRefresh();
+  // Cached catalog: refresh from network only when empty; R forces update.
+  if (s_targets.count <= 0 || s_catalog.count <= 0) {
+    if (ottoWifiIsConnected())
+      menuRefresh();
+    else if (s_targets.count <= 0)
+      menuInitFallbackTargets();
+  } else {
+    menuResolveTarget(true);
+  }
 
   for (;;) {
     VirtualKeyItem item{};
