@@ -139,9 +139,76 @@ ch376_cmd_dir_info_read:
     jsr ch376_wait_byte
     bcc ch376_dir_info_fail
     sta CH376_LAST_STATUS
-    jmp ch376_rd_usb_data0
+    jmp ch376_rd_dir_entry
 ch376_dir_info_fail:
     lda 0x00
+    rts
+
+; RD_USB_DATA0 for a FAT directory entry (max 32 B). Retries on timeout.
+; Returns A = bytes stored (0 on fail).
+ch376_rd_dir_entry:
+    phx
+    phy
+    ldy 0x03
+ch376_rd_dir_retry:
+    jsr ch376_delay_short
+    jsr ch376_rd_usb_data0_once
+    bne ch376_rd_dir_done
+    dey
+    bne ch376_rd_dir_retry
+    lda 0x00
+ch376_rd_dir_done:
+    ply
+    plx
+    rts
+
+; Single RD_USB_DATA0 attempt. Stores up to CH376_DIR_INFO_SIZE bytes in CH376_BUF.
+; Returns A = stored length (0 on fail), C=1 on success.
+ch376_rd_usb_data0_once:
+    phx
+    phy
+    jsr ch376_uart_sync
+    lda CH376_CMD_RD_USB_DATA0
+    jsr ch376_uart_cmd
+    jsr ch376_wait_byte
+    bcc ch376_rd_once_fail
+    sta CH376_SCRATCH
+    beq ch376_rd_once_fail
+    ldx 0x00
+    ldy 0x00
+ch376_rd_once_loop:
+    jsr ch376_wait_byte
+    bcc ch376_rd_once_fail
+    cpy CH376_DIR_INFO_SIZE
+    bcs ch376_rd_once_skip
+    sta CH376_BUF,y
+    iny
+ch376_rd_once_skip:
+    inx
+    cpx CH376_SCRATCH
+    bne ch376_rd_once_loop
+    tya
+    ply
+    plx
+    sec
+    rts
+ch376_rd_once_fail:
+    lda 0x00
+    ply
+    plx
+    clc
+    rts
+
+; Discard data after 0x14 / 0x1D if a later command will be sent.
+ch376_consume_pending:
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    beq ch376_consume_do
+    cmp CH376_INT_DISK_READ
+    bne ch376_consume_done
+ch376_consume_do:
+    jsr ch376_rd_usb_data0_once
+ch376_consume_done:
     rts
 
 ch376_rd_usb_data0:

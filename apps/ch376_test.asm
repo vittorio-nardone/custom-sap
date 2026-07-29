@@ -232,6 +232,7 @@
     rts
 
 .list_root:
+    jsr .set_timeout_long
     lda 0x00
     sta CH376_FILE_COUNT
 
@@ -240,23 +241,16 @@
     jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
-    ; Ch376msc cd("/"): open root, then wildcard in root (CommDef: "/*").
-    ldd .fn_root_slash[15:8]
-    lde .fn_root_slash[7:0]
-    jsr ch376_cmd_set_file_name
-    lda CH376_CMD_FILE_OPEN
-    jsr ch376_cmd_interrupt
-    bcc .list_root_fail
-
-    ldd .fn_star_slash[15:8]
-    lde .fn_star_slash[7:0]
+    ; Ch376msc listDir: wildcard in current dir (root after mount).
+    ldd .fn_star[15:8]
+    lde .fn_star[7:0]
     jsr ch376_cmd_set_file_name
     lda CH376_CMD_FILE_OPEN
     jsr ch376_cmd_interrupt
     bcc .list_root_fail
     jsr .list_dispatch_int
     bcc .list_root_fail
-    beq .list_root_done
+    beq .list_root_finish
 
 .list_root_enum:
     lda CH376_CMD_FILE_ENUM_GO
@@ -264,9 +258,11 @@
     bcc .list_root_fail
     jsr .list_dispatch_int
     bcc .list_root_fail
-    beq .list_root_done
+    beq .list_root_finish
     jmp .list_root_enum
 
+.list_root_finish:
+    jsr .set_timeout
 .list_root_done:
     ldd .msg_entries[15:8]
     lde .msg_entries[7:0]
@@ -291,20 +287,18 @@
     cmp CH376_INT_SUCCESS
     bne .ldi_fail
 .ldi_pull:
-    jsr ch376_rd_usb_data0
+    jsr ch376_rd_dir_entry
     bne .ldi_got_data
-    lda CH376_LAST_STATUS
-    cmp CH376_INT_SUCCESS
-    bne .ldi_fail
     jsr ch376_cmd_dir_info_read
     beq .ldi_done
 .ldi_got_data:
-    cmp CH376_DIR_INFO_SIZE
-    bcc .ldi_fail
     lda CH376_BUF
     beq .ldi_done
     cmp 0xE5
     beq .ldi_more
+    lda CH376_BUF+11
+    and 0x08
+    bne .ldi_more
     jsr .print_direntry
     jsr ch376_print_nl
     inc CH376_FILE_COUNT
@@ -360,9 +354,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v13 (ST14 pull)", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v14 (1D pull)", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v13 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v14 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -390,13 +384,11 @@
 .msg_list_fail:
     #d "List fail ST ", 0x00
 .msg_listing:
-    #d "Root listing (/*):", 0x00
+    #d "Root listing (*):", 0x00
 .msg_entries:
     #d "Entries: ", 0x00
-.fn_root_slash:
-    #d "/", 0x00
-.fn_star_slash:
-    #d "/*", 0x00
+.fn_star:
+    #d "*", 0x00
 .tag_dir:
     #d " <DIR>", 0x00
 
