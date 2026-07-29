@@ -14,7 +14,13 @@ source .venv/bin/activate
 ./generate-all.sh              # release — run after ANY kernel or P-Machine change
 ./generate-all.sh --debug      # debug — includes boot tests
 ./scripts/build-apps.sh --pascal       # apps only (no ROM rebuild)
-./scripts/build-apps.sh --abi v1.2.101 # apps for older kernel EEPROM
+./scripts/build-apps.sh --abi v1.2.101 # apps for older kernel EEPROM (Otto hardware)
+```
+
+**App commit for Otto hardware (v1.2.101):** after editing `apps/*.asm`, always run
+`./scripts/build-apps.sh --abi v1.2.101 <app.asm>` and commit **source +**
+`roms/apps/v1.2.101/asm/*.bin` + `catalog.json` together before push. See
+`.cursor/rules/otto-assembly.mdc`.
 customasm apps/myapp.asm -f binary -o roms/apps/current/asm/myapp.bin
 python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/current/pascal/hello.bin
 ```
