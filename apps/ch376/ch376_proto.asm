@@ -102,13 +102,32 @@ ch376_wait_status_fail:
     rts
 
 ; Like ch376_cmd_wait_status but does not flush RX (file enum chain).
+; Reads first UART status byte; handles CMD_RET_SUCCESS (0x51) prefix.
+; If status is 0x14, polls GET_STATUS for the real interrupt code (often 0x1D).
 ch376_cmd_interrupt:
     pha
     jsr ch376_uart_sync
     pla
     jsr ch376_uart_cmd
+    jsr ch376_delay_short
     jsr ch376_wait_byte
     bcc ch376_interrupt_fail
+    cmp CH376_CMD_RET_SUCCESS
+    bne ch376_interrupt_got
+    jsr ch376_wait_byte
+    bcc ch376_interrupt_fail
+ch376_interrupt_got:
+    sta CH376_SCRATCH
+    cmp CH376_INT_SUCCESS
+    bne ch376_interrupt_store
+    jsr ch376_get_status
+    bcc ch376_interrupt_use_scratch
+    sta CH376_LAST_STATUS
+    sec
+    rts
+ch376_interrupt_use_scratch:
+    lda CH376_SCRATCH
+ch376_interrupt_store:
     sta CH376_LAST_STATUS
     sec
     rts
