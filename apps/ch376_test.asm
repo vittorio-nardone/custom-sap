@@ -249,7 +249,7 @@
     rts
 
 .msg_title:
-    #d 0x0A, 0x0D, "--- CH376S test (ACIA2) ---", 0x00
+    #d 0x0A, 0x0D, "--- CH376S test v2 (ACIA2) ---", 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
