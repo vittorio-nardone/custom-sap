@@ -46,6 +46,11 @@ ch376_uart_flush:
 ch376_uart_flush_done:
     rts
 
+; Drain any pending CH376 bytes (e.g. extra connect/disconnect status).
+ch376_drain_rx:
+    jsr ch376_uart_flush
+    rts
+
 ch376_print_nl:
     jmp ACIA_SEND_NEWLINE
 

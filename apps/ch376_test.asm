@@ -66,6 +66,13 @@
     sta CH376_TMO+1
     rts
 
+.set_timeout_long:
+    lda 0xFF
+    sta CH376_TMO
+    lda 0xFF
+    sta CH376_TMO+1
+    rts
+
 .test_get_ic_ver:
     ldd .msg_ic_ver[15:8]
     lde .msg_ic_ver[7:0]
@@ -130,12 +137,24 @@
     bcc .test_usb_to
     jsr ch376_print_status
 
+    jsr ch376_drain_rx
+
     ldd .msg_mount[15:8]
     lde .msg_mount[7:0]
     jsr ACIA_SEND_STRING
+    jsr .set_timeout_long
+    lda 0x05
+    sta CH376_SCRATCH
+.test_disk_mount_loop:
     lda CH376_CMD_DISK_MOUNT
     jsr ch376_cmd_wait_status
-    bcc .test_usb_to
+    bcs .test_disk_mount_got
+    dec CH376_SCRATCH
+    bne .test_disk_mount_loop
+    jsr .set_timeout
+    jmp .test_usb_to
+.test_disk_mount_got:
+    jsr .set_timeout
     jsr ch376_print_status
     cmp CH376_INT_SUCCESS
     bne .test_usb_fail
@@ -147,7 +166,10 @@
 .test_usb_to:
     ldd .msg_timeout[15:8]
     lde .msg_timeout[7:0]
-    jmp ACIA_SEND_STRING
+    jsr ACIA_SEND_STRING
+    jsr ch376_print_nl
+    clc
+    rts
 .test_usb_fail:
     clc
     rts
@@ -254,9 +276,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v3 running", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v4 running", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v3 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v4 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
