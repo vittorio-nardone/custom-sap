@@ -1,5 +1,6 @@
 #include "otto_wifi.h"
 
+#include <Arduino.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
 #include <WiFi.h>
@@ -833,4 +834,18 @@ OttoWifiResult ottoWifiFetchTargets(OttoWifiTargetList * out) {
 
 OttoWifiResult ottoWifiFetchCatalog(OttoWifiCatalog * out) {
   return ottoWifiFetchCatalogPath("roms/apps/current/asm", out);
+}
+
+void ottoWifiCacheBustUrl(char const * url, char * out, size_t outLen) {
+  if (!url || !out || outLen == 0)
+    return;
+  strncpy(out, url, outLen - 1);
+  out[outLen - 1] = '\0';
+  char tbuf[16];
+  snprintf(tbuf, sizeof(tbuf), "%lu", (unsigned long)millis());
+  size_t const n = strlen(out);
+  if (n >= outLen - 1)
+    return;
+  char const sep = strchr(out, '?') ? '&' : '?';
+  snprintf(out + n, outLen - n, "%c%s=%s", sep, "t", tbuf);
 }

@@ -120,6 +120,9 @@ bool ottoWifiIsConnected();
 /** Reduce RF activity before timing-sensitive UART (XMODEM). */
 void ottoWifiPauseForUart();
 
+/** Copy url into out, appending ?t=millis to defeat CDN / HTTP caches at download time. */
+void ottoWifiCacheBustUrl(char const * url, char * out, size_t outLen);
+
 OttoWifiResult ottoWifiDownload(char const * url, uint8_t ** outData, size_t * outLen,
                                 void (*onProgress)(void * ctx, size_t got, size_t total) = nullptr,
                                 void * progressCtx = nullptr,

@@ -914,10 +914,13 @@ static bool menuUpload()
   setMenuMsg(msg);
   refreshMenuFooter();
 
+  char dlUrl[OTTO_WIFI_URL_MAX + 32];
+  ottoWifiCacheBustUrl(app.url, dlUrl, sizeof(dlUrl));
+
   uint8_t * data = nullptr;
   size_t len = 0;
   OttoWifiResult const dr = ottoWifiDownload(
-    app.url, &data, &len, wifiProgressToMenu, nullptr, wifiStatusToMenu, nullptr,
+    dlUrl, &data, &len, wifiProgressToMenu, nullptr, wifiStatusToMenu, nullptr,
     pollUploadCancel, nullptr);
   if (dr != OttoWifiResult::Ok || !data || len == 0) {
     char detail[96];

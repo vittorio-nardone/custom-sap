@@ -351,9 +351,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v10 (re-upload!)", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v11 (re-upload!)", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v10 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v11 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
