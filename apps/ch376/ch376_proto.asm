@@ -1,4 +1,6 @@
 ; CH376S UART protocol (sync header + command packets).
+; Reference: Ch376msc (UART path) — status on serial, RD_USB_DATA0 for payloads.
+; Critical: ACIA2 has 1-byte RX; bulk RD must run under SEI with no delays.
 
 ch376_uart_sync:
     lda CH376_SYNC1
@@ -23,7 +25,8 @@ ch376_uart_send_str_loop:
     bcc ch376_uart_send_str_put
     cmp 0x7B
     bcs ch376_uart_send_str_put
-    sbc 0x1F
+    sec
+    sbc 0x20
 ch376_uart_send_str_put:
     jsr ch376_uart_putc
     inx
@@ -97,6 +100,8 @@ ch376_set_mode_fail:
 
 ch376_cmd_wait_status:
     pha
+    lda 0x00
+    sta CH376_INT_FLAG
     jsr ch376_drain_rx
     jsr ch376_uart_sync
     pla
@@ -104,6 +109,7 @@ ch376_cmd_wait_status:
     jsr ch376_wait_response_byte
     bcc ch376_wait_status_fail
     sta CH376_LAST_STATUS
+    jsr ch376_clear_int
     sec
     rts
 ch376_wait_status_fail:
@@ -112,9 +118,11 @@ ch376_wait_status_fail:
     clc
     rts
 
-; UART: status byte on serial after command. No RX drain (Ch376msc never flushes UART).
+; Interrupt-style command: no RX drain (Ch376msc). Clear INT# after status.
 ch376_cmd_interrupt:
     pha
+    lda 0x00
+    sta CH376_INT_FLAG
     jsr ch376_uart_sync
     pla
     jsr ch376_uart_cmd
@@ -126,6 +134,7 @@ ch376_cmd_interrupt:
     bcc ch376_interrupt_fail
 ch376_interrupt_store:
     sta CH376_LAST_STATUS
+    jsr ch376_clear_int
     sec
     rts
 ch376_interrupt_fail:
@@ -134,7 +143,7 @@ ch376_interrupt_fail:
     clc
     rts
 
-; SET_FILE_NAME: D:E -> null-terminated name. No UART status (Ch376msc sendFilename).
+; SET_FILE_NAME: D:E null-terminated. No UART status (Ch376msc).
 ch376_cmd_set_file_name:
     jsr ch376_uart_sync
     lda CH376_CMD_SET_FILE_NAME
@@ -143,52 +152,39 @@ ch376_cmd_set_file_name:
     sec
     rts
 
-; Ch376msc dirInfoRead: DIR_INFO_READ 0xFF then RD_USB_DATA0.
-; Returns A = data length (0 on fail). C=1 if command byte received.
-ch376_cmd_dir_info_read:
-    jsr ch376_drain_rx
-    jsr ch376_uart_sync
-    lda CH376_CMD_DIR_INFO_READ
-    jsr ch376_uart_cmd
-    lda 0xFF
-    jsr ch376_uart_param
-    jsr ch376_wait_response_byte
-    bcc ch376_dir_info_fail
-    sta CH376_LAST_STATUS
-    jmp ch376_rd_dir_entry
-ch376_dir_info_fail:
-    lda 0x00
-    rts
-
-; RD_USB_DATA0 for DISK_QUERY payload: read full wire length, store up to 9 bytes.
+; DISK_QUERY payload under SEI (short, but same path as FAT).
 ch376_rd_disk_query:
     phx
     phy
     jsr ch376_usb_timeout_on
     lda 0x00
     sta CH376_PULL_MODE
+    sei
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
     jsr ch376_uart_cmd
-    jsr ch376_wait_response_byte
-    bcc ch376_rdq_fail
+    jsr ch376_uart_getc_tmo
+    bcc ch376_rdq_fail_cli
     sta CH376_SCRATCH
-    beq ch376_rdq_fail
+    beq ch376_rdq_fail_cli
+    lda 0x52
+    sta CH376_PULL_MODE
     ldx 0x00
     ldy 0x00
 ch376_rdq_loop:
     cpx CH376_SCRATCH
     bcs ch376_rdq_done
-    jsr ch376_wait_byte
-    bcc ch376_rdq_fail
+    jsr ch376_uart_getc_tmo
+    bcc ch376_rdq_fail_cli
     cpy 0x09
-    bcs ch376_rdq_skip_store
+    bcs ch376_rdq_skip
     sta CH376_BUF,y
     iny
-ch376_rdq_skip_store:
+ch376_rdq_skip:
     inx
     jmp ch376_rdq_loop
 ch376_rdq_done:
+    cli
     tya
     pha
     jsr ch376_usb_timeout_off
@@ -197,7 +193,8 @@ ch376_rdq_done:
     plx
     sec
     rts
-ch376_rdq_fail:
+ch376_rdq_fail_cli:
+    cli
     lda 0x00
     pha
     jsr ch376_usb_timeout_off
@@ -207,71 +204,41 @@ ch376_rdq_fail:
     clc
     rts
 
-; After ST 0x1D: if length byte already on UART, use it; else RD_USB_DATA0 (Ch376msc).
-ch376_read_usb_payload_dir:
-    phx
-    phy
-    jsr ch376_usb_timeout_on
-    lda 0x00
-    sta CH376_PULL_MODE
-    jsr ch376_poll_rx_wait
-    bcc ch376_rup1d_send_rd
-    lda ACIA2_RW_DATA_ADDR
-    sta CH376_RD_LEN
-    beq ch376_rup1d_send_rd
-    lda 0x49
-    sta CH376_PULL_MODE
-    jmp ch376_rup_read_body
-ch376_rup1d_send_rd:
-    ply
-    plx
-    jmp ch376_read_usb_payload_rd
-
-; RD_USB_DATA0 only (after ST 0x14 disk query — Ch376msc rdDiskInfo).
+; Ch376msc rdFatInfo: RD_USB_DATA0 immediately under SEI (no delay, no poll).
+; Returns A = bytes stored (0..32). C=1 on success.
 ch376_read_usb_payload_rd:
     phx
     phy
     jsr ch376_usb_timeout_on
     lda 0x00
     sta CH376_PULL_MODE
-    ldx 0x04
-ch376_rup_rd_retry:
+    sei
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
     jsr ch376_uart_cmd
-    jsr ch376_delay_short
-    jsr ch376_wait_response_byte
-    bcc ch376_rup_rd_tmo
+    jsr ch376_uart_getc_tmo
+    bcc ch376_rup_fail_cli
     sta CH376_RD_LEN
-    bne ch376_rup_rd_got_len
-    dex
-    bne ch376_rup_rd_retry
-    jmp ch376_rup_fail
-ch376_rup_rd_tmo:
-    dex
-    bne ch376_rup_rd_retry
-    jmp ch376_rup_fail
-ch376_rup_rd_got_len:
+    sta CH376_WIRE_LEN
+    beq ch376_rup_fail_cli
     lda 0x52
     sta CH376_PULL_MODE
-    jmp ch376_rup_read_body
-
-ch376_rup_read_body:
     ldx 0x00
     ldy 0x00
 ch376_rup_loop:
     cpx CH376_RD_LEN
     bcs ch376_rup_done
-    jsr ch376_wait_byte
-    bcc ch376_rup_fail
+    jsr ch376_uart_getc_tmo
+    bcc ch376_rup_fail_cli
     cpy 0x20
-    bcs ch376_rup_skip_store
+    bcs ch376_rup_skip
     sta CH376_BUF,y
     iny
-ch376_rup_skip_store:
+ch376_rup_skip:
     inx
     jmp ch376_rup_loop
 ch376_rup_done:
+    cli
     tya
     pha
     jsr ch376_usb_timeout_off
@@ -280,7 +247,8 @@ ch376_rup_done:
     plx
     sec
     rts
-ch376_rup_fail:
+ch376_rup_fail_cli:
+    cli
     lda 0x00
     pha
     jsr ch376_usb_timeout_off
@@ -290,26 +258,20 @@ ch376_rup_fail:
     clc
     rts
 
-; FAT directory entry read (retries). Returns A = stored length.
-ch376_rd_dir_entry:
-    phx
-    lda 0x04
-    sta CH376_SCRATCH
-ch376_rd_dir_retry:
-    jsr ch376_read_usb_payload_dir
-    bne ch376_rd_dir_done
-    dec CH376_SCRATCH
-    bne ch376_rd_dir_retry
-    lda 0x00
-ch376_rd_dir_done:
-    plx
-    rts
+; After ST 0x1D: same as Ch376msc — always RD_USB_DATA0 (no inline guess).
+ch376_read_usb_payload_dir:
+    jmp ch376_read_usb_payload_rd
 
-; Legacy single-shot RD command path (used by tests).
+; Single-shot FAT entry read. A = stored length (0 = fail).
+ch376_rd_dir_entry:
+    jmp ch376_read_usb_payload_dir
+
 ch376_rd_usb_data0_once:
     jmp ch376_read_usb_payload_rd
 
-; Discard pending FAT data after FILE_OPEN.
+ch376_rd_usb_data0:
+    jmp ch376_read_usb_payload_rd
+
 ch376_consume_pending:
     lda CH376_LAST_STATUS
     cmp CH376_INT_SUCCESS
@@ -319,9 +281,3 @@ ch376_consume_pending:
     rts
 ch376_consume_pull:
     jmp ch376_rd_dir_entry
-
-ch376_rd_usb_data0:
-    phx
-    jsr ch376_read_usb_payload_rd
-    plx
-    rts

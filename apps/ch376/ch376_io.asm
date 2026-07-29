@@ -1,5 +1,10 @@
 ; CH376S low-level I/O on Otto ACIA #2 (0x6022/0x6023).
-; Console output uses kernel ACIA #1 routines.
+; Console on ACIA #1.
+;
+; INT model (hardware microcode + kernel ISR):
+;   TAI = write MASK; TIA = read PENDING (not mask). Never RMW mask via TIA.
+;   EXTINT1 handler must clear CH376 INT# (GET_STATUS) or level-IRQ storms.
+;   Auto UART status byte may already be in ACIA when IRQ fires — drain it first.
 
 ch376_acia2_init:
     lda ACIA_INIT_MASTER_RESET
@@ -18,7 +23,7 @@ ch376_uart_putc_wait:
     sta ACIA2_RW_DATA_ADDR
     rts
 
-; C=1 and A=byte on success. Uses CH376_TMO (16-bit down-counter).
+; C=1 A=byte. Uses CH376_TMO as loop reload (X=lo, Y=hi).
 ch376_uart_getc_tmo:
     ldx CH376_TMO
     ldy CH376_TMO+1
@@ -46,12 +51,9 @@ ch376_uart_flush:
 ch376_uart_flush_done:
     rts
 
-; Drain any pending CH376 bytes (e.g. extra connect/disconnect status).
 ch376_drain_rx:
-    jsr ch376_uart_flush
-    rts
+    jmp ch376_uart_flush
 
-; Returns A = number of bytes discarded.
 ch376_drain_count:
     phy
     ldy 0x00
@@ -66,44 +68,118 @@ ch376_drain_count_done:
     ply
     rts
 
-; A = ACIA #2 status register (parity/framing/overrun flags).
 ch376_acia2_read_status:
     lda ACIA2_CONTROL_STATUS_ADDR
     rts
 
-; Enable EXTINT1 in mask (TAI) so TIA reflects the EXTI1 line when polling.
-ch376_int_enable:
+; Install EXTINT1 handler; mask = TIMER|EXTINT1 (absolute).
+ch376_int_install:
     sei
-    tia
+    lda INT_EXTINT1_HANDLER_POINTER
+    sta CH376_SAVED_H
+    lda INT_EXTINT1_HANDLER_POINTER + 1
+    sta CH376_SAVED_H + 1
+    lda ch376_extint1_handler[15:8]
+    sta INT_EXTINT1_HANDLER_POINTER
+    lda ch376_extint1_handler[7:0]
+    sta INT_EXTINT1_HANDLER_POINTER + 1
+    lda 0x00
+    sta CH376_INT_FLAG
+    sta CH376_INT_STATUS
+    lda INT_TIMER
     ora INT_EXTINT1
     tai
     cli
     rts
 
-; C=1 if CH376 INT# is pending (EXTINT1 via TIA).
-ch376_int_asserted:
-    tia
-    and INT_EXTINT1
-    beq ch376_int_not_asserted
+ch376_int_restore:
+    sei
+    lda CH376_SAVED_H
+    sta INT_EXTINT1_HANDLER_POINTER
+    lda CH376_SAVED_H + 1
+    sta INT_EXTINT1_HANDLER_POINTER + 1
+    lda INT_TIMER
+    tai
+    cli
+    rts
+
+; EXTINT1 ISR: capture auto UART status if present, GET_STATUS to clear INT#.
+ch376_extint1_handler:
+    pha
+    phx
+    phy
+    lda 0x01
+    sta CH376_INT_FLAG
+    ; Auto-sent status may already be in ACIA2.
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
+    beq ch376_e1h_gst
+    lda ACIA2_RW_DATA_ADDR
+    sta CH376_INT_STATUS
+ch376_e1h_gst:
+    ; Cancel INT# (datasheet); drain response (may duplicate status).
+    lda CH376_SYNC1
+    jsr ch376_uart_putc
+    lda CH376_SYNC2
+    jsr ch376_uart_putc
+    lda CH376_CMD_GET_STATUS
+    jsr ch376_uart_putc
+    ldx 0xFF
+    ldy 0x40
+ch376_e1h_wait:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
+    bne ch376_e1h_got
+    dex
+    bne ch376_e1h_wait
+    dey
+    bne ch376_e1h_wait
+    jmp ch376_e1h_done
+ch376_e1h_got:
+    lda ACIA2_RW_DATA_ADDR
+    ldx CH376_INT_STATUS
+    bne ch376_e1h_keep
+    sta CH376_INT_STATUS
+ch376_e1h_keep:
+ch376_e1h_done:
+    ply
+    plx
+    pla
+    rts
+
+ch376_int_flagged:
+    lda CH376_INT_FLAG
+    beq ch376_int_flag_no
     sec
     rts
-ch376_int_not_asserted:
+ch376_int_flag_no:
     clc
     rts
 
-; C=1 A='A' if INT pending, A='I' if idle.
-ch376_int_pin_char:
-    jsr ch376_int_asserted
-    bcc ch376_int_pin_idle
-    lda 0x41
+ch376_int_pending:
+    tia
+    and INT_EXTINT1
+    beq ch376_int_pend_no
     sec
     rts
-ch376_int_pin_idle:
+ch376_int_pend_no:
+    clc
+    rts
+
+ch376_int_pin_char:
+    jsr ch376_int_flagged
+    bcs ch376_int_pin_act
+    jsr ch376_int_pending
+    bcs ch376_int_pin_act
     lda 0x49
     sec
     rts
+ch376_int_pin_act:
+    lda 0x41
+    sec
+    rts
 
-; Wait for INT# and/or UART RX, then read one byte. C=1 A=byte on success.
+; Wait for UART status byte (Ch376msc). Also accept handler-captured status.
 ch376_wait_response_byte:
     phx
     phy
@@ -112,8 +188,8 @@ ch376_wait_response_byte:
 ch376_wrb_loop:
     jsr ch376_uart_rx_pending
     bcs ch376_wrb_got
-    jsr ch376_int_asserted
-    bcs ch376_wrb_wait
+    lda CH376_INT_FLAG
+    bne ch376_wrb_via_int
     dex
     bne ch376_wrb_loop
     dey
@@ -122,14 +198,11 @@ ch376_wrb_loop:
     ply
     plx
     rts
-ch376_wrb_wait:
-    jsr ch376_uart_rx_pending
-    bcs ch376_wrb_got
-    dex
-    bne ch376_wrb_loop
-    dey
-    bne ch376_wrb_loop
-    clc
+ch376_wrb_via_int:
+    lda 0x00
+    sta CH376_INT_FLAG
+    lda CH376_INT_STATUS
+    sec
     ply
     plx
     rts
@@ -139,25 +212,37 @@ ch376_wrb_got:
     plx
     rts
 
-; Wait up to ~32 short delays for UART RX. C=1 if a byte is pending.
-ch376_poll_rx_wait:
+; Release CH376 INT# after we already consumed the UART status in main.
+ch376_clear_int:
+    pha
     phx
-    ldx 0x20
-ch376_prw_loop:
-    jsr ch376_uart_rx_pending
-    bcs ch376_prw_got
-    jsr ch376_delay_short
+    phy
+    sei
+    jsr ch376_uart_sync
+    lda CH376_CMD_GET_STATUS
+    jsr ch376_uart_cmd
+    ldx 0xFF
+    ldy 0x20
+ch376_ci_wait:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
+    bne ch376_ci_got
     dex
-    bne ch376_prw_loop
-    clc
+    bne ch376_ci_wait
+    dey
+    bne ch376_ci_wait
+    jmp ch376_ci_done
+ch376_ci_got:
+    lda ACIA2_RW_DATA_ADDR
+ch376_ci_done:
+    lda 0x00
+    sta CH376_INT_FLAG
+    cli
+    ply
     plx
-    rts
-ch376_prw_got:
-    sec
-    plx
+    pla
     rts
 
-; Rough ~50ms busy-wait at 1 MHz (tune if needed).
 ch376_delay_short:
     phx
     phy
@@ -172,7 +257,6 @@ ch376_delay_outer:
     plx
     rts
 
-; ~300ms busy-wait at 1 MHz.
 ch376_delay_long:
     phx
     phy
@@ -187,7 +271,6 @@ ch376_delay_long_outer:
     plx
     rts
 
-; Save/restore CH376_TMO around slow USB reads (Ch376msc ANSWTIMEOUT ~1s).
 ch376_usb_timeout_on:
     lda CH376_TMO
     sta CH376_TMO_SAVE
@@ -205,7 +288,6 @@ ch376_usb_timeout_off:
     sta CH376_TMO+1
     rts
 
-; C=1 if ACIA2 RX holds a byte.
 ch376_uart_rx_pending:
     lda ACIA2_CONTROL_STATUS_ADDR
     bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
