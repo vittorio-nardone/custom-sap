@@ -123,6 +123,8 @@ ch376_wrb_loop:
     plx
     rts
 ch376_wrb_wait:
+    jsr ch376_uart_rx_pending
+    bcs ch376_wrb_got
     dex
     bne ch376_wrb_loop
     dey

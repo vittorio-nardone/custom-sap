@@ -122,6 +122,11 @@ ch376_cmd_interrupt:
     jsr ch376_uart_cmd
     jsr ch376_wait_response_byte
     bcc ch376_interrupt_fail
+    cmp CH376_CMD_RET_SUCCESS
+    bne ch376_interrupt_store
+    jsr ch376_wait_response_byte
+    bcc ch376_interrupt_fail
+ch376_interrupt_store:
     sta CH376_LAST_STATUS
     sec
     rts
@@ -131,11 +136,20 @@ ch376_interrupt_fail:
     clc
     rts
 
+; SET_FILE_NAME: D:E -> null-terminated name. Waits for UART status (datasheet: IRQ when done).
 ch376_cmd_set_file_name:
     jsr ch376_uart_sync
     lda CH376_CMD_SET_FILE_NAME
     jsr ch376_uart_cmd
-    jmp ch376_uart_send_str
+    jsr ch376_uart_send_str
+    jsr ch376_wait_response_byte
+    bcc ch376_set_fname_fail
+    sta CH376_LAST_STATUS
+    sec
+    rts
+ch376_set_fname_fail:
+    clc
+    rts
 
 ; Ch376msc dirInfoRead: DIR_INFO_READ 0xFF then RD_USB_DATA0.
 ; Returns A = data length (0 on fail). C=1 if command byte received.
@@ -152,6 +166,56 @@ ch376_cmd_dir_info_read:
     jmp ch376_rd_dir_entry
 ch376_dir_info_fail:
     lda 0x00
+    rts
+
+; RD_USB_DATA0 for DISK_QUERY payload: read full wire length, store up to 9 bytes.
+ch376_rd_disk_query:
+    phx
+    phy
+    jsr ch376_usb_timeout_on
+    lda 0x00
+    sta CH376_PULL_MODE
+    jsr ch376_uart_sync
+    lda CH376_CMD_RD_USB_DATA0
+    jsr ch376_uart_cmd
+    jsr ch376_wait_response_byte
+    bcc ch376_rdq_fail
+    sta CH376_SCRATCH
+    beq ch376_rdq_fail
+    lda 0x00
+    sta CH376_RD_LEN
+    ldx 0x00
+    ldy 0x00
+ch376_rdq_loop:
+    cpx CH376_SCRATCH
+    bcs ch376_rdq_done
+    jsr ch376_wait_byte
+    bcc ch376_rdq_fail
+    cpy CH376_DISK_QUERY_SIZE
+    bcs ch376_rdq_skip_store
+    sta CH376_BUF,y
+    iny
+    inc CH376_RD_LEN
+ch376_rdq_skip_store:
+    inx
+    jmp ch376_rdq_loop
+ch376_rdq_done:
+    lda CH376_RD_LEN
+    pha
+    jsr ch376_usb_timeout_off
+    pla
+    ply
+    plx
+    sec
+    rts
+ch376_rdq_fail:
+    lda 0x00
+    pha
+    jsr ch376_usb_timeout_off
+    pla
+    ply
+    plx
+    clc
     rts
 
 ; RD_USB_DATA0 only (after ST 0x14 disk query — Ch376msc rdDiskInfo).
