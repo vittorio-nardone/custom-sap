@@ -150,9 +150,10 @@ ch376_dir_info_fail:
     lda 0x00
     rts
 
-; Read USB payload after ST 0x14/0x1D.
-; If UART already has bytes (inline length), skip RD_USB_DATA0 command.
-; Sets CH376_PULL_MODE to 'I' inline or 'R' command path.
+; Read USB payload after ST 0x14/0x1D (Ch376msc rdFatInfo UART path).
+; GET_STATUS clears the pending interrupt before RD_USB_DATA0 (WCH datasheet).
+; GST byte is saved in CH376_SCRATCH for diagnostics.
+; Sets CH376_PULL_MODE to 'R' on success.
 ; Returns A = bytes stored in CH376_BUF (0 on fail), C=1 on success.
 ch376_read_usb_payload:
     phx
@@ -161,23 +162,10 @@ ch376_read_usb_payload:
     lda 0x00
     sta CH376_PULL_MODE
 
-    jsr ch376_uart_rx_pending
-    bcs ch376_rup_inline_len
-    jsr ch376_delay_long
-    jsr ch376_uart_rx_pending
-    bcs ch376_rup_inline_len
-    jmp ch376_rup_rd_cmd
-
-ch376_rup_inline_len:
-    jsr ch376_wait_byte
+    jsr ch376_get_status
     bcc ch376_rup_fail
-    sta CH376_RD_LEN
-    beq ch376_rup_rd_cmd
-    lda 0x49
-    sta CH376_PULL_MODE
-    jmp ch376_rup_read_body
+    sta CH376_SCRATCH
 
-ch376_rup_rd_cmd:
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
     jsr ch376_uart_cmd

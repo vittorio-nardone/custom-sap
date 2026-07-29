@@ -215,6 +215,12 @@
 .read_disk_id:
     lda CH376_CMD_DISK_QUERY
     jsr ch376_cmd_interrupt
+    ldd .msg_disk_q[15:8]
+    lde .msg_disk_q[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_LAST_STATUS
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
     bcc .read_disk_id_done
     lda CH376_LAST_STATUS
     cmp CH376_INT_SUCCESS
@@ -242,18 +248,7 @@
     jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
-    ; Ch376msc cd("/") then listDir("*").
-    ldd .fn_root_slash[15:8]
-    lde .fn_root_slash[7:0]
-    jsr ch376_cmd_set_file_name
-    lda CH376_CMD_FILE_OPEN
-    jsr ch376_cmd_interrupt
-    bcc .list_root_fail
-    lda CH376_LAST_STATUS
-    cmp CH376_ERR_MISS_FILE
-    beq .list_root_fail
-    jsr ch376_consume_pending
-
+    ; Ch376msc listDir: SET_FILE_NAME("*") then FILE_OPEN only.
     ldd .fn_star[15:8]
     lde .fn_star[7:0]
     jsr ch376_cmd_set_file_name
@@ -274,7 +269,9 @@
 
     jsr ch376_rd_dir_entry
     sta CH376_RD_LEN
-    beq .list_root_fail
+    beq .list_root_finish
+    lda CH376_SCRATCH
+    sta CH376_GST_STAT
     jsr .list_emit_entry
 
     dec CH376_ENUM_LEFT
@@ -298,6 +295,12 @@
     lde .msg_rd_len[7:0]
     jsr ACIA_SEND_STRING
     lda CH376_RD_LEN
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    ldd .msg_gst[15:8]
+    lde .msg_gst[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_GST_STAT
     jsr ch376_print_hex8
     jsr ch376_print_nl
     ldd .msg_pull[15:8]
@@ -401,9 +404,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v19", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v20", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v19 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v20 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -426,6 +429,8 @@
     #d "DISK_MOUNT: ", 0x00
 .msg_disk_id:
     #d "Disk id len: ", 0x00
+.msg_disk_q:
+    #d "DISK_QUERY ST ", 0x00
 .msg_fail_st:
     #d "USB fail ST ", 0x00
 .msg_list_fail:
@@ -434,14 +439,14 @@
     #d "OPEN ST ", 0x00
 .msg_rd_len:
     #d "RD len ", 0x00
+.msg_gst:
+    #d "GST ", 0x00
 .msg_pull:
     #d "pull ", 0x00
 .msg_listing:
     #d "Root listing (*):", 0x00
 .msg_entries:
     #d "Entries: ", 0x00
-.fn_root_slash:
-    #d "/", 0x00
 .fn_star:
     #d "*", 0x00
 .tag_dir:
@@ -454,6 +459,8 @@ CH376_TMO_SAVE:
 CH376_SCRATCH:
     #d 0x00
 CH376_OPEN_ST:
+    #d 0x00
+CH376_GST_STAT:
     #d 0x00
 CH376_RD_LEN:
     #d 0x00
