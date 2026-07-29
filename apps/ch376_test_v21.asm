@@ -39,6 +39,9 @@
     jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
+    jsr .test_link
+    bcc .fail
+
     jsr .test_get_ic_ver
     bcc .fail
     jsr .test_check_exist
@@ -71,6 +74,50 @@
     sta CH376_TMO
     lda 0xFF
     sta CH376_TMO+1
+    rts
+
+.test_link:
+    ldd .msg_acia2_st[15:8]
+    lde .msg_acia2_st[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_acia2_read_status
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+
+    ldd .msg_int_pin[15:8]
+    lde .msg_int_pin[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_int_pin_char
+    jsr ACIA_SEND_CHAR
+    jsr ch376_print_nl
+
+    lda 0xAA
+    jsr ch376_cmd_check_exist
+    bcc .test_link_fail
+    ldd .msg_ce_aa[15:8]
+    lde .msg_ce_aa[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_print_nl
+
+    jsr ch376_cmd_get_ic_ver
+    bcc .test_link_fail
+    sta CH376_SCRATCH
+    jsr ch376_cmd_get_ic_ver
+    bcc .test_link_fail
+    cmp CH376_SCRATCH
+    bne .test_link_fail
+    ldd .msg_ic_twice[15:8]
+    lde .msg_ic_twice[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_print_nl
+    sec
+    rts
+.test_link_fail:
+    ldd .msg_link_fail[15:8]
+    lde .msg_link_fail[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_print_nl
+    clc
     rts
 
 .test_get_ic_ver:
@@ -180,6 +227,22 @@
     lda CH376_LAST_STATUS
     jsr ch376_print_status
 
+    jsr ch376_delay_short
+    jsr ch376_drain_count
+    sta CH376_DRAIN_CNT
+    ldd .msg_post_mount[15:8]
+    lde .msg_post_mount[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_DRAIN_CNT
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    ldd .msg_int_pin[15:8]
+    lde .msg_int_pin[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_int_pin_char
+    jsr ACIA_SEND_CHAR
+    jsr ch376_print_nl
+
     jsr .read_disk_id
     jsr .list_root
     bcc .test_list_fail
@@ -213,8 +276,10 @@
     rts
 
 .read_disk_id:
+    jsr .set_timeout_long
     lda CH376_CMD_DISK_QUERY
     jsr ch376_cmd_interrupt
+    jsr .set_timeout
     ldd .msg_disk_q[15:8]
     lde .msg_disk_q[7:0]
     jsr ACIA_SEND_STRING
@@ -225,7 +290,9 @@
     lda CH376_LAST_STATUS
     cmp CH376_INT_SUCCESS
     bne .read_disk_id_done
+    jsr .set_timeout_long
     jsr ch376_rd_usb_data0
+    jsr .set_timeout
     beq .read_disk_id_done
     pha
     ldd .msg_disk_id[15:8]
@@ -270,8 +337,6 @@
     jsr ch376_rd_dir_entry
     sta CH376_RD_LEN
     beq .list_root_finish
-    lda CH376_SCRATCH
-    sta CH376_GST_STAT
     jsr .list_emit_entry
 
     dec CH376_ENUM_LEFT
@@ -297,11 +362,11 @@
     lda CH376_RD_LEN
     jsr ch376_print_hex8
     jsr ch376_print_nl
-    ldd .msg_gst[15:8]
-    lde .msg_gst[7:0]
+    ldd .msg_int_pin[15:8]
+    lde .msg_int_pin[7:0]
     jsr ACIA_SEND_STRING
-    lda CH376_GST_STAT
-    jsr ch376_print_hex8
+    jsr ch376_int_pin_char
+    jsr ACIA_SEND_CHAR
     jsr ch376_print_nl
     ldd .msg_pull[15:8]
     lde .msg_pull[7:0]
@@ -404,9 +469,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v20", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v21", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v20 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v21 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -431,6 +496,18 @@
     #d "Disk id len: ", 0x00
 .msg_disk_q:
     #d "DISK_QUERY ST ", 0x00
+.msg_acia2_st:
+    #d "ACIA2 ST ", 0x00
+.msg_int_pin:
+    #d "INT pin ", 0x00
+.msg_ce_aa:
+    #d "CHECK_EXIST AA OK", 0x00
+.msg_ic_twice:
+    #d "IC ver stable", 0x00
+.msg_link_fail:
+    #d "Link test fail", 0x00
+.msg_post_mount:
+    #d "Post-mount drain ", 0x00
 .msg_fail_st:
     #d "USB fail ST ", 0x00
 .msg_list_fail:
@@ -439,8 +516,6 @@
     #d "OPEN ST ", 0x00
 .msg_rd_len:
     #d "RD len ", 0x00
-.msg_gst:
-    #d "GST ", 0x00
 .msg_pull:
     #d "pull ", 0x00
 .msg_listing:
@@ -460,7 +535,7 @@ CH376_SCRATCH:
     #d 0x00
 CH376_OPEN_ST:
     #d 0x00
-CH376_GST_STAT:
+CH376_DRAIN_CNT:
     #d 0x00
 CH376_RD_LEN:
     #d 0x00

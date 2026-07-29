@@ -48,23 +48,23 @@ ch376_get_status:
     jmp ch376_wait_byte
 
 ch376_cmd_get_ic_ver:
-    jsr ch376_uart_flush
+    jsr ch376_drain_rx
     jsr ch376_uart_sync
     lda CH376_CMD_GET_IC_VER
     jsr ch376_uart_cmd
-    jmp ch376_wait_byte
+    jmp ch376_wait_response_byte
 
 ch376_cmd_check_exist:
     sta CH376_SCRATCH
     lda 0x00
     sta CH376_LAST_STATUS
-    jsr ch376_uart_flush
+    jsr ch376_drain_rx
     jsr ch376_uart_sync
     lda CH376_CMD_CHECK_EXIST
     jsr ch376_uart_cmd
     lda CH376_SCRATCH
     jsr ch376_uart_param
-    jsr ch376_wait_byte
+    jsr ch376_wait_response_byte
     bcc ch376_check_exist_fail
     sta CH376_LAST_STATUS
     eor 0xFF
@@ -78,13 +78,13 @@ ch376_check_exist_fail:
 
 ch376_cmd_set_usb_mode:
     sta CH376_SCRATCH
-    jsr ch376_uart_flush
+    jsr ch376_drain_rx
     jsr ch376_uart_sync
     lda CH376_CMD_SET_USB_MODE
     jsr ch376_uart_cmd
     lda CH376_SCRATCH
     jsr ch376_uart_param
-    jsr ch376_wait_byte
+    jsr ch376_wait_response_byte
     bcc ch376_set_mode_fail
     sta CH376_LAST_STATUS
     jsr ch376_drain_rx
@@ -97,27 +97,30 @@ ch376_set_mode_fail:
 
 ch376_cmd_wait_status:
     pha
-    jsr ch376_uart_flush
+    jsr ch376_drain_rx
     jsr ch376_uart_sync
     pla
     jsr ch376_uart_cmd
-    jsr ch376_wait_byte
+    jsr ch376_wait_response_byte
     bcc ch376_wait_status_fail
     sta CH376_LAST_STATUS
     sec
     rts
 ch376_wait_status_fail:
+    lda 0x00
+    sta CH376_LAST_STATUS
     clc
     rts
 
-; UART interrupt response: one status byte (Ch376msc readSerDataUSB).
-; No GET_STATUS on serial — that is SPI-only in the reference library.
+; UART: status byte on serial after command (Ch376msc readSerDataUSB).
+; Drain stale RX first; optionally cross-check INT# via wait_response_byte.
 ch376_cmd_interrupt:
     pha
+    jsr ch376_drain_rx
     jsr ch376_uart_sync
     pla
     jsr ch376_uart_cmd
-    jsr ch376_wait_byte
+    jsr ch376_wait_response_byte
     bcc ch376_interrupt_fail
     sta CH376_LAST_STATUS
     sec
@@ -150,9 +153,7 @@ ch376_dir_info_fail:
     lda 0x00
     rts
 
-; Read USB payload after ST 0x14/0x1D (Ch376msc rdFatInfo UART path).
-; GET_STATUS clears the pending interrupt before RD_USB_DATA0 (WCH datasheet).
-; GST byte is saved in CH376_SCRATCH for diagnostics.
+; Read USB payload after ST 0x14/0x1D (Ch376msc rdFatInfo UART — no GET_STATUS).
 ; Sets CH376_PULL_MODE to 'R' on success.
 ; Returns A = bytes stored in CH376_BUF (0 on fail), C=1 on success.
 ch376_read_usb_payload:
@@ -162,14 +163,11 @@ ch376_read_usb_payload:
     lda 0x00
     sta CH376_PULL_MODE
 
-    jsr ch376_get_status
-    bcc ch376_rup_fail
-    sta CH376_SCRATCH
-
+    jsr ch376_drain_rx
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
     jsr ch376_uart_cmd
-    jsr ch376_wait_byte
+    jsr ch376_wait_response_byte
     bcc ch376_rup_fail
     sta CH376_RD_LEN
     beq ch376_rup_fail

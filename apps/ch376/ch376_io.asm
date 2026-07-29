@@ -51,6 +51,83 @@ ch376_drain_rx:
     jsr ch376_uart_flush
     rts
 
+; Returns A = number of bytes discarded.
+ch376_drain_count:
+    phy
+    ldy 0x00
+ch376_drain_count_loop:
+    jsr ch376_uart_rx_pending
+    bcc ch376_drain_count_done
+    lda ACIA2_RW_DATA_ADDR
+    iny
+    jmp ch376_drain_count_loop
+ch376_drain_count_done:
+    tya
+    ply
+    rts
+
+; A = ACIA #2 status register (parity/framing/overrun flags).
+ch376_acia2_read_status:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    rts
+
+; C=1 if CH376 INT# is pending (EXTINT1 via TIA).
+ch376_int_asserted:
+    tia
+    and INT_EXTINT1
+    beq ch376_int_not_asserted
+    sec
+    rts
+ch376_int_not_asserted:
+    clc
+    rts
+
+; C=1 A='A' if INT pending, A='I' if idle.
+ch376_int_pin_char:
+    jsr ch376_int_asserted
+    bcc ch376_int_pin_idle
+    lda 0x41
+    sec
+    rts
+ch376_int_pin_idle:
+    lda 0x49
+    sec
+    rts
+
+; Wait for INT# and/or UART RX, then read one byte. C=1 A=byte on success.
+ch376_wait_response_byte:
+    phx
+    phy
+    ldx CH376_TMO
+    ldy CH376_TMO+1
+ch376_wrb_loop:
+    jsr ch376_uart_rx_pending
+    bcs ch376_wrb_got
+    jsr ch376_int_asserted
+    bcs ch376_wrb_wait
+    dex
+    bne ch376_wrb_loop
+    dey
+    bne ch376_wrb_loop
+    clc
+    ply
+    plx
+    rts
+ch376_wrb_wait:
+    dex
+    bne ch376_wrb_loop
+    dey
+    bne ch376_wrb_loop
+    clc
+    ply
+    plx
+    rts
+ch376_wrb_got:
+    jsr ch376_uart_getc_tmo
+    ply
+    plx
+    rts
+
 ; Rough ~50ms busy-wait at 1 MHz (tune if needed).
 ch376_delay_short:
     phx
@@ -66,7 +143,7 @@ ch376_delay_outer:
     plx
     rts
 
-; ~300ms busy-wait at 1 MHz — USB stick may need time before RD_USB_DATA0.
+; ~300ms busy-wait at 1 MHz.
 ch376_delay_long:
     phx
     phy
