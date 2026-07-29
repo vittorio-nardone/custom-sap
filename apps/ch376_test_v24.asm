@@ -312,12 +312,6 @@
     rts
 
 .print_rd_tail:
-    ldd .msg_gst[15:8]
-    lde .msg_gst[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_LAST_GST
-    jsr ch376_print_hex8
-    jsr ch376_print_nl
     ldd .msg_rd_tail[15:8]
     lde .msg_rd_tail[7:0]
     jsr ACIA_SEND_STRING
@@ -380,12 +374,6 @@
     lde .msg_rd_len[7:0]
     jsr ACIA_SEND_STRING
     lda CH376_RD_LEN
-    jsr ch376_print_hex8
-    jsr ch376_print_nl
-    ldd .msg_gst[15:8]
-    lde .msg_gst[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_LAST_GST
     jsr ch376_print_hex8
     jsr ch376_print_nl
     ldd .msg_rd_tail[15:8]
@@ -501,9 +489,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v23", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v24", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v23 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v24 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -550,8 +538,6 @@
     #d "OPEN ST ", 0x00
 .msg_rd_len:
     #d "RD len ", 0x00
-.msg_gst:
-    #d "GST ", 0x00
 .msg_rd_tail:
     #d "RD tail ", 0x00
 .msg_pull:
@@ -572,8 +558,6 @@ CH376_TMO_SAVE:
 CH376_SCRATCH:
     #d 0x00
 CH376_OPEN_ST:
-    #d 0x00
-CH376_LAST_GST:
     #d 0x00
 CH376_DRAIN_CNT:
     #d 0x00
