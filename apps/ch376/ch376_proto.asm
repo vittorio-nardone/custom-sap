@@ -134,7 +134,14 @@ ch376_cmd_interrupt:
     bcc ch376_interrupt_fail
 ch376_interrupt_store:
     sta CH376_LAST_STATUS
+    ; USB_INT_DISK_READ/WRITE: data still in chip — do NOT GET_STATUS yet
+    ; (Ch376msc UART goes straight to RD_USB_DATA0).
+    cmp CH376_INT_DISK_READ
+    beq ch376_interrupt_ok
+    cmp 0x1E
+    beq ch376_interrupt_ok
     jsr ch376_clear_int
+ch376_interrupt_ok:
     sec
     rts
 ch376_interrupt_fail:
@@ -152,117 +159,142 @@ ch376_cmd_set_file_name:
     sec
     rts
 
-; DISK_QUERY payload under SEI (short, but same path as FAT).
+; DISK_QUERY / FAT payload: ultra-tight RX under SEI (ACIA2 is 1-byte FIFO).
+; No JSR / stack traffic in the byte loop — 115200 needs a read every ~87us.
 ch376_rd_disk_query:
     phx
     phy
     jsr ch376_usb_timeout_on
     lda 0x00
     sta CH376_PULL_MODE
-    sei
-    jsr ch376_uart_sync
-    lda CH376_CMD_RD_USB_DATA0
-    jsr ch376_uart_cmd
-    jsr ch376_uart_getc_tmo
-    bcc ch376_rdq_fail_cli
+    lda 0x09
+    sta CH376_CAP
+    jsr ch376_rd_usb_burst
+    bcc ch376_rdq_out
+    pha
+    lda CH376_WIRE_LEN
     sta CH376_SCRATCH
-    beq ch376_rdq_fail_cli
-    lda 0x52
-    sta CH376_PULL_MODE
-    ldx 0x00
-    ldy 0x00
-ch376_rdq_loop:
-    cpx CH376_SCRATCH
-    bcs ch376_rdq_done
-    jsr ch376_uart_getc_tmo
-    bcc ch376_rdq_fail_cli
-    cpy 0x09
-    bcs ch376_rdq_skip
-    sta CH376_BUF,y
-    iny
-ch376_rdq_skip:
-    inx
-    jmp ch376_rdq_loop
-ch376_rdq_done:
-    cli
-    tya
-    pha
-    jsr ch376_usb_timeout_off
     pla
-    ply
-    plx
     sec
-    rts
-ch376_rdq_fail_cli:
-    cli
-    lda 0x00
-    pha
-    jsr ch376_usb_timeout_off
-    pla
+ch376_rdq_out:
     ply
     plx
-    clc
     rts
 
-; Ch376msc rdFatInfo: RD_USB_DATA0 immediately under SEI (no delay, no poll).
-; Returns A = bytes stored (0..32). C=1 on success.
+; Ch376msc rdFatInfo after ST 1D.
 ch376_read_usb_payload_rd:
     phx
     phy
     jsr ch376_usb_timeout_on
     lda 0x00
     sta CH376_PULL_MODE
-    sei
-    jsr ch376_uart_sync
-    lda CH376_CMD_RD_USB_DATA0
-    jsr ch376_uart_cmd
-    jsr ch376_uart_getc_tmo
-    bcc ch376_rup_fail_cli
-    sta CH376_RD_LEN
+    lda 0x20
+    sta CH376_CAP
+    jsr ch376_rd_usb_burst
+    ply
+    plx
+    rts
+
+; Send RD_USB_DATA0 and read len+payload. CH376_CAP = max bytes to store.
+; Success: A=stored, WIRE_LEN=len, RD_LEN=len, C=1.
+; Fail: A=0, C=0; CH376_OVERRUN = last ACIA2 status.
+ch376_rd_usb_burst:
+    lda 0x00
+    sta CH376_OVERRUN
     sta CH376_WIRE_LEN
-    beq ch376_rup_fail_cli
-    lda 0x52
-    sta CH376_PULL_MODE
+    sta CH376_RD_LEN
+    sei
+    ; 57 AB 27 — inline TX so we enter RX wait ASAP.
+ch376_rdb_tx1:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_TRANSMIT_DATA_REGISTER_EMPTY
+    beq ch376_rdb_tx1
+    lda CH376_SYNC1
+    sta ACIA2_RW_DATA_ADDR
+ch376_rdb_tx2:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_TRANSMIT_DATA_REGISTER_EMPTY
+    beq ch376_rdb_tx2
+    lda CH376_SYNC2
+    sta ACIA2_RW_DATA_ADDR
+ch376_rdb_tx3:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_TRANSMIT_DATA_REGISTER_EMPTY
+    beq ch376_rdb_tx3
+    lda CH376_CMD_RD_USB_DATA0
+    sta ACIA2_RW_DATA_ADDR
+    ; Length byte.
     ldx 0x00
+    ldy 0xFF
+ch376_rdb_wlen:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
+    bne ch376_rdb_glen
+    dex
+    bne ch376_rdb_wlen
+    dey
+    bne ch376_rdb_wlen
+    jmp ch376_rdb_fail
+ch376_rdb_glen:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVER_OVERRUN
+    beq ch376_rdb_glen_rd
+    sta CH376_OVERRUN
+ch376_rdb_glen_rd:
+    lda ACIA2_RW_DATA_ADDR
+    sta CH376_WIRE_LEN
+    sta CH376_RD_LEN
+    beq ch376_rdb_fail
+    tax
     ldy 0x00
-ch376_rup_loop:
-    cpx CH376_RD_LEN
-    bcs ch376_rup_done
-    jsr ch376_uart_getc_tmo
-    bcc ch376_rup_fail_cli
-    cpy 0x20
-    bcs ch376_rup_skip
+    ; Body: X=remaining, Y=store index, D:E=per-byte timeout.
+ch376_rdb_body:
+    ldd 0x00
+    lde 0xC0
+ch376_rdb_wbyte:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
+    bne ch376_rdb_gbyte
+    dee
+    bne ch376_rdb_wbyte
+    ded
+    bne ch376_rdb_wbyte
+    jmp ch376_rdb_fail
+ch376_rdb_gbyte:
+    bit ACIA_STATUS_REG_RECEIVER_OVERRUN
+    beq ch376_rdb_gbyte_rd
+    sta CH376_OVERRUN
+ch376_rdb_gbyte_rd:
+    lda ACIA2_RW_DATA_ADDR
+    cpy CH376_CAP
+    bcs ch376_rdb_skip
     sta CH376_BUF,y
     iny
-ch376_rup_skip:
-    inx
-    jmp ch376_rup_loop
-ch376_rup_done:
+ch376_rdb_skip:
+    dex
+    bne ch376_rdb_body
+    lda 0x52
+    sta CH376_PULL_MODE
     cli
-    tya
-    pha
+    jsr ch376_clear_int
     jsr ch376_usb_timeout_off
-    pla
-    ply
-    plx
+    tya
     sec
     rts
-ch376_rup_fail_cli:
+ch376_rdb_fail:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    sta CH376_OVERRUN
+    lda 0x52
+    sta CH376_PULL_MODE
     cli
-    lda 0x00
-    pha
     jsr ch376_usb_timeout_off
-    pla
-    ply
-    plx
+    lda 0x00
     clc
     rts
 
-; After ST 0x1D: same as Ch376msc — always RD_USB_DATA0 (no inline guess).
 ch376_read_usb_payload_dir:
     jmp ch376_read_usb_payload_rd
 
-; Single-shot FAT entry read. A = stored length (0 = fail).
 ch376_rd_dir_entry:
     jmp ch376_read_usb_payload_dir
 
