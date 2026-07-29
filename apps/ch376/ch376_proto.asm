@@ -163,6 +163,7 @@ ch376_rd_dir_done:
     rts
 
 ; Single RD_USB_DATA0 attempt. Stores up to CH376_DIR_INFO_SIZE bytes in CH376_BUF.
+; Uses CH376_RD_LEN for device packet length (does not clobber CH376_SCRATCH).
 ; Returns A = stored length (0 on fail), C=1 on success.
 ch376_rd_usb_data0_once:
     phx
@@ -172,7 +173,7 @@ ch376_rd_usb_data0_once:
     jsr ch376_uart_cmd
     jsr ch376_wait_byte
     bcc ch376_rd_once_fail
-    sta CH376_SCRATCH
+    sta CH376_RD_LEN
     beq ch376_rd_once_fail
     ldx 0x00
     ldy 0x00
@@ -185,7 +186,7 @@ ch376_rd_once_loop:
     iny
 ch376_rd_once_skip:
     inx
-    cpx CH376_SCRATCH
+    cpx CH376_RD_LEN
     bne ch376_rd_once_loop
     tya
     ply
@@ -199,17 +200,17 @@ ch376_rd_once_fail:
     clc
     rts
 
-; Discard pending FAT data after FILE_OPEN (Ch376msc openFile + dirInfoRead).
+; Discard pending FAT data after FILE_OPEN (RD_USB_DATA0 only, like DISK_QUERY).
 ch376_consume_pending:
     lda CH376_LAST_STATUS
     cmp CH376_INT_SUCCESS
-    beq ch376_consume_14
+    beq ch376_consume_pull
     cmp CH376_INT_DISK_READ
-    beq ch376_consume_1d
+    beq ch376_consume_pull
+    cmp 0x20
+    beq ch376_consume_pull
     rts
-ch376_consume_14:
-    jmp ch376_cmd_dir_info_read
-ch376_consume_1d:
+ch376_consume_pull:
     jmp ch376_rd_dir_entry
 
 ch376_rd_usb_data0:
@@ -219,7 +220,7 @@ ch376_rd_usb_data0:
     jsr ch376_uart_cmd
     jsr ch376_wait_byte
     bcc ch376_rd_fail
-    sta CH376_SCRATCH
+    sta CH376_RD_LEN
     beq ch376_rd_done_len
     ldx 0x00
 ch376_rd_loop:
@@ -227,10 +228,10 @@ ch376_rd_loop:
     bcc ch376_rd_fail
     sta CH376_BUF,x
     inx
-    cpx CH376_SCRATCH
+    cpx CH376_RD_LEN
     bne ch376_rd_loop
 ch376_rd_done_len:
-    lda CH376_SCRATCH
+    lda CH376_RD_LEN
     plx
     rts
 ch376_rd_fail:

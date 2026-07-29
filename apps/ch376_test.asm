@@ -241,7 +241,7 @@
     jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
-    ; Ch376msc cd("/"): select root before wildcard listing.
+    ; Ch376msc cd("/") then listDir("*").
     ldd .fn_root_slash[15:8]
     lde .fn_root_slash[7:0]
     jsr ch376_cmd_set_file_name
@@ -252,7 +252,18 @@
     cmp CH376_ERR_MISS_FILE
     beq .list_root_fail
     jsr ch376_consume_pending
+    jsr ch376_uart_flush
 
+    ldd .fn_star_slash[15:8]
+    lde .fn_star_slash[7:0]
+    jsr ch376_cmd_set_file_name
+    lda CH376_CMD_FILE_OPEN
+    jsr ch376_cmd_interrupt
+    bcc .list_root_fail
+    lda CH376_LAST_STATUS
+    sta CH376_OPEN_ST
+    cmp CH376_ERR_MISS_FILE
+    bne .list_wild_ready
     ldd .fn_star[15:8]
     lde .fn_star[7:0]
     jsr ch376_cmd_set_file_name
@@ -260,17 +271,8 @@
     jsr ch376_cmd_interrupt
     bcc .list_root_fail
     lda CH376_LAST_STATUS
-    cmp CH376_ERR_MISS_FILE
-    bne .list_wild_ready
-    ldd .fn_star_slash[15:8]
-    lde .fn_star_slash[7:0]
-    jsr ch376_cmd_set_file_name
-    lda CH376_CMD_FILE_OPEN
-    jsr ch376_cmd_interrupt
-    bcc .list_root_fail
+    sta CH376_OPEN_ST
 .list_wild_ready:
-    lda CH376_LAST_STATUS
-    sta CH376_SCRATCH
     jsr .list_dispatch_int
     bcc .list_root_fail
     beq .list_root_finish
@@ -291,7 +293,7 @@
     ldd .msg_open_st[15:8]
     lde .msg_open_st[7:0]
     jsr ACIA_SEND_STRING
-    lda CH376_SCRATCH
+    lda CH376_OPEN_ST
     jsr ch376_print_hex8
     jsr ch376_print_nl
 .list_root_done:
@@ -307,37 +309,21 @@
     clc
     rts
 
-; After FILE_OPEN / FILE_ENUM_GO: handle 0x42 end, 0x1D/0x14 + data pull.
-; A=0 listing done, A=1 entry printed (call ENUM_GO), fail = clc.
+; After FILE_OPEN / FILE_ENUM_GO.
+; A=0 done (0x42), A=1 continue enum, fail = clc.
 .list_dispatch_int:
     lda CH376_LAST_STATUS
     cmp CH376_ERR_MISS_FILE
     beq .ldi_done
-    cmp CH376_INT_DISK_READ
-    beq .ldi_pull
-    cmp CH376_INT_SUCCESS
-    bne .ldi_fail
+    jsr .list_int_has_data
+    bcc .ldi_fail
 .ldi_pull:
     jsr ch376_rd_dir_entry
-    bne .ldi_got_data
+    bne .ldi_process
     jsr ch376_cmd_dir_info_read
-    beq .ldi_done
-.ldi_got_data:
-    lda CH376_BUF
-    beq .ldi_done
-    cmp 0xE5
     beq .ldi_more
-    cmp 0x2E
-    beq .ldi_more
-    lda CH376_BUF+11
-    cmp 0x0F
-    beq .ldi_more
-    lda CH376_BUF+11
-    and 0x08
-    bne .ldi_more
-    jsr .print_direntry
-    jsr ch376_print_nl
-    inc CH376_FILE_COUNT
+.ldi_process:
+    jsr .list_emit_entry
 .ldi_more:
     lda 0x01
     sec
@@ -348,6 +334,40 @@
     rts
 .ldi_fail:
     clc
+    rts
+
+; C=1 if status expects a data pull (0x14, 0x1D, or 0x20).
+.list_int_has_data:
+    cmp CH376_INT_DISK_READ
+    beq .lihd_yes
+    cmp CH376_INT_SUCCESS
+    beq .lihd_yes
+    cmp 0x20
+    beq .lihd_yes
+    clc
+    rts
+.lihd_yes:
+    sec
+    rts
+
+; Print current CH376_BUF if it looks like a real 8.3 entry.
+.list_emit_entry:
+    lda CH376_BUF
+    beq .lem_skip
+    cmp 0xE5
+    beq .lem_skip
+    cmp 0x2E
+    beq .lem_skip
+    lda CH376_BUF+11
+    cmp 0x0F
+    beq .lem_skip
+    lda CH376_BUF+11
+    and 0x08
+    bne .lem_skip
+    jsr .print_direntry
+    jsr ch376_print_nl
+    inc CH376_FILE_COUNT
+.lem_skip:
     rts
 
 .print_direntry:
@@ -390,9 +410,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v15 (cd root)", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v16 (enum fix)", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v15 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v16 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -422,7 +442,7 @@
 .msg_open_st:
     #d "OPEN ST ", 0x00
 .msg_listing:
-    #d "Root listing (*):", 0x00
+    #d "Root listing (/*):", 0x00
 .msg_entries:
     #d "Entries: ", 0x00
 .fn_root_slash:
@@ -437,6 +457,10 @@
 CH376_TMO:
     #d 0x00, 0x00
 CH376_SCRATCH:
+    #d 0x00
+CH376_OPEN_ST:
+    #d 0x00
+CH376_RD_LEN:
     #d 0x00
 CH376_LAST_STATUS:
     #d 0x00
