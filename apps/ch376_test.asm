@@ -85,17 +85,28 @@
     jsr ch376_print_str
     lda 0x65
     jsr ch376_cmd_check_exist
-    bcc .test_check_exist_to
+    bcc .test_check_exist_fail
     ldd .msg_ok_short[15:8]
     lde .msg_ok_short[7:0]
     jsr ch376_print_str
     jsr ch376_print_nl
     sec
     rts
-.test_check_exist_to:
+.test_check_exist_fail:
+    lda CH376_LAST_STATUS
+    bne .test_check_exist_bad
     ldd .msg_timeout[15:8]
     lde .msg_timeout[7:0]
     jsr ch376_print_str
+    jsr ch376_print_nl
+    clc
+    rts
+.test_check_exist_bad:
+    ldd .msg_bad[15:8]
+    lde .msg_bad[7:0]
+    jsr ch376_print_str
+    lda CH376_LAST_STATUS
+    jsr ch376_print_hex8
     jsr ch376_print_nl
     clc
     rts
@@ -245,6 +256,8 @@
     #d "CH376 test failed.", 0x00
 .msg_timeout:
     #d "TIMEOUT", 0x00
+.msg_bad:
+    #d "BAD rsp ", 0x00
 .msg_ic_ver:
     #d "IC/FW ver: ", 0x00
 .msg_check:

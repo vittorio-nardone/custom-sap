@@ -47,6 +47,8 @@ ch376_cmd_get_ic_ver:
 
 ch376_cmd_check_exist:
     sta CH376_SCRATCH
+    lda 0x00
+    sta CH376_LAST_STATUS
     jsr ch376_uart_flush
     jsr ch376_uart_sync
     lda CH376_CMD_CHECK_EXIST
@@ -55,7 +57,9 @@ ch376_cmd_check_exist:
     jsr ch376_uart_param
     jsr ch376_wait_byte
     bcc ch376_check_exist_fail
-    eor CH376_SCRATCH
+    sta CH376_LAST_STATUS
+    eor 0xFF
+    cmp CH376_SCRATCH
     bne ch376_check_exist_fail
     sec
     rts
