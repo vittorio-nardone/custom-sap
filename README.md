@@ -29,7 +29,7 @@ Summarizing the technical characteristics, Otto is configured as follows:
 * 2x serial/USB interface
 * 3x maskable interrupt lines and 10Hz timer interrupt
 
-**Display and I/O (in use):** a [LilyGO TTGO VGA32](devices/vga32/README.md) board runs FabGL **AdvancedTerminal** as Otto's console — VGA monitor + PS/2 keyboard over UART (115200 8N1) via a level shifter. Program storage on Otto is planned via **CH376S** on serial port 2 (not implemented yet). The VGA32 microSD slot remains in firmware behind `OTTO_SD_ENABLED 0` for future local experiments only.
+**Display and I/O (optional):** a [LilyGO TTGO VGA32](devices/vga32/README.md) can serve as Otto's VGA/PS/2 console over UART (115200 8N1, level shifter), with optional WiFi app upload via the `OttoTerminal` firmware. Program storage on Otto is planned via **CH376S** on serial port 2 (not implemented yet).
 
 # Repository Contents
 
@@ -71,7 +71,7 @@ This repository houses the complete design files and software components for the
   * **examples/** - Pascal example programs
 * **pascal_compiler.py** - Tiny Pascal cross-compiler (Python, produces P-code binaries)
 * **forth/** - FORTH language interpreter (deprecated, files retained but excluded from build)
-* **devices/vga32/** - VGA32 AdvancedTerminal firmware and build scripts
+* **devices/vga32/** - optional VGA32 console firmware (`OttoTerminal`) and build script
 * **roms/** - Binary files
   * **system/** - Microcode EEPROMs, unified kernel ROM (kernel + P-Machine + editor + compiler)
   * **apps/asm/** - Assembly app binaries (compiled from `apps/*.asm`)
@@ -119,9 +119,9 @@ Otto Simulator is a Python application that emulates Otto's hardware architectur
 |------|---------|
 | Local stdin/stdout | `python simulate.py` |
 | Virtual serial (minicom) | `python simulate.py --simulate-serial` |
-| **VGA32 AdvancedTerminal** (recommended) | `python simulate.py --serial-device /dev/cu.usbserial-XXXX` |
+| **VGA32 console** (hardware) | `python simulate.py --serial-device /dev/cu.usbserial-XXXX` |
 
-With `--serial-device`, the emulated ACIA is mapped to a USB serial adapter connected to the VGA32 Otto UART. The kernel menu, VT100 output, and PS/2 keyboard on the VGA board behave like a real Otto session. Flash firmware with `devices/vga32/build.sh upload` and read `devices/vga32/README.md` for wiring and F12/F11 settings.
+With `--serial-device`, the emulated ACIA is mapped to a USB serial adapter on the VGA32 Otto UART. See `devices/vga32/README.md` for wiring and firmware flash.
 
 **Mac-as-Otto (no CPU board):** the same flag lets you develop against a real VGA32 while the kernel runs only in the simulator — useful before the level shifter and Otto serial are wired.
 
@@ -289,7 +289,7 @@ pip install watchdog
 
 # Serial communication
 
-**Console:** day-to-day development uses the VGA32 AdvancedTerminal (`devices/vga32/`). A second USB serial adapter (FTDI) on the VGA32 Otto UART is used for simulator `--serial-device`, or connects Otto CPU ↔ VGA32 once the level shifter is installed.
+**Console:** optional VGA32 setup (`devices/vga32/`) or a USB serial adapter on Otto's ACIA for `simulate.py --serial-device` / minicom.
 
 For direct Otto CPU upload and minicom (kernel ROM workflow, XMODEM):
 

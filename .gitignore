@@ -2,3 +2,9 @@
 __pycache__
 .venv/
 .claude/
+
+# Local WiFi credentials (see otto_secrets.h.example)
+devices/vga32/**/otto_secrets.h
+
+# Auto-generated OttoTerminal version header (see build.sh)
+devices/vga32/OttoTerminal/otto_version_gen.h
