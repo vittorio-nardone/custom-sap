@@ -1,0 +1,29 @@
+; CH376S constants (serial UART mode, 115200 8N1 on ACIA #2).
+; Shared by ch376_test.asm; intended for future kernel/storage module.
+
+#const CH376_SYNC1 = 0x57
+#const CH376_SYNC2 = 0xAB
+
+#const CH376_CMD_GET_IC_VER = 0x01
+#const CH376_CMD_CHECK_EXIST = 0x16
+#const CH376_CMD_GET_STATUS = 0x22
+#const CH376_CMD_RD_USB_DATA0 = 0x27
+#const CH376_CMD_SET_USB_MODE = 0x15
+#const CH376_CMD_DISK_CONNECT = 0x30
+#const CH376_CMD_DISK_MOUNT = 0x31
+#const CH376_CMD_SET_FILE_NAME = 0x2F
+#const CH376_CMD_FILE_OPEN = 0x32
+#const CH376_CMD_FILE_ENUM_GO = 0x33
+
+#const CH376_USB_MODE_HOST = 0x06
+
+#const CH376_INT_SUCCESS = 0x14
+#const CH376_INT_DISK_READ = 0x1D
+#const CH376_ERR_MISS_FILE = 0x42
+#const CH376_ERR_OPEN_DIR = 0x41
+
+#const CH376_DIR_ATTR_DIRECTORY = 0x10
+#const CH376_DIR_INFO_SIZE = 32
+
+#const ACIA2_CONTROL_STATUS_ADDR = 0x6022
+#const ACIA2_RW_DATA_ADDR = 0x6023
