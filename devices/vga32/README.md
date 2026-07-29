@@ -41,6 +41,11 @@ Apps catalog: `roms/apps/catalog.json` on GitHub (per-kernel trees under `roms/a
 Regenerate locally with `python3.11 scripts/python/update_app_catalog.py` after building apps.
 Configure repo URL in `otto_config.h` (`OTTO_WIFI_CATALOG_INDEX_URL`).
 
+**GitHub raw CDN:** `raw.githubusercontent.com` can serve stale `.bin` files for a few minutes
+after a push. OttoTerminal appends `?sha=<blob>` (from the GitHub Contents API) to each
+`download_url` so F10 always fetches the current binary. Reflash OttoTerminal after updating
+`otto_wifi.cpp` if uploads still show an old app banner after R + upload.
+
 ## Wiring (Otto serial 1 → ESP32)
 
 Otto MC68B50 (5 V) through a **bidirectional level shifter** (BSS138 recommended). Do not use a resistor divider on Otto TX.

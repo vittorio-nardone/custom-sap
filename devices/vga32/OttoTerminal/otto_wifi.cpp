@@ -139,6 +139,17 @@ bool copyJsonString(char const * start, char const * end, char * out, size_t out
   return true;
 }
 
+bool appendUrlQueryParam(char * url, size_t urlLen, char const * key, char const * value) {
+  if (!url || !key || !value || urlLen == 0)
+    return false;
+  size_t const n = strlen(url);
+  if (n >= urlLen - 1)
+    return false;
+  char const sep = strchr(url, '?') ? '&' : '?';
+  int const wrote = snprintf(url + n, urlLen - n, "%c%s=%s", sep, key, value);
+  return wrote > 0 && (size_t)n + (size_t)wrote < urlLen;
+}
+
 void buildGithubContentsUrl(char const * catalogPath, char * out, size_t outLen) {
   if (!catalogPath || !out || outLen == 0)
     return;
@@ -176,14 +187,20 @@ bool parseGithubCatalogJson(char * text, OttoWifiCatalog * out) {
 
     char const * urlEnd = nullptr;
     char const * urlVal = findJsonStringValue(nameVal, "download_url", &urlEnd);
+    char const * shaEnd = nullptr;
+    char const * shaVal = findJsonStringValue(nameVal, "sha", &shaEnd);
     if (saved)
       *saved = savedCh;
 
     if (endsWithBin(name) && name[0] != '_' && urlVal) {
       OttoWifiApp & app = out->apps[out->count];
       copyDisplayName(name, app.name, sizeof(app.name));
-      if (copyJsonString(urlVal, urlEnd, app.url, sizeof(app.url)))
+      if (copyJsonString(urlVal, urlEnd, app.url, sizeof(app.url))) {
+        char sha[41];
+        if (shaVal && shaEnd > shaVal && copyJsonString(shaVal, shaEnd, sha, sizeof(sha)))
+          appendUrlQueryParam(app.url, sizeof(app.url), "sha", sha);
         out->count++;
+      }
     }
 
     cursor = const_cast<char *>(nameEnd + 1);
@@ -785,7 +802,13 @@ OttoWifiResult ottoWifiFetchTargets(OttoWifiTargetList * out) {
 
   uint8_t * data = nullptr;
   size_t len = 0;
-  OttoWifiResult const dr = ottoWifiDownload(OTTO_WIFI_CATALOG_INDEX_URL, &data, &len);
+  char indexUrl[OTTO_WIFI_URL_MAX + 24];
+  strncpy(indexUrl, OTTO_WIFI_CATALOG_INDEX_URL, sizeof(indexUrl) - 1);
+  indexUrl[sizeof(indexUrl) - 1] = '\0';
+  char tbuf[12];
+  snprintf(tbuf, sizeof(tbuf), "%lu", (unsigned long)millis());
+  appendUrlQueryParam(indexUrl, sizeof(indexUrl), "t", tbuf);
+  OttoWifiResult const dr = ottoWifiDownload(indexUrl, &data, &len);
   if (dr != OttoWifiResult::Ok)
     return dr;
 
