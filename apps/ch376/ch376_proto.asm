@@ -210,6 +210,26 @@ ch376_rdq_fail:
     clc
     rts
 
+; After ST 0x1D: if length byte already on UART, use it; else RD_USB_DATA0 (Ch376msc).
+ch376_read_usb_payload_dir:
+    phx
+    phy
+    jsr ch376_usb_timeout_on
+    lda 0x00
+    sta CH376_PULL_MODE
+    jsr ch376_uart_rx_pending
+    bcc ch376_rup1d_send_rd
+    lda ACIA2_RW_DATA_ADDR
+    sta CH376_RD_LEN
+    beq ch376_rup1d_send_rd
+    lda 0x49
+    sta CH376_PULL_MODE
+    jmp ch376_rup_read_body
+ch376_rup1d_send_rd:
+    ply
+    plx
+    jmp ch376_read_usb_payload_rd
+
 ; RD_USB_DATA0 only (after ST 0x14 disk query — Ch376msc rdDiskInfo).
 ch376_read_usb_payload_rd:
     phx
@@ -227,10 +247,6 @@ ch376_read_usb_payload_rd:
     lda 0x52
     sta CH376_PULL_MODE
     jmp ch376_rup_read_body
-
-; After ST 0x1D: RD_USB_DATA0 only (Ch376msc rdFatInfo — no inline UART poll).
-ch376_read_usb_payload_dir:
-    jmp ch376_read_usb_payload_rd
 
 ch376_rup_read_body:
     ldx 0x00
