@@ -75,7 +75,16 @@ ch376_cmd_set_usb_mode:
     jsr ch376_uart_cmd
     lda CH376_SCRATCH
     jsr ch376_uart_param
-    jmp ch376_wait_byte
+    jsr ch376_wait_byte
+    bcc ch376_set_mode_fail
+    sta CH376_LAST_STATUS
+    jsr ch376_drain_rx
+    lda CH376_LAST_STATUS
+    sec
+    rts
+ch376_set_mode_fail:
+    clc
+    rts
 
 ch376_cmd_wait_status:
     pha
@@ -116,7 +125,6 @@ ch376_cmd_set_file_name:
 
 ch376_rd_usb_data0:
     phx
-    jsr ch376_uart_flush
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
     jsr ch376_uart_cmd
