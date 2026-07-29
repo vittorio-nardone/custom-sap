@@ -112,11 +112,9 @@ ch376_wait_status_fail:
     clc
     rts
 
-; UART: status byte on serial after command (Ch376msc readSerDataUSB).
-; Drain stale RX first; optionally cross-check INT# via wait_response_byte.
+; UART: status byte on serial after command. No RX drain (Ch376msc never flushes UART).
 ch376_cmd_interrupt:
     pha
-    jsr ch376_drain_rx
     jsr ch376_uart_sync
     pla
     jsr ch376_uart_cmd
@@ -185,7 +183,7 @@ ch376_rdq_loop:
     bcs ch376_rdq_done
     jsr ch376_wait_byte
     bcc ch376_rdq_fail
-    cpy CH376_DISK_QUERY_SIZE
+    cpy 0x09
     bcs ch376_rdq_skip_store
     sta CH376_BUF,y
     iny
@@ -230,41 +228,9 @@ ch376_read_usb_payload_rd:
     sta CH376_PULL_MODE
     jmp ch376_rup_read_body
 
-; After ST 0x1D: poll UART for inline length, else RD_USB_DATA0.
+; After ST 0x1D: RD_USB_DATA0 only (Ch376msc rdFatInfo — no inline UART poll).
 ch376_read_usb_payload_dir:
-    phx
-    phy
-    jsr ch376_usb_timeout_on
-    lda 0x00
-    sta CH376_PULL_MODE
-
-    ldx 0x0C
-ch376_rupd_wait_rx:
-    jsr ch376_uart_rx_pending
-    bcs ch376_rupd_inline_len
-    jsr ch376_delay_short
-    dex
-    bne ch376_rupd_wait_rx
-
-    jsr ch376_uart_sync
-    lda CH376_CMD_RD_USB_DATA0
-    jsr ch376_uart_cmd
-    jsr ch376_wait_response_byte
-    bcc ch376_rup_fail
-    sta CH376_RD_LEN
-    beq ch376_rup_fail
-    lda 0x52
-    sta CH376_PULL_MODE
-    jmp ch376_rup_read_body
-
-ch376_rupd_inline_len:
-    jsr ch376_wait_response_byte
-    bcc ch376_rup_fail
-    sta CH376_RD_LEN
-    beq ch376_rup_fail
-    lda 0x49
-    sta CH376_PULL_MODE
-    jmp ch376_rup_read_body
+    jmp ch376_read_usb_payload_rd
 
 ch376_rup_read_body:
     ldx 0x00
@@ -274,7 +240,7 @@ ch376_rup_loop:
     bcs ch376_rup_done
     jsr ch376_wait_byte
     bcc ch376_rup_fail
-    cpy CH376_DIR_INFO_SIZE
+    cpy 0x20
     bcs ch376_rup_skip_store
     sta CH376_BUF,y
     iny
