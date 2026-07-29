@@ -27,11 +27,16 @@
 #bank ram
 
     jsr .set_timeout
+
+    ldd .msg_boot[15:8]
+    lde .msg_boot[7:0]
+    jsr ACIA_SEND_STRING
+
     jsr ch376_acia2_init
 
     ldd .msg_title[15:8]
     lde .msg_title[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
     jsr .test_get_ic_ver
@@ -43,14 +48,14 @@
 
     ldd .msg_ok[15:8]
     lde .msg_ok[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     jsr ch376_print_nl
     rts
 
 .fail:
     ldd .msg_fail[15:8]
     lde .msg_fail[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     jsr ch376_print_nl
     rts
 
@@ -64,7 +69,7 @@
 .test_get_ic_ver:
     ldd .msg_ic_ver[15:8]
     lde .msg_ic_ver[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     jsr ch376_cmd_get_ic_ver
     bcc .test_get_ic_ver_to
     jsr ch376_print_hex8
@@ -74,7 +79,7 @@
 .test_get_ic_ver_to:
     ldd .msg_timeout[15:8]
     lde .msg_timeout[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     jsr ch376_print_nl
     clc
     rts
@@ -82,13 +87,13 @@
 .test_check_exist:
     ldd .msg_check[15:8]
     lde .msg_check[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     lda 0x65
     jsr ch376_cmd_check_exist
     bcc .test_check_exist_fail
     ldd .msg_ok_short[15:8]
     lde .msg_ok_short[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     jsr ch376_print_nl
     sec
     rts
@@ -97,14 +102,14 @@
     bne .test_check_exist_bad
     ldd .msg_timeout[15:8]
     lde .msg_timeout[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     jsr ch376_print_nl
     clc
     rts
 .test_check_exist_bad:
     ldd .msg_bad[15:8]
     lde .msg_bad[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     lda CH376_LAST_STATUS
     jsr ch376_print_hex8
     jsr ch376_print_nl
@@ -114,7 +119,7 @@
 .test_usb_storage:
     ldd .msg_usb_mode[15:8]
     lde .msg_usb_mode[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     lda CH376_USB_MODE_HOST
     jsr ch376_cmd_set_usb_mode
     bcc .test_usb_to
@@ -127,7 +132,7 @@
 
     ldd .msg_mount[15:8]
     lde .msg_mount[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     lda CH376_CMD_DISK_MOUNT
     jsr ch376_cmd_wait_status
     bcc .test_usb_to
@@ -142,7 +147,7 @@
 .test_usb_to:
     ldd .msg_timeout[15:8]
     lde .msg_timeout[7:0]
-    jmp ch376_print_str
+    jmp ACIA_SEND_STRING
 .test_usb_fail:
     clc
     rts
@@ -153,7 +158,7 @@
 
     ldd .msg_listing[15:8]
     lde .msg_listing[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
     ldd .fn_root_all[15:8]
@@ -190,7 +195,7 @@
 .list_root_done:
     ldd .msg_entries[15:8]
     lde .msg_entries[7:0]
-    jsr ch376_print_str
+    jsr ACIA_SEND_STRING
     lda CH376_FILE_COUNT
     jsr ch376_print_hex8
     jsr ch376_print_nl
@@ -244,12 +249,14 @@
     beq .print_tag_done
     ldd .tag_dir[15:8]
     lde .tag_dir[7:0]
-    jmp ch376_print_str
+    jmp ACIA_SEND_STRING
 .print_tag_done:
     rts
 
+.msg_boot:
+    #d 0x0A, 0x0D, "CH376 test v3 running", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d 0x0A, 0x0D, "--- CH376S test v2 (ACIA2) ---", 0x00
+    #d "--- CH376S test v3 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
