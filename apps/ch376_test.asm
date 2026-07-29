@@ -175,13 +175,14 @@
     jsr .set_timeout
     lda CH376_LAST_STATUS
     beq .test_usb_to
-    jsr ch376_print_status
     cmp CH376_INT_SUCCESS
     bne .test_usb_fail
+    lda CH376_LAST_STATUS
+    jsr ch376_print_status
 
     jsr .read_disk_id
     jsr .list_root
-    bcc .test_usb_fail
+    bcc .test_list_fail
     sec
     rts
 .test_usb_to:
@@ -194,6 +195,16 @@
 .test_usb_fail:
     ldd .msg_fail_st[15:8]
     lde .msg_fail_st[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_LAST_STATUS
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    clc
+    rts
+
+.test_list_fail:
+    ldd .msg_list_fail[15:8]
+    lde .msg_list_fail[7:0]
     jsr ACIA_SEND_STRING
     lda CH376_LAST_STATUS
     jsr ch376_print_hex8
@@ -229,16 +240,21 @@
     lda CH376_CMD_FILE_OPEN
     jsr ch376_cmd_wait_status
     bcc .list_root_fail
+    lda CH376_LAST_STATUS
     jsr ch376_print_status
 
+    lda CH376_LAST_STATUS
     cmp CH376_ERR_MISS_FILE
     beq .list_root_done
+    cmp CH376_ERR_OPEN_DIR
+    beq .list_root_enum
     cmp CH376_INT_DISK_READ
     bne .list_root_check_open
     jsr .read_print_entry
     jmp .list_root_enum
 
 .list_root_check_open:
+    lda CH376_LAST_STATUS
     cmp CH376_INT_SUCCESS
     bne .list_root_fail
 
@@ -246,6 +262,7 @@
     lda CH376_CMD_FILE_ENUM_GO
     jsr ch376_cmd_wait_status
     bcc .list_root_fail
+    lda CH376_LAST_STATUS
     cmp CH376_ERR_MISS_FILE
     beq .list_root_done
     cmp CH376_INT_DISK_READ
@@ -315,9 +332,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v6 (re-upload!)", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v7 (re-upload!)", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v6 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v7 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -342,6 +359,8 @@
     #d "Disk id len: ", 0x00
 .msg_fail_st:
     #d "USB fail ST ", 0x00
+.msg_list_fail:
+    #d "List fail ST ", 0x00
 .msg_listing:
     #d "Root listing (/*):", 0x00
 .msg_entries:
