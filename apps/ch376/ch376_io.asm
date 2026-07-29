@@ -139,6 +139,24 @@ ch376_wrb_got:
     plx
     rts
 
+; Wait up to ~32 short delays for UART RX. C=1 if a byte is pending.
+ch376_poll_rx_wait:
+    phx
+    ldx 0x20
+ch376_prw_loop:
+    jsr ch376_uart_rx_pending
+    bcs ch376_prw_got
+    jsr ch376_delay_short
+    dex
+    bne ch376_prw_loop
+    clc
+    plx
+    rts
+ch376_prw_got:
+    sec
+    plx
+    rts
+
 ; Rough ~50ms busy-wait at 1 MHz (tune if needed).
 ch376_delay_short:
     phx

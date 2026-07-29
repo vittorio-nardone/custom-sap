@@ -174,8 +174,6 @@ ch376_rd_disk_query:
     bcc ch376_rdq_fail
     sta CH376_SCRATCH
     beq ch376_rdq_fail
-    lda 0x00
-    sta CH376_RD_LEN
     ldx 0x00
     ldy 0x00
 ch376_rdq_loop:
@@ -187,12 +185,11 @@ ch376_rdq_loop:
     bcs ch376_rdq_skip_store
     sta CH376_BUF,y
     iny
-    inc CH376_RD_LEN
 ch376_rdq_skip_store:
     inx
     jmp ch376_rdq_loop
 ch376_rdq_done:
-    lda CH376_RD_LEN
+    tya
     pha
     jsr ch376_usb_timeout_off
     pla
@@ -217,7 +214,7 @@ ch376_read_usb_payload_dir:
     jsr ch376_usb_timeout_on
     lda 0x00
     sta CH376_PULL_MODE
-    jsr ch376_uart_rx_pending
+    jsr ch376_poll_rx_wait
     bcc ch376_rup1d_send_rd
     lda ACIA2_RW_DATA_ADDR
     sta CH376_RD_LEN
@@ -237,13 +234,24 @@ ch376_read_usb_payload_rd:
     jsr ch376_usb_timeout_on
     lda 0x00
     sta CH376_PULL_MODE
+    ldx 0x04
+ch376_rup_rd_retry:
     jsr ch376_uart_sync
     lda CH376_CMD_RD_USB_DATA0
     jsr ch376_uart_cmd
+    jsr ch376_delay_short
     jsr ch376_wait_response_byte
-    bcc ch376_rup_fail
+    bcc ch376_rup_rd_tmo
     sta CH376_RD_LEN
-    beq ch376_rup_fail
+    bne ch376_rup_rd_got_len
+    dex
+    bne ch376_rup_rd_retry
+    jmp ch376_rup_fail
+ch376_rup_rd_tmo:
+    dex
+    bne ch376_rup_rd_retry
+    jmp ch376_rup_fail
+ch376_rup_rd_got_len:
     lda 0x52
     sta CH376_PULL_MODE
     jmp ch376_rup_read_body
