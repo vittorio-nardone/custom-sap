@@ -241,13 +241,36 @@
     jsr ACIA_SEND_STRING
     jsr ch376_print_nl
 
-    ; Ch376msc listDir: wildcard in current dir (root after mount).
+    ; Ch376msc cd("/"): select root before wildcard listing.
+    ldd .fn_root_slash[15:8]
+    lde .fn_root_slash[7:0]
+    jsr ch376_cmd_set_file_name
+    lda CH376_CMD_FILE_OPEN
+    jsr ch376_cmd_interrupt
+    bcc .list_root_fail
+    lda CH376_LAST_STATUS
+    cmp CH376_ERR_MISS_FILE
+    beq .list_root_fail
+    jsr ch376_consume_pending
+
     ldd .fn_star[15:8]
     lde .fn_star[7:0]
     jsr ch376_cmd_set_file_name
     lda CH376_CMD_FILE_OPEN
     jsr ch376_cmd_interrupt
     bcc .list_root_fail
+    lda CH376_LAST_STATUS
+    cmp CH376_ERR_MISS_FILE
+    bne .list_wild_ready
+    ldd .fn_star_slash[15:8]
+    lde .fn_star_slash[7:0]
+    jsr ch376_cmd_set_file_name
+    lda CH376_CMD_FILE_OPEN
+    jsr ch376_cmd_interrupt
+    bcc .list_root_fail
+.list_wild_ready:
+    lda CH376_LAST_STATUS
+    sta CH376_SCRATCH
     jsr .list_dispatch_int
     bcc .list_root_fail
     beq .list_root_finish
@@ -263,6 +286,14 @@
 
 .list_root_finish:
     jsr .set_timeout
+    lda CH376_FILE_COUNT
+    bne .list_root_done
+    ldd .msg_open_st[15:8]
+    lde .msg_open_st[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_SCRATCH
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
 .list_root_done:
     ldd .msg_entries[15:8]
     lde .msg_entries[7:0]
@@ -295,6 +326,11 @@
     lda CH376_BUF
     beq .ldi_done
     cmp 0xE5
+    beq .ldi_more
+    cmp 0x2E
+    beq .ldi_more
+    lda CH376_BUF+11
+    cmp 0x0F
     beq .ldi_more
     lda CH376_BUF+11
     and 0x08
@@ -354,9 +390,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v14 (1D pull)", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v15 (cd root)", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v14 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v15 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
@@ -383,12 +419,18 @@
     #d "USB fail ST ", 0x00
 .msg_list_fail:
     #d "List fail ST ", 0x00
+.msg_open_st:
+    #d "OPEN ST ", 0x00
 .msg_listing:
     #d "Root listing (*):", 0x00
 .msg_entries:
     #d "Entries: ", 0x00
+.fn_root_slash:
+    #d "/", 0x00
 .fn_star:
     #d "*", 0x00
+.fn_star_slash:
+    #d "/*", 0x00
 .tag_dir:
     #d " <DIR>", 0x00
 

@@ -199,17 +199,18 @@ ch376_rd_once_fail:
     clc
     rts
 
-; Discard data after 0x14 / 0x1D if a later command will be sent.
+; Discard pending FAT data after FILE_OPEN (Ch376msc openFile + dirInfoRead).
 ch376_consume_pending:
     lda CH376_LAST_STATUS
     cmp CH376_INT_SUCCESS
-    beq ch376_consume_do
+    beq ch376_consume_14
     cmp CH376_INT_DISK_READ
-    bne ch376_consume_done
-ch376_consume_do:
-    jsr ch376_rd_usb_data0_once
-ch376_consume_done:
+    beq ch376_consume_1d
     rts
+ch376_consume_14:
+    jmp ch376_cmd_dir_info_read
+ch376_consume_1d:
+    jmp ch376_rd_dir_entry
 
 ch376_rd_usb_data0:
     phx
