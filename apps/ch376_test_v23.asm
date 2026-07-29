@@ -286,8 +286,8 @@
     lda CH376_LAST_STATUS
     jsr ch376_print_hex8
     jsr ch376_print_nl
-    bcc .read_disk_id_done
     lda CH376_LAST_STATUS
+    beq .read_disk_id_done
     cmp CH376_INT_SUCCESS
     bne .read_disk_id_done
     jsr .set_timeout_long
@@ -501,9 +501,9 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 test v22", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 test v23", 0x0A, 0x0D, 0x00
 .msg_title:
-    #d "--- CH376S test v22 (ACIA2) ---", 0x0A, 0x0D, 0x00
+    #d "--- CH376S test v23 (ACIA2) ---", 0x0A, 0x0D, 0x00
 .msg_ok:
     #d "CH376 tests done.", 0x00
 .msg_fail:
