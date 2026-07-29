@@ -71,6 +71,15 @@ ch376_acia2_read_status:
     lda ACIA2_CONTROL_STATUS_ADDR
     rts
 
+; Enable EXTINT1 in mask (TAI) so TIA reflects the EXTI1 line when polling.
+ch376_int_enable:
+    sei
+    tia
+    ora INT_EXTINT1
+    tai
+    cli
+    rts
+
 ; C=1 if CH376 INT# is pending (EXTINT1 via TIA).
 ch376_int_asserted:
     tia
