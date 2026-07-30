@@ -308,11 +308,14 @@
     clc
     rts
 
-; Store printable file (not dir/LFN/vol/./..) and print "N. name"
+; Store printable file (not dir/LFN/vol/hidden/./..) and print "N. name"
+; Skip "_" names: macOS AppleDouble "._*" become "_XXXX~N.EXT" on FAT 8.3.
 .list_emit:
     lda CH376_BUF
     beq .lem_skip
     cmp 0xE5
+    beq .lem_skip
+    cmp 0x5F
     beq .lem_skip
     jsr .list_is_dot
     bcc .lem_skip
@@ -324,6 +327,9 @@
     bne .lem_skip
     lda CH376_BUF+11
     and CH376_DIR_ATTR_DIRECTORY
+    bne .lem_skip
+    lda CH376_BUF+11
+    and CH376_DIR_ATTR_HIDDEN
     bne .lem_skip
     lda CH376_FILE_COUNT
     cmp CH376_MAX_FILES
@@ -693,7 +699,7 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 USB loader v3", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 USB loader v4", 0x0A, 0x0D, 0x00
 .msg_mounting:
     #d "Mounting USB... ", 0x00
 .msg_ok_short:
