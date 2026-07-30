@@ -197,6 +197,158 @@ ch376_cmd_byte_rd_go:
     lda CH376_CMD_BYTE_RD_GO
     jmp ch376_cmd_interrupt
 
+; FILE_CREATE — truncates if exists. Expect INT_SUCCESS after SET_FILE_NAME.
+ch376_cmd_file_create:
+    lda CH376_CMD_FILE_CREATE
+    jmp ch376_cmd_interrupt
+
+; BYTE_WRITE: A = request length (high byte 0). Status in CH376_LAST_STATUS.
+ch376_cmd_byte_write:
+    sta CH376_SCRATCH
+    lda 0x00
+    sta CH376_INT_FLAG
+    jsr ch376_uart_sync
+    lda CH376_CMD_BYTE_WRITE
+    jsr ch376_uart_cmd
+    lda CH376_SCRATCH
+    jsr ch376_uart_param
+    lda 0x00
+    jsr ch376_uart_param
+    jsr ch376_wait_response_byte
+    bcc ch376_byte_write_fail
+    cmp CH376_CMD_RET_SUCCESS
+    bne ch376_byte_write_store
+    jsr ch376_wait_response_byte
+    bcc ch376_byte_write_fail
+ch376_byte_write_store:
+    sta CH376_LAST_STATUS
+    cmp CH376_INT_DISK_WRITE
+    beq ch376_byte_write_ok
+    jsr ch376_clear_int
+ch376_byte_write_ok:
+    sec
+    rts
+ch376_byte_write_fail:
+    lda 0x00
+    sta CH376_LAST_STATUS
+    clc
+    rts
+
+; BYTE_WR_GO — continue multi-chunk write.
+ch376_cmd_byte_wr_go:
+    lda CH376_CMD_BYTE_WR_GO
+    jmp ch376_cmd_interrupt
+
+; WR_REQ_DATA: chip returns chunk length, then accept that many TX bytes.
+; Source Y:DE advanced. A = bytes sent. C=1 OK, C=0 fail.
+ch376_wr_req_data:
+    jsr ch376_usb_timeout_on
+    jsr ch376_uart_sync
+    lda CH376_CMD_WR_REQ_DATA
+    jsr ch376_uart_cmd
+    jsr ch376_wait_response_byte
+    bcc ch376_wrd_fail
+    sta CH376_WIRE_LEN
+    sta CH376_SCRATCH
+    beq ch376_wrd_fail
+    ldy CH376_DST_PAGE
+    ldd CH376_DST_MSB
+    lde CH376_DST_LSB
+ch376_wrd_tx:
+    ldx 0x00
+    lda yde,x
+    jsr ch376_uart_putc
+    ine
+    bne ch376_wrd_next
+    ind
+    bne ch376_wrd_next
+    iny
+ch376_wrd_next:
+    dec CH376_SCRATCH
+    bne ch376_wrd_tx
+    sty CH376_DST_PAGE
+    std CH376_DST_MSB
+    ste CH376_DST_LSB
+    jsr ch376_usb_timeout_off
+    lda CH376_WIRE_LEN
+    sec
+    rts
+ch376_wrd_fail:
+    jsr ch376_usb_timeout_off
+    lda 0x00
+    clc
+    rts
+
+; Write from Y:DE; CH376_REMAIN_LO/HI = byte count. File must already be open.
+; Updates CH376_LOADED_*; C=1 OK, C=0 fail.
+ch376_file_write_from:
+    lda 0x00
+    sta CH376_LOADED_LO
+    sta CH376_LOADED_HI
+    sty CH376_DST_PAGE
+    std CH376_DST_MSB
+    ste CH376_DST_LSB
+ch376_fwt_loop:
+    lda CH376_REMAIN_LO
+    ora CH376_REMAIN_HI
+    bne ch376_fwt_req
+    sec
+    rts
+ch376_fwt_req:
+    lda CH376_REMAIN_HI
+    bne ch376_fwt_chunk_max
+    lda CH376_REMAIN_LO
+    cmp CH376_WRITE_CHUNK
+    bcc ch376_fwt_chunk_use
+ch376_fwt_chunk_max:
+    lda CH376_WRITE_CHUNK
+ch376_fwt_chunk_use:
+    sta CH376_SCRATCH
+    jsr ch376_usb_timeout_on
+    lda CH376_SCRATCH
+    jsr ch376_cmd_byte_write
+    bcc ch376_fwt_fail
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    beq ch376_fwt_done
+    cmp CH376_INT_DISK_WRITE
+    bne ch376_fwt_fail
+ch376_fwt_data:
+    jsr ch376_wr_req_data
+    bcc ch376_fwt_fail
+    lda CH376_WIRE_LEN
+    beq ch376_fwt_fail
+    sta CH376_SCRATCH
+    clc
+    lda CH376_LOADED_LO
+    adc CH376_SCRATCH
+    sta CH376_LOADED_LO
+    lda CH376_LOADED_HI
+    adc 0x00
+    sta CH376_LOADED_HI
+    sec
+    lda CH376_REMAIN_LO
+    sbc CH376_SCRATCH
+    sta CH376_REMAIN_LO
+    lda CH376_REMAIN_HI
+    sbc 0x00
+    sta CH376_REMAIN_HI
+    lda CH376_CMD_BYTE_WR_GO
+    jsr ch376_cmd_interrupt
+    bcc ch376_fwt_fail
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_DISK_WRITE
+    beq ch376_fwt_data
+    cmp CH376_INT_SUCCESS
+    beq ch376_fwt_loop
+    jmp ch376_fwt_fail
+ch376_fwt_done:
+    sec
+    rts
+ch376_fwt_fail:
+    clc
+    rts
+
 ; FILE_CLOSE: A = 0 (no size update) or 1 (update).
 ch376_cmd_file_close:
     sta CH376_SCRATCH
