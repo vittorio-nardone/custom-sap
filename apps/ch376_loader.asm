@@ -237,7 +237,7 @@
     jsr ch376_rd_dir_entry
     sta CH376_RD_LEN
     lda CH376_RD_LEN
-    beq .list_fail
+    beq .list_rd_fail
     jsr .list_emit
     dec CH376_ENUM_LEFT
     beq .list_ok
@@ -259,6 +259,26 @@
     jsr ACIA_SEND_DECIMAL
     jsr ch376_print_nl
     sec
+    rts
+
+.list_rd_fail:
+    jsr .set_timeout
+    ldy .msg_rd_fail[23:16]
+    ldd .msg_rd_fail[15:8]
+    lde .msg_rd_fail[7:0]
+    jsr ch376_print_str
+    lda CH376_WIRE_LEN
+    jsr ch376_print_hex8
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    lda CH376_RD_LEN
+    jsr ch376_print_hex8
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    lda CH376_OVERRUN
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    clc
     rts
 
 .list_fail:
@@ -671,6 +691,8 @@
     #d "Files: ", 0x00
 .msg_list_fail:
     #d "List fail ST ", 0x00
+.msg_rd_fail:
+    #d "RD fail wire/rd/ov ", 0x00
 .msg_empty:
     #d "No files.", 0x00
 .msg_prompt:
@@ -700,17 +722,11 @@ CH376_TMO:
     #d 0x00, 0x00
 CH376_TMO_SAVE:
     #d 0x00, 0x00
-CH376_TMO_BYTE:
-    #d 0x00
 CH376_SCRATCH:
     #d 0x00
 CH376_SCRATCH2:
     #d 0x00
 CH376_OPEN_ST:
-    #d 0x00
-CH376_RD_LEN:
-    #d 0x00
-CH376_PULL_MODE:
     #d 0x00
 CH376_ENUM_LEFT:
     #d 0x00
@@ -718,28 +734,12 @@ CH376_LAST_STATUS:
     #d 0x00
 CH376_FILE_COUNT:
     #d 0x00
-CH376_WIRE_LEN:
-    #d 0x00
 CH376_INT_FLAG:
     #d 0x00
 CH376_INT_STATUS:
     #d 0x00
 CH376_SAVED_H:
     #d 0x00, 0x00
-CH376_CAP:
-    #d 0x00
-CH376_OVERRUN:
-    #d 0x00
-CH376_RDB_MODE:
-    #d 0x00
-CH376_RD_LEFT:
-    #d 0x00
-CH376_DST_PAGE:
-    #d 0x00
-CH376_DST_MSB:
-    #d 0x00
-CH376_DST_LSB:
-    #d 0x00
 CH376_REMAIN_LO:
     #d 0x00
 CH376_REMAIN_HI:
@@ -761,11 +761,7 @@ CH376_SIZE_3:
 CH376_FNBUF:
     #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-CH376_BUF:
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+; Hot RX vars (BUF/CAP/…) live at 0x8284 — see ch376_const.asm
 ; 40 entries * 15 bytes
 CH376_NAMES:
     #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00

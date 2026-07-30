@@ -47,3 +47,19 @@
 
 #const ACIA2_CONTROL_STATUS_ADDR = 0x6022
 #const ACIA2_RW_DATA_ADDR = 0x6023
+
+; Hot-path RX vars in free kernel RAM (0x8284-0x8332). Must be 16-bit
+; addresses: apps at 0x020000 would otherwise use 24-bit abs ops in the
+; SEI burst and overrun ACIA2's 1-byte FIFO (~87us/byte @ 115200).
+#const CH376_BUF = 0x8284
+#const CH376_CAP = 0x82A4
+#const CH376_OVERRUN = 0x82A5
+#const CH376_TMO_BYTE = 0x82A6
+#const CH376_RDB_MODE = 0x82A7
+#const CH376_RD_LEFT = 0x82A8
+#const CH376_WIRE_LEN = 0x82A9
+#const CH376_RD_LEN = 0x82AA
+#const CH376_PULL_MODE = 0x82AB
+#const CH376_DST_PAGE = 0x82AC
+#const CH376_DST_MSB = 0x82AD
+#const CH376_DST_LSB = 0x82AE
