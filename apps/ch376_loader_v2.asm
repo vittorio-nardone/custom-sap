@@ -678,7 +678,7 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 USB loader", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 USB loader v2", 0x0A, 0x0D, 0x00
 .msg_mounting:
     #d "Mounting USB... ", 0x00
 .msg_ok_short:

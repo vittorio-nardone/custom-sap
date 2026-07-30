@@ -72,4 +72,13 @@ strings roms/apps/v1.2.101/asm/myapp.bin | grep "expected banner"
 
 Then `git push` so OttoTerminal F10 can download the new `.bin` from GitHub.
 
+### GitHub / OttoTerminal CDN cache
+
+GitHub raw/`jsDelivr` may keep serving an old `.bin` after push if the **filename is unchanged**. For iterative hardware apps (CH376 tests, loaders, etc.):
+
+1. **Bump the app name** on each publish: `myapp_v2.asm` → `myapp_v3.asm` (source + `roms/apps/v1.2.101/asm/myapp_vN.bin`).
+2. Put the version in the boot banner string too (so the serial log proves which binary ran).
+3. Optionally delete the previous test version’s `.asm`/`.bin` in the same commit once the new one is confirmed, to keep F10 clean.
+4. Do **not** overwrite the same filename and expect F10 to pick up the fix immediately.
+
 Do **not** rely on `roms/apps/current/asm/` for Otto hardware — wrong kernel symbols and wrong F10 target.
