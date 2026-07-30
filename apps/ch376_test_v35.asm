@@ -354,6 +354,7 @@
     jsr ch376_print_nl
 
     ; Ch376msc: SET_FILE_NAME + FILE_OPEN, then RD immediately on 1D (no prints in between).
+    ldy 0x00
     ldd .fn_slash_star[15:8]
     lde .fn_slash_star[7:0]
     jsr ch376_cmd_set_file_name
@@ -702,6 +703,26 @@ CH376_SAVED_H:
 CH376_CAP:
     #d 0x00
 CH376_OVERRUN:
+    #d 0x00
+CH376_TMO_BYTE:
+    #d 0x00
+CH376_RDB_MODE:
+    #d 0x00
+CH376_RD_LEFT:
+    #d 0x00
+CH376_DST_PAGE:
+    #d 0x00
+CH376_DST_MSB:
+    #d 0x00
+CH376_DST_LSB:
+    #d 0x00
+CH376_REMAIN_LO:
+    #d 0x00
+CH376_REMAIN_HI:
+    #d 0x00
+CH376_LOADED_LO:
+    #d 0x00
+CH376_LOADED_HI:
     #d 0x00
 CH376_BUF:
     #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00

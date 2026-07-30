@@ -304,11 +304,28 @@ ch376_print_nl:
 ch376_print_hex8:
     jmp ACIA_SEND_HEX
 
+; Null-terminated string at Y:DE (works above 64 KB; ABI v1.2.101 has no STRING24).
+ch376_print_str:
+    phx
+    ldx 0x00
+ch376_print_str_loop:
+    lda yde,x
+    beq ch376_print_str_done
+    jsr ACIA_SEND_CHAR
+    inx
+    bne ch376_print_str_loop
+    ind
+    jmp ch376_print_str_loop
+ch376_print_str_done:
+    plx
+    rts
+
 ch376_print_status:
     sta CH376_LAST_STATUS
+    ldy ch376_msg_st[23:16]
     ldd ch376_msg_st[15:8]
     lde ch376_msg_st[7:0]
-    jsr ACIA_SEND_STRING
+    jsr ch376_print_str
     lda CH376_LAST_STATUS
     jsr ch376_print_hex8
     jsr ch376_print_nl
