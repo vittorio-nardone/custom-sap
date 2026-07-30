@@ -63,3 +63,10 @@
 #const CH376_DST_PAGE = 0x82AC
 #const CH376_DST_MSB = 0x82AD
 #const CH376_DST_LSB = 0x82AE
+
+; SEI burst code runs here (16-bit PC targets → fast branches).
+; Image is embedded at file offset CH376_BURST_OUTP and copied at startup.
+#const CH376_BURST_ENTRY = 0x82B0
+#const CH376_BURST_OUTP = 0x1800
+; Ends before ACIA RX idx @ 0x83F1. Overlaps idle XMODEM/BINDEC; OK during USB.
+#const CH376_BURST_MAX = 0x120

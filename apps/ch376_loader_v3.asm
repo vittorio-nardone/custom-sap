@@ -14,18 +14,27 @@
 ; User then runs the loaded app with `r` / `r8400`.
 ;
 ; No EXTINT1 handler (ISR pointers are 16-bit; code lives above 64 KB).
-; UART status path only (same as successful v35 listing).
+; UART status path only. SEI burst is copied to 0x82B0 (16-bit branches).
 ; =====================================================
 
 #include "../assembly/ruledef.asm"
 #include "../kernel/symbols.asm"
 #include "ch376/ch376_const.asm"
 
+#const CH376_BURST_IMG = 0x020000 + CH376_BURST_OUTP
+
 #bankdef ch376_loader
 {
     #addr 0x020000
-    #size 0x10000
+    #size 0x1800
     #outp 0
+}
+
+#bankdef ch376_burst_lo
+{
+    #addr 0x82B0
+    #size 0x120
+    #outp 8 * 0x1800
 }
 
 #bank ch376_loader
@@ -37,6 +46,12 @@
     lda INT_TIMER
     tai
     cli
+
+    ; Install SEI burst into low RAM (fast 16-bit branch encodings).
+    ldy CH376_BURST_IMG[23:16]
+    ldd CH376_BURST_IMG[15:8]
+    lde CH376_BURST_IMG[7:0]
+    jsr ch376_install_burst
 
     ldy .msg_boot[23:16]
     ldd .msg_boot[15:8]
@@ -678,7 +693,7 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 USB loader v2", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 USB loader v3", 0x0A, 0x0D, 0x00
 .msg_mounting:
     #d "Mounting USB... ", 0x00
 .msg_ok_short:
@@ -807,3 +822,6 @@ CH376_NAMES:
 
 #include "ch376/ch376_io.asm"
 #include "ch376/ch376_proto.asm"
+
+#bank ch376_burst_lo
+#include "ch376/ch376_burst.asm"

@@ -13,6 +13,32 @@ ch376_acia2_init:
     sta ACIA2_CONTROL_STATUS_ADDR
     rts
 
+; Copy SEI burst image (Y:DE = source in load image) → CH376_BURST_ENTRY.
+; Supports size > 255 (BURST_SIZE is 16-bit).
+ch376_install_burst:
+    phx
+    phy
+    ldx 0x00
+ch376_ib_page0:
+    lda yde,x
+    sta CH376_BURST_ENTRY,x
+    inx
+    bne ch376_ib_page0
+    ; 256 bytes copied; advance source by 256 (D++)
+    ind
+    ldx 0x00
+ch376_ib_page1:
+    cpx CH376_BURST_TAIL
+    bcs ch376_ib_done
+    lda yde,x
+    sta CH376_BURST_ENTRY + 0x100,x
+    inx
+    jmp ch376_ib_page1
+ch376_ib_done:
+    ply
+    plx
+    rts
+
 ch376_uart_putc:
     pha
 ch376_uart_putc_wait:

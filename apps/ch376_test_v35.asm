@@ -17,16 +17,30 @@
 #include "../kernel/symbols.asm"
 #include "ch376/ch376_const.asm"
 
+#const CH376_BURST_IMG = 0x8400 + CH376_BURST_OUTP
+
 #bankdef ram
 {
     #addr 0x8400
-    #size 0x6C00
+    #size 0x1800
     #outp 0
+}
+
+#bankdef ch376_burst_lo
+{
+    #addr 0x82B0
+    #size 0x120
+    #outp 8 * 0x1800
 }
 
 #bank ram
 
     jsr .set_timeout
+
+    ldy CH376_BURST_IMG[23:16]
+    ldd CH376_BURST_IMG[15:8]
+    lde CH376_BURST_IMG[7:0]
+    jsr ch376_install_burst
 
     ldd .msg_boot[15:8]
     lde .msg_boot[7:0]
@@ -706,3 +720,6 @@ CH376_LOADED_HI:
 
 #include "ch376/ch376_io.asm"
 #include "ch376/ch376_proto.asm"
+
+#bank ch376_burst_lo
+#include "ch376/ch376_burst.asm"
