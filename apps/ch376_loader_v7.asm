@@ -10,6 +10,7 @@
 ;
 ; Flow: mount USB → numbered list (files + dirs) → select
 ;   0 = quit (RTS)
+;   s = save memory range → USB file (addr, length, 8.3 name)
 ;   N = directory → enter (or .. to go up), re-list
 ;   N = file → reject if > 27 KB (0x6C00), else load @ 0x8400, RTS
 ; User then runs the loaded app with `r` / `r8400`.
@@ -92,11 +93,17 @@
     jsr .read_selection
     bcc .menu_bad
     lda CH376_SELECT
+    cmp 0xFF
+    beq .do_save
+    cmp 0x00
     beq .quit
     cmp CH376_FILE_COUNT
     beq .menu_ok
     bcc .menu_ok
     jmp .menu_bad
+.do_save:
+    jsr .save_mem
+    jmp .browse
 .menu_ok:
     jsr .entry_is_dir
     bcs .do_enter
@@ -651,7 +658,8 @@
 .pn_done:
     rts
 
-; Read decimal selection into CH376_SELECT (0..N). C=1 ok.
+; Read decimal selection into CH376_SELECT (0..N), or 0xFF for save ('s').
+; C=1 ok.
 .read_selection:
     lda 0x00
     sta CH376_SELECT
@@ -661,10 +669,19 @@
     beq .rs_done
     cmp 0x0A
     beq .rs_done
+    cmp 0x73
+    beq .rs_save
+    cmp 0x53
+    beq .rs_save
     cmp 0x30
     bcc .rs_loop
     cmp 0x3A
     bcs .rs_loop
+    pha
+    lda CH376_SELECT
+    cmp 0xFF
+    beq .rs_digit_ign
+    pla
     jsr ACIA_SEND_CHAR
     sec
     sbc 0x30
@@ -679,6 +696,17 @@
     clc
     adc CH376_SCRATCH
     sta CH376_SELECT
+    jmp .rs_loop
+.rs_digit_ign:
+    pla
+    jmp .rs_loop
+.rs_save:
+    lda CH376_SELECT
+    bne .rs_loop
+    lda 0xFF
+    sta CH376_SELECT
+    lda 0x73
+    jsr ACIA_SEND_CHAR
     jmp .rs_loop
 .rs_done:
     jsr ch376_print_nl
@@ -881,8 +909,334 @@
     sec
     rts
 
+; ---- Save memory range to USB file in current directory ----
+; Prompts: start addr (hex24), length (hex16), 8.3 name.
+.save_mem:
+    ldy .msg_save_addr[23:16]
+    ldd .msg_save_addr[15:8]
+    lde .msg_save_addr[7:0]
+    jsr ch376_print_str
+    jsr .read_hex24
+    bcc .save_bad
+    lda CH376_SIZE_2
+    sta CH376_SAVE_PAGE
+    lda CH376_SIZE_1
+    sta CH376_SAVE_MSB
+    lda CH376_SIZE_0
+    sta CH376_SAVE_LSB
+
+    ldy .msg_save_len[23:16]
+    ldd .msg_save_len[15:8]
+    lde .msg_save_len[7:0]
+    jsr ch376_print_str
+    jsr .read_hex16
+    bcc .save_bad
+    lda CH376_REMAIN_LO
+    ora CH376_REMAIN_HI
+    beq .save_bad
+
+    ldy .msg_save_name[23:16]
+    ldd .msg_save_name[15:8]
+    lde .msg_save_name[7:0]
+    jsr ch376_print_str
+    jsr .read_fname
+    bcc .save_bad
+
+    ldy .msg_saving[23:16]
+    ldd .msg_saving[15:8]
+    lde .msg_saving[7:0]
+    jsr ch376_print_str
+    ldy CH376_FNBUF[23:16]
+    ldd CH376_FNBUF[15:8]
+    lde CH376_FNBUF[7:0]
+    jsr ch376_print_str
+    jsr ch376_print_nl
+
+    ; OPEN then CREATE (truncate if exists) — same path as save_test_v4
+    ldy CH376_FNBUF[23:16]
+    ldd CH376_FNBUF[15:8]
+    lde CH376_FNBUF[7:0]
+    jsr ch376_cmd_set_file_name
+    jsr .set_timeout_long
+    lda CH376_CMD_FILE_OPEN
+    jsr ch376_cmd_interrupt
+    bcc .save_create_fail
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    beq .save_trunc
+    cmp CH376_ERR_MISS_FILE
+    beq .save_create_new
+    jmp .save_create_fail
+.save_trunc:
+    lda 0x00
+    jsr ch376_cmd_file_close
+    ldy CH376_FNBUF[23:16]
+    ldd CH376_FNBUF[15:8]
+    lde CH376_FNBUF[7:0]
+    jsr ch376_cmd_set_file_name
+.save_create_new:
+    jsr ch376_cmd_file_create
+    bcc .save_create_fail
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    bne .save_create_fail
+
+    ldy CH376_SAVE_PAGE
+    ldd CH376_SAVE_MSB
+    lde CH376_SAVE_LSB
+    jsr ch376_file_write_from
+    bcc .save_write_fail
+
+    lda 0x01
+    jsr ch376_cmd_file_close
+    jsr .set_timeout
+
+    ldy .msg_saved[23:16]
+    ldd .msg_saved[15:8]
+    lde .msg_saved[7:0]
+    jsr ch376_print_str
+    lda CH376_LOADED_HI
+    jsr ch376_print_hex8
+    lda CH376_LOADED_LO
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    sec
+    rts
+
+.save_create_fail:
+    jsr .set_timeout
+    ldy .msg_create_fail[23:16]
+    ldd .msg_create_fail[15:8]
+    lde .msg_create_fail[7:0]
+    jsr ch376_print_str
+    lda CH376_LAST_STATUS
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+    clc
+    rts
+
+.save_write_fail:
+    lda 0x01
+    jsr ch376_cmd_file_close
+    jsr .set_timeout
+    ldy .msg_write_fail[23:16]
+    ldd .msg_write_fail[15:8]
+    lde .msg_write_fail[7:0]
+    jsr ch376_print_str
+    jsr ch376_print_nl
+    clc
+    rts
+
+.save_bad:
+    ldy .msg_save_bad[23:16]
+    ldd .msg_save_bad[15:8]
+    lde .msg_save_bad[7:0]
+    jsr ch376_print_str
+    jsr ch376_print_nl
+    clc
+    rts
+
+; Hex nibble in A → C=1, A=0..15; else C=0.
+.hex_nibble:
+    cmp 0x30
+    bcc .hn_fail
+    cmp 0x3A
+    bcc .hn_digit
+    cmp 0x41
+    bcc .hn_fail
+    cmp 0x47
+    bcc .hn_upper
+    cmp 0x61
+    bcc .hn_fail
+    cmp 0x67
+    bcc .hn_lower
+.hn_fail:
+    clc
+    rts
+.hn_digit:
+    sec
+    sbc 0x30
+    sec
+    rts
+.hn_upper:
+    sec
+    sbc 0x37
+    sec
+    rts
+.hn_lower:
+    sec
+    sbc 0x57
+    sec
+    rts
+
+; Read 1..6 hex digits → SIZE_2:SIZE_1:SIZE_0 (page:msb:lsb). C=1 ok.
+; Accumulators in low RAM (CH376_BUF) so ASL/ROL are 16-bit ZP ops.
+.read_hex24:
+    lda 0x00
+    sta CH376_BUF
+    sta CH376_BUF+1
+    sta CH376_BUF+2
+    sta CH376_CAP
+.rh24_loop:
+    jsr ACIA_READ_CHAR
+    cmp 0x0D
+    beq .rh24_done
+    cmp 0x0A
+    beq .rh24_done
+    pha
+    jsr .hex_nibble
+    bcc .rh24_ign
+    sta CH376_SCRATCH
+    pla
+    jsr ACIA_SEND_CHAR
+    lda CH376_CAP
+    cmp 0x06
+    bcs .rh24_loop
+    ldx 0x04
+.rh24_shl:
+    asl CH376_BUF
+    rol CH376_BUF+1
+    rol CH376_BUF+2
+    dex
+    bne .rh24_shl
+    lda CH376_BUF
+    ora CH376_SCRATCH
+    sta CH376_BUF
+    inc CH376_CAP
+    jmp .rh24_loop
+.rh24_ign:
+    pla
+    jmp .rh24_loop
+.rh24_done:
+    jsr ch376_print_nl
+    lda CH376_CAP
+    beq .rh24_fail
+    lda CH376_BUF
+    sta CH376_SIZE_0
+    lda CH376_BUF+1
+    sta CH376_SIZE_1
+    lda CH376_BUF+2
+    sta CH376_SIZE_2
+    sec
+    rts
+.rh24_fail:
+    clc
+    rts
+
+; Read 1..4 hex digits → REMAIN_HI:REMAIN_LO. C=1 ok.
+.read_hex16:
+    lda 0x00
+    sta CH376_BUF
+    sta CH376_BUF+1
+    sta CH376_CAP
+.rh16_loop:
+    jsr ACIA_READ_CHAR
+    cmp 0x0D
+    beq .rh16_done
+    cmp 0x0A
+    beq .rh16_done
+    pha
+    jsr .hex_nibble
+    bcc .rh16_ign
+    sta CH376_SCRATCH
+    pla
+    jsr ACIA_SEND_CHAR
+    lda CH376_CAP
+    cmp 0x04
+    bcs .rh16_loop
+    ldx 0x04
+.rh16_shl:
+    asl CH376_BUF
+    rol CH376_BUF+1
+    dex
+    bne .rh16_shl
+    lda CH376_BUF
+    ora CH376_SCRATCH
+    sta CH376_BUF
+    inc CH376_CAP
+    jmp .rh16_loop
+.rh16_ign:
+    pla
+    jmp .rh16_loop
+.rh16_done:
+    jsr ch376_print_nl
+    lda CH376_CAP
+    beq .rh16_fail
+    lda CH376_BUF
+    sta CH376_REMAIN_LO
+    lda CH376_BUF+1
+    sta CH376_REMAIN_HI
+    sec
+    rts
+.rh16_fail:
+    clc
+    rts
+
+; Read 8.3 filename into FNBUF (leading '/' if DEPTH=0). C=1 ok.
+.read_fname:
+    lda 0x00
+    sta CH376_SCRATCH2
+    lda CH376_DEPTH
+    bne .rf_loop
+    lda 0x2F
+    sta CH376_FNBUF
+    lda 0x01
+    sta CH376_SCRATCH2
+.rf_loop:
+    jsr ACIA_READ_CHAR
+    cmp 0x0D
+    beq .rf_done
+    cmp 0x0A
+    beq .rf_done
+    cmp 0x2E
+    beq .rf_ok
+    cmp 0x5F
+    beq .rf_ok
+    cmp 0x30
+    bcc .rf_loop
+    cmp 0x3A
+    bcc .rf_ok
+    cmp 0x41
+    bcc .rf_loop
+    cmp 0x5B
+    bcc .rf_ok
+    cmp 0x61
+    bcc .rf_loop
+    cmp 0x7B
+    bcs .rf_loop
+    sec
+    sbc 0x20
+.rf_ok:
+    ldx CH376_SCRATCH2
+    cpx 0x0C
+    bcs .rf_loop
+    sta CH376_FNBUF,x
+    jsr ACIA_SEND_CHAR
+    inc CH376_SCRATCH2
+    jmp .rf_loop
+.rf_done:
+    jsr ch376_print_nl
+    lda CH376_DEPTH
+    bne .rf_check
+    lda CH376_SCRATCH2
+    cmp 0x02
+    bcc .rf_fail
+    jmp .rf_term
+.rf_check:
+    lda CH376_SCRATCH2
+    beq .rf_fail
+.rf_term:
+    ldx CH376_SCRATCH2
+    lda 0x00
+    sta CH376_FNBUF,x
+    sec
+    rts
+.rf_fail:
+    clc
+    rts
+
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 USB loader v5", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 USB loader v7", 0x0A, 0x0D, 0x00
 .msg_mounting:
     #d "Mounting USB... ", 0x00
 .msg_ok_short:
@@ -902,7 +1256,7 @@
 .msg_empty:
     #d "No files.", 0x00
 .msg_prompt:
-    #d "Select (0=quit): ", 0x00
+    #d "Select (0=quit, s=save): ", 0x00
 .msg_bad_sel:
     #d "Bad selection.", 0x00
 .msg_bye:
@@ -923,6 +1277,22 @@
     #d "Read fail.", 0x00
 .msg_fail:
     #d "Loader failed.", 0x00
+.msg_save_addr:
+    #d "Start addr hex: ", 0x00
+.msg_save_len:
+    #d "Length hex: ", 0x00
+.msg_save_name:
+    #d "Name 8.3: ", 0x00
+.msg_saving:
+    #d "Saving ", 0x00
+.msg_saved:
+    #d "Saved 0x", 0x00
+.msg_save_bad:
+    #d "Bad save input.", 0x00
+.msg_create_fail:
+    #d "Create fail ST ", 0x00
+.msg_write_fail:
+    #d "Write fail.", 0x00
 .fn_slash_star:
     #d "/*", 0x00
 .fn_star:
@@ -975,6 +1345,12 @@ CH376_DEPTH:
 CH376_DOTDOT:
     #d 0x00
 CH376_ENTRY_FLAGS:
+    #d 0x00
+CH376_SAVE_PAGE:
+    #d 0x00
+CH376_SAVE_MSB:
+    #d 0x00
+CH376_SAVE_LSB:
     #d 0x00
 CH376_FNBUF:
     #d 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
