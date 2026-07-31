@@ -411,6 +411,10 @@
     jsr ACIA_SEND_STRING
     lda CH376_LAST_STATUS
     jsr ch376_print_hex8
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    lda CH376_WIRE_LEN
+    jsr ch376_print_hex8
     jsr ch376_print_nl
     clc
     rts
@@ -532,7 +536,7 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 save test v3", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 save test v4", 0x0A, 0x0D, 0x00
 .msg_fill:
     #d "Fill 1K @ C000... ", 0x00
 .msg_mounting:

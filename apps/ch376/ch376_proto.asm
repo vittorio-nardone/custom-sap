@@ -239,18 +239,42 @@ ch376_cmd_byte_wr_go:
     lda CH376_CMD_BYTE_WR_GO
     jmp ch376_cmd_interrupt
 
-; WR_REQ_DATA: chip returns chunk length, then accept that many TX bytes.
-; Source Y:DE advanced. A = bytes sent. C=1 OK, C=0 fail.
+; WR_REQ_DATA after INT_DISK_WRITE.
+; CH376_WR_WANT = bytes requested in BYTE_WRITE (caller sets).
+; Chip may return a length byte (Ch376msc); some UART modules do not —
+; if no length arrives quickly, TX CH376_WR_WANT bytes (Abraxas-style).
+; Source via CH376_DST_*; advances pointer. A = bytes sent. C=1 OK.
 ch376_wr_req_data:
     jsr ch376_usb_timeout_on
     jsr ch376_uart_sync
     lda CH376_CMD_WR_REQ_DATA
     jsr ch376_uart_cmd
-    jsr ch376_wait_response_byte
-    bcc ch376_wrd_fail
+    ; Brief wait for optional length byte (do not use full USB timeout —
+    ; if the module expects data immediately, a long wait deadlocks).
+    ldx 0x00
+    ldy 0x20
+ch376_wrd_wait_len:
+    lda ACIA2_CONTROL_STATUS_ADDR
+    bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
+    bne ch376_wrd_got_len
+    dex
+    bne ch376_wrd_wait_len
+    dey
+    bne ch376_wrd_wait_len
+    ; No length — send what BYTE_WRITE asked for
+    lda CH376_WR_WANT
+    beq ch376_wrd_fail
+    jmp ch376_wrd_use_len
+ch376_wrd_got_len:
+    lda ACIA2_RW_DATA_ADDR
+    beq ch376_wrd_fail
+    cmp CH376_WR_WANT
+    beq ch376_wrd_use_len
+    bcc ch376_wrd_use_len
+    lda CH376_WR_WANT
+ch376_wrd_use_len:
     sta CH376_WIRE_LEN
     sta CH376_SCRATCH
-    beq ch376_wrd_fail
     ldy CH376_DST_PAGE
     ldd CH376_DST_MSB
     lde CH376_DST_LSB
@@ -269,11 +293,15 @@ ch376_wrd_next:
     sty CH376_DST_PAGE
     std CH376_DST_MSB
     ste CH376_DST_LSB
+    ; Abraxas sees a trailing byte (often 0xFF) after data — drop it
+    ; so it is not mistaken for BYTE_WR_GO status.
+    jsr ch376_drain_rx
     jsr ch376_usb_timeout_off
     lda CH376_WIRE_LEN
     sec
     rts
 ch376_wrd_fail:
+    jsr ch376_drain_rx
     jsr ch376_usb_timeout_off
     lda 0x00
     clc
@@ -303,6 +331,7 @@ ch376_fwt_req:
 ch376_fwt_chunk_max:
     lda CH376_WRITE_CHUNK
 ch376_fwt_chunk_use:
+    sta CH376_WR_WANT
     sta CH376_SCRATCH
     jsr ch376_usb_timeout_on
     lda CH376_SCRATCH
@@ -333,6 +362,12 @@ ch376_fwt_data:
     lda CH376_REMAIN_HI
     sbc 0x00
     sta CH376_REMAIN_HI
+    ; Remaining of this BYTE_WRITE request (for next WR_REQ if 1E again)
+    sec
+    lda CH376_WR_WANT
+    sbc CH376_SCRATCH
+    sta CH376_WR_WANT
+    jsr ch376_drain_rx
     lda CH376_CMD_BYTE_WR_GO
     jsr ch376_cmd_interrupt
     bcc ch376_fwt_fail

@@ -24,6 +24,8 @@
 #const CH376_CMD_BYTE_WR_GO = 0x3D
 #const CH376_CMD_WR_REQ_DATA = 0x2D
 #const CH376_WRITE_CHUNK = 0x40
+; Bytes we asked for in the current BYTE_WRITE (WR_REQ may echo a length).
+#const CH376_WR_WANT = 0x82AF
 
 #const CH376_USB_MODE_HOST = 0x06
 #const CH376_USB_MODE_HOST_RESET = 0x07
