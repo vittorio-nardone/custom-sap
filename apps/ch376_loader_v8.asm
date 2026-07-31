@@ -461,12 +461,25 @@
     jsr .print_name83
     lda CH376_ENTRY_FLAGS
     and CH376_ENTRY_FLAG_DIR
-    beq .pel_nl
+    bne .pel_dir
+    ; File: print FAT size (32-bit LE @ BUF+0x1C) as 8 hex digits, MSB first.
+    ; Hex avoids ACIA_SEND_DECIMAL32 — BINDEC32_VALUE @ 0x8340 overlaps SEI burst.
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    lda CH376_BUF+0x1F
+    jsr ch376_print_hex8
+    lda CH376_BUF+0x1E
+    jsr ch376_print_hex8
+    lda CH376_BUF+0x1D
+    jsr ch376_print_hex8
+    lda CH376_BUF+0x1C
+    jsr ch376_print_hex8
+    jmp ch376_print_nl
+.pel_dir:
     ldy .tag_dir[23:16]
     ldd .tag_dir[15:8]
     lde .tag_dir[7:0]
     jsr ch376_print_str
-.pel_nl:
     jmp ch376_print_nl
 
 ; Copy FAT 8.3 (11) + size LE (4) + flags (1) into NAMES[FILE_COUNT * 16]
@@ -1236,7 +1249,7 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 USB loader v7", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 USB loader v8", 0x0A, 0x0D, 0x00
 .msg_mounting:
     #d "Mounting USB... ", 0x00
 .msg_ok_short:
