@@ -78,7 +78,7 @@ GitHub raw/`jsDelivr` may keep serving an old `.bin` after push if the **filenam
 
 1. **Bump the app name** on each publish: `myapp_v2.asm` → `myapp_v3.asm` (source + `roms/apps/v1.2.101/asm/myapp_vN.bin`).
 2. Put the version in the boot banner string too (so the serial log proves which binary ran).
-3. Optionally delete the previous test version’s `.asm`/`.bin` in the same commit once the new one is confirmed, to keep F10 clean.
+3. **Delete the previous version in the same commit** (`apps/myapp_vN.asm` + `roms/apps/v1.2.101/asm/myapp_vN.bin`) so F10 stays clean — do not leave old iterative test/loader builds around.
 4. Do **not** overwrite the same filename and expect F10 to pick up the fix immediately.
 
 Do **not** rely on `roms/apps/current/asm/` for Otto hardware — wrong kernel symbols and wrong F10 target.

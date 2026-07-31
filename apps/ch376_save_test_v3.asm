@@ -3,8 +3,8 @@
 ; CH376S save round-trip smoke test (kernel v1.2.101)
 ; =====================================================
 ; Fixed test (no prompts):
-;   1. Fill 1 KB pattern at 0xC000
-;   2. Mount USB
+;   1. Init ACIA2 + mount USB (before any long RAM loops)
+;   2. Fill 1 KB pattern at 0xC000, clear verify @ 0xC400
 ;   3. Create/overwrite /OTSAVE.BIN
 ;   4. Write 1 KB from 0xC000
 ;   5. Re-open and read into 0xC400
@@ -12,8 +12,7 @@
 ;
 ; Upload: u / F10  →  run with r
 ;
-; No EXTINT1 handler — same as ch376_loader: UART status polling only.
-; Enabling EXTINT1 races GET_STATUS vs command responses → ST 00 timeouts.
+; No EXTINT1 — UART status polling only (same as ch376_loader).
 ; =====================================================
 
 #include "../assembly/ruledef.asm"
@@ -60,12 +59,16 @@
     jsr ACIA_SEND_STRING
 
     jsr ch376_acia2_init
+    jsr ch376_drain_rx
+    jsr ch376_delay_short
+
+    ; Mount first (same order as working loader) — do not burn time
+    ; filling RAM before talking to the chip.
+    jsr .mount_usb
+    bcc .fail
 
     jsr .fill_pattern
     jsr .clear_dst
-
-    jsr .mount_usb
-    bcc .fail
 
     jsr .create_file
     bcc .fail
@@ -141,14 +144,14 @@
     sta CH376_TMO+1
     rts
 
-; Pattern at SAVE_SRC: byte[i] = (i_lo XOR 0xA5)
+; Pattern at 0xC000: byte[i] = (addr_lo XOR 0xA5)
 .fill_pattern:
     ldd .msg_fill[15:8]
     lde .msg_fill[7:0]
     jsr ACIA_SEND_STRING
     ldy 0x00
-    ldd SAVE_SRC[15:8]
-    lde SAVE_SRC[7:0]
+    ldd 0xC0
+    lde 0x00
     lda 0x00
     sta CH376_REMAIN_LO
     lda SAVE_LEN_HI
@@ -180,8 +183,8 @@
 
 .clear_dst:
     ldy 0x00
-    ldd SAVE_DST[15:8]
-    lde SAVE_DST[7:0]
+    ldd 0xC4
+    lde 0x00
     lda 0x00
     sta CH376_REMAIN_LO
     lda SAVE_LEN_HI
@@ -211,9 +214,40 @@
     lde .msg_mounting[7:0]
     jsr ACIA_SEND_STRING
 
+    ldd .msg_acia2[15:8]
+    lde .msg_acia2[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_acia2_read_status
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+
+    jsr .set_timeout_long
+    jsr ch376_cmd_get_ic_ver
+    bcc .mount_fail_ic
+    sta CH376_SCRATCH2
+    ldd .msg_ic[15:8]
+    lde .msg_ic[7:0]
+    jsr ACIA_SEND_STRING
+    lda CH376_SCRATCH2
+    jsr ch376_print_hex8
+    jsr ch376_print_nl
+
+    lda 0x03
+    sta CH376_RETRIES
+.ce_retry:
+    jsr ch376_drain_rx
     lda 0xAA
     jsr ch376_cmd_check_exist
-    bcc .mount_fail_ce
+    bcs .ce_ok
+    dec CH376_RETRIES
+    beq .mount_fail_ce
+    jsr ch376_delay_short
+    jmp .ce_retry
+.ce_ok:
+    ldd .msg_ce_ok[15:8]
+    lde .msg_ce_ok[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ch376_print_nl
 
     lda CH376_USB_MODE_HOST_RESET
     jsr ch376_cmd_set_usb_mode
@@ -253,12 +287,16 @@
     lda CH376_LAST_STATUS
     cmp CH376_INT_SUCCESS
     bne .mount_fail_mnt
-    ldd .msg_ok_short[15:8]
-    lde .msg_ok_short[7:0]
+    ldd .msg_mount_ok[15:8]
+    lde .msg_mount_ok[7:0]
     jsr ACIA_SEND_STRING
     jsr ch376_print_nl
     sec
     rts
+.mount_fail_ic:
+    ldd .msg_fail_ic[15:8]
+    lde .msg_fail_ic[7:0]
+    jmp .mount_fail_print
 .mount_fail_ce:
     ldd .msg_fail_ce[15:8]
     lde .msg_fail_ce[7:0]
@@ -343,8 +381,8 @@
     lda SAVE_LEN_HI
     sta CH376_REMAIN_HI
     ldy 0x00
-    ldd SAVE_SRC[15:8]
-    lde SAVE_SRC[7:0]
+    ldd 0xC0
+    lde 0x00
     jsr .set_timeout_long
     jsr ch376_file_write_from
     bcc .write_fail
@@ -395,8 +433,8 @@
     lda SAVE_LEN_HI
     sta CH376_REMAIN_HI
     ldy 0x00
-    ldd SAVE_DST[15:8]
-    lde SAVE_DST[7:0]
+    ldd 0xC4
+    lde 0x00
     jsr ch376_file_read_to
     bcc .read_fail
 
@@ -494,11 +532,21 @@
     rts
 
 .msg_boot:
-    #d 0x0A, 0x0D, "CH376 save test v2", 0x0A, 0x0D, 0x00
+    #d 0x0A, 0x0D, "CH376 save test v3", 0x0A, 0x0D, 0x00
 .msg_fill:
     #d "Fill 1K @ C000... ", 0x00
 .msg_mounting:
-    #d "Mounting USB... ", 0x00
+    #d "Mounting USB...", 0x0A, 0x0D, 0x00
+.msg_acia2:
+    #d "ACIA2 ST ", 0x00
+.msg_ic:
+    #d "IC/FW ", 0x00
+.msg_ce_ok:
+    #d "CHECK_EXIST OK", 0x00
+.msg_mount_ok:
+    #d "Mount OK", 0x00
+.msg_fail_ic:
+    #d "GET_IC_VER fail ST ", 0x00
 .msg_fail_ce:
     #d "CHECK_EXIST fail ST ", 0x00
 .msg_fail_mode:
@@ -547,6 +595,10 @@ CH376_TMO:
 CH376_TMO_SAVE:
     #d 0x00, 0x00
 CH376_SCRATCH:
+    #d 0x00
+CH376_SCRATCH2:
+    #d 0x00
+CH376_RETRIES:
     #d 0x00
 CH376_LAST_STATUS:
     #d 0x00
