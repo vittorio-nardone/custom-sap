@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "generated_at": "2026-08-02T16:53:17Z",
+  "generated_at": "2026-08-02T20:36:14Z",
   "default_target": "current",
   "targets": [
     {
       "id": "current",
-      "kernel_version": "v1.3.9",
+      "kernel_version": "v1.3.10",
       "label": "Latest",
       "base_path": "roms/apps/current",
       "catalog_path": "roms/apps/current/asm",
@@ -18,6 +18,14 @@
       "base_path": "roms/apps/v1.2.101",
       "catalog_path": "roms/apps/v1.2.101/asm",
       "pascal_path": "roms/apps/v1.2.101/pascal"
+    },
+    {
+      "id": "v1.3.10",
+      "kernel_version": "v1.3.10",
+      "label": "v1.3.10",
+      "base_path": "roms/apps/v1.3.10",
+      "catalog_path": "roms/apps/v1.3.10/asm",
+      "pascal_path": "roms/apps/v1.3.10/pascal"
     },
     {
       "id": "v1.3.9",
