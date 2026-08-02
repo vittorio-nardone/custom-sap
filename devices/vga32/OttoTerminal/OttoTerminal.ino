@@ -68,6 +68,7 @@ static void ottoUsbMirrorInit()
     s_usbMirrorQueue = xQueueCreate(512, sizeof(uint8_t));
   Serial.begin(OTTO_USB_MIRROR_BAUD);
   Serial.setTxBufferSize(1024);
+  Serial.setRxBufferSize(512);
 }
 
 static void ottoUsbMirrorPush(uint8_t value, bool fromISR)
@@ -84,6 +85,7 @@ static void ottoUsbMirrorPush(uint8_t value, bool fromISR)
   }
 }
 
+/** Drain Otto->USB TX queue and USB Serial RX -> Otto (same gates as PS/2). */
 static void ottoUsbMirrorPump()
 {
   if (!s_usbMirrorQueue)
@@ -91,6 +93,19 @@ static void ottoUsbMirrorPump()
   uint8_t b = 0;
   while (xQueueReceive(s_usbMirrorQueue, &b, 0) == pdTRUE)
     Serial.write(b);
+
+  // USB console typing -> Otto. Skip while F1/F10/F11 UI or FabGL mute.
+  while (Serial.available() > 0) {
+    int const ch = Serial.read();
+    if (ch < 0)
+      break;
+    if (s_muteSerialSend || s_uiBusy)
+      continue;
+    uint8_t c = (uint8_t)ch;
+    if (c == 0x0A)  // LF -> CR (same as simulate.py keyboard path)
+      c = 0x0D;
+    SerialPort.send(c);
+  }
 }
 #endif
 
@@ -1895,7 +1910,7 @@ void setup()
   ottoInstallSerialBridge();  // after setup: filtered RX + muted FabGL TX replies
 
 
-  Terminal.keyboard()->setLayout(&fabgl::USLayout);
+  Terminal.keyboard()->setLayout(&fabgl::ItalianLayout);
   Terminal.setTerminalType(TermType::ANSILegacy);
   Terminal.setBackgroundColor(Color::Black);
   Terminal.setForegroundColor(Color::BrightWhite);

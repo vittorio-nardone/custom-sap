@@ -50,7 +50,10 @@
 #define OTTO_XFER_DEBUG 0
 #endif
 
-// Mirror Otto ACIA #1 RX to USB Serial (minicom on TTGO USB port). 0 to disable.
+// Bidirectional USB Serial bridge (minicom on TTGO USB port):
+//   Otto ACIA #1 RX  -> USB Serial TX  (print)
+//   USB Serial RX    -> Otto ACIA #1 TX (type)
+// Set 0 to disable both directions.
 #ifndef OTTO_USB_MIRROR
 #define OTTO_USB_MIRROR 1
 #endif

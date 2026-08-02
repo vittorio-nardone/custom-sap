@@ -36,7 +36,7 @@ Unified ROM (kernel + P-Machine) shares 0x0000–0x5FFF. `kernel/build_config.as
 | Region | Range | Notes |
 |--------|-------|-------|
 | ROM | 0x0000–0x5FFF | Kernel + P-Machine |
-| I/O | 0x6000–0x67FF | Keyboard 0x6000, ACIA 0x6020/0x6021 |
+| I/O | 0x6000–0x67FF | Keyboard 0x6000, ACIA1 0x6020/0x6021, ACIA2/CH376 0x6022/0x6023 |
 | App RAM | 0x8400–0xEFFF | Apps load here (27 KB) |
 | Stack | 0xF000–0xFFFF | Grows down from 0xFFFF |
 | Expansion | 0x010000+, 0x020000+ | IDE @ 0x020000, editor source @ 0x010000 |

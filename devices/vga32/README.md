@@ -58,14 +58,18 @@ Otto MC68B50 (5 V) through a **bidirectional level shifter** (BSS138 recommended
 
 Verify header pin labels with a meter — some TTGO boards have incorrect silkscreen.
 
-**USB mirror (OttoTerminal 1.0.10+):** bytes from Otto ACIA #1 are also forwarded to the
-TTGO USB serial port at 115200 8N1. Use minicom on the same port as firmware upload:
+**USB bridge (OttoTerminal 1.0.10+):** bidirectional link on the TTGO USB serial port
+at 115200 8N1 (same port as firmware upload):
+
+- Otto ACIA #1 RX → USB Serial (print, raw VT100)
+- USB Serial → Otto ACIA #1 TX (type; LF converted to CR)
 
 ```bash
 minicom -D /dev/cu.usbserial-XXXX -b 115200
 ```
 
-Output is raw (includes VT100 escapes). Disable with `OTTO_USB_MIRROR 0` in `otto_config.h`.
+Disable with `OTTO_USB_MIRROR 0` in `otto_config.h`. PS/2 keyboard defaults to
+**Italian** layout (`fabgl::ItalianLayout`).
 
 ## Build / flash
 

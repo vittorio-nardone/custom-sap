@@ -15,7 +15,14 @@
 
 #addr 0x00FF  
 INTERRUPT_HANDLER:
+    ; Preserve all registers: ACIA_SEND_STRING24 and other Y:DE callers
+    ; keep the page in Y across the send loop; a timer tick that clobbered Y
+    ; truncated strings in apps linked above 0xFFFF (TinyPascal IDE).
     pha
+    phx
+    phy
+    phd
+    phe
     tia
 .int1_check:
     bit INT_EXTINT1
@@ -34,6 +41,10 @@ INTERRUPT_HANDLER:
     beq .int_end
     jsr (INT_KEYBOARD_HANDLER_POINTER)
 .int_end:
+    ple
+    pld
+    ply
+    plx
     pla
     rti
 
@@ -98,12 +109,7 @@ INTERRUPT_TIMER_HANDLER:
     rts
 
 INTERRUPT_SERIAL_HANDLER:
-    phx
-    phd
-    phe
-    jsr ACIA_READ_TO_BUFFER
-    ple
-    pld
-    plx
-    rts
+    ; X/D/E already saved by INTERRUPT_HANDLER; ACIA_READ_TO_BUFFER
+    ; destroys A/D/E/X only.
+    jmp ACIA_READ_TO_BUFFER
 

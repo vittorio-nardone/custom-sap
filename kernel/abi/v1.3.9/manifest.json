@@ -1,0 +1,14 @@
+{
+  "kernel_version": "v1.3.9",
+  "kernel_build_date": "08/02/2026",
+  "build_debug": 0x0,
+  "ot_header": true,
+  "git_commit": "a672fccae237ca7f2ec501b1829a5024dc73435b",
+  "saved_at": "2026-08-02T16:53:08Z",
+  "rom_size": 19078,
+  "files": {
+    "symbols_txt": "symbols.txt",
+    "symbols_asm": "symbols.asm",
+    "kernel_rom": "kernel-rom.bin"
+  }
+}

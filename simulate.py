@@ -4,6 +4,7 @@ import sys
 _ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_ROOT / "scripts" / "python"))
 from microcode import INSTRUCTIONS_SET, verifyInstructionSet
+from ch376_sim import Ch376Sim
 from serial import Serial
 from virtualserialports import VirtualSerialPorts
 import sys
@@ -36,6 +37,7 @@ class OttoCPU:
         self.KEY = []  # Keyboard input queue (FIFO)
         self.serial_io = None  # Serial port
         self._timer_cycle_debt = 0
+        self.ch376 = None  # optional Ch376Sim when --ch376 is set
 
         # Kernel INT_TIMER_COUNTER @ 10 Hz (see kernel/interrupt.asm)
         self.TIMER_COUNTER_LSB = 0x83F7
@@ -61,6 +63,8 @@ class OttoCPU:
             'ram_ext_2': {'start': 0x020000, 'stop': 0x02FFFF, 'read_only': False, 'io': False},
             'random': {'start': 0x6010, 'stop': 0x6012, 'read_only': False, 'io': True},
             'acia_1': {'start': 0x6020, 'stop': 0x6021, 'read_only': False, 'io': True},
+            # ACIA #2 hosts the CH376 USB module (optional --ch376 emulator).
+            'acia_2': {'start': 0x6022, 'stop': 0x6023, 'read_only': False, 'io': True},
         }
         
         # Initialize instruction set
@@ -485,6 +489,14 @@ class OttoCPU:
                         if len(self.KEY) > 0:
                             return 0x03
                         return 0x02
+                    elif address == 0x6022:
+                        if self.ch376 is not None:
+                            return self.ch376.read_status()
+                        return 0x02  # TX empty, no RX
+                    elif address == 0x6023:
+                        if self.ch376 is not None:
+                            return self.ch376.read_data()
+                        return 0x00
                     
         raise Exception(f"Invalid memory read at {hex(address)}")
     
@@ -510,6 +522,11 @@ class OttoCPU:
                         else:
                             print(f"{chr(value)}", end="")
                             sys.stdout.flush()
+                    elif address == 0x6022:
+                        pass  # ACIA #2 control writes ignored
+                    elif address == 0x6023:
+                        if self.ch376 is not None:
+                            self.ch376.write_data(value)
                 return
 
         # TODO add support for IO regions
@@ -598,6 +615,9 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true", help="Suppress kernel output, show only application output (address >= 0x8400)")
     parser.add_argument("--dump-regs", type=str, default=None, help="Dump CPU registers to a file on exit (JSON format)")
     parser.add_argument("--input", type=str, default=None, help="Pre-load keyboard buffer with this string (use \\r for CR)")
+    parser.add_argument("--ch376", action="store_true", help="Emulate a CH376S USB module on ACIA #2 (0x6022/0x6023)")
+    parser.add_argument("--ch376-dir", type=str, default=None,
+                        help="Host directory used as the USB stick root (default: roms/sim/ch376/)")
     args = parser.parse_args()
 
     if args.simulate_serial and args.serial_device:
@@ -610,6 +630,11 @@ if __name__ == "__main__":
     print("\nProject OTTO - Simulator v1.4.0")
     # Create a new OttoCPU instance
     cpu = OttoCPU()
+
+    if args.ch376:
+        stick_root = args.ch376_dir or str(_ROOT / "roms" / "sim" / "ch376")
+        cpu.ch376 = Ch376Sim(stick_root)
+        print(f"-> CH376 emulator: virtual USB stick at {stick_root}")
 
     # Load unified ROM (kernel + P-Machine) into memory
     print("-> loading ROM into memory")

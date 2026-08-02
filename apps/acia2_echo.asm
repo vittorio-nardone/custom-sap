@@ -10,8 +10,8 @@
 #include "../assembly/ruledef.asm"
 #include "../kernel/symbols.asm"
 
-#const ACIA2_CONTROL_STATUS_ADDR = 0x6022
-#const ACIA2_RW_DATA_ADDR = 0x6023
+#const A2_CONTROL_STATUS_ADDR = 0x6022
+#const A2_RW_DATA_ADDR = 0x6023
 #const EXIT_CHAR = 0x30
 
 #bankdef ram
@@ -63,10 +63,10 @@
 
 ; C=1 and A=byte if serial 2 has input.
 .acia2_poll:
-    lda ACIA2_CONTROL_STATUS_ADDR
+    lda A2_CONTROL_STATUS_ADDR
     bit ACIA_STATUS_REG_RECEIVE_DATA_REGISTER_FULL
     beq .acia2_poll_none
-    lda ACIA2_RW_DATA_ADDR
+    lda A2_RW_DATA_ADDR
     sec
     rts
 .acia2_poll_none:
@@ -83,11 +83,11 @@
 .acia2_xmit:
     pha
 .acia2_wait_tx:
-    lda ACIA2_CONTROL_STATUS_ADDR
+    lda A2_CONTROL_STATUS_ADDR
     bit ACIA_STATUS_REG_TRANSMIT_DATA_REGISTER_EMPTY
     beq .acia2_wait_tx
     pla
-    sta ACIA2_RW_DATA_ADDR
+    sta A2_RW_DATA_ADDR
     rts
 
 .acia1_xmit:
@@ -103,9 +103,9 @@
 ; Master reset + 115200 8N1 (no RX interrupt).
 .acia2_init:
     lda ACIA_INIT_MASTER_RESET
-    sta ACIA2_CONTROL_STATUS_ADDR
+    sta A2_CONTROL_STATUS_ADDR
     lda ACIA_INIT_115200_8N1
-    sta ACIA2_CONTROL_STATUS_ADDR
+    sta A2_CONTROL_STATUS_ADDR
     rts
 
 .banner:

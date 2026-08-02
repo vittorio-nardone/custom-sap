@@ -46,4 +46,6 @@ Mask bits: EXT1=0x01, EXT2=0x02, TIMER=0x04, KEYBOARD=0x08. Setup: write handler
 
 **Transfer**: `XMODEM_RCV`
 
+**USB storage** (optional CH376 on ACIA #2): `STORAGE_INIT` / `MOUNT` / `READ` / `WRITE` / `LOAD_FILE` / `SAVE_FILE` — see `kernel/storage/README.md`. Menu: `l`/`w`.
+
 Full symbol table and addresses: `kernel/symbols.asm` and `AGENTS.md`.

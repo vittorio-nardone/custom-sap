@@ -109,8 +109,14 @@ ACIA_SEND_STRING:
 ; **********************************************************
 
 ACIA_SEND_STRING24:
+    ; Reload Y (page) every character: the interrupt handler historically
+    ; did not preserve Y, and even with that fixed a nested clobber would
+    ; make lda yde,x read page 0 and stop on the first NUL there.
+    phy
     ldx 0x00
 .send_char24:
+    ply
+    phy
     lda yde,x
     beq .send_end24
     jsr ACIA_WAIT_SEND_CLEAR
@@ -120,6 +126,7 @@ ACIA_SEND_STRING24:
     ind
     jmp .send_char24
 .send_end24:
+    ply
     rts
 
 ; **********************************************************

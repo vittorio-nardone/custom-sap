@@ -52,8 +52,8 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.2.162"
-#const KERNEL_BUILDDATE = "07/16/2026"
+#const KERNEL_VERSION = "v1.3.9"
+#const KERNEL_BUILDDATE = "08/02/2026"
 
 #include "../assembly/ruledef.asm"
 #include "banks.asm"
@@ -67,6 +67,14 @@
 #include "interrupt.asm"
 #include "random.asm"
 #include "xmodem.asm"
+#include "storage/const.asm"
+#include "storage/io.asm"
+#include "storage/burst.asm"
+#include "storage/proto.asm"
+#include "storage/range.asm"
+#include "storage/ot.asm"
+#include "storage/api.asm"
+#include "storage/menu.asm"
 #include "vt100.asm"
 #include "../pascal/pmachine.asm"
 
@@ -105,6 +113,7 @@ main:
 
 .init:
     lda 0x00
+    sta CH376_STATUS
     sta MAIN_MENU_STATUS
     sta MAIN_MENU_ADDR_PAGE
     lda 0x84
@@ -219,6 +228,10 @@ menu_ready:
     beq .menu_upload_command
     cmp "r"
     beq .menu_run_command
+    cmp "l"
+    beq .menu_usb_load_command
+    cmp "w"
+    beq .menu_usb_save_command
     cmp "h"
     beq .menu_help_command
 .menu_show_error:
@@ -493,6 +506,36 @@ menu_ready:
 
     jmp menu_ready
 
+; --------------------------------------
+
+.menu_usb_load_command:
+    jsr .menu_read_address
+    bcs .menu_show_error
+    sty STORAGE_ADDR_PAGE
+    std STORAGE_ADDR_MSB
+    ste STORAGE_ADDR_LSB
+    ; No explicit address: take the destination from the OT header.
+    lda MAIN_MENU_INPUT_BUFFER_COUNT
+    cmp 0x01
+    bne .menu_usb_load_explicit
+    lda 0x01
+    jmp .menu_usb_load_start
+.menu_usb_load_explicit:
+    lda 0x00
+.menu_usb_load_start:
+    sta CH376_OT_AUTO
+    jsr STORAGE_MENU_LOAD
+    jmp menu_ready
+
+.menu_usb_save_command:
+    jsr .menu_read_address
+    bcs .menu_show_error
+    sty CH376_SAVE_PAGE
+    std CH376_SAVE_MSB
+    ste CH376_SAVE_LSB
+    jsr STORAGE_MENU_SAVE
+    jmp menu_ready
+
 .menu_help_msg:
     #d 0x0A, 0x0D, 0x0A, 0x0D
     #d "Project OTTO Kernel - ", KERNEL_VERSION, " (", KERNEL_BUILDDATE, ")", 0x0A, 0x0D
@@ -500,6 +543,8 @@ menu_ready:
     #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D
     #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
     #d "   ryyxxxx  - Run application", 0x0A, 0x0D
+    #d "   lyyxxxx  - Load application from USB storage", 0x0A, 0x0D
+    #d "   wyyxxxx  - Write memory to USB storage", 0x0A, 0x0D
     #d "   h        - show Help", 0x0A, 0x0D
     #d 0x00
 
@@ -511,6 +556,9 @@ menu_ready:
     #d "   u010000  - upload an application and store it at location 0x010000", 0x0A, 0x0D
     #d "   u020000  - upload TinyPascal IDE (tinypascal_ide.bin) to expansion RAM page 2", 0x0A, 0x0D
     #d "   r020000  - run TinyPascal IDE (after u020000)", 0x0A, 0x0D
+    #d "   l        - browse USB storage, load using the OT header address", 0x0A, 0x0D
+    #d "   l010000  - browse USB storage, load at location 0x010000", 0x0A, 0x0D
+    #d "   w8400    - write memory from 0x8400 to a USB file (asks length, name)", 0x0A, 0x0D
     #d 0x0A, 0x0D  
     #d "Memory map:", 0x0A, 0x0D     
     #d "   0x0000-0x5FFF      - ROM", 0x0A, 0x0D

@@ -91,11 +91,14 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
   0x6012                   Random seed (write N times)
   0x6020                   ACIA #1 Control/Status Register
   0x6021                   ACIA #1 Transmit/Receive Data Register
+  0x6022                   ACIA #2 Control/Status (CH376S USB, optional)
+  0x6023                   ACIA #2 Transmit/Receive Data
 
 0x006800-0x007FFF  (6 KB)  Video RAM (reserved)
 
 0x008000-0x00FFFF  (32 KB) Main RAM
   0x8000-0x83FF  (1 KB)    Kernel reserved variables (see kernel/memmap.asm for full map)
+  0x8284-0x82EF            USB storage (CH376) hot vars + state — see kernel/storage/README.md
   0x8400-0xEFFF  (27 KB)   Application RAM (apps load here)
   0xF000-0xFFFF  (4 KB)    Stack (grows downward from 0xFFFF)
 
@@ -504,7 +507,20 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 ### File Transfer
 | Symbol | Address | Description |
 |--------|---------|-------------|
-| XMODEM_RCV | 0x0E16 | Receive file via XMODEM/CRC |
+| XMODEM_RCV | (symbols.asm) | Receive file via XMODEM/CRC |
+
+### USB storage (CH376S, optional)
+Polling-only FAT access over ACIA #2. Lazy init — absent module returns `C=0`, never blocks boot. Menu: `l`/`lyyxxxx` load, `w`/`wyyxxxx` save (OT header on menu save). Full API and OT rules: `kernel/storage/README.md`.
+
+| Symbol | Description |
+|--------|-------------|
+| STORAGE_INIT / STORAGE_MOUNT / STORAGE_STATUS | Probe, mount USB mass-storage, status flags |
+| STORAGE_SET_NAME / OPEN / CREATE / CLOSE | Path + file ops (`Y:DE` NUL path; CREATE truncates) |
+| STORAGE_READ / STORAGE_WRITE | Raw transfer (`Y:DE`, length in `CH376_REMAIN_*`) |
+| STORAGE_LOAD_FILE / STORAGE_SAVE_FILE | OT-aware load; save with optional OT (`CH376_OT_FLAG`) |
+| STORAGE_CHECK_RANGE | Reject I/O `0x6000–0x67FF` and video `0x6800–0x7FFF`; max ~64 KB |
+
+Addresses in `kernel/symbols.asm`. Smoke test: `apps/storage_smoke.asm`.
 
 ## Application Template
 
@@ -655,6 +671,7 @@ The simulator (`OttoCPU` class in `simulate.py`) faithfully emulates:
 | ram_ext_1 | 0x010000 | 0x01FFFF | No | No |
 | ram_ext_2 | 0x020000 | 0x02FFFF | No | No |
 | acia_1 | 0x6020 | 0x6021 | No | Yes |
+| acia_2 | 0x6022 | 0x6023 | No | Yes (idle unless CH376 emulated) |
 
 ### I/O Simulation
 
@@ -662,6 +679,21 @@ The simulator (`OttoCPU` class in `simulate.py`) faithfully emulates:
 - **0x6020** (read): returns status - `0x03` if data available, `0x02` if empty
 - **0x6021** (read): returns next byte from serial port or keyboard queue
 - **0x6021** (write): sends byte to serial port, or prints to stdout if no serial
+- **0x6022/0x6023**: ACIA #2 (CH376). Without `--ch376`, reads idle (TX empty, no RX) so kernel storage fails cleanly. With `--ch376`, a minimal CH376S UART emulator (`scripts/python/ch376_sim.py`) backs a host directory as the USB stick (default `roms/sim/ch376/`).
+
+**CH376 emulator** (`--ch376`):
+- Maps `roms/sim/ch376/` (or `--ch376-dir <path>`) as the FAT root: mount, `/*` listing, file open/create/read/write.
+- Enough for kernel menu `l`/`w`, `STORAGE_*` API, and `apps/storage_smoke.asm`.
+- Sample files ship under `roms/sim/ch376/` (`HELLO.TXT`, `DEMO.BIN`).
+
+```bash
+# Kernel menu browse (mount + list + quit)
+python simulate.py --ch376 --headless --input $'l\r0\r' --max-cycles 15000000
+
+# storage_smoke round-trip (needs rebuilt kernel ROM)
+python simulate.py --ch376 --autorun --program roms/apps/current/asm/storage_smoke.bin \
+  --max-cycles 8000000 --quiet
+```
 
 **Two modes**:
 1. **stdin/stdout** (default): keyboard input is queued via `push_key()`, serial output goes to `print()`. Enter key (0x0A) is converted to CR (0x0D).
@@ -975,6 +1007,7 @@ kernel/
   math.asm               - Multiplication, division, sqrt, 16-bit signed math
   utils.asm              - Hex/decimal conversions
   xmodem.asm             - XMODEM/CRC file transfer
+  storage/               - CH376S USB mass-storage driver + menu l/w (optional hardware)
   tests.asm              - CPU instruction tests (debug build only)
   float.asm              - Floating point (WIP)
 apps/                    - Example applications

@@ -107,7 +107,79 @@
 #const XMODEM_RETRY_COUNTER2  = 0x833E  ; 1 byte
 #const XMODEM_BLOCK_FLAG      = 0x833F  ; 1 byte
 
-; --- 0x8284-0x83F5: free (formerly OTIO) ----------------------
+; --- 0x8284-0x82AF: USB storage hot RX path (storage/burst.asm) ---
+; These MUST stay below 0x10000 so the SEI burst uses 16-bit (zero page)
+; operands: ACIA #2 has a 1-byte RX FIFO and 115200 baud leaves ~87us per
+; byte, which 24-bit absolute addressing does not meet.
+#const CH376_BUF        = 0x8284  ; 32 bytes (0x8284-0x82A3) - dir entry / scratch payload
+#const CH376_CAP        = 0x82A4  ; 1 byte  - max bytes to keep in CH376_BUF
+#const CH376_OVERRUN    = 0x82A5  ; 1 byte  - ACIA #2 status captured on burst failure
+#const CH376_TMO_BYTE   = 0x82A6  ; 1 byte  - per-byte timeout counter (burst)
+#const CH376_RDB_MODE   = 0x82A7  ; 1 byte  - 0 = into CH376_BUF, 1 = into CH376_DST_*
+#const CH376_RD_LEFT    = 0x82A8  ; 1 byte  - bytes still expected in current burst
+#const CH376_WIRE_LEN   = 0x82A9  ; 1 byte  - length byte announced by the chip
+#const CH376_RD_LEN     = 0x82AA  ; 1 byte  - copy of WIRE_LEN for diagnostics
+#const CH376_PULL_MODE  = 0x82AB  ; 1 byte  - last burst outcome marker
+#const CH376_DST_PAGE   = 0x82AC  ; 1 byte  - burst destination (page)
+#const CH376_DST_MSB    = 0x82AD  ; 1 byte  - burst destination (high)
+#const CH376_DST_LSB    = 0x82AE  ; 1 byte  - burst destination (low)
+#const CH376_WR_WANT    = 0x82AF  ; 1 byte  - bytes asked for in current BYTE_WRITE
+
+; --- 0x82B0-0x82EF: USB storage state (kernel/storage/*.asm) ------
+#const CH376_TMO         = 0x82B0  ; 2 bytes - UART timeout reload (lo, hi)
+#const CH376_TMO_SAVE    = 0x82B2  ; 2 bytes - saved timeout during USB waits
+#const CH376_SCRATCH     = 0x82B4  ; 1 byte
+#const CH376_SCRATCH2    = 0x82B5  ; 1 byte
+#const CH376_LAST_STATUS = 0x82B6  ; 1 byte  - last CH376 interrupt status
+#const CH376_INT_FLAG    = 0x82B7  ; 1 byte  - always 0 (polling only, kept for driver parity)
+#const CH376_INT_STATUS  = 0x82B8  ; 1 byte
+#const CH376_REMAIN_LO   = 0x82B9  ; 1 byte  - bytes left to transfer (low)
+#const CH376_REMAIN_HI   = 0x82BA  ; 1 byte  - bytes left to transfer (high)
+#const CH376_LOADED_LO   = 0x82BB  ; 1 byte  - bytes transferred (low)
+#const CH376_LOADED_HI   = 0x82BC  ; 1 byte  - bytes transferred (high)
+#const CH376_TOTAL_LO    = 0x82BD  ; 1 byte  - requested transfer size (low)
+#const CH376_TOTAL_HI    = 0x82BE  ; 1 byte  - requested transfer size (high)
+#const CH376_STATUS      = 0x82BF  ; 1 byte  - STORAGE_ST_* flags
+#const CH376_DEPTH       = 0x82C0  ; 1 byte  - directory nesting level (0 = root)
+#const CH376_SELECT      = 0x82C1  ; 1 byte  - menu selection (1-based)
+#const CH376_DOTDOT      = 0x82C2  ; 1 byte  - selected entry is ".."
+#const CH376_ENTRY_FLAGS = 0x82C3  ; 1 byte  - CH376_ENTRY_FLAG_*
+#const CH376_SIZE_0      = 0x82C4  ; 1 byte  - FAT size / hex input (LSB)
+#const CH376_SIZE_1      = 0x82C5  ; 1 byte
+#const CH376_SIZE_2      = 0x82C6  ; 1 byte
+#const CH376_SIZE_3      = 0x82C7  ; 1 byte  - FAT size (MSB)
+#const CH376_SAVE_PAGE   = 0x82C8  ; 1 byte  - save source address (page)
+#const CH376_SAVE_MSB    = 0x82C9  ; 1 byte
+#const CH376_SAVE_LSB    = 0x82CA  ; 1 byte
+#const CH376_CMP_PAGE    = 0x82CB  ; 1 byte  - range check work area
+#const CH376_CMP_MSB     = 0x82CC  ; 1 byte
+#const CH376_CMP_LSB     = 0x82CD  ; 1 byte
+#const CH376_CMP_TMP     = 0x82CE  ; 1 byte
+#const CH376_RETRIES     = 0x82CF  ; 1 byte  - DISK_MOUNT retry counter
+#const CH376_OT_AUTO     = 0x82D0  ; 1 byte  - 1 = take load address from OT header
+#const CH376_OT_FLAG     = 0x82D1  ; 1 byte  - 1 = prepend OT header when saving
+#const CH376_OT_FOUND    = 0x82D2  ; 1 byte  - 1 = OT header present in loaded file
+#const CH376_PRELOAD     = 0x82D3  ; 1 byte  - bytes of file data sitting in CH376_BUF
+#const CH376_FILE_COUNT  = 0x82D4  ; 1 byte  - entries listed in STORAGE_NAMES
+#const CH376_ENUM_LEFT   = 0x82D5  ; 1 byte  - FILE_ENUM_GO budget
+#const CH376_OPEN_ST     = 0x82D6  ; 1 byte  - status of the listing FILE_OPEN
+#const STORAGE_ADDR_PAGE = 0x82D7  ; 1 byte  - caller supplied address (page)
+#const STORAGE_ADDR_MSB  = 0x82D8  ; 1 byte
+#const STORAGE_ADDR_LSB  = 0x82D9  ; 1 byte
+#const STORAGE_LOAD_PTRP = 0x82DA  ; 1 byte  - effective load address (page)
+#const STORAGE_LOAD_PTRH = 0x82DB  ; 1 byte  - effective load address (high)
+#const STORAGE_LOAD_PTR  = 0x82DC  ; 1 byte  - effective load address (low)
+#const CH376_DEST_PAGE   = 0x82DD  ; 1 byte  - running destination while loading
+#const CH376_DEST_MSB    = 0x82DE  ; 1 byte
+#const CH376_DEST_LSB    = 0x82DF  ; 1 byte
+#const CH376_FNBUF       = 0x82E0  ; 16 bytes (0x82E0-0x82EF) - path passed to the chip
+
+; --- 0x82F0-0x8332: free ------------------------------------------
+; --- 0x834E-0x83F0: free ------------------------------------------
+
+; --- 0xDC00-0xDE7F: USB browser entry table (storage/menu.asm) ----
+; Lives in application RAM: only valid while the kernel USB menu is running.
+#const STORAGE_NAMES     = 0xDC00  ; 40 entries x 16 bytes
 
 ; --- 0x8340-0x834D: Utility variables (utils.asm) ------------
 #const BINDEC32_VALUE  = 0x8340  ; 4 bytes (0x8340-0x8343)
