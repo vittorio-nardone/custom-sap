@@ -32,6 +32,10 @@
 #const CH376_CMD_BYTE_WRITE    = 0x3C
 #const CH376_CMD_BYTE_WR_GO    = 0x3D
 #const CH376_CMD_WR_REQ_DATA   = 0x2D
+#const CH376_CMD_READ_VAR8     = 0x0A
+#const CH376_CMD_WRITE_VAR8    = 0x0B
+#const CH376_VAR_FILE_DIR_IDX  = 0x3B  ; index of current FAT_DIR_INFO in its sector
+#const CH376_VAR_END_DIR_INFO  = 0x0D  ; write 0 after consuming DIR_INFO_READ data
 
 #const CH376_USB_MODE_HOST       = 0x06
 #const CH376_USB_MODE_HOST_RESET = 0x07
@@ -64,6 +68,10 @@
 #const CH376_MAX_FILES       = 0x28  ; 40 entries
 #const CH376_NAME_ENTRY      = 0x10  ; 11 name + 4 size + 1 flags
 #const CH376_ENTRY_FLAG_DIR  = 0x01
+#const CH376_LFN_ENTRY       = 0x20  ; display name bytes per STORAGE_LFN slot
+#const CH376_LFN_ATTR        = 0x0F  ; VFAT long-name directory attribute
+#const CH376_LFN_LAST        = 0x40  ; sequence bit: first physical / last logical slot
+#const CH376_LFN_DISP_MAX    = 0x1F  ; max ASCII chars stored (room for NUL in 32-byte slot)
 
 ; --- OT application header (see scripts/python/add_header.py) --------
 #const STORAGE_OT_MAGIC0 = 0x4F  ; 'O'

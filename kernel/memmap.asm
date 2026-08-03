@@ -174,12 +174,23 @@
 #const CH376_DEST_LSB    = 0x82DF  ; 1 byte
 #const CH376_FNBUF       = 0x82E0  ; 16 bytes (0x82E0-0x82EF) - path passed to the chip
 
-; --- 0x82F0-0x8332: free ------------------------------------------
+; --- 0x82F0-0x831B: LFN assemble state (storage/menu.asm listing) -
+#const CH376_LFN_TMP     = 0x82F0  ; 40 bytes - UCS-2->ASCII assemble buffer
+#const CH376_LFN_LEN     = 0x8318  ; 1 byte  - bytes used in CH376_LFN_TMP
+#const CH376_LFN_CKSUM   = 0x8319  ; 1 byte  - expected short-name checksum
+#const CH376_LFN_NEXT    = 0x831A  ; 1 byte  - next expected LFN ordinal (0 = idle)
+#const CH376_LFN_READY   = 0x831B  ; 1 byte  - 1 = TMP holds a name for the next 8.3
+#const CH376_LIST_IDX    = 0x831C  ; 1 byte  - 0-based index while finishing a listing
+#const CH376_LIST_NUM    = 0x831D  ; 1 byte  - 1-based line number while printing
+#const CH376_DIR_INDEX   = 0x831E  ; 1 byte  - FAT_DIR_INFO index within sector (LFN walk)
+
+; --- 0x831F-0x8332: free ------------------------------------------
 ; --- 0x834E-0x83F0: free ------------------------------------------
 
-; --- 0xDC00-0xDE7F: USB browser entry table (storage/menu.asm) ----
+; --- 0xDC00-0xE37F: USB browser tables (storage/menu.asm) ---------
 ; Lives in application RAM: only valid while the kernel USB menu is running.
-#const STORAGE_NAMES     = 0xDC00  ; 40 entries x 16 bytes
+#const STORAGE_NAMES     = 0xDC00  ; 40 entries x 16 bytes (0xDC00-0xDE7F)
+#const STORAGE_LFN       = 0xDE80  ; 40 entries x 32 bytes (0xDE80-0xE37F), NUL-term ASCII
 
 ; --- 0x8340-0x834D: Utility variables (utils.asm) ------------
 #const BINDEC32_VALUE  = 0x8340  ; 4 bytes (0x8340-0x8343)

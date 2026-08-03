@@ -65,7 +65,7 @@ static QueueHandle_t   s_usbMirrorQueue = nullptr;
 static void ottoUsbMirrorInit()
 {
   if (!s_usbMirrorQueue)
-    s_usbMirrorQueue = xQueueCreate(512, sizeof(uint8_t));
+    s_usbMirrorQueue = xQueueCreate(4096, sizeof(uint8_t));
   Serial.begin(OTTO_USB_MIRROR_BAUD);
   Serial.setTxBufferSize(1024);
   Serial.setRxBufferSize(512);
@@ -141,11 +141,58 @@ static void ottoInstallSerialBridge()
   };
 }
 
-/** Gate Otto serial into the Terminal (also keeps connector flag in sync). */
+/** Gate Otto serial into the Terminal. Never stop draining the UART FIFO —
+ * Otto has no CTS; disableSerialPortRX / RxReady=false overflows HW RX and
+ * drops bytes (VGA + USB mirror). */
 static void ottoEnableSerialToTerm(bool enabled)
 {
   s_serialToTerm = enabled;
-  SerialPortTerminalConnector.disableSerialPortRX(!enabled);
+}
+
+static constexpr size_t kOttoTermPendCap = 4096;  // power of two
+static uint8_t          s_ottoTermPend[kOttoTermPendCap];
+static volatile size_t  s_ottoTermPendHead = 0;
+static volatile size_t  s_ottoTermPendTail = 0;
+
+static void ottoTermPendClear()
+{
+  s_ottoTermPendHead = 0;
+  s_ottoTermPendTail = 0;
+}
+
+static size_t ottoTermPendCount()
+{
+  return (s_ottoTermPendHead - s_ottoTermPendTail) & (kOttoTermPendCap - 1);
+}
+
+static bool ottoTermPendPush(uint8_t value)
+{
+  size_t const h = s_ottoTermPendHead;
+  size_t const n = (h + 1) & (kOttoTermPendCap - 1);
+  if (n == s_ottoTermPendTail)
+    return false;
+  s_ottoTermPend[h] = value;
+  s_ottoTermPendHead = n;
+  return true;
+}
+
+static void ottoFilterVtToTerminal(uint8_t c, bool fromISR);
+static void ottoSerialRingPush(uint8_t value);
+
+static void ottoTermPendDrain(bool fromISR)
+{
+  while (s_ottoTermPendTail != s_ottoTermPendHead) {
+    if (!s_serialToTerm)
+      return;
+    if (Terminal.availableForWrite(fromISR) <= 0)
+      return;
+    size_t const t = s_ottoTermPendTail;
+    uint8_t const v = s_ottoTermPend[t];
+    s_ottoTermPendTail = (t + 1) & (kOttoTermPendCap - 1);
+    if (!fromISR)
+      ottoSerialRingPush(v);
+    ottoFilterVtToTerminal(v, fromISR);
+  }
 }
 
 static void termWriteByte(uint8_t c, bool fromISR)
@@ -271,11 +318,10 @@ static void ottoSerialRingPush(uint8_t value)
   if (!(c == '\n' || (c >= 32 && c < 127)))
     return;
 
+  // No memmove here — this can run while draining on the main task only.
   if (s_ottoSerialRingLen >= kOttoSerialRingSize - 1) {
-    size_t const keep = kOttoSerialRingSize / 2;
-    memmove(s_ottoSerialRing, s_ottoSerialRing + s_ottoSerialRingLen - keep, keep);
-    s_ottoSerialRingLen = keep;
-    s_ottoSerialRing[s_ottoSerialRingLen] = '\0';
+    s_ottoSerialRingLen = 0;
+    s_ottoSerialRing[0] = '\0';
   }
   s_ottoSerialRing[s_ottoSerialRingLen++] = (char)c;
   s_ottoSerialRing[s_ottoSerialRingLen] = '\0';
@@ -305,18 +351,22 @@ static bool ottoParseKernelVersionFromSerial(char * out, size_t outLen)
 
 static void ottoSerialRx(void * /*args*/, uint8_t value, bool fromISR)
 {
-  ottoSerialRingPush(value);
 #if OTTO_USB_MIRROR
   ottoUsbMirrorPush(value, fromISR);
 #endif
-  if (!s_serialToTerm)
-    return;
-  ottoFilterVtToTerminal(value, fromISR);
+  // ISR must stay tiny: only enqueue. Painting Terminal from the UART ISR
+  // stalls FIFO drain and overflows (same truncation on VGA + USB mirror).
+  (void)ottoTermPendPush(value);
+  if (!fromISR)
+    ottoTermPendDrain(false);
 }
 
 static bool ottoSerialRxReady(void * /*args*/, bool fromISR)
 {
-  return Terminal.availableForWrite(fromISR) > 0;
+  (void)fromISR;
+  // Never apply Terminal backpressure to the UART RX path. Returning false
+  // makes FabGL leave bytes in the ESP32 FIFO until it overflows.
+  return true;
 }
 static int             s_selectedApp  = 0;
 static char            s_uiFooter[96] = "";
@@ -485,6 +535,7 @@ static void drawTerminalFooter(bool restoreCursor)
     waitTerminalInputDrained();
     if (!s_uiBusy)
       ottoEnableSerialToTerm(true);
+    ottoTermPendDrain(false);
   }
 }
 
@@ -1143,6 +1194,7 @@ static void startWifiMenu()
     return;
   xQueueReset(s_menuKeyQueue);
   s_uiBusy = true;
+  ottoTermPendClear();
   drawStatusBar(true);
   BaseType_t const ok = xTaskCreatePinnedToCore(
     wifiMenuTask, "otto_wifi_menu", OTTO_WIFI_MENU_STACK, nullptr, 5, nullptr, 0);
@@ -1737,6 +1789,7 @@ static void startSettings()
     return;
   xQueueReset(s_menuKeyQueue);
   s_uiBusy = true;
+  ottoTermPendClear();
   drawStatusBar(true);
   BaseType_t const ok = xTaskCreatePinnedToCore(
     settingsTask, "otto_settings", OTTO_WIFI_MENU_STACK, nullptr, 5, nullptr, 0);
@@ -1871,6 +1924,7 @@ static void startHelpPage()
     return;
   xQueueReset(s_menuKeyQueue);
   s_uiBusy = true;
+  ottoTermPendClear();
   drawStatusBar(true);
   BaseType_t const ok = xTaskCreatePinnedToCore(
     helpTask, "otto_help", 4096, nullptr, 5, nullptr, 0);
@@ -1961,11 +2015,18 @@ void loop()
 #if OTTO_USB_MIRROR
   ottoUsbMirrorPump();
 #endif
-  // Repaint periodically: Otto \e[2J clears the footer; FabGL may scroll it away.
-  // Keep interval modest — each paint briefly pauses Otto RX for getCursorPos.
+  // Drain Otto→Terminal promptly; spin briefly while the soft queue is hot.
+  for (int i = 0; i < 8; ++i) {
+    size_t const before = ottoTermPendCount();
+    ottoTermPendDrain(false);
+    if (ottoTermPendCount() == 0 || ottoTermPendCount() == before)
+      break;
+  }
+  // getCursorPos briefly gates Terminal painting (s_serialToTerm=false) but UART
+  // keeps draining into the soft pending queue.
   if (!s_uiBusy && (now - last > 3000)) {
     last = now;
     drawStatusBar(true);
   }
-  vTaskDelay(50 / portTICK_PERIOD_MS);
+  vTaskDelay((ottoTermPendCount() > 0 ? 1 : 20) / portTICK_PERIOD_MS);
 }

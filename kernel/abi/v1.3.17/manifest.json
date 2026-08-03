@@ -1,0 +1,14 @@
+{
+  "kernel_version": "v1.3.17",
+  "kernel_build_date": "08/03/2026",
+  "build_debug": 0x0,
+  "ot_header": true,
+  "git_commit": "93239e559629a7ca71b1a251f67f47588df79c6c",
+  "saved_at": "2026-08-03T07:48:50Z",
+  "rom_size": 20227,
+  "files": {
+    "symbols_txt": "symbols.txt",
+    "symbols_asm": "symbols.asm",
+    "kernel_rom": "kernel-rom.bin"
+  }
+}

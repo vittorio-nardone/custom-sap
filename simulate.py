@@ -446,13 +446,22 @@ class OttoCPU:
                 raise ValueError(f"Invalid operand size: {size}")
 
     def get_address_from_registries(self, registries, index=None):
-        """Calculate the address from registries with optional index"""
+        """Calculate the address from registries with optional index.
+
+        DE,X / YDE,X: hardware does not support page-cross when E+index overflows
+        (microcode: "Cross page not supported"). Match that unless
+        self.allow_index_page_cross is True (legacy sim leniency).
+        """
         if index:
             self.O = (self.E + index) > 0xFF
         match registries:
             case 'yde':
+                if index and not getattr(self, 'allow_index_page_cross', False) and (self.E + index) > 0xFF:
+                    return self.Y * 65536 + self.D * 256 + ((self.E + index) & 0xFF)
                 return self.Y * 65536 + self.D * 256 + self.E + (index if index else 0)
             case 'de':
+                if index and not getattr(self, 'allow_index_page_cross', False) and (self.E + index) > 0xFF:
+                    return self.D * 256 + ((self.E + index) & 0xFF)
                 return self.D * 256 + self.E + (index if index else 0)
             case _:
                 raise ValueError(f"Invalid operand registries: {registries}")

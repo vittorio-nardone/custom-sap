@@ -84,9 +84,7 @@ STORAGE_MENU_LOAD:
     ldd storage_msg_loading[15:8]
     lde storage_msg_loading[7:0]
     jsr ACIA_SEND_STRING
-    ldd CH376_FNBUF[15:8]
-    lde CH376_FNBUF[7:0]
-    jsr ACIA_SEND_STRING
+    jsr storage_print_selected_name
     jsr ACIA_SEND_NEWLINE
 
     jsr STORAGE_LOAD_FILE
@@ -233,14 +231,16 @@ storage_mount_verbose:
     rts
 
 ; ---- Directory listing with numbered selectable entries ----
+; Opens the current directory and BYTE_READs raw 32-byte FAT entries.
+; Wildcard /* enum cannot see VFAT LFN slots (CH376 filters them); raw
+; directory reads can, so LFN display is assembled while scanning.
 storage_list_dir:
     lda 0x00
     sta CH376_FILE_COUNT
     sta CH376_WIRE_LEN
     sta CH376_RD_LEN
     sta CH376_PULL_MODE
-    lda 0x40
-    sta CH376_ENUM_LEFT
+    jsr storage_lfn_clear
 
     lda CH376_DEPTH
     bne .hdr_sub
@@ -254,21 +254,14 @@ storage_list_dir:
     jsr ACIA_SEND_STRING
 
     lda CH376_DEPTH
-    beq .wildcard
-    jsr storage_inject_dotdot
+    beq .open_root
+    ; Subdirectory was left open by storage_enter_dir.
+    jmp .opened
 
-.wildcard:
-    lda CH376_DEPTH
-    bne .wc_star
-    ldy storage_fn_slash_star[23:16]
-    ldd storage_fn_slash_star[15:8]
-    lde storage_fn_slash_star[7:0]
-    jmp .wc_set
-.wc_star:
-    ldy storage_fn_star[23:16]
-    ldd storage_fn_star[15:8]
-    lde storage_fn_star[7:0]
-.wc_set:
+.open_root:
+    ldy storage_fn_slash[23:16]
+    ldd storage_fn_slash[15:8]
+    lde storage_fn_slash[7:0]
     jsr ch376_cmd_set_file_name
     bcc .fail
     jsr ch376_set_timeout_long
@@ -276,36 +269,52 @@ storage_list_dir:
     jsr ch376_cmd_interrupt
     bcc .fail
     lda CH376_LAST_STATUS
-    sta CH376_OPEN_ST
+    cmp CH376_ERR_OPEN_DIR
+    bne .fail
 
-.loop:
-    lda CH376_LAST_STATUS
-    cmp CH376_ERR_MISS_FILE
-    beq .ok
-    cmp CH376_INT_DISK_READ
-    beq .read
-    cmp CH376_INT_SUCCESS
-    beq .enum
-    jmp .fail
-
-.read:
+.opened:
+    lda CH376_DEPTH
+    beq .no_dotdot
+    jsr storage_inject_dotdot
+.no_dotdot:
     jsr ch376_set_timeout_long
+    lda 0xFF
+    sta CH376_ENUM_LEFT
+
+.read_loop:
+    lda CH376_ENUM_LEFT
+    beq .done_close
+    lda 0x20
+    jsr ch376_cmd_byte_read
+    bcc .fail_close
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_DISK_READ
+    beq .got
+    cmp CH376_INT_SUCCESS
+    beq .done_close
+    jmp .fail_close
+
+.got:
     jsr ch376_rd_dir_entry
     sta CH376_RD_LEN
     lda CH376_RD_LEN
-    beq .fail
+    beq .fail_close
     jsr storage_list_emit
     dec CH376_ENUM_LEFT
-    beq .ok
-
-.enum:
-    jsr ch376_set_timeout_long
-    lda CH376_CMD_FILE_ENUM_GO
+    lda CH376_CMD_BYTE_RD_GO
     jsr ch376_cmd_interrupt
-    bcc .fail
-    jmp .loop
+    bcc .fail_close
+    ; After a 32-byte request, GO is usually INT_SUCCESS → next BYTE_READ.
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_DISK_READ
+    beq .got
+    cmp CH376_INT_SUCCESS
+    beq .read_loop
+    jmp .fail_close
 
-.ok:
+.done_close:
+    lda 0x00
+    jsr ch376_cmd_file_close
     jsr ch376_set_timeout
     ldd storage_msg_entries[15:8]
     lde storage_msg_entries[7:0]
@@ -316,35 +325,42 @@ storage_list_dir:
     sec
     rts
 
+.fail_close:
+    lda 0x00
+    jsr ch376_cmd_file_close
 .fail:
     jsr ch376_set_timeout
     clc
     rts
 
 ; Store a printable file/dir entry and print "N. name".
-; Skips LFN slots, volume labels, hidden entries, "." / ".." and the
-; "_XXXXXX~N" 8.3 aliases macOS creates for its "._*" resource forks.
+; VFAT LFN slots (attr 0x0F) are absorbed into CH376_LFN_TMP; the following
+; 8.3 entry is what gets stored for open/select. Volume labels, hidden
+; entries, "." / ".." and macOS "_XXXXXX~N" aliases are skipped.
 storage_list_emit:
-    lda CH376_BUF
-    beq .skip
-    cmp 0xE5
-    beq .skip
-    cmp 0x5F
-    beq .skip
-    jsr storage_list_is_dot
-    bcc .skip
     lda CH376_BUF+11
-    cmp 0x0F
-    beq .skip
+    cmp CH376_LFN_ATTR
+    bne .short
+    jmp storage_lfn_absorb
+
+.short:
+    lda CH376_BUF
+    beq .discard
+    cmp 0xE5
+    beq .discard
+    cmp 0x5F
+    beq .discard
+    jsr storage_list_is_dot
+    bcc .discard
     lda CH376_BUF+11
     and 0x08
-    bne .skip
+    bne .discard
     lda CH376_BUF+11
     and CH376_DIR_ATTR_HIDDEN
-    bne .skip
+    bne .discard
     lda CH376_FILE_COUNT
     cmp CH376_MAX_FILES
-    bcs .skip
+    bcs .discard
     lda 0x00
     sta CH376_ENTRY_FLAGS
     lda CH376_BUF+11
@@ -353,10 +369,77 @@ storage_list_emit:
     lda CH376_ENTRY_FLAG_DIR
     sta CH376_ENTRY_FLAGS
 .store:
+    jsr storage_lfn_bind
     jsr storage_store_entry
+    jsr storage_store_lfn
+    lda CH376_FILE_COUNT
+    clc
+    adc 0x01
+    sta CH376_LIST_NUM
     jsr storage_print_entry_line
+    jsr storage_lfn_clear
     inc CH376_FILE_COUNT
-.skip:
+    rts
+
+.discard:
+    jsr storage_lfn_clear
+    rts
+
+; After enum: for each stored entry fetch LFN (EXAM11-style) and print the line.
+; (Kept for reference / probe parity — listing now uses BYTE_READ + absorb.)
+storage_list_finish_display:
+    lda 0x00
+    sta CH376_LIST_IDX
+.fin_loop:
+    lda CH376_LIST_IDX
+    cmp CH376_FILE_COUNT
+    bcs .fin_done
+    clc
+    adc 0x01
+    sta CH376_SELECT
+    sta CH376_LIST_NUM
+    jsr storage_entry_ptr_select
+    jsr storage_copy_entry_to_buf
+    jsr storage_try_fetch_lfn
+    ; fetch clobbers CH376_BUF — reload 8.3/size for the printed line.
+    jsr storage_entry_ptr_select
+    jsr storage_copy_entry_to_buf
+    jsr storage_print_entry_line
+    inc CH376_LIST_IDX
+    jmp .fin_loop
+.fin_done:
+    rts
+
+; Y:DE -> NAMES entry (11 name + 4 size + 1 flags).
+; Copies name/size into CH376_BUF FAT layout and flags into CH376_ENTRY_FLAGS.
+storage_copy_entry_to_buf:
+    ldx 0x00
+.name:
+    cpx 0x0B
+    bcs .size
+    lda yde,x
+    sta CH376_BUF,x
+    inx
+    jmp .name
+.size:
+    ldx 0x00
+.sz:
+    cpx 0x04
+    bcs .flags
+    txa
+    clc
+    adc 0x0B
+    phx
+    tax
+    lda yde,x
+    plx
+    sta CH376_BUF+0x1C,x
+    inx
+    jmp .sz
+.flags:
+    ldx 0x0F
+    lda yde,x
+    sta CH376_ENTRY_FLAGS
     rts
 
 ; Skip "." and ".." only. C=1 keep, C=0 skip.
@@ -384,6 +467,7 @@ storage_inject_dotdot:
     lda CH376_FILE_COUNT
     cmp CH376_MAX_FILES
     bcs .done
+    jsr storage_lfn_clear
     ldx 0x00
     lda 0x2E
     sta CH376_BUF,x
@@ -407,22 +491,26 @@ storage_inject_dotdot:
     sta CH376_BUF+0x1F
     lda CH376_ENTRY_FLAG_DIR
     sta CH376_ENTRY_FLAGS
+    jsr storage_lfn_clear
     jsr storage_store_entry
+    jsr storage_store_lfn
+    lda CH376_FILE_COUNT
+    clc
+    adc 0x01
+    sta CH376_LIST_NUM
     jsr storage_print_entry_line
     inc CH376_FILE_COUNT
 .done:
     rts
 
 storage_print_entry_line:
-    lda CH376_FILE_COUNT
-    clc
-    adc 0x01
+    lda CH376_LIST_NUM
     jsr ACIA_SEND_DECIMAL
     lda 0x2E
     jsr ACIA_SEND_CHAR
     lda 0x20
     jsr ACIA_SEND_CHAR
-    jsr storage_print_name83
+    jsr storage_print_name
     lda CH376_ENTRY_FLAGS
     and CH376_ENTRY_FLAG_DIR
     bne .dir
@@ -443,6 +531,23 @@ storage_print_entry_line:
     lde storage_tag_dir[7:0]
     jsr ACIA_SEND_STRING
     jmp ACIA_SEND_NEWLINE
+
+; Print LFN (if bound) else the 8.3 name from CH376_BUF.
+storage_print_name:
+    lda CH376_LFN_READY
+    beq storage_print_name83
+    lda CH376_LFN_LEN
+    beq storage_print_name83
+    ldx 0x00
+.lfn:
+    cpx CH376_LFN_LEN
+    bcs .done
+    lda CH376_LFN_TMP,x
+    jsr ACIA_SEND_CHAR
+    inx
+    jmp .lfn
+.done:
+    rts
 
 storage_print_name83:
     ldx 0x00
@@ -475,6 +580,26 @@ storage_print_name83:
     jmp .ext_loop
 .done:
     rts
+
+; Print LFN for CH376_SELECT if stored, else CH376_FNBUF (open path).
+storage_print_selected_name:
+    jsr storage_lfn_ptr_select
+    ldx 0x00
+    lda yde,x
+    beq .short
+.lfn:
+    lda yde,x
+    beq .done
+    jsr ACIA_SEND_CHAR
+    inx
+    cpx CH376_LFN_ENTRY
+    bcc .lfn
+.done:
+    rts
+.short:
+    ldd CH376_FNBUF[15:8]
+    lde CH376_FNBUF[7:0]
+    jmp ACIA_SEND_STRING
 
 ; Copy FAT 8.3 (11) + size LE (4) + flags (1) into NAMES[FILE_COUNT * 16]
 storage_store_entry:
@@ -514,6 +639,378 @@ storage_store_entry:
     lda CH376_ENTRY_FLAGS
     ldx 0x00
     sta yde,x
+    rts
+
+; Copy bound LFN into STORAGE_LFN[FILE_COUNT], or store an empty string.
+storage_store_lfn:
+    jsr storage_lfn_ptr_count
+    jmp storage_store_lfn_at_yde
+
+; Copy bound LFN into STORAGE_LFN[SELECT-1].
+storage_store_lfn_selected:
+    jsr storage_lfn_ptr_select
+storage_store_lfn_at_yde:
+    lda CH376_LFN_READY
+    beq .empty
+    lda CH376_LFN_LEN
+    beq .empty
+    ldx 0x00
+.copy:
+    cpx CH376_LFN_LEN
+    bcs .nul
+    cpx CH376_LFN_DISP_MAX
+    bcs .nul
+    lda CH376_LFN_TMP,x
+    phx
+    ldx 0x00
+    sta yde,x
+    plx
+    ine
+    bne .copy_next
+    ind
+.copy_next:
+    inx
+    jmp .copy
+.nul:
+    lda 0x00
+    ldx 0x00
+    sta yde,x
+    rts
+.empty:
+    lda 0x00
+    ldx 0x00
+    sta yde,x
+    rts
+
+storage_lfn_clear:
+    lda 0x00
+    sta CH376_LFN_LEN
+    sta CH376_LFN_CKSUM
+    sta CH376_LFN_NEXT
+    sta CH376_LFN_READY
+    rts
+
+storage_lfn_clear_buf:
+    ldx 0x00
+    lda 0x00
+.clr:
+    sta CH376_LFN_TMP,x
+    inx
+    cpx 0x28
+    bcc .clr
+    sta CH376_LFN_LEN
+    sta CH376_LFN_READY
+    rts
+
+; Absorb one VFAT LFN directory slot from CH376_BUF into CH376_LFN_TMP
+; (directory order: highest ordinal first).
+storage_lfn_absorb:
+    lda CH376_BUF
+    and CH376_LFN_LAST
+    beq .cont
+    jsr storage_lfn_clear_buf
+    lda CH376_BUF+13
+    sta CH376_LFN_CKSUM
+    lda CH376_BUF
+    and 0x1F
+    beq .bad
+    sta CH376_LFN_NEXT
+    jmp .place
+.cont:
+    lda CH376_LFN_NEXT
+    beq .bad
+    lda CH376_BUF
+    and 0x1F
+    cmp CH376_LFN_NEXT
+    bne .bad
+    lda CH376_BUF+13
+    cmp CH376_LFN_CKSUM
+    bne .bad
+.place:
+    lda CH376_BUF
+    and 0x1F
+    jsr storage_lfn_place
+    dec CH376_LFN_NEXT
+    rts
+.bad:
+    jsr storage_lfn_clear
+    rts
+
+; A = LFN ordinal (1..N). Copy up to 13 UCS-2 chars into TMP[(A-1)*13].
+storage_lfn_place:
+    sec
+    sbc 0x01
+    sta CH376_SCRATCH
+    asl a
+    clc
+    adc CH376_SCRATCH
+    asl a
+    asl a
+    clc
+    adc CH376_SCRATCH
+    sta CH376_SCRATCH2
+    ldy 0x00
+.loop:
+    cpy 0x0D
+    bcs .done
+    lda storage_lfn_offs,y
+    tax
+    lda CH376_BUF,x
+    sta CH376_SCRATCH
+    inx
+    lda CH376_BUF,x
+    bne .non_ascii
+    lda CH376_SCRATCH
+    beq .done
+    jmp .store
+.non_ascii:
+    cmp 0xFF
+    bne .qmark
+    lda CH376_SCRATCH
+    cmp 0xFF
+    beq .done
+.qmark:
+    lda 0x3F
+.store:
+    ldx CH376_SCRATCH2
+    cpx CH376_LFN_DISP_MAX
+    bcs .next
+    sta CH376_LFN_TMP,x
+    inc CH376_SCRATCH2
+.next:
+    iny
+    jmp .loop
+.done:
+    rts
+
+; If the LFN chain is complete and checksum matches CH376_BUF[0..10], mark READY.
+storage_lfn_bind:
+    lda CH376_LFN_NEXT
+    bne .drop
+    jsr storage_lfn_checksum
+    cmp CH376_LFN_CKSUM
+    bne .drop
+    ldx 0x00
+.len_scan:
+    cpx CH376_LFN_DISP_MAX
+    bcs .got
+    lda CH376_LFN_TMP,x
+    beq .got
+    inx
+    jmp .len_scan
+.got:
+    cpx 0x00
+    beq .drop
+    stx CH376_LFN_LEN
+    lda 0x01
+    sta CH376_LFN_READY
+    rts
+.drop:
+    lda 0x00
+    sta CH376_LFN_READY
+    sta CH376_LFN_LEN
+    rts
+
+; Open the short name in CH376_BUF / NAMES[SELECT-1], walk preceding DIR_INFO
+; slots (WCH EXAM11 / CH376GetLongName), fill TMP + STORAGE_LFN[SELECT-1].
+; Does not cross directory-sector boundaries (falls back to 8.3).
+storage_try_fetch_lfn:
+    lda CH376_BUF
+    cmp 0x2E
+    bne .open
+    lda CH376_BUF+1
+    cmp 0x2E
+    bne .open
+    ; ".." — no LFN
+    jmp .empty
+
+.open:
+    jsr storage_entry_ptr_select
+    jsr storage_build_open_name
+    bcc .empty
+    ldy 0x00
+    ldd CH376_FNBUF[15:8]
+    lde CH376_FNBUF[7:0]
+    jsr ch376_cmd_set_file_name
+    bcc .empty
+    jsr ch376_set_timeout_long
+    lda CH376_CMD_FILE_OPEN
+    jsr ch376_cmd_interrupt
+    bcc .empty
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    beq .opened
+    cmp CH376_ERR_OPEN_DIR
+    bne .empty
+
+.opened:
+    lda 0xFF
+    jsr ch376_cmd_dir_info_read
+    bcc .close_empty
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_DISK_READ
+    bne .close_empty
+    jsr ch376_rd_dir_entry
+    jsr ch376_end_dir_info
+    jsr storage_lfn_checksum
+    sta CH376_LFN_CKSUM
+    jsr storage_lfn_clear_buf
+    lda CH376_VAR_FILE_DIR_IDX
+    jsr ch376_read_var8
+    bcc .close_empty
+    sta CH376_DIR_INDEX
+
+.walk:
+    lda CH376_DIR_INDEX
+    beq .close_empty
+    dec CH376_DIR_INDEX
+    lda CH376_DIR_INDEX
+    jsr ch376_cmd_dir_info_read
+    bcc .close_empty
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_DISK_READ
+    bne .close_empty
+    jsr ch376_rd_dir_entry
+    jsr ch376_end_dir_info
+    lda CH376_BUF+11
+    and 0x3F
+    cmp CH376_LFN_ATTR
+    bne .close_empty
+    lda CH376_BUF+13
+    cmp CH376_LFN_CKSUM
+    bne .close_empty
+    jsr storage_lfn_append_slot
+    lda CH376_BUF
+    and CH376_LFN_LAST
+    beq .walk
+    ; Complete — measure ASCII length
+    ldx 0x00
+.len_scan:
+    cpx CH376_LFN_DISP_MAX
+    bcs .got
+    lda CH376_LFN_TMP,x
+    beq .got
+    inx
+    jmp .len_scan
+.got:
+    cpx 0x00
+    beq .close_empty
+    stx CH376_LFN_LEN
+    lda 0x01
+    sta CH376_LFN_READY
+    lda 0x00
+    jsr ch376_cmd_file_close
+    jsr ch376_set_timeout
+    jsr storage_store_lfn_selected
+    sec
+    rts
+
+.close_empty:
+    lda 0x00
+    jsr ch376_cmd_file_close
+.empty:
+    jsr ch376_set_timeout
+    jsr storage_lfn_clear
+    jsr storage_store_lfn_selected
+    clc
+    rts
+
+; Append up to 13 UCS-2 chars from the LFN slot in CH376_BUF onto TMP.
+storage_lfn_append_slot:
+    ldy 0x00
+.loop:
+    cpy 0x0D
+    bcs .done
+    lda storage_lfn_offs,y
+    tax
+    lda CH376_BUF,x
+    sta CH376_SCRATCH
+    inx
+    lda CH376_BUF,x
+    bne .non_ascii
+    lda CH376_SCRATCH
+    beq .done
+    jmp .store
+.non_ascii:
+    cmp 0xFF
+    bne .qmark
+    lda CH376_SCRATCH
+    cmp 0xFF
+    beq .done
+.qmark:
+    lda 0x3F
+.store:
+    ldx CH376_LFN_LEN
+    cpx CH376_LFN_DISP_MAX
+    bcs .next
+    sta CH376_LFN_TMP,x
+    inx
+    stx CH376_LFN_LEN
+.next:
+    iny
+    jmp .loop
+.done:
+    rts
+
+storage_lfn_offs:
+    #d 0x01, 0x03, 0x05, 0x07, 0x09
+    #d 0x0E, 0x10, 0x12, 0x14, 0x16, 0x18
+    #d 0x1C, 0x1E
+
+; A = Microsoft LFN checksum of the 11-byte 8.3 field in CH376_BUF.
+storage_lfn_checksum:
+    lda 0x00
+    tax
+.loop:
+    lsr a
+    bcc .no_c
+    ora 0x80
+.no_c:
+    clc
+    adc CH376_BUF,x
+    inx
+    cpx 0x0B
+    bcc .loop
+    rts
+
+; Y:DE = &STORAGE_LFN[FILE_COUNT * 32]
+storage_lfn_ptr_count:
+    lda CH376_FILE_COUNT
+    jmp storage_lfn_ptr_a
+
+; Y:DE = &STORAGE_LFN[(CH376_SELECT - 1) * 32]
+storage_lfn_ptr_select:
+    lda CH376_SELECT
+    sec
+    sbc 0x01
+storage_lfn_ptr_a:
+    sta CH376_SCRATCH
+    lda 0x00
+    sta CH376_SCRATCH2
+    ; offset = index * 32
+    asl CH376_SCRATCH
+    rol CH376_SCRATCH2
+    asl CH376_SCRATCH
+    rol CH376_SCRATCH2
+    asl CH376_SCRATCH
+    rol CH376_SCRATCH2
+    asl CH376_SCRATCH
+    rol CH376_SCRATCH2
+    asl CH376_SCRATCH
+    rol CH376_SCRATCH2
+    ldy STORAGE_LFN[23:16]
+    ldd STORAGE_LFN[15:8]
+    lde STORAGE_LFN[7:0]
+    clc
+    tea
+    adc CH376_SCRATCH
+    tae
+    tda
+    adc CH376_SCRATCH2
+    tad
+    bcc .ok
+    iny
+.ok:
     rts
 
 ; Y:DE = &NAMES[FILE_COUNT * 16]
@@ -595,9 +1092,7 @@ storage_enter_dir:
     ldd storage_msg_entering[15:8]
     lde storage_msg_entering[7:0]
     jsr ACIA_SEND_STRING
-    ldd CH376_FNBUF[15:8]
-    lde CH376_FNBUF[7:0]
-    jsr ACIA_SEND_STRING
+    jsr storage_print_selected_name
     jsr ACIA_SEND_NEWLINE
 
     ldy 0x00
@@ -947,6 +1442,8 @@ storage_msg_save_fail:
     #d "Save failed ST ", 0x00
 storage_msg_bad_input:
     #d "Bad input.", 0x0A, 0x0D, 0x00
+storage_fn_slash:
+    #d "/", 0x00
 storage_fn_slash_star:
     #d "/*", 0x00
 storage_fn_star:

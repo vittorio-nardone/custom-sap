@@ -32,6 +32,9 @@ CMD_BYTE_RD_GO = 0x3B
 CMD_BYTE_WRITE = 0x3C
 CMD_BYTE_WR_GO = 0x3D
 CMD_WR_REQ_DATA = 0x2D
+CMD_DIR_INFO_READ = 0x37
+CMD_READ_VAR8 = 0x0A
+CMD_WRITE_VAR8 = 0x0B
 
 INT_SUCCESS = 0x14
 INT_CONNECT = 0x15
@@ -41,21 +44,92 @@ CMD_RET_SUCCESS = 0x51
 ERR_MISS_FILE = 0x42
 ERR_OPEN_DIR = 0x41
 
+VAR_FILE_DIR_INDEX = 0x3B
+VAR_END_DIR_INFO = 0x0D
+
 DIR_ATTR_DIRECTORY = 0x10
+DIR_ATTR_LFN = 0x0F
+LFN_LAST = 0x40
 
 ACIA_RX_FULL = 0x01
 ACIA_TX_EMPTY = 0x02
 
 
-def _fat_dir_entry(name: str, size: int, is_dir: bool) -> bytes:
-    entry = bytearray(32)
-    name = name.upper()
+def _fat_checksum(name11: bytes) -> int:
+    s = 0
+    for b in name11:
+        s = ((s >> 1) | (0x80 if (s & 1) else 0)) + b
+        s &= 0xFF
+    return s
+
+
+def _is_strict_83(name: str) -> bool:
+    if name != name.upper() or " " in name:
+        return False
     if "." in name:
         base, ext = name.split(".", 1)
+        if "." in ext:
+            return False
+        return 1 <= len(base) <= 8 and len(ext) <= 3 and base.isalnum() and (
+            ext == "" or ext.isalnum()
+        )
+    return 1 <= len(name) <= 8 and name.isalnum()
+
+
+def _short_83(name: str) -> str:
+    """Return NAME.EXT (uppercase) suitable for a FAT 8.3 field."""
+    if _is_strict_83(name):
+        return name.upper()
+    if "." in name:
+        base, ext = name.rsplit(".", 1)
     else:
         base, ext = name, ""
-    field = base[:8].ljust(8) + ext[:3].ljust(3)
-    entry[0:11] = field.encode("ascii", errors="replace")
+    cleaned = "".join(c for c in base.upper() if c.isalnum()) or "FILE"
+    ext3 = "".join(c for c in ext.upper() if c.isalnum())[:3]
+    short = f"{cleaned[:6]}~1"
+    return f"{short}.{ext3}" if ext3 else short
+
+
+def _fat_name11(short_name: str) -> bytes:
+    if "." in short_name:
+        base, ext = short_name.split(".", 1)
+    else:
+        base, ext = short_name, ""
+    return (base[:8].ljust(8) + ext[:3].ljust(3)).encode("ascii")
+
+
+def _lfn_entries(long_name: str, checksum: int) -> list[bytes]:
+    """Build VFAT LFN slots (directory order: last fragment first)."""
+    chars = list(long_name) + ["\0"]
+    # pad to multiple of 13 with 0xFFFF
+    while len(chars) % 13:
+        chars.append("\uffff")
+    slots = []
+    nslots = len(chars) // 13
+    for ord_i in range(nslots, 0, -1):
+        chunk = chars[(ord_i - 1) * 13 : ord_i * 13]
+        entry = bytearray(32)
+        seq = ord_i
+        if ord_i == nslots:
+            seq |= LFN_LAST
+        entry[0] = seq
+        entry[11] = DIR_ATTR_LFN
+        entry[12] = 0
+        entry[13] = checksum & 0xFF
+        entry[26] = 0
+        entry[27] = 0
+        offs = [1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30]
+        for i, ch in enumerate(chunk):
+            code = 0xFFFF if ch == "\uffff" else ord(ch)
+            entry[offs[i]] = code & 0xFF
+            entry[offs[i] + 1] = (code >> 8) & 0xFF
+        slots.append(bytes(entry))
+    return slots
+
+
+def _fat_dir_entry(short_name: str, size: int, is_dir: bool) -> bytes:
+    entry = bytearray(32)
+    entry[0:11] = _fat_name11(short_name)
     entry[11] = DIR_ATTR_DIRECTORY if is_dir else 0x20
     struct.pack_into("<I", entry, 28, size & 0xFFFFFFFF)
     return bytes(entry)
@@ -78,17 +152,31 @@ class Ch376Sim:
         self.mounted = False
         self._last_status = INT_SUCCESS
         self._set_name = ""
+        self._aliases: dict[str, Path] = {}
+        # short_upper -> list of LFN FAT slots in directory order (last fragment first)
+        self._lfn_by_short: dict[str, list[bytes]] = {}
+        self._short_entry_by_short: dict[str, bytes] = {}
 
         self._open_mode: str | None = None
         self._open_path: Path | None = None
         self._file_pos = 0
         self._dir_entries: list[bytes] = []
         self._dir_index = 0
+        self._dir_read_entries: list[bytes] = []
+        self._dir_read_index = 0
         self._pending_payload: bytes | None = None
+
+        # DIR_INFO_READ state for the currently open file/dir (GetLongName).
+        self._info_short = ""
+        self._info_lfn: list[bytes] = []
+        self._info_short_entry = b"\x00" * 32
+        self._info_dir_index = 0
 
         self._write_expect = 0
         self._write_buf = bytearray()
         self._byte_write_len = 0
+        self._pending_var: int | None = None
+        self._write_var_idx: int | None = None
 
     # ---- ACIA #2 -------------------------------------------------------------
     def read_status(self) -> int:
@@ -178,35 +266,104 @@ class Ch376Sim:
                 path = path / part
         return path
 
-    def _build_dir_listing(self, directory: Path) -> list[bytes]:
+    def _build_dir_listing(self, directory: Path, *, include_lfn: bool = False) -> list[bytes]:
+        """Build FAT dir entries. include_lfn=True for BYTE_READ of an open directory."""
         entries: list[bytes] = []
+        self._aliases = {}
+        self._lfn_by_short = {}
+        self._short_entry_by_short = {}
         try:
             items = sorted(directory.iterdir(), key=lambda p: p.name.lower())
         except OSError:
             return entries
+        used_shorts: set[str] = set()
         for item in items:
             if item.name.startswith("."):
                 continue
+            short = _short_83(item.name)
+            if short in used_shorts:
+                base = short.split(".", 1)[0]
+                ext = short.split(".", 1)[1] if "." in short else ""
+                n = 2
+                while True:
+                    cand = f"{base[:6]}~{n}" + (f".{ext}" if ext else "")
+                    if cand not in used_shorts:
+                        short = cand
+                        break
+                    n += 1
+            used_shorts.add(short)
+            key = short.upper()
+            self._aliases[key] = item
+            name11 = _fat_name11(short)
+            cksum = _fat_checksum(name11)
+            lfn_slots: list[bytes] = []
+            if not _is_strict_83(item.name):
+                lfn_slots = _lfn_entries(item.name, cksum)
+            self._lfn_by_short[key] = lfn_slots
             if item.is_dir():
-                entries.append(_fat_dir_entry(item.name, 0, True))
+                entry = _fat_dir_entry(short, 0, True)
             elif item.is_file():
                 try:
                     size = item.stat().st_size
                 except OSError:
                     size = 0
-                entries.append(_fat_dir_entry(item.name, size, False))
+                entry = _fat_dir_entry(short, size, False)
+            else:
+                continue
+            self._short_entry_by_short[key] = entry
+            if include_lfn:
+                entries.extend(lfn_slots)
+            entries.append(entry)
         return entries
 
-    def _open_directory(self, directory: Path) -> None:
+    def _open_directory_enum(self, directory: Path) -> None:
+        """Wildcard FILE_OPEN: enumerate 8.3 entries only (real CH376 behaviour)."""
         self._open_mode = "dir"
         self._open_path = directory
-        self._dir_entries = self._build_dir_listing(directory)
+        self._dir_entries = self._build_dir_listing(directory, include_lfn=False)
         self._dir_index = 0
         if self._dir_entries:
             self._queue_payload(self._dir_entries[0])
             self._dir_index = 1
         else:
             self._respond_status(ERR_MISS_FILE)
+
+    def _open_directory_only(self, directory: Path, short: str) -> None:
+        """Open a directory for BYTE_READ (ERR_OPEN_DIR), including LFN slots."""
+        self._open_mode = "dir_open"
+        self._open_path = directory
+        self._dir_read_entries = self._build_dir_listing(directory, include_lfn=True)
+        self._dir_read_index = 0
+        self._bind_dir_info(short)
+        self._respond_status(ERR_OPEN_DIR)
+
+    def _open_root_for_read(self) -> None:
+        self._open_mode = "dir_open"
+        self._open_path = self.root
+        self._dir_read_entries = self._build_dir_listing(self.root, include_lfn=True)
+        self._dir_read_index = 0
+        self._respond_status(ERR_OPEN_DIR)
+
+    def _bind_dir_info(self, short: str) -> None:
+        key = short.upper()
+        self._info_short = key
+        self._info_lfn = list(self._lfn_by_short.get(key, []))
+        self._info_short_entry = self._short_entry_by_short.get(
+            key, _fat_dir_entry(short, 0, False)
+        )
+        self._info_dir_index = len(self._info_lfn)
+
+    def _dir_info_read(self, index: int) -> None:
+        index &= 0xFF
+        if index == 0xFF:
+            index = self._info_dir_index
+        if index == self._info_dir_index:
+            self._queue_payload(self._info_short_entry)
+            return
+        if index < len(self._info_lfn):
+            self._queue_payload(self._info_lfn[index])
+            return
+        self._respond_status(ERR_MISS_FILE)
 
     def _open_file(self, path: Path) -> None:
         if not path.is_file():
@@ -215,6 +372,30 @@ class Ch376Sim:
         self._open_mode = "file"
         self._open_path = path
         self._file_pos = 0
+        # Bind DIR_INFO to the short alias used to open, when known.
+        short = None
+        for key, p in self._aliases.items():
+            if p == path:
+                short = key
+                break
+        if short is None:
+            short = _short_83(path.name)
+            # Ensure metadata exists for hosts that open by long path.
+            if short.upper() not in self._short_entry_by_short:
+                try:
+                    size = path.stat().st_size
+                except OSError:
+                    size = 0
+                key = short.upper()
+                self._aliases[key] = path
+                self._short_entry_by_short[key] = _fat_dir_entry(short, size, False)
+                if not _is_strict_83(path.name):
+                    self._lfn_by_short[key] = _lfn_entries(
+                        path.name, _fat_checksum(_fat_name11(short))
+                    )
+                else:
+                    self._lfn_by_short[key] = []
+        self._bind_dir_info(short)
         self._respond_int(INT_SUCCESS)
 
     def _enum_next(self) -> None:
@@ -225,6 +406,20 @@ class Ch376Sim:
         self._dir_index += 1
 
     def _read_file_chunk(self, length: int) -> None:
+        if self._open_mode == "dir_open":
+            length = max(1, min(length, 0xFF))
+            if self._dir_read_index >= len(self._dir_read_entries):
+                self._respond_int(INT_SUCCESS)
+                return
+            # Serve one FAT_DIR_INFO (32 bytes) per BYTE_READ when possible.
+            entry = self._dir_read_entries[self._dir_read_index]
+            self._dir_read_index += 1
+            chunk = entry[:length]
+            if chunk:
+                self._queue_payload(chunk)
+            else:
+                self._respond_int(INT_SUCCESS)
+            return
         if self._open_mode != "file" or self._open_path is None:
             self._respond_status(ERR_MISS_FILE)
             return
@@ -279,6 +474,25 @@ class Ch376Sim:
             self._open_path = None
             self._respond_status(INT_SUCCESS)
             return
+        if cmd == CMD_DIR_INFO_READ:
+            self._pending_cmd = None
+            self._dir_info_read(value)
+            return
+        if cmd == CMD_READ_VAR8:
+            self._pending_cmd = None
+            if value == VAR_FILE_DIR_INDEX:
+                self._enqueue(self._info_dir_index & 0xFF)
+            else:
+                self._enqueue(0x00)
+            return
+        if cmd == CMD_WRITE_VAR8:
+            if self._write_var_idx is None:
+                self._write_var_idx = value
+                return
+            # value is data byte; ignore (EndDirInfo writes VAR 0x0D = 0)
+            self._pending_cmd = None
+            self._write_var_idx = None
+            return
         if cmd in (CMD_BYTE_READ, CMD_BYTE_WRITE):
             if self._param_lo is None:
                 self._param_lo = value
@@ -304,6 +518,16 @@ class Ch376Sim:
             return
         if cmd == CMD_SET_USB_MODE:
             self._pending_cmd = cmd
+            return
+        if cmd == CMD_DIR_INFO_READ:
+            self._pending_cmd = cmd
+            return
+        if cmd == CMD_READ_VAR8:
+            self._pending_cmd = cmd
+            return
+        if cmd == CMD_WRITE_VAR8:
+            self._pending_cmd = cmd
+            self._write_var_idx = None
             return
         if cmd in (CMD_BYTE_READ, CMD_BYTE_WRITE, CMD_FILE_CLOSE):
             self._pending_cmd = cmd
@@ -346,15 +570,33 @@ class Ch376Sim:
 
     def _handle_file_open(self) -> None:
         name = self._set_name
+        if name in ("/", "\\"):
+            self._open_root_for_read()
+            return
         if name in ("/*", "*") or name.endswith("/*"):
-            self._open_directory(self._resolve_path(name) or self.root)
+            self._open_directory_enum(self._resolve_path(name) or self.root)
             return
         path = self._resolve_path(name)
-        if path is None:
+        key = name.strip().upper().lstrip("/")
+        if (path is None or not path.exists()) and key in self._aliases:
+            path = self._aliases[key]
+        if path is None or not path.exists():
             self._respond_status(ERR_MISS_FILE)
             return
         if path.is_dir():
-            self._open_directory(path)
+            parent = path.parent
+            self._build_dir_listing(parent, include_lfn=False)
+            short = key if key in self._aliases else _short_83(path.name)
+            if short.upper() not in self._aliases:
+                self._aliases[short.upper()] = path
+                self._short_entry_by_short[short.upper()] = _fat_dir_entry(
+                    short, 0, True
+                )
+                if not _is_strict_83(path.name):
+                    self._lfn_by_short[short.upper()] = _lfn_entries(
+                        path.name, _fat_checksum(_fat_name11(short))
+                    )
+            self._open_directory_only(path, short)
             return
         self._open_file(path)
 

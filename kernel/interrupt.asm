@@ -15,9 +15,9 @@
 
 #addr 0x00FF  
 INTERRUPT_HANDLER:
-    ; Preserve all registers: ACIA_SEND_STRING24 and other Y:DE callers
-    ; keep the page in Y across the send loop; a timer tick that clobbered Y
-    ; truncated strings in apps linked above 0xFFFF (TinyPascal IDE).
+    ; Save GPRs so ISRs (kernel or app-installed) cannot clobber the interrupted
+    ; context. Flags/PC are already pushed by the interrupt entry and restored
+    ; by RTI — no software save of Z/N/C is needed here.
     pha
     phx
     phy

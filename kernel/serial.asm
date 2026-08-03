@@ -66,7 +66,7 @@ ACIA_INIT:
 ; OUTPUTS:
 ;
 ; DESTROY:
-;   X A
+;   A X D E   (DE advanced to the terminating NUL)
 ;
 ; FLAGS AFFECTED:
 ;
@@ -75,21 +75,29 @@ ACIA_INIT:
 ; EXAMPLE:
 ;
 ; AUTHOR: VN
-; LAST UPDATE: 06/10/2024
+; LAST UPDATE: 03/08/2026
 ; **********************************************************
 
+; Walk DE with INE/IND and always read at offset X=0. Do not scan with a
+; growing X index: LDA DE,X / LDA YDE,X do not support page-cross when E+X
+; overflows (see microcode "Cross page not supported"). Long mid-page
+; strings (common for apps in expansion RAM) would otherwise read the wrong
+; page, hit a spurious NUL, and truncate early.
+
 ACIA_SEND_STRING:
-    ldx 0x00                ; set message offset to 0
+    sei                     ; keep Y/D/E stable across timer/serial IRQs
+    ldx 0x00
 .send_char:
-    lda de,x              ; load next char
-    beq .send_end           ; if char is 0, we've finished
+    lda de,x
+    beq .send_end
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
-    inx
+    ine
     bne .send_char
     ind
     jmp .send_char
 .send_end:
+    cli
     rts
 
 ; **********************************************************
@@ -104,23 +112,24 @@ ACIA_SEND_STRING:
 ; OUTPUTS:
 ;
 ; DESTROY:
-;   X A
+;   A X D E   (DE advanced to the terminating NUL; Y preserved)
 ;
 ; **********************************************************
 
 ACIA_SEND_STRING24:
-    ; Y (page) must stay intact across the loop; INTERRUPT_HANDLER preserves it.
+    sei
     ldx 0x00
 .send_char24:
     lda yde,x
     beq .send_end24
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
-    inx
+    ine
     bne .send_char24
     ind
     jmp .send_char24
 .send_end24:
+    cli
     rts
 
 ; **********************************************************

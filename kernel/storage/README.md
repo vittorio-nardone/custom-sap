@@ -29,9 +29,10 @@ RAM variables are declared in `kernel/memmap.asm`:
   one byte RX FIFO and at 115200 baud the burst has ~87us per byte, which
   24-bit addressing does not meet.
 * `0x82B0-0x82EF` — driver state, path buffer (`CH376_FNBUF`).
-* `0xDC00` — `STORAGE_NAMES`, the 40 x 16 byte browser table. This lives in
-  application RAM (`0xDC00–0xDE7F`) and is only valid while the kernel USB menu
-  is running — menu `l`/`w` will overwrite whatever an app left in that range.
+* `0xDC00` — `STORAGE_NAMES`, the 40 x 16 byte browser table (8.3 + size +
+  flags). `STORAGE_LFN` at `0xDE80` holds optional display names (40 x 32).
+  Both live in application RAM (`0xDC00–0xE37F`) and are only valid while the
+  kernel USB menu is running — menu `l`/`w` will overwrite that range.
 
 ## API
 
@@ -78,7 +79,11 @@ source address). An existing file is truncated.
 * Transfers are 16-bit: 65535 bytes maximum (~64 KB).
 * `0x6000-0x67FF` (device I/O) and `0x6800-0x7FFF` (video window) can never be
   a transfer endpoint, and a range may not wrap past `0xFFFF` into another page.
-* Paths are 8.3 FAT names, at most 15 characters plus the terminator.
+* Paths opened on the wire are still 8.3 FAT names. The menu lists a directory
+  by opening it and `BYTE_READ`ing raw 32-byte FAT entries (including VFAT LFN
+  slots). Wildcard `/*` enum cannot see LFN slots — that is a CH376 limitation.
+  Display names are ASCII, truncated to 31 characters; open/select still uses
+  the short alias.
 
 ## Menu commands
 

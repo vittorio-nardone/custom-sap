@@ -451,6 +451,88 @@ ch376_file_close_fail:
     clc
     rts
 
+; READ_VAR8: A = variable index → A = value. C=1 OK.
+ch376_read_var8:
+    sta CH376_SCRATCH
+    jsr ch376_drain_rx
+    jsr ch376_uart_sync
+    bcc .fail
+    lda CH376_CMD_READ_VAR8
+    jsr ch376_uart_cmd
+    bcc .fail
+    lda CH376_SCRATCH
+    jsr ch376_uart_param
+    bcc .fail
+    jsr ch376_wait_response_byte
+    bcc .fail
+    sec
+    rts
+.fail:
+    clc
+    rts
+
+; WRITE_VAR8: A = variable index, X = value.
+ch376_write_var8:
+    sta CH376_SCRATCH
+    stx CH376_SCRATCH2
+    jsr ch376_drain_rx
+    jsr ch376_uart_sync
+    bcc .fail
+    lda CH376_CMD_WRITE_VAR8
+    jsr ch376_uart_cmd
+    bcc .fail
+    lda CH376_SCRATCH
+    jsr ch376_uart_param
+    bcc .fail
+    lda CH376_SCRATCH2
+    jsr ch376_uart_param
+    bcc .fail
+    sec
+    rts
+.fail:
+    clc
+    rts
+
+; DIR_INFO_READ: A = sector index (0..15) or 0xFF for the open file.
+; On success CH376_LAST_STATUS is USB_INT_DISK_READ and data is ready.
+ch376_cmd_dir_info_read:
+    sta CH376_SCRATCH
+    lda 0x00
+    sta CH376_INT_FLAG
+    jsr ch376_uart_sync
+    bcc .fail
+    lda CH376_CMD_DIR_INFO_READ
+    jsr ch376_uart_cmd
+    bcc .fail
+    lda CH376_SCRATCH
+    jsr ch376_uart_param
+    bcc .fail
+    jsr ch376_wait_response_byte
+    bcc .fail
+    cmp CH376_CMD_RET_SUCCESS
+    bne .store
+    jsr ch376_wait_response_byte
+    bcc .fail
+.store:
+    sta CH376_LAST_STATUS
+    cmp CH376_INT_DISK_READ
+    beq .ok
+    jsr ch376_clear_int
+.ok:
+    sec
+    rts
+.fail:
+    lda 0x00
+    sta CH376_LAST_STATUS
+    clc
+    rts
+
+; Release DIR_INFO_READ buffer (WCH CH376EndDirInfo).
+ch376_end_dir_info:
+    lda CH376_VAR_END_DIR_INFO
+    ldx 0x00
+    jmp ch376_write_var8
+
 ; Read open file into Y:DE destination.
 ; Inputs: Y=page, D:E=addr, CH376_REMAIN_LO/HI = max bytes to accept.
 ; Outputs: CH376_LOADED_LO/HI updated; C=1 OK, C=0 fail.
