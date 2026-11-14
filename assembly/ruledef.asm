@@ -523,6 +523,10 @@
 		assert(value <= 0xffffff)
 		0x32 @ value
  	} 
+	; Load Accumulator from [D:E], then increment D:E [Z N C]
+	LDA (de)+ => { 
+		0xF4
+ 	} 
 	; Load Accumulator with Memory (DE pointer - zero page - X index) [Z O N]
 	LDA de,x  => { 
 		0x94
@@ -918,6 +922,10 @@
 		assert(value >= 0x10000)
 		assert(value <= 0xffffff)
 		0x70 @ value
+ 	} 
+	; Store Accumulator to [D:E], then increment D:E [C]
+	STA (de)+ => { 
+		0xF5
  	} 
 	; Store Accumulator in Memory (DE pointer - zero page - X index) [O]
 	STA de,x  => { 
