@@ -209,6 +209,48 @@ BINDEC32:
         rts
 
 ;================================================================================
+;
+;BINDEC16: CONVERT UNSIGNED 16-BIT VALUE TO 5 DECIMAL DIGITS
+;
+;   ————————————————————————————————————
+;   Preparatory Ops:
+;        BINDEC32_VALUE: 16-bit value LE in bytes 0..1 (bytes 2..3 unused)
+;
+;   Returned Values:
+;        BINDEC32_RESULT: 5 digits, LSD at +0 .. MSD at +4
+;   Destroy:
+;        X, Y, A, BINDEC32_VALUE[0..1]
+;   ————————————————————————————————————
+;
+BINDEC16:
+        ldx 0x00
+.b16_l3:
+        jsr .div10_16
+        sta BINDEC32_RESULT,x
+        inx
+        cpx 0x05
+        bne .b16_l3
+        rts
+
+        ; divides a 16-bit value by 10; remainder in A
+        ; Same shift-subtract scheme as .div10: N+1 iterations (Y=16..0).
+.div10_16:
+        ldy 0x10              ; 16 bits → 17 passes via BPL
+        lda 0x00
+        clc
+.b16_l4:
+        rol a
+        cmp 10
+        bcc .b16_skip
+        sbc 10
+.b16_skip:
+        rol BINDEC32_VALUE
+        rol BINDEC32_VALUE+1
+        dey
+        bpl .b16_l4
+        rts
+
+;================================================================================
 ; WAIT_MS — busy-wait delay (MATH16_A = milliseconds, 16-bit LE)
 ; @ 1 MHz: solo WAIT_10MS_APPROX (10 000 cyc = 10 ms). Residuo < 10 ms ignorato.
 ;================================================================================

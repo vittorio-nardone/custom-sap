@@ -576,7 +576,7 @@ ACIA_SEND_DECIMAL32:
 ; DESCRIPTION:
 ;   Print a signed 16-bit integer as a decimal string.
 ;   Negative values are printed with a leading '-'.
-;   Uses BINDEC32 / ACIA_SEND_DECIMAL32 internally.
+;   Uses BINDEC16 (16-bit path), not BINDEC32.
 ;
 ; INPUTS:
 ;   MATH16_A : 16-bit signed value (little-endian)
@@ -588,7 +588,7 @@ ACIA_SEND_DECIMAL32:
 ;   A X Y
 ;
 ; AUTHOR: VN
-; LAST UPDATE: 03/24/2026
+; LAST UPDATE: 11/14/2026
 ; **********************************************************
 
 ACIA_SEND_DECIMAL16S:
@@ -603,16 +603,29 @@ ACIA_SEND_DECIMAL16S:
         jsr MATH16_NEGATE_A
 
 .positive:
-        ; Zero-extend 16-bit to 32-bit into BINDEC32_VALUE
+        ; 16-bit unsigned magnitude into BINDEC32_VALUE LE
         lda MATH16_A
         sta BINDEC32_VALUE
         lda MATH16_A+1
         sta BINDEC32_VALUE+1
-        lda 0x00
-        sta BINDEC32_VALUE+2
-        sta BINDEC32_VALUE+3
 
-        jsr ACIA_SEND_DECIMAL32
+        jsr BINDEC16
+
+        ; Print up to 5 digits, skip leading zeros (same rules as DECIMAL32)
+        ldx 0x04
+.sd16_skip:
+        lda BINDEC32_RESULT,x
+        bne .sd16_print
+        dex
+        bne .sd16_skip
+
+.sd16_print:
+        lda BINDEC32_RESULT,x
+        ora 0x30
+        tao
+        jsr ACIA_SEND_CHAR
+        dex
+        bpl .sd16_print
         rts
 
 ; **********************************************************

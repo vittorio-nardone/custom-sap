@@ -128,7 +128,7 @@ for app in "${APP_FILES[@]}"; do
     fi
     addr="$(awk '/@load-address/{print $3; exit}' "$app")"
     if [ -n "$addr" ] && [ "$ADD_OT_HEADER" = "1" ]; then
-        python3.11 "${SCRIPTS_DIR}/python/add_header.py" "${ASM_OUT}/${base}.bin" --address "$addr"
+        python3 "${SCRIPTS_DIR}/python/add_header.py" "${ASM_OUT}/${base}.bin" --address "$addr"
         OT_COUNT=$((OT_COUNT + 1))
     fi
     APP_COUNT=$((APP_COUNT + 1))
