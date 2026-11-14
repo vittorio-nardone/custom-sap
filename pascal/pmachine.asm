@@ -1,8 +1,8 @@
 #once
 #bank kernel
 
-#const PMACHINE_VERSION = "v0.4.39"
-#const PMACHINE_BUILDDATE = "04/06/2026"
+#const PMACHINE_VERSION = "v0.4.40"
+#const PMACHINE_BUILDDATE = "11/14/2026"
 
 #include "consts.asm"
 
@@ -2193,16 +2193,11 @@ PM_ENTRY:
 ; =========================================================
 
 ; Fetch one byte from P-code at IP, advance IP.
-; Out: A = fetched byte.  Clobbers D, E, X.
+; Out: A = fetched byte.  Clobbers D, E (X preserved).
 .fetch_byte:
     ldd PM_IP_MSB
     lde PM_IP_LSB
-    ldx 0x00
-    lda de,x
-    ine
-    bne .fetch_byte_nc
-    ind
-.fetch_byte_nc:
+    lda (de)+
     std PM_IP_MSB
     ste PM_IP_LSB
     rts

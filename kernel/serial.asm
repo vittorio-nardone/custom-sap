@@ -66,7 +66,7 @@ ACIA_INIT:
 ; OUTPUTS:
 ;
 ; DESTROY:
-;   A X D E   (DE advanced to the terminating NUL)
+;   A D E   (DE advanced to the terminating NUL; X preserved)
 ;
 ; FLAGS AFFECTED:
 ;
@@ -78,23 +78,24 @@ ACIA_INIT:
 ; LAST UPDATE: 03/08/2026
 ; **********************************************************
 
-; Walk DE with INE/IND and X=0 so strings longer than 256 bytes work (X is
-; only 8-bit). LDA DE,X / YDE,X do carry E+X into D within the 64 KB bank;
-; microcode "Cross page not supported" means D wrapping 0xFF→0x00 does not
-; advance MARPAGE (16→24). INE/IND also keeps the pointer advancing under SEI.
+; Walk DE with LDA (DE)+ (post-inc carries E→D within the 64 KB bank;
+; MARPAGE is not advanced). On NUL, back up one so DE still points at the
+; terminator (same ABI as the old LDA DE,X + INE/IND loop).
 
 ACIA_SEND_STRING:
     sei                     ; keep Y/D/E stable across timer/serial IRQs
-    ldx 0x00
 .send_char:
-    lda de,x
-    beq .send_end
+    lda (de)+
+    beq .send_end_backup
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
-    ine
-    bne .send_char
-    ind
     jmp .send_char
+.send_end_backup:
+    ; DE is one past NUL — restore pointer to the terminator
+    dee
+    cpe 0xFF
+    bne .send_end
+    ded
 .send_end:
     cli
     rts
