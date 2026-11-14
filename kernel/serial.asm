@@ -78,11 +78,10 @@ ACIA_INIT:
 ; LAST UPDATE: 03/08/2026
 ; **********************************************************
 
-; Walk DE with INE/IND and always read at offset X=0. Do not scan with a
-; growing X index: LDA DE,X / LDA YDE,X do not support page-cross when E+X
-; overflows (see microcode "Cross page not supported"). Long mid-page
-; strings (common for apps in expansion RAM) would otherwise read the wrong
-; page, hit a spurious NUL, and truncate early.
+; Walk DE with INE/IND and X=0 so strings longer than 256 bytes work (X is
+; only 8-bit). LDA DE,X / YDE,X do carry E+X into D within the 64 KB bank;
+; microcode "Cross page not supported" means D wrapping 0xFF→0x00 does not
+; advance MARPAGE (16→24). INE/IND also keeps the pointer advancing under SEI.
 
 ACIA_SEND_STRING:
     sei                     ; keep Y/D/E stable across timer/serial IRQs
