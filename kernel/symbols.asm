@@ -788,5 +788,5 @@
 #const CC_STR_BASE = 0x6e00
 #const PM_ENTRY = 0x3464
 #const boot = 0x0
-#const main = 0x46b1
-#const menu_ready = 0x46d8
+#const main = 0x46a6
+#const menu_ready = 0x46cd

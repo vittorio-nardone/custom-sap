@@ -3170,7 +3170,46 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC'],
                         ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL,
                         CC_notETMP + CC_notLPCHP0 
-                    ] },    
+                    ] },
+
+    # JMP (zp,X): eff = zp+X, then PC ← word at eff (MSB-first like other JMP indiretti).
+    # A preserved (TMP holds zp_hi). Assembler: JMP ({u16},X) via i_inside.
+    "JMPindxp": {  "c": 0xF3,
+                "d": "Jump to New Location (indirect - zero page - X pre-index)",
+                "v": "u16",
+                "i": "x",
+                "i_inside": True,
+                "sim": "\n".join((
+                    "base = self.get_address_from_operands(2, index=self.X)",
+                    "self.true_condition = self.O",
+                    "hi = self.read_byte(base)",
+                    "lo = self.read_byte((base + 1) & 0xFFFF)",
+                    "self.PC = ((hi << 8) | lo) & 0xFFFF",
+                )),
+                "m": [
+                        # PC ← zp + X
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
+                        ['CPC'],
+                        ['ERAM', 'LRALU-IN', 'EPCADDR', 'MEMADDRVALID'],
+                        ['CPC', 'ALUS0', 'ALUS3', 'LRALU-OUT', 'LO'] + CC_notEX + CC_ALUCN,
+                        ['ERALU-OUT'] + CC_notLPCL + CC_CHKO,
+                        CC_notETMP + CC_notLPCHP0,
+
+                        # PC ← word @ PC (hi then lo → PCH/PCL)
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
+                        ['CPC'],
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL,
+                        CC_notETMP + CC_notLPCHP0,
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notETMP,
+                        ['ERALU-OUT'] + CC_notLPCHP0,
+
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_LTMP,
+                        ['CPC'],
+                        ['ERAM', 'EPCADDR', 'MEMADDRVALID'] + CC_notLPCL,
+                        CC_notETMP + CC_notLPCHP0,
+                    ] },
 
     "JMPinda": {   "c": 0x91,  
                 "d": "Jump to New Location (indirect - absolute)", 
@@ -3852,23 +3891,28 @@ def generateRuldef():
         f.write('{\n')
         for i in INSTRUCTIONS_SET:
             flags = ('[' + ' '.join(INSTRUCTIONS_SET[i]['f'])  + ']') if 'f' in INSTRUCTIONS_SET[i] else ''
+            inst = INSTRUCTIONS_SET[i]
+            is_ind = i[3:6] == 'ind'
+            value_tok = (('{value: ' + inst['v'] + '}') if 'v' in inst else '') + ((inst['op']) if 'op' in inst else '')
+            # i_inside: JMP (zp,X) — index inside parentheses (pre-index on zp)
+            if is_ind and inst.get('i_inside') and 'i' in inst:
+                operand = ' (' + value_tok + ',' + inst['i'] + ')'
+                index_sfx = ''
+            else:
+                operand = ((' (' if is_ind else ' ') + value_tok + (')' if is_ind else '') +
+                           ((',' + inst['i'] + ' ') if 'i' in inst else ''))
 
-            f.writelines([  '\t; ' + INSTRUCTIONS_SET[i]['d'], ' ', flags , '\n',
-                            '\t', i[:3], 
-                            (' (' if i[3:6] == 'ind' else ' ') + 
-                            #('#' if len(i) == 4 and i[3] == 'i' else '') +
-                            (('{value: ' + INSTRUCTIONS_SET[i]['v'] + '}') if 'v' in INSTRUCTIONS_SET[i] else '') +  
-                            ((INSTRUCTIONS_SET[i]['op']) if 'op' in INSTRUCTIONS_SET[i] else ''),
-                            (')' if i[3:6] == 'ind' else ''),    
-                            (',' + INSTRUCTIONS_SET[i]['i'] + ' ') if 'i' in INSTRUCTIONS_SET[i] else '',                             
+            f.writelines([  '\t; ' + inst['d'], ' ', flags , '\n',
+                            '\t', i[:3],
+                            operand,
                             ' => { \n',
-                            ('\t\tassert(value >= 0)\n\t\tassert(value <= 0xff)\n') if 'v' in INSTRUCTIONS_SET[i] and INSTRUCTIONS_SET[i]['v'] == 'u8' else '',
-                            ('\t\tassert(value >= 0x100)\n\t\tassert(value <= 0xffff)\n') if 'v' in INSTRUCTIONS_SET[i] and INSTRUCTIONS_SET[i]['v'] == 'u16' else '',
-                            ('\t\tassert(value >= 0x10000)\n\t\tassert(value <= 0xffffff)\n') if 'v' in INSTRUCTIONS_SET[i] and INSTRUCTIONS_SET[i]['v'] == 'u24' else '',
-                            '\t\t0x', '{:02X}'.format(INSTRUCTIONS_SET[i]['c']), 
-                            (' @ value') if 'v' in INSTRUCTIONS_SET[i] else '', 
-                            (' @ (value + 1)`16' ) if 'w' in INSTRUCTIONS_SET[i] else '',
-                            ''.join([' @ ' + '0x' + '{:02X}'.format(x) for x in INSTRUCTIONS_SET[i]['b']]) if 'b' in INSTRUCTIONS_SET[i] else '',
+                            ('\t\tassert(value >= 0)\n\t\tassert(value <= 0xff)\n') if 'v' in inst and inst['v'] == 'u8' else '',
+                            ('\t\tassert(value >= 0x100)\n\t\tassert(value <= 0xffff)\n') if 'v' in inst and inst['v'] == 'u16' else '',
+                            ('\t\tassert(value >= 0x10000)\n\t\tassert(value <= 0xffffff)\n') if 'v' in inst and inst['v'] == 'u24' else '',
+                            '\t\t0x', '{:02X}'.format(inst['c']),
+                            (' @ value') if 'v' in inst else '',
+                            (' @ (value + 1)`16' ) if 'w' in inst else '',
+                            ''.join([' @ ' + '0x' + '{:02X}'.format(x) for x in inst['b']]) if 'b' in inst else '',
                             '\n \t} \n'
                         ])
             
@@ -3896,6 +3940,7 @@ def generateIstructionsCsv():
         'inda': 'indirect - absolute',
         'indpx': 'indirect - zero page - X index',
         'indpy': 'indirect - zero page - Y index',
+        'indxp': 'indirect - zero page - X pre-index',
         'depx': 'DE pointer - zero page - X index',
         'deinc': 'DE pointer post-increment',
         'ydeax': 'YDE pointer - absolute - X index',
@@ -3935,13 +3980,21 @@ def generateIstructionsCsv():
                 1 + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0) + (values_len[INSTRUCTIONS_SET[i]['v']] if 'v' in INSTRUCTIONS_SET[i] else 0) + (values_len[INSTRUCTIONS_SET[i]['v']] if 'w' in INSTRUCTIONS_SET[i] else 0),
                 '"' + ' '.join(INSTRUCTIONS_SET[i]['f'] if 'f' in INSTRUCTIONS_SET[i] else []) + '"', 
                 '"' + INSTRUCTIONS_SET[i]['d'] + '"',   
-                '"' + i[:3] 
-                      + (' (' if i[3:6] == 'ind' else ' ')
-                      + ((sample_values[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else '')
-                      + ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
-                      + (')' if i[3:6] == 'ind' else '')
-                      + ((',' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '') 
-                      + '"'
+                '"' + (
+                    (i[:3] + ' (' +
+                     ((sample_values[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else '') +
+                     ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') +
+                     ',' + INSTRUCTIONS_SET[i]['i'].upper() + ')')
+                    if (i[3:6] == 'ind' and INSTRUCTIONS_SET[i].get('i_inside') and 'i' in INSTRUCTIONS_SET[i])
+                    else (
+                        i[:3]
+                        + (' (' if i[3:6] == 'ind' else ' ')
+                        + ((sample_values[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else '')
+                        + ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '')
+                        + (')' if i[3:6] == 'ind' else '')
+                        + ((',' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '')
+                    )
+                ) + '"'
                       )
             )
 
@@ -3965,15 +4018,21 @@ def generateIstructionsAsm():
         for x in range(256):
             for i in INSTRUCTIONS_SET:
                 if INSTRUCTIONS_SET[i]['c'] == x:
+                    if i[3:6] == 'ind' and INSTRUCTIONS_SET[i].get('i_inside') and 'i' in INSTRUCTIONS_SET[i]:
+                        prefix = i[:3] + ' ('
+                        postfix = ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') + ',' + INSTRUCTIONS_SET[i]['i'].upper() + ')'
+                    else:
+                        prefix = i[:3] + (' (' if i[3:6] == 'ind' else '')
+                        postfix = ((' ' if (('op' in INSTRUCTIONS_SET[i]) and (i[3:6] != 'ind')) else '')
+                                   + ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '')
+                                   + (')' if i[3:6] == 'ind' else '')
+                                   + ((',' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else ''))
                     f.write(".OPCODE_0x{:02X}: \n    #d  0x{:02X}, 0x{:02X}, \"{}\", 0x00, \"{}\", 0x00\n".format(
                             INSTRUCTIONS_SET[i]['c'], 
                             ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else 0) + ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'w' in INSTRUCTIONS_SET[i] else 0) + (len(INSTRUCTIONS_SET[i]['b']) if 'b' in INSTRUCTIONS_SET[i] else 0),
                             ((value_length[INSTRUCTIONS_SET[i]['v']]) if 'v' in INSTRUCTIONS_SET[i] else 0),
-                            i[:3]  + (' (' if i[3:6] == 'ind' else ''),
-                            (' ' if (('op' in INSTRUCTIONS_SET[i]) and (i[3:6] != 'ind')) else '')    
-                                + ((INSTRUCTIONS_SET[i]['op'].upper()) if 'op' in INSTRUCTIONS_SET[i] else '') 
-                                + (')' if i[3:6] == 'ind' else '')
-                                + ((',' + INSTRUCTIONS_SET[i]['i'].upper()) if 'i' in INSTRUCTIONS_SET[i] else '')  
+                            prefix,
+                            postfix,
                         )
                     )
         f.write(".OPCODE_NOTVALID: \n    #d  0x00, 0x00, \"NOT VALID\", 0x00, \"\", 0x00\n\n\n") 

@@ -85,6 +85,7 @@ Opcode,Instruction,Mode,Cycles,Cycles (true condition),Len,Flags,Description,Exa
 0x4D,"JMP","absolute",10,N/A,4,"","Jump to New Location (absolute)","JMP 0x2234FA"
 0x91,"JMP","indirect - absolute",18,N/A,4,"","Jump to New Location (indirect - absolute)","JMP (0x2234FA)"
 0x8F,"JMP","indirect - zero page",10,N/A,3,"","Jump to New Location (indirect - zero page)","JMP (0x7503)"
+0xF3,"JMP","indirect - zero page - X pre-index",12,13,3,"","Jump to New Location (indirect - zero page - X pre-index)","JMP (0x7503,X)"
 0x4C,"JMP","zero page",6,N/A,3,"","Jump to New Location (zero page)","JMP 0x7503"
 0x21,"JSR","absolute",16,N/A,4,"","Jump to New Location Saving Return Address (absolute)","JSR 0x2234FA"
 0x93,"JSR","indirect - absolute",24,N/A,4,"","Jump to New Location Saving Return Address (indirect - absolute)","JSR (0x2234FA)"
