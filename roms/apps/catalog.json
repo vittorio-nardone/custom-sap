@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "generated_at": "2026-11-14T20:52:01Z",
+  "generated_at": "2026-11-15T13:39:19Z",
   "default_target": "current",
   "targets": [
     {
       "id": "current",
-      "kernel_version": "v1.3.24",
+      "kernel_version": "v1.3.25",
       "label": "Latest",
       "base_path": "roms/apps/current",
       "catalog_path": "roms/apps/current/asm",

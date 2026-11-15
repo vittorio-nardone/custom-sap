@@ -112,22 +112,28 @@ ACIA_SEND_STRING:
 ; OUTPUTS:
 ;
 ; DESTROY:
-;   A X D E   (DE advanced to the terminating NUL; Y preserved)
+;   A D E   (DE advanced to the terminating NUL; X and Y preserved)
 ;
 ; **********************************************************
 
+; Walk Y:DE with LDA (YDE)+ (post-inc carries E→D within the 64 KB bank;
+; Y / MARPAGE are not advanced). On NUL, back up one so DE still points at
+; the terminator (same ABI as the old LDA YDE,X + INE/IND loop).
+
 ACIA_SEND_STRING24:
     sei
-    ldx 0x00
 .send_char24:
-    lda yde,x
-    beq .send_end24
+    lda (yde)+
+    beq .send_end24_backup
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
-    ine
-    bne .send_char24
-    ind
     jmp .send_char24
+.send_end24_backup:
+    ; DE is one past NUL — restore pointer to the terminator
+    dee
+    cpe 0xFF
+    bne .send_end24
+    ded
 .send_end24:
     cli
     rts

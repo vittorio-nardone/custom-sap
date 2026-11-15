@@ -584,6 +584,10 @@
 	LDA yde,x  => { 
 		0xB2
  	} 
+	; Load Accumulator from [Y:D:E], then increment D:E [Z N C]
+	LDA (yde)+ => { 
+		0xF6
+ 	} 
 	; Load Register D with Memory (absolute) [Z N]
 	LDD {value: u24} => { 
 		assert(value >= 0x10000)
@@ -976,6 +980,10 @@
 	; Store Accumulator in Memory (YDE pointer - absolute - X index) [O]
 	STA yde,x  => { 
 		0xB3
+ 	} 
+	; Store Accumulator to [Y:D:E], then increment D:E [C]
+	STA (yde)+ => { 
+		0xF8
  	} 
 	; Store Register D in Memory (absolute) 
 	STD {value: u24} => { 
