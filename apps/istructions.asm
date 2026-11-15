@@ -428,8 +428,12 @@ ISTRUCTIONS:
     #d  0x00, 0x00, "LDA", 0x00, " (DE)+", 0x00
 .OPCODE_0xF5: 
     #d  0x00, 0x00, "STA", 0x00, " (DE)+", 0x00
+.OPCODE_0xF6: 
+    #d  0x00, 0x00, "LDA", 0x00, " (YDE)+", 0x00
 .OPCODE_0xF7: 
     #d  0x00, 0x00, "DMP", 0x00, "", 0x00
+.OPCODE_0xF8: 
+    #d  0x00, 0x00, "STA", 0x00, " (YDE)+", 0x00
 .OPCODE_0xFD: 
     #d  0x02, 0x02, "LDO", 0x00, "", 0x00
 .OPCODE_0xFE: 
@@ -690,9 +694,9 @@ ISTRUCTIONS:
     #d .OPCODE_0xF3[15:8]
     #d .OPCODE_0xF4[15:8]
     #d .OPCODE_0xF5[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0xF6[15:8]
     #d .OPCODE_0xF7[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0xF8[15:8]
     #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_NOTVALID[15:8]
     #d .OPCODE_NOTVALID[15:8]
@@ -952,9 +956,9 @@ ISTRUCTIONS:
     #d .OPCODE_0xF3[7:0]
     #d .OPCODE_0xF4[7:0]
     #d .OPCODE_0xF5[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0xF6[7:0]
     #d .OPCODE_0xF7[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0xF8[7:0]
     #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_NOTVALID[7:0]
     #d .OPCODE_NOTVALID[7:0]

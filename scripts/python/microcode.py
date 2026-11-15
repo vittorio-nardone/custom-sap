@@ -374,7 +374,37 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
-                    ] },                      
+                    ] },
+
+    # LDA (YDE)+ : A ← [Y:D:E], then DE = DE+1 (16-bit; Y / MARPAGE unchanged — no 64 KB cross-page)
+    "LDAydeinc": {  "c": 0xF6,
+                "d": "Load Accumulator from [Y:D:E], then increment D:E",
+                "f": ['Z', 'N', 'C'],
+                "op": "(yde)+",
+                "sim": "\n".join((
+                    "self.A = self.load_from_memory(registry_operands='yde')",
+                    "self.C = (self.E == 0xFF)",
+                    "self.E = (self.E + 1) & 0xFF",
+                    "self.true_condition = self.C",
+                    "if self.C:",
+                    "    self.D = (self.D + 1) & 0xFF",
+                )),
+                "m": [
+                        # MAR = Y:D:E  (no X add)
+                        ['LMARPAGE'] + CC_notEY,
+                        ['LMARL'] + CC_notEE,
+                        ['LMARH'] + CC_notED,
+                        # A ← [MAR], Z/N from loaded byte
+                        ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO,
+                        # E ← E+1; C set on wrap FF→00 (same INC+LC pattern as INW / (DE)+)
+                        ['LRALU-IN', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['ERALU-OUT'] + CC_LE + CC_CHKC,
+                    ],
+                "true": [
+                        # D ← D+1 when E wrapped; Y unchanged
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+                        ['ERALU-OUT'] + CC_LD,
+                    ] },
 
     "LDAax": {  "c": 0xBE,  # Cross page not supported
                 "d": "Load Accumulator with Memory (absolute - X index)", 
@@ -928,7 +958,33 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
                         ['ERALU-OUT', 'LMARH'],
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
-                    ] },                   
+                    ] },
+
+    # STA (YDE)+ : [Y:D:E] ← A, then DE = DE+1 (16-bit; Y / MARPAGE unchanged — no 64 KB cross-page)
+    "STAydeinc": {  "c": 0xF8,
+                "d": "Store Accumulator to [Y:D:E], then increment D:E",
+                "f": ['C'],
+                "op": "(yde)+",
+                "sim": "\n".join((
+                    "self.store_in_memory(self.A, registry_operands='yde')",
+                    "self.C = (self.E == 0xFF)",
+                    "self.E = (self.E + 1) & 0xFF",
+                    "self.true_condition = self.C",
+                    "if self.C:",
+                    "    self.D = (self.D + 1) & 0xFF",
+                )),
+                "m": [
+                        ['LMARPAGE'] + CC_notEY,
+                        ['LMARL'] + CC_notEE,
+                        ['LMARH'] + CC_notED,
+                        ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
+                        ['LRALU-IN', 'LRALU-OUT', 'LC'] + CC_notEE,
+                        ['ERALU-OUT'] + CC_LE + CC_CHKC,
+                    ],
+                "true": [
+                        ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
+                        ['ERALU-OUT'] + CC_LD,
+                    ] },
 
     "STAax": {  "c": 0x62,  # Cross page not supported
                 "d": "Store Accumulator in Memory (absolute - X index)", 
@@ -3944,6 +4000,7 @@ def generateIstructionsCsv():
         'depx': 'DE pointer - zero page - X index',
         'deinc': 'DE pointer post-increment',
         'ydeax': 'YDE pointer - absolute - X index',
+        'ydeinc': 'YDE pointer post-increment',
 
         'px': 'zero page - X index',
         'py': 'zero page - Y index',
