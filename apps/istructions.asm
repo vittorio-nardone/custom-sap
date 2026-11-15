@@ -422,6 +422,8 @@ ISTRUCTIONS:
     #d  0x04, 0x02, "INW", 0x00, "", 0x00
 .OPCODE_0xF2: 
     #d  0x04, 0x02, "DEW", 0x00, "", 0x00
+.OPCODE_0xF3: 
+    #d  0x02, 0x02, "JMP (", 0x00, ",X)", 0x00
 .OPCODE_0xF4: 
     #d  0x00, 0x00, "LDA", 0x00, " (DE)+", 0x00
 .OPCODE_0xF5: 
@@ -685,7 +687,7 @@ ISTRUCTIONS:
     #d .OPCODE_0xF0[15:8]
     #d .OPCODE_0xF1[15:8]
     #d .OPCODE_0xF2[15:8]
-    #d .OPCODE_NOTVALID[15:8]
+    #d .OPCODE_0xF3[15:8]
     #d .OPCODE_0xF4[15:8]
     #d .OPCODE_0xF5[15:8]
     #d .OPCODE_NOTVALID[15:8]
@@ -947,7 +949,7 @@ ISTRUCTIONS:
     #d .OPCODE_0xF0[7:0]
     #d .OPCODE_0xF1[7:0]
     #d .OPCODE_0xF2[7:0]
-    #d .OPCODE_NOTVALID[7:0]
+    #d .OPCODE_0xF3[7:0]
     #d .OPCODE_0xF4[7:0]
     #d .OPCODE_0xF5[7:0]
     #d .OPCODE_NOTVALID[7:0]

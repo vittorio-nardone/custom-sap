@@ -1,7 +1,7 @@
 #once
 #bank kernel
 
-#const PMACHINE_VERSION = "v0.4.40"
+#const PMACHINE_VERSION = "v0.4.41"
 #const PMACHINE_BUILDDATE = "11/14/2026"
 
 #include "consts.asm"
@@ -81,87 +81,61 @@ PM_ENTRY:
     jsr .fetch_byte
     cmp 0x3F
     bcs .error_invalid
+    asl a                       ; word index (hi,lo pairs)
     tax
-    lda .dispatch_hi,x
-    sta PM_DISPATCH
-    lda .dispatch_lo,x
-    sta PM_DISPATCH + 1
-    jmp (PM_DISPATCH)
+    jmp (.dispatch,x)
 
-; --- Dispatch tables (opcode → handler address) -----------
+; --- Dispatch table: MSB-first words @ base+opcode*2 ------
 
-.dispatch_lo:
+.dispatch:
     ; 0x00 HALT    0x01 LIT     0x02 LIT16   0x03 LOAD
-    #d .op_halt[7:0], .op_lit[7:0], .op_lit16[7:0], .op_load[7:0]
+    #d .op_halt[15:8], .op_halt[7:0], .op_lit[15:8], .op_lit[7:0]
+    #d .op_lit16[15:8], .op_lit16[7:0], .op_load[15:8], .op_load[7:0]
     ; 0x04 STORE   0x05 ADD     0x06 SUB     0x07 MUL
-    #d .op_store[7:0], .op_add[7:0], .op_sub[7:0], .op_mul[7:0]
+    #d .op_store[15:8], .op_store[7:0], .op_add[15:8], .op_add[7:0]
+    #d .op_sub[15:8], .op_sub[7:0], .op_mul[15:8], .op_mul[7:0]
     ; 0x08 DIV     0x09 NEG     0x0A MOD     0x0B JMP
-    #d .op_div[7:0], .op_neg[7:0], .op_mod[7:0], .op_jmp[7:0]
+    #d .op_div[15:8], .op_div[7:0], .op_neg[15:8], .op_neg[7:0]
+    #d .op_mod[15:8], .op_mod[7:0], .op_jmp[15:8], .op_jmp[7:0]
     ; 0x0C JPC     0x0D EQ      0x0E NE      0x0F LT
-    #d .op_jpc[7:0], .op_eq[7:0], .op_ne[7:0], .op_lt[7:0]
+    #d .op_jpc[15:8], .op_jpc[7:0], .op_eq[15:8], .op_eq[7:0]
+    #d .op_ne[15:8], .op_ne[7:0], .op_lt[15:8], .op_lt[7:0]
     ; 0x10 CSP     0x11 GE      0x12 GT      0x13 LE
-    #d .op_csp[7:0], .op_ge[7:0], .op_gt[7:0], .op_le[7:0]
+    #d .op_csp[15:8], .op_csp[7:0], .op_ge[15:8], .op_ge[7:0]
+    #d .op_gt[15:8], .op_gt[7:0], .op_le[15:8], .op_le[7:0]
     ; 0x14 AND     0x15 OR      0x16 NOT     0x17 CALL
-    #d .op_and[7:0], .op_or[7:0], .op_not[7:0], .op_call[7:0]
+    #d .op_and[15:8], .op_and[7:0], .op_or[15:8], .op_or[7:0]
+    #d .op_not[15:8], .op_not[7:0], .op_call[15:8], .op_call[7:0]
     ; 0x18 ENTER   0x19 RET     0x1A LOAD_L  0x1B STORE_L
-    #d .op_enter[7:0], .op_ret[7:0], .op_load_l[7:0], .op_store_l[7:0]
+    #d .op_enter[15:8], .op_enter[7:0], .op_ret[15:8], .op_ret[7:0]
+    #d .op_load_l[15:8], .op_load_l[7:0], .op_store_l[15:8], .op_store_l[7:0]
     ; 0x1C LOAD_A  0x1D STORE_A 0x1E LOAD_AL 0x1F STORE_AL
-    #d .op_load_a[7:0], .op_store_a[7:0], .op_load_al[7:0], .op_store_al[7:0]
+    #d .op_load_a[15:8], .op_load_a[7:0], .op_store_a[15:8], .op_store_a[7:0]
+    #d .op_load_al[15:8], .op_load_al[7:0], .op_store_al[15:8], .op_store_al[7:0]
     ; 0x20 ABS     0x21 LOAD_REF 0x22 STORE_REF 0x23 PUSH_ADDR
-    #d .op_abs[7:0], .op_load_ref[7:0], .op_store_ref[7:0], .op_push_addr[7:0]
+    #d .op_abs[15:8], .op_abs[7:0], .op_load_ref[15:8], .op_load_ref[7:0]
+    #d .op_store_ref[15:8], .op_store_ref[7:0], .op_push_addr[15:8], .op_push_addr[7:0]
     ; 0x24 PUSH_ADDR_L  0x25 ENTER16  0x26 LOADW  0x27 STOREW
-    #d .op_push_addr_l[7:0]
-    #d .op_enter16[7:0]
-    #d .op_loadw[7:0], .op_storew[7:0]
-    ; 0x28-0x2F: exactly 8 slots (was 11 — shifted FLIT.. so float literals failed)
-    #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
-    #d .error_invalid[7:0], .error_invalid[7:0], .error_invalid[7:0]
-    #d .error_invalid[7:0], .error_invalid[7:0]
+    #d .op_push_addr_l[15:8], .op_push_addr_l[7:0]
+    #d .op_enter16[15:8], .op_enter16[7:0]
+    #d .op_loadw[15:8], .op_loadw[7:0], .op_storew[15:8], .op_storew[7:0]
+    ; 0x28-0x2F: exactly 8 slots
+    #d .error_invalid[15:8], .error_invalid[7:0], .error_invalid[15:8], .error_invalid[7:0]
+    #d .error_invalid[15:8], .error_invalid[7:0], .error_invalid[15:8], .error_invalid[7:0]
+    #d .error_invalid[15:8], .error_invalid[7:0], .error_invalid[15:8], .error_invalid[7:0]
+    #d .error_invalid[15:8], .error_invalid[7:0], .error_invalid[15:8], .error_invalid[7:0]
     ; 0x30 FLIT    0x31 FLOAD   0x32 FSTORE  0x33 FADD
-    #d .op_flit[7:0], .op_fload[7:0], .op_fstore[7:0], .op_fadd[7:0]
+    #d .op_flit[15:8], .op_flit[7:0], .op_fload[15:8], .op_fload[7:0]
+    #d .op_fstore[15:8], .op_fstore[7:0], .op_fadd[15:8], .op_fadd[7:0]
     ; 0x34 FSUB    0x35 FMUL    0x36 FDIV    0x37 FNEG
-    #d .op_fsub[7:0], .op_fmul[7:0], .op_fdiv[7:0], .op_fneg[7:0]
+    #d .op_fsub[15:8], .op_fsub[7:0], .op_fmul[15:8], .op_fmul[7:0]
+    #d .op_fdiv[15:8], .op_fdiv[7:0], .op_fneg[15:8], .op_fneg[7:0]
     ; 0x38 ITOF    0x39 FTOI    0x3A FCMP    0x3B FLOAD_L
-    #d .op_itof[7:0], .op_ftoi[7:0], .op_fcmp[7:0], .op_fload_l[7:0]
+    #d .op_itof[15:8], .op_itof[7:0], .op_ftoi[15:8], .op_ftoi[7:0]
+    #d .op_fcmp[15:8], .op_fcmp[7:0], .op_fload_l[15:8], .op_fload_l[7:0]
     ; 0x3C FSTORE_L 0x3D FABS   0x3E ITOF_SWAP
-    #d .op_fstore_l[7:0], .op_fabs[7:0], .op_itof_swap[7:0]
-
-.dispatch_hi:
-    ; 0x00-0x03
-    #d .op_halt[15:8], .op_lit[15:8], .op_lit16[15:8], .op_load[15:8]
-    ; 0x04-0x07
-    #d .op_store[15:8], .op_add[15:8], .op_sub[15:8], .op_mul[15:8]
-    ; 0x08-0x0B
-    #d .op_div[15:8], .op_neg[15:8], .op_mod[15:8], .op_jmp[15:8]
-    ; 0x0C-0x0F
-    #d .op_jpc[15:8], .op_eq[15:8], .op_ne[15:8], .op_lt[15:8]
-    ; 0x10-0x13
-    #d .op_csp[15:8], .op_ge[15:8], .op_gt[15:8], .op_le[15:8]
-    ; 0x14-0x17
-    #d .op_and[15:8], .op_or[15:8], .op_not[15:8], .op_call[15:8]
-    ; 0x18-0x1B
-    #d .op_enter[15:8], .op_ret[15:8], .op_load_l[15:8], .op_store_l[15:8]
-    ; 0x1C-0x1F
-    #d .op_load_a[15:8], .op_store_a[15:8], .op_load_al[15:8], .op_store_al[15:8]
-    ; 0x20-0x24
-    #d .op_abs[15:8], .op_load_ref[15:8], .op_store_ref[15:8], .op_push_addr[15:8]
-    #d .op_push_addr_l[15:8]
-    ; 0x25 ENTER16
-    #d .op_enter16[15:8]
-    ; 0x26-0x27 LOADW, STOREW
-    #d .op_loadw[15:8], .op_storew[15:8]
-    ; 0x28-0x2F: exactly 8 slots (match .dispatch_lo)
-    #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
-    #d .error_invalid[15:8], .error_invalid[15:8], .error_invalid[15:8]
-    #d .error_invalid[15:8], .error_invalid[15:8]
-    ; 0x30-0x33
-    #d .op_flit[15:8], .op_fload[15:8], .op_fstore[15:8], .op_fadd[15:8]
-    ; 0x34-0x37
-    #d .op_fsub[15:8], .op_fmul[15:8], .op_fdiv[15:8], .op_fneg[15:8]
-    ; 0x38-0x3B
-    #d .op_itof[15:8], .op_ftoi[15:8], .op_fcmp[15:8], .op_fload_l[15:8]
-    ; 0x3C-0x3E
-    #d .op_fstore_l[15:8], .op_fabs[15:8], .op_itof_swap[15:8]
+    #d .op_fstore_l[15:8], .op_fstore_l[7:0], .op_fabs[15:8], .op_fabs[7:0]
+    #d .op_itof_swap[15:8], .op_itof_swap[7:0]
 
 ; --- HALT -------------------------------------------------
 

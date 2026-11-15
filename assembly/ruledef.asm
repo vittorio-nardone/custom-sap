@@ -475,6 +475,12 @@
 		assert(value <= 0xffff)
 		0x8F @ value
  	} 
+	; Jump to New Location (indirect - zero page - X pre-index) 
+	JMP ({value: u16},x) => { 
+		assert(value >= 0x100)
+		assert(value <= 0xffff)
+		0xF3 @ value
+ 	} 
 	; Jump to New Location (zero page) 
 	JMP {value: u16} => { 
 		assert(value >= 0x100)
