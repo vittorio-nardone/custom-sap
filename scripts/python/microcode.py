@@ -328,6 +328,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # LDA (DE)+ : A ← [0:D:E], then DE = DE+1 (16-bit; MARPAGE unchanged)
+    # Page-wrap uses LO+CHKO (same as LDAindpy MAR-L INC), not LC+CHKC.
     "LDAdeinc": {  "c": 0xF4,
                 "d": "Load Accumulator from [D:E], then increment D:E",
                 "f": ['Z', 'N', 'C'],
@@ -335,9 +336,10 @@ INSTRUCTIONS_SET = dict(sorted({
                 "sim": "\n".join((
                     "self.A = self.load_from_memory(registry_operands='de')",
                     "self.C = (self.E == 0xFF)",
+                    "self.O = self.C",
                     "self.E = (self.E + 1) & 0xFF",
-                    "self.true_condition = self.C",
-                    "if self.C:",
+                    "self.true_condition = self.O",
+                    "if self.O:",
                     "    self.D = (self.D + 1) & 0xFF",
                 )),
                 "m": [
@@ -346,12 +348,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notED,
                         # A ← [MAR], Z/N from loaded byte
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO,
-                        # E ← E+1; C set on wrap FF→00 (same INC+LC pattern as INW)
-                        ['LRALU-IN', 'LRALU-OUT', 'LC'] + CC_notEE,
-                        ['ERALU-OUT'] + CC_LE + CC_CHKC,
+                        # E ← E+1; LO+CHKO for page-cross (like LDAindpy)
+                        ['LRALU-IN', 'LRALU-OUT', 'LO'] + CC_notEE,
+                        ['ERALU-OUT'] + CC_LE + CC_CHKO,
                     ],
                 "true": [
-                        # D ← D+1 when E wrapped
+                        # D ← D+1 when E wrapped (O=1)
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
                         ['ERALU-OUT'] + CC_LD,
                     ] },
@@ -377,6 +379,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # LDA (YDE)+ : A ← [Y:D:E], then DE = DE+1 (16-bit; Y / MARPAGE unchanged — no 64 KB cross-page)
+    # Page-wrap uses LO+CHKO (same as LDAindpy / (DE)+), not LC+CHKC.
     "LDAydeinc": {  "c": 0xF6,
                 "d": "Load Accumulator from [Y:D:E], then increment D:E",
                 "f": ['Z', 'N', 'C'],
@@ -384,9 +387,10 @@ INSTRUCTIONS_SET = dict(sorted({
                 "sim": "\n".join((
                     "self.A = self.load_from_memory(registry_operands='yde')",
                     "self.C = (self.E == 0xFF)",
+                    "self.O = self.C",
                     "self.E = (self.E + 1) & 0xFF",
-                    "self.true_condition = self.C",
-                    "if self.C:",
+                    "self.true_condition = self.O",
+                    "if self.O:",
                     "    self.D = (self.D + 1) & 0xFF",
                 )),
                 "m": [
@@ -396,12 +400,12 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARH'] + CC_notED,
                         # A ← [MAR], Z/N from loaded byte
                         ['EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO,
-                        # E ← E+1; C set on wrap FF→00 (same INC+LC pattern as INW / (DE)+)
-                        ['LRALU-IN', 'LRALU-OUT', 'LC'] + CC_notEE,
-                        ['ERALU-OUT'] + CC_LE + CC_CHKC,
+                        # E ← E+1; LO+CHKO for page-cross (like LDAindpy)
+                        ['LRALU-IN', 'LRALU-OUT', 'LO'] + CC_notEE,
+                        ['ERALU-OUT'] + CC_LE + CC_CHKO,
                     ],
                 "true": [
-                        # D ← D+1 when E wrapped; Y unchanged
+                        # D ← D+1 when E wrapped (O=1); Y unchanged
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
                         ['ERALU-OUT'] + CC_LD,
                     ] },
@@ -916,6 +920,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # STA (DE)+ : [0:D:E] ← A, then DE = DE+1 (16-bit; MARPAGE unchanged)
+    # Page-wrap uses LO+CHKO (same as LDAindpy / (DE)+), not LC+CHKC.
     "STAdeinc": {  "c": 0xF5,
                 "d": "Store Accumulator to [D:E], then increment D:E",
                 "f": ['C'],
@@ -923,17 +928,18 @@ INSTRUCTIONS_SET = dict(sorted({
                 "sim": "\n".join((
                     "self.store_in_memory(self.A, registry_operands='de')",
                     "self.C = (self.E == 0xFF)",
+                    "self.O = self.C",
                     "self.E = (self.E + 1) & 0xFF",
-                    "self.true_condition = self.C",
-                    "if self.C:",
+                    "self.true_condition = self.O",
+                    "if self.O:",
                     "    self.D = (self.D + 1) & 0xFF",
                 )),
                 "m": [
                         ['LMARPAGEZERO', 'LMARL'] + CC_notEE,
                         ['LMARH'] + CC_notED,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
-                        ['LRALU-IN', 'LRALU-OUT', 'LC'] + CC_notEE,
-                        ['ERALU-OUT'] + CC_LE + CC_CHKC,
+                        ['LRALU-IN', 'LRALU-OUT', 'LO'] + CC_notEE,
+                        ['ERALU-OUT'] + CC_LE + CC_CHKO,
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
@@ -961,6 +967,7 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # STA (YDE)+ : [Y:D:E] ← A, then DE = DE+1 (16-bit; Y / MARPAGE unchanged — no 64 KB cross-page)
+    # Page-wrap uses LO+CHKO (same as LDAindpy / (DE)+), not LC+CHKC.
     "STAydeinc": {  "c": 0xF8,
                 "d": "Store Accumulator to [Y:D:E], then increment D:E",
                 "f": ['C'],
@@ -968,9 +975,10 @@ INSTRUCTIONS_SET = dict(sorted({
                 "sim": "\n".join((
                     "self.store_in_memory(self.A, registry_operands='yde')",
                     "self.C = (self.E == 0xFF)",
+                    "self.O = self.C",
                     "self.E = (self.E + 1) & 0xFF",
-                    "self.true_condition = self.C",
-                    "if self.C:",
+                    "self.true_condition = self.O",
+                    "if self.O:",
                     "    self.D = (self.D + 1) & 0xFF",
                 )),
                 "m": [
@@ -978,8 +986,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['LMARL'] + CC_notEE,
                         ['LMARH'] + CC_notED,
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
-                        ['LRALU-IN', 'LRALU-OUT', 'LC'] + CC_notEE,
-                        ['ERALU-OUT'] + CC_LE + CC_CHKC,
+                        ['LRALU-IN', 'LRALU-OUT', 'LO'] + CC_notEE,
+                        ['ERALU-OUT'] + CC_LE + CC_CHKO,
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,

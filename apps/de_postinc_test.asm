@@ -1,6 +1,10 @@
 ; @load-address 0x8400
 ; =========================================================
-; LDA/STA (DE)+ regression harness
+; LDA/STA (DE)+ hardware / simulator regression
+;
+; Upload via XMODEM (OT) and run with `r` / `call 8400`.
+; Prints: de_postinc_test / OK  or  FAIL <step>
+; Steps: 1=STA fill  2=LDA read  3=wrap LDA  4=wrap STA  5=flags N
 ; =========================================================
 
 #include "../assembly/ruledef.asm"
@@ -15,11 +19,21 @@
 
 #bank ram
 
-    ldd .banner[15:8]
-    lde .banner[7:0]
-    jsr ACIA_SEND_STRING
+    ; Banner via ACIA_SEND_CHAR only (no string walk dependency)
+    ldx 0x00
+.ban:
+    lda .banner,x
+    beq .ban_done
+    jsr ACIA_SEND_CHAR
+    inx
+    jmp .ban
+.ban_done:
+    jsr ACIA_SEND_NEWLINE
 
     ; --- 1) STA (DE)+ fill 4 bytes at 0x9000 ---
+    lda 0x01
+    sta .step
+
     lda 0x00
     sta 0x9000
     sta 0x9001
@@ -37,7 +51,6 @@
     lda 0x44
     sta (de)+
 
-    ; expect DE = 0x9004
     cpd 0x90
     bne .fail
     cpe 0x04
@@ -57,6 +70,9 @@
     bne .fail
 
     ; --- 2) LDA (DE)+ read back ---
+    lda 0x02
+    sta .step
+
     ldd 0x90
     lde 0x00
     lda (de)+
@@ -76,7 +92,10 @@
     cpe 0x04
     bne .fail
 
-    ; --- 3) wrap E=0xFF → D increments ---
+    ; --- 3) wrap: LDA at E=0xFF → D increments ---
+    lda 0x03
+    sta .step
+
     lda 0xAA
     sta 0x90FF
     lda 0xBB
@@ -92,8 +111,12 @@
     cpe 0x00
     bne .fail
 
+    ; --- 4) wrap: STA at DE=0x9100 after step 3 ---
+    lda 0x04
+    sta .step
+
     lda 0xCC
-    sta (de)+              ; write at 0x9100, then DE=0x9101
+    sta (de)+
     lda 0x9100
     cmp 0xCC
     bne .fail
@@ -102,13 +125,16 @@
     cpe 0x01
     bne .fail
 
-    ; --- 4) Z/N from loaded byte (0x80 → N=1), then post-inc ---
+    ; --- 5) Z/N from loaded byte (0x80 → N=1), then post-inc ---
+    lda 0x05
+    sta .step
+
     lda 0x80
     sta 0x9200
     ldd 0x92
     lde 0x00
     lda (de)+
-    bmi .n_ok                 ; N must still reflect loaded 0x80
+    bmi .n_ok
     jmp .fail
 .n_ok:
     cmp 0x80
@@ -116,20 +142,32 @@
     cpe 0x01
     bne .fail
 
-    ldd .ok_msg[15:8]
-    lde .ok_msg[7:0]
-    jsr ACIA_SEND_STRING
+    lda "O"
+    jsr ACIA_SEND_CHAR
+    lda "K"
+    jsr ACIA_SEND_CHAR
+    jsr ACIA_SEND_NEWLINE
     rts
 
 .fail:
-    ldd .fail_msg[15:8]
-    lde .fail_msg[7:0]
-    jsr ACIA_SEND_STRING
+    lda "F"
+    jsr ACIA_SEND_CHAR
+    lda "A"
+    jsr ACIA_SEND_CHAR
+    lda "I"
+    jsr ACIA_SEND_CHAR
+    lda "L"
+    jsr ACIA_SEND_CHAR
+    lda " "
+    jsr ACIA_SEND_CHAR
+    lda .step
+    ora 0x30                      ; ASCII digit
+    jsr ACIA_SEND_CHAR
+    jsr ACIA_SEND_NEWLINE
     rts
 
+.step:
+    #d 0x00
+
 .banner:
-    #d "de_postinc_test", 0x0A, 0x0D, 0x00
-.ok_msg:
-    #d "OK", 0x0A, 0x0D, 0x00
-.fail_msg:
-    #d "FAIL", 0x0A, 0x0D, 0x00
+    #d "de_postinc_test", 0x00

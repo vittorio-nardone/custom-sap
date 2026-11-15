@@ -66,7 +66,7 @@ ACIA_INIT:
 ; OUTPUTS:
 ;
 ; DESTROY:
-;   A D E   (DE advanced to the terminating NUL; X preserved)
+;   A X D E   (DE advanced to the terminating NUL)
 ;
 ; FLAGS AFFECTED:
 ;
@@ -78,24 +78,21 @@ ACIA_INIT:
 ; LAST UPDATE: 03/08/2026
 ; **********************************************************
 
-; Walk DE with LDA (DE)+ (post-inc carries E→D within the 64 KB bank;
-; MARPAGE is not advanced). On NUL, back up one so DE still points at the
-; terminator (same ABI as the old LDA DE,X + INE/IND loop).
+; Walk DE with INE/IND and X=0 so strings longer than 256 bytes work.
+; (DE)+ reserved for HW bring-up via apps/de_postinc_test.asm.
 
 ACIA_SEND_STRING:
     sei                     ; keep Y/D/E stable across timer/serial IRQs
+    ldx 0x00
 .send_char:
-    lda (de)+
-    beq .send_end_backup
+    lda de,x
+    beq .send_end
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
+    ine
+    bne .send_char
+    ind
     jmp .send_char
-.send_end_backup:
-    ; DE is one past NUL — restore pointer to the terminator
-    dee
-    cpe 0xFF
-    bne .send_end
-    ded
 .send_end:
     cli
     rts
@@ -112,28 +109,25 @@ ACIA_SEND_STRING:
 ; OUTPUTS:
 ;
 ; DESTROY:
-;   A D E   (DE advanced to the terminating NUL; X and Y preserved)
+;   A X D E   (DE advanced to the terminating NUL; Y preserved)
 ;
 ; **********************************************************
 
-; Walk Y:DE with LDA (YDE)+ (post-inc carries E→D within the 64 KB bank;
-; Y / MARPAGE are not advanced). On NUL, back up one so DE still points at
-; the terminator (same ABI as the old LDA YDE,X + INE/IND loop).
+; Walk Y:DE with INE/IND (Y = 64 KB page, not advanced).
+; (YDE)+ reserved for HW bring-up via apps/yde_postinc_test.asm.
 
 ACIA_SEND_STRING24:
     sei
+    ldx 0x00
 .send_char24:
-    lda (yde)+
-    beq .send_end24_backup
+    lda yde,x
+    beq .send_end24
     jsr ACIA_WAIT_SEND_CLEAR
     sta ACIA_RW_DATA_ADDR
+    ine
+    bne .send_char24
+    ind
     jmp .send_char24
-.send_end24_backup:
-    ; DE is one past NUL — restore pointer to the terminator
-    dee
-    cpe 0xFF
-    bne .send_end24
-    ded
 .send_end24:
     cli
     rts

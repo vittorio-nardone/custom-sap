@@ -107,7 +107,12 @@ ch376_rd_usb_burst:
     jmp .fail
 .dst_g:
     lda ACIA2_RW_DATA_ADDR
-    sta (yde)+
+    ldx 0x00
+    sta yde,x
+    ine
+    bne .dst_skip
+    ind
+.dst_skip:
     dec CH376_RD_LEFT
     bne .dst_body
     sty CH376_DST_PAGE
