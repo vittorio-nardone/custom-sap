@@ -52,7 +52,7 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.3.25"
+#const KERNEL_VERSION = "v1.3.27"
 #const KERNEL_BUILDDATE = "11/15/2026"
 
 #include "../assembly/ruledef.asm"
