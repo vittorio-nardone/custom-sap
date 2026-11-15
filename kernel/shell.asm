@@ -1800,6 +1800,13 @@ shell_usb_fail:
     ldd sh_err_usb[15:8]
     lde sh_err_usb[7:0]
     jsr ACIA_SEND_STRING
+    ; Surface CH376_LAST_STATUS so hardware can distinguish open/read fails
+    ; (e.g. ?usb 41 vs ?usb 14 vs ?usb 00).
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    lda CH376_LAST_STATUS
+    jsr ACIA_SEND_HEX
+    jsr ACIA_SEND_NEWLINE
     rts
 
 ; ============================================================
@@ -2240,7 +2247,11 @@ sh_s_mkdir:  #d "MKDIR", 0x00
 sh_s_del:    #d "DEL", 0x00
 sh_s_rmdir:  #d "RMDIR", 0x00
 
-; name(MSB,LSB) + handler(MSB,LSB) — JMP (zp,X) is MSB-first
+; name(MSB,LSB) + handler(MSB,LSB) — JMP (zp,X) is MSB-first.
+; MUST stay within one page: LDD/LDE tab,X and JMP (tab+2,X) do not carry
+; lo+X into the high byte (92-byte table → fits if page-aligned).
+; customasm #align is in bits: 2048 bits = 256 bytes.
+#align 2048
 shell_builtin_tab:
     #d sh_s_help[15:8],   sh_s_help[7:0],   shell_cmd_help[15:8],   shell_cmd_help[7:0]
     #d sh_s_qm[15:8],     sh_s_qm[7:0],     shell_cmd_help[15:8],   shell_cmd_help[7:0]

@@ -244,7 +244,9 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },
 
-    "LDApx": {  "c": 0xBD,  # Cross page not supported
+    # Cross page not supported: lo+X overflow keeps original MARH (true path has
+    # no +1). 256-byte tables (e.g. XMODEM CRC) must be page-aligned.
+    "LDApx": {  "c": 0xBD,
                 "d": "Load Accumulator with Memory (zero page - X index)", 
                 "f": ['Z','O','N'],
                 "v": "u16",
@@ -308,7 +310,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['CPC', 'EMAR', 'ERAM', 'LZN', 'MEMADDRVALID'] + CC_LACC + CC_ALU_DETECT_ZERO 
                     ] },     
 
-    "LDAdepx": {  "c": 0x94,  # Cross page not supported
+    # Cross page not supported: E+X overflow keeps D (true path has no D+1).
+    "LDAdepx": {  "c": 0x94,
                 "d": "Load Accumulator with Memory (DE pointer - zero page - X index)", 
                 "f": ['Z','O','N'],
                 "op": "de",
@@ -358,7 +361,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT'] + CC_LD,
                     ] },
           
-    "LDAydeax": {  "c": 0xB2,  # Cross page not supported
+    # Cross page not supported: E+X overflow keeps D; Y/MARPAGE unchanged.
+    "LDAydeax": {  "c": 0xB2,
                 "d": "Load Accumulator with Memory (YDE pointer - absolute - X index)", 
                 "f": ['Z','O','N'],
                 "op": "yde",
@@ -410,7 +414,8 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['ERALU-OUT'] + CC_LD,
                     ] },
 
-    "LDAax": {  "c": 0xBE,  # Cross page not supported
+    # Cross page not supported: lo+X overflow keeps original MARH (no +1).
+    "LDAax": {  "c": 0xBE,
                 "d": "Load Accumulator with Memory (absolute - X index)", 
                 "f": ['Z','O','N'],
                 "v": "u24",
