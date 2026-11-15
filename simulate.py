@@ -241,11 +241,14 @@ class OttoCPU:
 
             MARl = self.read_byte(self.MAR)
             self.MAR += 1
-            # Pointer is 16-bit in page 0; index carry wraps within 64 KB
-            # (no MARPAGE advance — same "Cross page not supported" rule).
-            self.MAR = (
-                self.read_byte(self.MAR) * 256 + MARl + (index if index != None else 0)
-            ) & 0xFFFF
+            # (zp),X / (zp),Y: add index to the 16-bit pointer WITH carry into
+            # pointer high (microcode uses CC_ALUCARRY). Still no MARPAGE bump.
+            ptr_hi = self.read_byte(self.MAR)
+            idx = index if index is not None else 0
+            if index is not None:
+                self.O = (MARl + idx) > 0xFF
+                self.C = (MARl + idx) > 0xFF
+            self.MAR = ((ptr_hi << 8) + MARl + idx) & 0xFFFF
 
             result = self.read_byte(self.MAR)            
         elif (mem_operands_size):
@@ -269,9 +272,13 @@ class OttoCPU:
             self.PC += mem_operands_size + 1
             MARl = self.read_byte(self.MAR)
             self.MAR += 1
-            self.MAR = (
-                self.read_byte(self.MAR) * 256 + MARl + (index if index != None else 0)
-            ) & 0xFFFF
+            # (zp),X / (zp),Y: carry into pointer high (see load_from_memory).
+            ptr_hi = self.read_byte(self.MAR)
+            idx = index if index is not None else 0
+            if index is not None:
+                self.O = (MARl + idx) > 0xFF
+                self.C = (MARl + idx) > 0xFF
+            self.MAR = ((ptr_hi << 8) + MARl + idx) & 0xFFFF
         elif (mem_operands_size):
             self.MAR = self.get_address_from_operands(mem_operands_size, index)
             self.PC += mem_operands_size + 1
@@ -325,11 +332,12 @@ class OttoCPU:
             self.MAR = self.get_address_from_operands(operator_mem_operands_size)        
             MARl = self.read_byte(self.MAR)
             self.MAR += 1
-            self.MAR = (
-                self.read_byte(self.MAR) * 256
-                + MARl
-                + (operator_index if operator_index != None else 0)
-            ) & 0xFFFF
+            ptr_hi = self.read_byte(self.MAR)
+            idx = operator_index if operator_index is not None else 0
+            if operator_index is not None:
+                self.O = (MARl + idx) > 0xFF
+                self.C = (MARl + idx) > 0xFF
+            self.MAR = ((ptr_hi << 8) + MARl + idx) & 0xFFFF
             operator = self.read_byte(self.MAR)
             self.PC += operator_mem_operands_size + 1 + extra_bytes  
         elif (operator_mem_operands_size == 4):
@@ -451,10 +459,14 @@ class OttoCPU:
     def get_address_from_operands(self, size, index=None):
         """Calculate the address from instruction operands.
 
-        Indexed modes add the index into the low 16 bits only. Carry from the
-        low byte into the high byte is performed (microcode true path = IND).
-        Carry from that 16-bit sum into MARPAGE is not ("Cross page not
-        supported"): the page byte stays fixed and the 16-bit offset wraps.
+        zp,X / abs,X (and Y forms): microcode adds index to the low byte only.
+        On overflow the high byte is reloaded unchanged (LDApx/LDAax "true"
+        path has no +1) — tables that are not page-aligned read wrong bytes.
+        "Cross page not supported" here means that 8→16 carry inside the
+        address; MARPAGE is also never advanced on 16→24 wrap.
+
+        Indirect indexed (zp),X/(zp),Y is different: see load_from_memory /
+        store_in_memory, which do add carry into the pointer high byte.
         """
         idx = index if index is not None else 0
         match size:
@@ -463,31 +475,32 @@ class OttoCPU:
                 lo = self.memory[self.PC + 2]
                 if index is not None:
                     self.O = (lo + idx) > 0xFF
-                # page forced to 0; wrap at 64 KB
-                return ((hi << 8) + lo + idx) & 0xFFFF
+                    # Hardware: MARH stays `hi`; only MARL wraps.
+                    return (hi << 8) | ((lo + idx) & 0xFF)
+                return ((hi << 8) | lo) & 0xFFFF
             case 3:
                 page = self.memory[self.PC + 1]
                 hi = self.memory[self.PC + 2]
                 lo = self.memory[self.PC + 3]
                 if index is not None:
                     self.O = (lo + idx) > 0xFF
-                offset = ((hi << 8) + lo + idx) & 0xFFFF
-                return (page << 16) | offset
+                    return (page << 16) | (hi << 8) | ((lo + idx) & 0xFF)
+                return (page << 16) | (hi << 8) | lo
             case _:
                 raise ValueError(f"Invalid operand size: {size}")
 
     def get_address_from_registries(self, registries, index=None):
         """Calculate the address from DE / YDE with optional X index.
 
-        E+X carry increments the high byte of the effective address (same ALU
-        sequence as IND in the microcode true path). When that high byte wraps
-        0xFF→0x00, MARPAGE is not advanced — that is what microcode means by
-        "Cross page not supported" (16→24 bit), not a refusal of E→D carry.
+        DE,X / YDE,X: E+X does not carry into D (same LDAdepx/LDAydeax true
+        path as zp,X). Use LDA/STA (DE)+ / (YDE)+ when the pointer must cross
+        a page. MARPAGE / Y never advance on D wrap (16→24).
         """
-        idx = index if index else 0
-        if index:
-            self.O = (self.E + idx) > 0xFF
-        offset = ((self.D << 8) + self.E + idx) & 0xFFFF
+        if index is not None:
+            self.O = (self.E + index) > 0xFF
+            offset = (self.D << 8) | ((self.E + index) & 0xFF)
+        else:
+            offset = ((self.D << 8) | self.E) & 0xFFFF
         match registries:
             case 'yde':
                 return (self.Y << 16) | offset
