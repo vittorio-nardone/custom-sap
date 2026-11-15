@@ -1800,6 +1800,13 @@ shell_usb_fail:
     ldd sh_err_usb[15:8]
     lde sh_err_usb[7:0]
     jsr ACIA_SEND_STRING
+    ; Surface CH376_LAST_STATUS so hardware can distinguish open/read fails
+    ; (e.g. ?usb 41 vs ?usb 14 vs ?usb 00).
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    lda CH376_LAST_STATUS
+    jsr ACIA_SEND_HEX
+    jsr ACIA_SEND_NEWLINE
     rts
 
 ; ============================================================

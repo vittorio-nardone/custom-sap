@@ -44,6 +44,10 @@ storage_list_dir:
     jmp .opened
 
 .open_root:
+    ; DISK_MOUNT / a prior op may leave a dir handle open — close first
+    ; (same pattern as load/exec/rmdir) so FILE_OPEN "/" returns 0x41.
+    lda 0x00
+    jsr ch376_cmd_file_close
     ldy storage_fn_slash[23:16]
     ldd storage_fn_slash[15:8]
     lde storage_fn_slash[7:0]
