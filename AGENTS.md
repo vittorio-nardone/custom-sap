@@ -125,9 +125,13 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | Register E | `ADC E` | 1 | `ADC E` |
 | DE pointer, X indexed | `LDA DE,X` | 1 | `LDA DE,X` |
 | YDE pointer, X indexed | `LDA YDE,X` | 1 | `LDA YDE,X` |
+| DE post-increment | `LDA (DE)+` | 1 | `LDA (DE)+` |
+| YDE post-increment | `LDA (YDE)+` | 1 | `LDA (YDE)+` |
 | Accumulator | `ASL A` | 1 | `ASL A` |
 
 **Note**: "Zero page" in Otto means 16-bit addresses (0x0000-0xFFFF), "absolute" means 24-bit addresses.
+`(DE)+` / `(YDE)+` load or store then increment D:E (16-bit wrap). C=1 if E was 0xFF.
+`(YDE)+` does **not** advance Y (no automatic 64 KB page cross).
 
 ## Complete Instruction Set
 
@@ -210,6 +214,8 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | 0xC1 | LDA | (ZP),Y | 14/16 | Z N C | Load A indirect indexed |
 | 0x94 | LDA | DE,X | 7/8 | Z O N | Load A via DE pointer+X |
 | 0xB2 | LDA | YDE,X | 8/9 | Z O N | Load A via Y:DE pointer+X |
+| 0xF4 | LDA | (DE)+ | 7/9 | Z N C | Load A via DE, then DE++ |
+| 0xF6 | LDA | (YDE)+ | 8/10 | Z N C | Load A via Y:DE, then DE++ (Y unchanged) |
 | 0xA5 | LDD | immediate | 4 | Z N | Load D |
 | 0x33 | LDD | zero page | 6 | Z N | Load D |
 | 0x34 | LDD | absolute | 8 | Z N | Load D |
@@ -245,6 +251,8 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | 0xC2 | STA | (ZP),Y | 15/17 | C | Store A indirect indexed |
 | 0xA1 | STA | DE,X | 7/8 | O | Store A via DE pointer+X |
 | 0xB3 | STA | YDE,X | 8/9 | O | Store A via Y:DE pointer+X |
+| 0xF5 | STA | (DE)+ | 7/9 | C | Store A via DE, then DE++ |
+| 0xF8 | STA | (YDE)+ | 8/10 | C | Store A via Y:DE, then DE++ (Y unchanged) |
 | 0x7A | STD | zero page | 6 | - | Store D |
 | 0x7B | STD | absolute | 8 | - | Store D |
 | 0x7C | STD | ZP,X | 9/10 | O | Store D indexed |
@@ -350,6 +358,7 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | 0x4D | JMP | absolute | 10 | Jump |
 | 0x8F | JMP | (ZP) | 10 | Jump indirect |
 | 0x91 | JMP | (abs) | 18 | Jump indirect |
+| 0xF3 | JMP | (ZP,X) | 12/13 | Jump indirect, X pre-index (word MSB-first) |
 | 0x20 | JSR | zero page | 12 | Jump to subroutine |
 | 0x21 | JSR | absolute | 16 | Jump to subroutine |
 | 0x92 | JSR | (ZP) | 16 | Jump to subroutine indirect |
@@ -412,7 +421,7 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 1. **Addresses are NOT relative for branches** - BEQ/BNE/etc take absolute or zero-page addresses, not relative offsets
 2. **Zero page = 16-bit address** (0x0000-0xFFFF), absolute = 24-bit address
 3. **Extra registers**: D and E are additional general-purpose registers not in 6502
-4. **DE pointer mode**: D:E pair acts as a 16-bit pointer (`LDA DE,X`, `LDA YDE,X`)
+4. **DE pointer mode**: D:E pair acts as a 16-bit pointer (`LDA DE,X`, `LDA YDE,X`, `LDA (DE)+`, `LDA (YDE)+`)
 5. **Overflow flag** is NOT like 6502 - used internally for indexing, equals carry
 6. **No BCD mode**
 7. **24-bit PC** allows addressing 16 MB
@@ -421,6 +430,8 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 10. **ROL/ROR on D and E registers** directly
 11. **SBX** instruction (subtract E from X)
 12. **Inter-register compares**: CPX Y, CPX D, CPX E, CPD E, CPY D, CPY E
+13. **Post-increment loads/stores**: `LDA/STA (DE)+` and `LDA/STA (YDE)+` (Y unchanged on YDE form)
+14. **JMP (zp,X)**: pre-indexed indirect jump; table words are MSB-first (used by P-Machine and shell dispatch)
 
 ## Interrupt System
 
@@ -495,6 +506,7 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 | BINHEX | 0x0C60 | Binary to hex string conversion |
 | HEXBIN | 0x0C7F | Hex string to binary conversion |
 | BINDEC | 0x0CA3 | Binary to decimal string |
+| BINDEC16 | (symbols.asm) | Unsigned 16-bit binary to decimal digits |
 | BINDEC32 | 0x0CE3 | 32-bit binary to decimal |
 | DIVIDE_INT | 0x0AD0 | 8-bit integer division (X/Y -> A=quot, X=rem) |
 | MULTIPLY_INT | 0x0AF9 | 8-bit integer multiplication (A*X -> A:X) |
@@ -502,7 +514,7 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 | DIV16S | (symbols.asm) | 16-bit signed divide (MATH16_A / MATH16_B -> MATH16_A) |
 | MOD16S | (symbols.asm) | 16-bit signed modulo (MATH16_A % MATH16_B -> MATH16_A) |
 | CMP16S | (symbols.asm) | 16-bit signed compare (MATH16_A vs MATH16_B -> MATH16_TMP: 0=eq, 1=gt, 0xFF=lt) |
-| ACIA_SEND_DECIMAL16S | (symbols.asm) | Print signed 16-bit int (MATH16_A) as decimal |
+| ACIA_SEND_DECIMAL16S | (symbols.asm) | Print signed 16-bit int (MATH16_A) as decimal (via BINDEC16) |
 
 ### File Transfer
 | Symbol | Address | Description |
@@ -510,7 +522,11 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 | XMODEM_RCV | (symbols.asm) | Receive file via XMODEM/CRC |
 
 ### USB storage (CH376S, optional)
-Polling-only FAT access over ACIA #2. Lazy init — absent module returns `C=0`, never blocks boot. Shell: `load` / `save file len [addr]` (OT on save). Full API and OT rules: `kernel/storage/README.md`.
+Polling-only FAT access over ACIA #2. Lazy init — absent module returns `C=0`, never blocks boot.
+Word shell (`kernel/shell.asm`): `mount` / `umount`, `dir` / `cd`, `mkdir` / `rmdir` / `del`,
+`type`, `load file [addr]`, `save file len [addr]` (OT on save), `exec` / bare `NAME`, Tab-complete.
+`dir` lists directories first, then files (alpha). No interactive `l`/`w` browser.
+Full API and OT rules: `kernel/storage/README.md`.
 
 | Symbol | Description |
 |--------|-------------|
@@ -518,9 +534,11 @@ Polling-only FAT access over ACIA #2. Lazy init — absent module returns `C=0`,
 | STORAGE_SET_NAME / OPEN / CREATE / CLOSE | Path + file ops (`Y:DE` NUL path; CREATE truncates) |
 | STORAGE_READ / STORAGE_WRITE | Raw transfer (`Y:DE`, length in `CH376_REMAIN_*`) |
 | STORAGE_LOAD_FILE / STORAGE_SAVE_FILE | OT-aware load; save with optional OT (`CH376_OT_FLAG`) |
+| STORAGE_DELETE / STORAGE_MKDIR / STORAGE_RMDIR | Erase file; create dir; remove empty dir |
 | STORAGE_CHECK_RANGE | Reject I/O `0x6000–0x67FF` and video `0x6800–0x7FFF`; max ~64 KB |
 
 Addresses in `kernel/symbols.asm`. Smoke test: `apps/storage_smoke.asm`.
+Line editor app: `apps/edit.asm` (USB text files; launch via `edit` / `exec EDIT.BIN`).
 
 ## Application Template
 
@@ -682,13 +700,15 @@ The simulator (`OttoCPU` class in `simulate.py`) faithfully emulates:
 - **0x6022/0x6023**: ACIA #2 (CH376). Without `--ch376`, reads idle (TX empty, no RX) so kernel storage fails cleanly. With `--ch376`, a minimal CH376S UART emulator (`scripts/python/ch376_sim.py`) backs a host directory as the USB stick (default `roms/sim/ch376/`).
 
 **CH376 emulator** (`--ch376`):
-- Maps `roms/sim/ch376/` (or `--ch376-dir <path>`) as the FAT root: mount, `/*` listing, file open/create/read/write.
+- Maps `roms/sim/ch376/` (or `--ch376-dir <path>`) as the FAT root: mount, listing,
+  file open/create/read/write/erase, directory create/remove.
 - Enough for shell USB cmds, `STORAGE_*` API, and `apps/storage_smoke.asm`.
-- Sample files ship under `roms/sim/ch376/` (`HELLO.TXT`, `DEMO.BIN`).
+- Sample stick layout under `roms/sim/ch376/` (`HELLO.TXT`, `DEMO.BIN`, `EDIT.BIN`, `BIN/`, …).
+  `scripts/build-apps.sh` refreshes selected stick binaries from current apps.
 
 ```bash
-# Kernel menu browse (mount + list + quit)
-python simulate.py --ch376 --headless --input $'l\r0\r' --max-cycles 15000000
+# Shell: mount + list (dirs first) + quit
+python simulate.py --ch376 --headless --input $'mount\rdir\r' --max-cycles 15000000
 
 # storage_smoke round-trip (needs rebuilt kernel ROM)
 python simulate.py --ch376 --autorun --program roms/apps/current/asm/storage_smoke.bin \
@@ -1007,10 +1027,11 @@ kernel/
   math.asm               - Multiplication, division, sqrt, 16-bit signed math
   utils.asm              - Hex/decimal conversions
   xmodem.asm             - XMODEM/CRC file transfer
-  storage/               - CH376S USB mass-storage driver + menu l/w (optional hardware)
+  shell.asm              - Word shell (USB + monitor builtins, Tab-complete)
+  storage/               - CH376S USB mass-storage driver + dir listing helpers
   tests.asm              - CPU instruction tests (debug build only)
   float.asm              - Floating point (WIP)
-apps/                    - Example applications
+apps/                    - Example applications (incl. edit.asm line editor)
 forth/                   - FORTH language interpreter (legacy, not built)
 pascal/
   pmachine.asm           - P-Machine interpreter (part of unified build)

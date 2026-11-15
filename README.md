@@ -29,7 +29,7 @@ Summarizing the technical characteristics, Otto is configured as follows:
 * 2x serial/USB interface
 * 3x maskable interrupt lines and 10Hz timer interrupt
 
-**Display and I/O (optional):** a [LilyGO TTGO VGA32](devices/vga32/README.md) can serve as Otto's VGA/PS/2 console over UART (115200 8N1, level shifter), with optional WiFi app upload via the `OttoTerminal` firmware. Program storage on Otto is planned via **CH376S** on serial port 2 (not implemented yet).
+**Display and I/O (optional):** a [LilyGO TTGO VGA32](devices/vga32/README.md) can serve as Otto's VGA/PS/2 console over UART (115200 8N1, level shifter), with optional WiFi app upload via the `OttoTerminal` firmware. Optional **CH376S** USB mass-storage on serial port 2 (ACIA #2) is supported in the kernel (`mount` / `dir` / `load` / `save` / …); see `kernel/storage/README.md`.
 
 # Repository Contents
 
@@ -62,12 +62,11 @@ This repository houses the complete design files and software components for the
 * **scripts/build-apps.sh** / **scripts/save-kernel-abi.sh** - App builds and kernel ABI snapshots
 
 ### System Software
-* **kernel/** - Operating system kernel source code
-* **apps/** - Example applications and demos
-* **pascal/** - Tiny Pascal system (part of the unified ROM build)
-  * **pmachine.asm** - P-Machine bytecode interpreter
-  * **editor.asm** - On-board line editor
-  * **compiler.asm** - On-board single-pass Pascal compiler
+* **kernel/** - Operating system kernel source code (incl. `shell.asm` word shell + `storage/` CH376 driver)
+* **apps/** - Example applications and demos (incl. `edit.asm` USB line editor, `tinypascal_ide.asm`)
+* **pascal/** - Tiny Pascal system (P-Machine in unified ROM; IDE built as an app)
+  * **pmachine.asm** - P-Machine bytecode interpreter (in ROM)
+  * **editor.asm** / **compiler.asm** - On-board line editor and compiler (in `tinypascal_ide` app)
   * **consts.asm** - Constants and RAM layout
   * **LANGUAGE.md** - Tiny Pascal language reference
   * **examples/** - Pascal example programs
@@ -75,11 +74,12 @@ This repository houses the complete design files and software components for the
 * **forth/** - FORTH language interpreter (deprecated, files retained but excluded from build)
 * **devices/vga32/** - optional VGA32 console firmware (`OttoTerminal`) and build script
 * **roms/** - Binary files
-  * **system/** - Microcode EEPROMs, unified kernel ROM (kernel + P-Machine + editor + compiler)
+  * **system/** - Microcode EEPROMs, unified kernel ROM (kernel + P-Machine)
   * **apps/** - Application binaries and OttoTerminal catalog
     * **catalog.json** - F10 app index (per-kernel targets)
-    * **current/asm/**, **current/pascal/** - Latest kernel builds
+    * **current/asm/**, **current/pascal/** - Latest kernel builds (incl. `tinypascal_ide.bin`, `edit.bin`)
     * **v\<version\>/asm/**, **v\<version\>/pascal/** - Apps for saved kernel ABI
+  * **sim/ch376/** - Virtual USB stick for `--ch376` simulator runs
 
 ### Documentation
 * **instruction.csv** - Complete assembly instruction reference
@@ -119,8 +119,9 @@ See `kernel/abi/README.md` and `scripts/README.md` for kernel ABI snapshots and 
    python pascal_compiler.py pascal/examples/hello.pas -o roms/apps/current/pascal/hello.bin
    python simulate.py --autorun --program roms/apps/current/pascal/hello.bin --max-cycles 1000000 --quiet
 
-   # Or use the on-board editor (kernel menu: 'e')
-   python simulate.py   # then type 'e' to enter editor
+   # Or load the TinyPascal IDE app at 0x020000 (u020000 / r020000)
+   python simulate.py --autorun --program roms/apps/current/asm/tinypascal_ide.bin \
+     --address 0x020000 --max-cycles 5000000
    ```
 
 ## Otto simulator
@@ -187,13 +188,13 @@ Exit codes: `0` = success, `1` = timeout, `2` = execution error.
 
 ## Tiny Pascal
 
-Otto includes a complete Tiny Pascal system: a P-Machine bytecode interpreter, a Python cross-compiler, and an on-board editor/compiler — all part of the unified 24 KB ROM build (kernel + P-Machine + editor + compiler share the same address space).
+Otto includes a complete Tiny Pascal system: a P-Machine bytecode interpreter in the unified ROM, a Python cross-compiler, and an on-board editor/compiler shipped as the `tinypascal_ide` app (load at **0x020000**).
 
 ### Components
 
-* **P-Machine** — a stack-based bytecode interpreter that executes P-code with support for 16-bit signed integers, 32-bit IEEE 754 floating point (`real` type), procedures, functions, recursion, arrays, `var` parameters, constants, and lexical scoping via static links.
+* **P-Machine** — a stack-based bytecode interpreter in ROM that executes P-code with support for 16-bit signed integers, 32-bit IEEE 754 floating point (`real` type), procedures, functions, recursion, arrays, `var` parameters, constants, and lexical scoping via static links.
 * **Cross-compiler** (`pascal_compiler.py`) — a Python tool that compiles Pascal source files into self-executing P-code binaries. The output can be loaded at 0x8400 and run with either the `r` (run) or `p` (Pascal) kernel commands.
-* **On-board editor/compiler** — a line editor and single-pass recursive descent compiler in native assembly, accessible via the kernel `e` command. Allows writing and running Pascal programs directly on Otto hardware without a host PC.
+* **On-board editor/compiler** (`apps/tinypascal_ide.asm`) — a line editor and single-pass recursive descent compiler in native assembly. Upload with **`u020000`**, run with **`r020000`**. Allows writing and running Pascal programs directly on Otto hardware without a host PC.
 
 ### Language Features
 
@@ -210,11 +211,11 @@ python simulate.py --autorun --program roms/apps/current/pascal/hello.bin --max-
 
 ### On-board editor (on Otto or in simulator)
 
-From the kernel menu, type `e` to enter the Pascal editor. Use `lo` to paste a program, `r` to compile and run:
+Load the IDE at 0x020000, then use `lo` to paste a program and `r` to compile and run:
 
 ```
-> e
-Pascal v0.2
+> r020000
+Pascal …
 H=help
 
 > lo
@@ -275,7 +276,7 @@ python scripts/python/microcode.py
 
 ## ROM generation
 
-The three ROM chips (24 KB total) are built as a single compilation unit via `generate-all.sh`. The kernel, P-Machine, editor, and compiler share the same address space (0x0000-0x5FFF) and are compiled together.
+The three ROM chips (24 KB total) are built as a single compilation unit via `generate-all.sh`. The kernel and P-Machine share the same address space (0x0000-0x5FFF). The TinyPascal IDE is built separately as an app (`roms/apps/current/asm/tinypascal_ide.bin`).
 
 ```sh
 source .venv/bin/activate && ./generate-all.sh

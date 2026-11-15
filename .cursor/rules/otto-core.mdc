@@ -45,10 +45,11 @@ Unified ROM (kernel + P-Machine) shares 0x0000–0x5FFF. `kernel/build_config.as
 
 1. Branches use **absolute** targets, not relative offsets
 2. "Zero page" = 16-bit addr; "absolute" = 24-bit addr
-3. Extra registers **D**, **E**; **D:E** is a 16-bit pointer (`LDA DE,X`, `LDA YDE,X`)
+3. Extra registers **D**, **E**; **D:E** is a 16-bit pointer (`LDA DE,X`, `LDA YDE,X`, `LDA (DE)+`, `LDA (YDE)+`)
 4. Overflow flag ≠ 6502 (internal indexing; equals carry)
 5. `JSR` is always 4 bytes (opcode + 3-byte address)
 6. `INW`/`DEW` for 16-bit memory inc/dec; `SBX` subtracts E from X
+7. `JMP (zp,X)` for table dispatch; `(YDE)+` does not advance Y across 64 KB
 
 ## Registers
 
