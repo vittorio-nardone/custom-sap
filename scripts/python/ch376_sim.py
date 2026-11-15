@@ -1,9 +1,9 @@
 """
 Minimal CH376S UART (Ch376msc) emulator for simulate.py.
 
-Enough protocol for kernel STORAGE_* and menu l/w: mount, browse (/*),
-file create/read/write, GET_STATUS.  Files live under a host directory
-(default roms/sim/ch376/).
+Enough protocol for kernel STORAGE_* and shell USB commands: mount, browse,
+file create/read/write/erase, dir create, GET_STATUS.  Files live under a
+host directory (default roms/sim/ch376/).
 """
 
 from __future__ import annotations
@@ -26,7 +26,9 @@ CMD_SET_FILE_NAME = 0x2F
 CMD_FILE_OPEN = 0x32
 CMD_FILE_ENUM_GO = 0x33
 CMD_FILE_CREATE = 0x34
+CMD_FILE_ERASE = 0x35
 CMD_FILE_CLOSE = 0x36
+CMD_DIR_CREATE = 0x40
 CMD_BYTE_READ = 0x3A
 CMD_BYTE_RD_GO = 0x3B
 CMD_BYTE_WRITE = 0x3C
@@ -152,6 +154,7 @@ class Ch376Sim:
         self.mounted = False
         self._last_status = INT_SUCCESS
         self._set_name = ""
+        self._cwd = self.root
         self._aliases: dict[str, Path] = {}
         # short_upper -> list of LFN FAT slots in directory order (last fragment first)
         self._lfn_by_short: dict[str, list[bytes]] = {}
@@ -250,20 +253,34 @@ class Ch376Sim:
         name = name.strip().upper()
         if name in ("", "/", "*", "/*"):
             return self.root
-        if name.startswith("/"):
+        if name in ("..", "/.."):
+            if self._cwd != self.root:
+                return self._cwd.parent
+            return self.root
+        absolute = name.startswith("/")
+        if absolute:
             rel = name.lstrip("/")
+            base = self.root
         else:
             rel = name
+            base = self._cwd
         if rel.endswith("/*"):
             rel = rel[:-2]
         parts = [p for p in rel.replace("\\", "/").split("/") if p and p != "."]
-        path = self.root
+        path = base
         for part in parts:
             if part == "..":
                 if path != self.root:
                     path = path.parent
             else:
-                path = path / part
+                # Prefer alias match in the current listing base
+                cand = path / part
+                if not cand.exists():
+                    # try short-name alias table built for path
+                    key = part.upper()
+                    if key in self._aliases:
+                        cand = self._aliases[key]
+                path = cand
         return path
 
     def _build_dir_listing(self, directory: Path, *, include_lfn: bool = False) -> list[bytes]:
@@ -332,6 +349,7 @@ class Ch376Sim:
         """Open a directory for BYTE_READ (ERR_OPEN_DIR), including LFN slots."""
         self._open_mode = "dir_open"
         self._open_path = directory
+        self._cwd = directory
         self._dir_read_entries = self._build_dir_listing(directory, include_lfn=True)
         self._dir_read_index = 0
         self._bind_dir_info(short)
@@ -340,6 +358,7 @@ class Ch376Sim:
     def _open_root_for_read(self) -> None:
         self._open_mode = "dir_open"
         self._open_path = self.root
+        self._cwd = self.root
         self._dir_read_entries = self._build_dir_listing(self.root, include_lfn=True)
         self._dir_read_index = 0
         self._respond_status(ERR_OPEN_DIR)
@@ -547,6 +566,7 @@ class Ch376Sim:
             return
         if cmd == CMD_DISK_MOUNT:
             self.mounted = True
+            self._cwd = self.root
             self._respond_status(INT_SUCCESS)
             return
         if cmd == CMD_FILE_OPEN:
@@ -557,6 +577,12 @@ class Ch376Sim:
             return
         if cmd == CMD_FILE_CREATE:
             self._handle_file_create()
+            return
+        if cmd == CMD_FILE_ERASE:
+            self._handle_file_erase()
+            return
+        if cmd == CMD_DIR_CREATE:
+            self._handle_dir_create()
             return
         if cmd in (CMD_BYTE_RD_GO, CMD_BYTE_WR_GO):
             self._respond_int(INT_SUCCESS)
@@ -618,4 +644,69 @@ class Ch376Sim:
         except OSError:
             self._respond_status(ERR_MISS_FILE)
             return
+        self._respond_int(INT_SUCCESS)
+
+    def _handle_file_erase(self) -> None:
+        """Delete by SET_FILE_NAME (files), or delete the currently open directory."""
+        path: Path | None = None
+        open_dir = self._open_mode in ("dir_open", "dir") and self._open_path is not None
+        if open_dir:
+            path = self._open_path
+        else:
+            path = self._resolve_path(self._set_name)
+            if path is not None and not path.exists():
+                key = self._set_name.strip().upper().lstrip("/")
+                if key in self._aliases:
+                    path = self._aliases[key]
+        if path is None or not path.exists():
+            self._open_mode = None
+            self._open_path = None
+            self._respond_status(ERR_MISS_FILE)
+            return
+        if path == self.root or path.name in (".", ".."):
+            self._respond_status(ERR_MISS_FILE)
+            return
+        if path.is_dir() and not open_dir:
+            # Directories must be opened first (rmdir path), like real CH376.
+            self._respond_status(ERR_OPEN_DIR)
+            return
+        try:
+            if path.is_dir():
+                if any(path.iterdir()):
+                    self._respond_status(ERR_MISS_FILE)
+                    return
+                path.rmdir()
+            else:
+                path.unlink()
+        except OSError:
+            self._respond_status(ERR_MISS_FILE)
+            return
+        if path == self._cwd:
+            self._cwd = path.parent if path.parent != path else self.root
+        self._open_mode = None
+        self._open_path = None
+        self._respond_int(INT_SUCCESS)
+
+    def _handle_dir_create(self) -> None:
+        path = self._resolve_path(self._set_name)
+        if path is None:
+            self._respond_status(ERR_MISS_FILE)
+            return
+        if path.exists():
+            if path.is_dir():
+                self._open_mode = "dir_open"
+                self._open_path = path
+                self._cwd = path
+                self._respond_int(INT_SUCCESS)
+                return
+            self._respond_status(ERR_MISS_FILE)
+            return
+        try:
+            path.mkdir(parents=False)
+        except OSError:
+            self._respond_status(ERR_MISS_FILE)
+            return
+        self._open_mode = "dir_open"
+        self._open_path = path
+        self._cwd = path
         self._respond_int(INT_SUCCESS)

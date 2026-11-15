@@ -52,7 +52,7 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.3.25"
+#const KERNEL_VERSION = "v1.4.49"
 #const KERNEL_BUILDDATE = "11/15/2026"
 
 #include "../assembly/ruledef.asm"
@@ -75,6 +75,7 @@
 #include "storage/ot.asm"
 #include "storage/api.asm"
 #include "storage/menu.asm"
+#include "shell.asm"
 #include "vt100.asm"
 #include "../pascal/pmachine.asm"
 
@@ -120,14 +121,16 @@ main:
     sta MAIN_MENU_ADDR_MSB
     lda 0x00
     sta MAIN_MENU_ADDR_LSB
+    jsr SHELL_INIT
 
 menu_ready:
-    jsr ACIA_SEND_NEWLINE
     lda 0x00
     sta MAIN_MENU_INPUT_BUFFER_COUNT
     sta MAIN_MENU_INPUT_CURSOR
-    lda 0x3E
-    jsr ACIA_SEND_CHAR
+    sta SHELL_HIST_PAINTED            ; nothing echoed after fresh prompt
+    lda 0xFF
+    sta SHELL_HIST_POS            ; live edit (not browsing history)
+    jsr SHELL_PROMPT
 
 .loop:
     lda ACIA_CONTROL_STATUS_ADDR  ; read serial 1 status
@@ -143,6 +146,13 @@ menu_ready:
     beq .backspace
     cmp 0x1B
     beq .escape
+    cmp 0x09
+    beq .tab
+    ; Editing breaks history browse (line becomes live draft)
+    pha
+    lda 0xFF
+    sta SHELL_HIST_POS
+    pla
     jsr ACIA_SEND_CHAR
     ldx MAIN_MENU_INPUT_CURSOR
     sta MAIN_MENU_INPUT_BUFFER,x
@@ -152,16 +162,36 @@ menu_ready:
     bcc .insert_skip_count
     stx MAIN_MENU_INPUT_BUFFER_COUNT
 .insert_skip_count:
-    cpx 0x0F
-    beq .menu_show_error
+    lda MAIN_MENU_INPUT_BUFFER_COUNT
+    sta SHELL_HIST_PAINTED
+    cpx SHELL_INPUT_MAX
+    bcs .menu_show_error
+    jmp .loop
+
+.tab:
+    lda 0xFF
+    sta SHELL_HIST_POS
+    jsr SHELL_TAB_COMPLETE
     jmp .loop
 
 .escape:
     jsr ACIA_READ_ESCAPE_KEY
+    cmp "A"
+    beq .hist_up
+    cmp "B"
+    beq .hist_down
     cmp "D"
     beq .cursor_left
     cmp "C"
     beq .cursor_right
+    jmp .loop
+
+.hist_up:
+    jsr SHELL_HIST_UP
+    jmp .loop
+
+.hist_down:
+    jsr SHELL_HIST_DOWN
     jmp .loop
 
 .cursor_left:
@@ -182,6 +212,8 @@ menu_ready:
 .backspace:
     lda MAIN_MENU_INPUT_CURSOR
     beq .loop
+    lda 0xFF
+    sta SHELL_HIST_POS
     dec MAIN_MENU_INPUT_CURSOR
     ldx MAIN_MENU_INPUT_CURSOR
 .backspace_shift:
@@ -195,6 +227,8 @@ menu_ready:
     jmp .backspace_shift
 .backspace_shift_done:
     dec MAIN_MENU_INPUT_BUFFER_COUNT
+    lda MAIN_MENU_INPUT_BUFFER_COUNT
+    sta SHELL_HIST_PAINTED
     jsr VT100_CURSOR_LEFT
     jsr VT100_CLEAR_LINE_END
     ldx MAIN_MENU_INPUT_CURSOR
@@ -218,35 +252,27 @@ menu_ready:
     jmp .loop
 
 .cmd_entered:
-    ldx MAIN_MENU_INPUT_BUFFER_COUNT 
-    cpx 0x00
-    beq .menu_show_help
-    lda MAIN_MENU_INPUT_BUFFER
-    cmp "d"
-    beq .menu_dump_command
-    cmp "u"
-    beq .menu_upload_command
-    cmp "r"
-    beq .menu_run_command
-    cmp "l"
-    beq .menu_usb_load_command
-    cmp "w"
-    beq .menu_usb_save_command
-    cmp "h"
-    beq .menu_help_command
-.menu_show_error:
-    ldd .menu_error_msg[15:8]
-    lde .menu_error_msg[7:0]
-    jsr ACIA_SEND_STRING
-    jmp menu_ready    
+    jsr SHELL_HIST_PUSH
+    jsr SHELL_DISPATCH
+    jmp menu_ready
 
-.menu_show_help:
-    ldd .menu_help_msg[15:8]
-    lde .menu_help_msg[7:0]
+.menu_show_error:
+    ldd menu_error_msg[15:8]
+    lde menu_error_msg[7:0]
     jsr ACIA_SEND_STRING
-    ; Print current default address dynamically
-    ldd .menu_default_addr_msg[15:8]
-    lde .menu_default_addr_msg[7:0]
+    jmp menu_ready
+
+; --------------------------------------
+
+MENU_HELP:
+    ldd menu_help_msg[15:8]
+    lde menu_help_msg[7:0]
+    jsr ACIA_SEND_STRING
+    ldd menu_adv_help_msg[15:8]
+    lde menu_adv_help_msg[7:0]
+    jsr ACIA_SEND_STRING
+    ldd menu_default_addr_msg[15:8]
+    lde menu_default_addr_msg[7:0]
     jsr ACIA_SEND_STRING
     lda MAIN_MENU_ADDR_PAGE
     jsr ACIA_SEND_HEX
@@ -257,20 +283,11 @@ menu_ready:
     lda ")"
     jsr ACIA_SEND_CHAR
     jsr ACIA_SEND_NEWLINE
-    jmp menu_ready
-
-.menu_help_command:
-    ldd .menu_help_msg[15:8]
-    lde .menu_help_msg[7:0]
-    jsr ACIA_SEND_STRING
-    ldd .menu_adv_help_msg[15:8]
-    lde .menu_adv_help_msg[7:0]
-    jsr ACIA_SEND_STRING
-    jmp menu_ready
+    rts
 
 ; --------------------------------------
 
-.menu_read_address:
+MENU_READ_ADDRESS:
     lda MAIN_MENU_INPUT_BUFFER_COUNT
     cmp 0x01
     beq .menu_read_address_default
@@ -321,7 +338,7 @@ menu_ready:
     clc
     rts
 
-.menu_store_address:
+MENU_STORE_ADDRESS:
     sty MAIN_MENU_ADDR_PAGE
     std MAIN_MENU_ADDR_MSB
     ste MAIN_MENU_ADDR_LSB
@@ -329,9 +346,15 @@ menu_ready:
 
 ; --------------------------------------
 
-.menu_dump_command:
-    jsr .menu_read_address
-    bcs .menu_show_error
+MENU_SHOW_ERROR_RTS:
+    ldd menu_error_msg[15:8]
+    lde menu_error_msg[7:0]
+    jsr ACIA_SEND_STRING
+    rts
+
+MENU_DUMP:
+    jsr MENU_READ_ADDRESS
+    bcs MENU_SHOW_ERROR_RTS
 
 .menu_dump_command_start:
     lda 0x00
@@ -414,7 +437,7 @@ menu_ready:
     inc MAIN_MENU_DUMP_COUNT
     lda MAIN_MENU_DUMP_COUNT
     cmp 0x10
-    beq menu_ready
+    beq .dump_done
     
     tea
     clc
@@ -428,9 +451,12 @@ menu_ready:
     iny
     jmp .menu_dump_command_dump_16byte
 
-.menu_upload_command:
-    jsr .menu_read_address
-    bcs .menu_show_error
+.dump_done:
+    jmp ACIA_SEND_NEWLINE
+
+MENU_UPLOAD:
+    jsr MENU_READ_ADDRESS
+    bcs MENU_SHOW_ERROR_RTS
     ; Set auto-detect flag based on whether address was explicit
     lda MAIN_MENU_INPUT_BUFFER_COUNT
     cmp 0x01
@@ -445,8 +471,8 @@ menu_ready:
 .menu_upload_command_start:
     phd
     phe
-    ldd .menu_upload_command_start_msg[15:8]
-    lde .menu_upload_command_start_msg[7:0]
+    ldd menu_upload_command_start_msg[15:8]
+    lde menu_upload_command_start_msg[7:0]
     jsr ACIA_SEND_STRING
     ple
     pld
@@ -456,8 +482,8 @@ menu_ready:
     cmp 0x02
     bne .menu_upload_failed
     ; Upload successful — show immediate feedback
-    ldd .menu_upload_command_ok_msg[15:8]
-    lde .menu_upload_command_ok_msg[7:0]
+    ldd menu_upload_command_ok_msg[15:8]
+    lde menu_upload_command_ok_msg[7:0]
     jsr ACIA_SEND_STRING
     ; Check if OT header was detected (XMODEM_AUTO_ADDR == 2)
     lda XMODEM_AUTO_ADDR
@@ -471,8 +497,8 @@ menu_ready:
     lda XMODEM_LOAD_PTR
     sta MAIN_MENU_ADDR_LSB
     ; Print new default address
-    ldd .menu_upload_addr_msg[15:8]
-    lde .menu_upload_addr_msg[7:0]
+    ldd menu_upload_addr_msg[15:8]
+    lde menu_upload_addr_msg[7:0]
     jsr ACIA_SEND_STRING
     lda MAIN_MENU_ADDR_PAGE
     jsr ACIA_SEND_HEX
@@ -483,121 +509,90 @@ menu_ready:
     jsr ACIA_SEND_NEWLINE
     jmp .menu_upload_done
 .menu_upload_failed:
-    ldd .menu_upload_command_error_msg[15:8]
-    lde .menu_upload_command_error_msg[7:0]
+    ldd menu_upload_command_error_msg[15:8]
+    lde menu_upload_command_error_msg[7:0]
     jsr ACIA_SEND_STRING
 .menu_upload_done:
     lda 0x00
     sta MAIN_MENU_STATUS
-    jmp menu_ready
+    rts
 
-.menu_run_command:
-    jsr .menu_read_address
-    bcs .menu_show_error
-    jsr .menu_store_address
+MENU_RUN:
+    jsr MENU_READ_ADDRESS
+    bcs MENU_SHOW_ERROR_RTS
+    jsr MENU_STORE_ADDRESS
 
-.menu_run_command_start:
+MENU_RUN_START:
     ; JSR indirect: pointer to 24-bit target at MAIN_MENU_ADDR_PAGE..+2 (big-endian page,hi,lo)
     #d 0x93, 0x00, MAIN_MENU_ADDR_PAGE[15:8], MAIN_MENU_ADDR_PAGE[7:0]
 
-    ldd .menu_run_command_end_msg[15:8]
-    lde .menu_run_command_end_msg[7:0]
+    ldd menu_run_command_end_msg[15:8]
+    lde menu_run_command_end_msg[7:0]
     jsr ACIA_SEND_STRING
-
-    jmp menu_ready
+    rts
 
 ; --------------------------------------
 
-.menu_usb_load_command:
-    jsr .menu_read_address
-    bcs .menu_show_error
-    sty STORAGE_ADDR_PAGE
-    std STORAGE_ADDR_MSB
-    ste STORAGE_ADDR_LSB
-    ; No explicit address: take the destination from the OT header.
-    lda MAIN_MENU_INPUT_BUFFER_COUNT
-    cmp 0x01
-    bne .menu_usb_load_explicit
-    lda 0x01
-    jmp .menu_usb_load_start
-.menu_usb_load_explicit:
-    lda 0x00
-.menu_usb_load_start:
-    sta CH376_OT_AUTO
-    jsr STORAGE_MENU_LOAD
-    jmp menu_ready
-
-.menu_usb_save_command:
-    jsr .menu_read_address
-    bcs .menu_show_error
-    sty CH376_SAVE_PAGE
-    std CH376_SAVE_MSB
-    ste CH376_SAVE_LSB
-    jsr STORAGE_MENU_SAVE
-    jmp menu_ready
-
-.menu_help_msg:
-    #d 0x0A, 0x0D, 0x0A, 0x0D
-    #d "Project OTTO Kernel - ", KERNEL_VERSION, " (", KERNEL_BUILDDATE, ")", 0x0A, 0x0D
-    #d "Valid commands:", 0x0A, 0x0D
-    #d "   dyyxxxx  - Dump memory ", 0x0A, 0x0D
-    #d "   uyyxxxx  - Upload application", 0x0A, 0x0D
-    #d "   ryyxxxx  - Run application", 0x0A, 0x0D
-    #d "   lyyxxxx  - Load application from USB storage", 0x0A, 0x0D
-    #d "   wyyxxxx  - Write memory to USB storage", 0x0A, 0x0D
-    #d "   h        - show Help", 0x0A, 0x0D
-    #d 0x00
-
-.menu_adv_help_msg:    
+menu_help_msg:
     #d 0x0A, 0x0D
-    #d "Examples:", 0x0A, 0x0D
-    #d "   d        - dump the contents of memory at the default address", 0x0A, 0x0D
-    #d "   d8000    - dump the contents of memory starting from location 0x8000", 0x0A, 0x0D
-    #d "   u010000  - upload an application and store it at location 0x010000", 0x0A, 0x0D
-    #d "   u020000  - upload TinyPascal IDE (tinypascal_ide.bin) to expansion RAM page 2", 0x0A, 0x0D
-    #d "   r020000  - run TinyPascal IDE (after u020000)", 0x0A, 0x0D
-    #d "   l        - browse USB storage, load using the OT header address", 0x0A, 0x0D
-    #d "   l010000  - browse USB storage, load at location 0x010000", 0x0A, 0x0D
-    #d "   w8400    - write memory from 0x8400 to a USB file (asks length, name)", 0x0A, 0x0D
-    #d 0x0A, 0x0D  
-    #d "Memory map:", 0x0A, 0x0D     
-    #d "   0x0000-0x5FFF      - ROM", 0x0A, 0x0D
-    #d "   0x6000-0x83FF      - reserved", 0x0A, 0x0D
-    #d "   0x8400-0xEFFF      - free RAM (27KB)", 0x0A, 0x0D
-    #d "   0xF000-0xFFFF      - reserved", 0x0A, 0x0D
-    #d "   0x010000-0x01FFFF  - free RAM (64KB) - expansion #1", 0x0A, 0x0D
-    #d "   0x020000-0x02FFFF  - free RAM (64KB) - expansion #2", 0x0A, 0x0D
+    #d "Otto Kernel ", KERNEL_VERSION, " (", KERNEL_BUILDDATE, ")", 0x0A, 0x0D
+    #d "Native commands:", 0x0A, 0x0D
+    #d "  help,?              show this help", 0x0A, 0x0D
+    #d "  ver                 kernel version", 0x0A, 0x0D
+    #d "  cls                 clear screen", 0x0A, 0x0D
+    #d "  addr [hex]          show/set working address", 0x0A, 0x0D
+    #d "  dump [addr]         hex+ASCII memory dump", 0x0A, 0x0D
+    #d "  call [addr]         JSR to address", 0x0A, 0x0D
+    #d "  upload [addr]       XMODEM receive to memory", 0x0A, 0x0D
+    #d "  peek addr           read one byte", 0x0A, 0x0D
+    #d "  poke addr val       write one byte", 0x0A, 0x0D
+    #d "  fill addr len val   fill memory range", 0x0A, 0x0D
+    #d "  copy src dst len    copy memory range", 0x0A, 0x0D
     #d 0x00
 
-.menu_error_msg:
+menu_adv_help_msg:
+    #d "  mount / umount      USB storage", 0x0A, 0x0D
+    #d "  dir / cd [path]     list / change directory", 0x0A, 0x0D
+    #d "  mkdir / rmdir name  create / remove directory", 0x0A, 0x0D
+    #d "  del name            delete file", 0x0A, 0x0D
+    #d "  type file           print text file", 0x0A, 0x0D
+    #d "  load file [addr]    load from USB", 0x0A, 0x0D
+    #d "  save file len [addr]  save memory to USB (+OT)", 0x0A, 0x0D
+    #d "  exec file / <name>  load+run (NAME.BIN)", 0x0A, 0x0D
+    #d 0x0A, 0x0D
+    #d "Legacy: d/u/r/h[+hex]  (e.g. d8400, r)", 0x0A, 0x0D
+    #d "Addr hex: 8400 or 020000. Default addr below.", 0x0A, 0x0D
+    #d 0x00
+
+menu_error_msg:
     #d 0x0A, 0x0D
     #d "?syntax error", 0x0A, 0x0D 
     #d 0x00
 
-.menu_run_command_end_msg:
+menu_run_command_end_msg:
     #d 0x0A, 0x0D
     #d "INFO: Execution ended.", 0x0A, 0x0D 
     #d 0x00
 
-.menu_upload_command_error_msg:
+menu_upload_command_error_msg:
     #d 0x0A, 0x0D
     #d "INFO: Upload Failed!", 0x0A, 0x0D 
     #d 0x00
 
-.menu_upload_command_ok_msg:
+menu_upload_command_ok_msg:
     #d 0x0A, 0x0D
     #d "INFO: Upload Successful!", 0x0A, 0x0D 
     #d 0x00
 
-.menu_upload_addr_msg:
+menu_upload_addr_msg:
     #d "INFO: Default address set to 0x"
     #d 0x00
 
-.menu_default_addr_msg:
-    #d "   (default address: 0x"
+menu_default_addr_msg:
+    #d "  (addr 0x"
     #d 0x00
 
-.menu_upload_command_start_msg:
+menu_upload_command_start_msg:
     #d 0x0A, 0x0D
     #d "INFO: Begin XMODEM/CRC transfer.  Press <Esc> to abort..."
     #d 0x0A, 0x0D

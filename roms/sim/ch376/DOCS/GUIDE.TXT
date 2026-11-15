@@ -1,0 +1,1 @@
+Otto docs: try cd DOCS then type GUIDE.TXT

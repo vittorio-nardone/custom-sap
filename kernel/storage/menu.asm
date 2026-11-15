@@ -1,212 +1,8 @@
-; Kernel USB menu: browse and load ("l"), save a memory range ("w").
-;
-; The entry table lives in application RAM (STORAGE_NAMES) and is only valid
-; while one of these commands is running.
+; Kernel USB directory helpers for the shell (dir / load / exec / cd #HH).
+; Public app API is STORAGE_* in api.asm — this file is listing + path helpers.
 
 #once
 #bank kernel
-
-; **********************************************************
-; SUBROUTINE: STORAGE_MENU_LOAD
-;
-; INPUTS:
-;   CH376_OT_AUTO              1 = address comes from the OT header
-;   STORAGE_ADDR_PAGE/MSB/LSB  destination when CH376_OT_AUTO = 0
-; **********************************************************
-
-STORAGE_MENU_LOAD:
-    jsr storage_mount_verbose
-    bcc .done
-    lda 0x00
-    sta CH376_DEPTH
-
-.browse:
-    jsr storage_list_dir
-    bcc .failed
-    lda CH376_FILE_COUNT
-    bne .menu
-    ldd storage_msg_empty[15:8]
-    lde storage_msg_empty[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_DEPTH
-    beq .done
-
-.menu:
-    ldd storage_msg_prompt[15:8]
-    lde storage_msg_prompt[7:0]
-    jsr ACIA_SEND_STRING
-    jsr storage_read_selection
-    lda CH376_SELECT
-    beq .done
-    cmp CH376_FILE_COUNT
-    beq .selected
-    bcc .selected
-    jmp .bad
-
-.selected:
-    jsr storage_entry_is_dir
-    bcs .enter
-    jmp .load_selected
-
-.enter:
-    jsr storage_enter_dir
-    bcc .bad
-    jmp .browse
-
-.bad:
-    ldd storage_msg_bad_sel[15:8]
-    lde storage_msg_bad_sel[7:0]
-    jsr ACIA_SEND_STRING
-    jmp .menu
-
-.failed:
-    ldd storage_msg_list_fail[15:8]
-    lde storage_msg_list_fail[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_LAST_STATUS
-    jsr ACIA_SEND_HEX
-    jsr ACIA_SEND_NEWLINE
-.done:
-    rts
-
-.load_selected:
-    jsr storage_entry_ptr_select
-    jsr storage_build_open_name
-    bcc .load_failed
-    lda CH376_SIZE_3
-    ora CH376_SIZE_2
-    bne .too_big
-    lda CH376_SIZE_0
-    sta CH376_TOTAL_LO
-    lda CH376_SIZE_1
-    sta CH376_TOTAL_HI
-
-    ldd storage_msg_loading[15:8]
-    lde storage_msg_loading[7:0]
-    jsr ACIA_SEND_STRING
-    jsr storage_print_selected_name
-    jsr ACIA_SEND_NEWLINE
-
-    jsr STORAGE_LOAD_FILE
-    bcc .load_failed
-
-    ldd storage_msg_loaded[15:8]
-    lde storage_msg_loaded[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_LOADED_HI
-    jsr ACIA_SEND_HEX
-    lda CH376_LOADED_LO
-    jsr ACIA_SEND_HEX
-    ldd storage_msg_loaded_at[15:8]
-    lde storage_msg_loaded_at[7:0]
-    jsr ACIA_SEND_STRING
-    lda STORAGE_LOAD_PTRP
-    jsr ACIA_SEND_HEX
-    lda STORAGE_LOAD_PTRH
-    jsr ACIA_SEND_HEX
-    lda STORAGE_LOAD_PTR
-    jsr ACIA_SEND_HEX
-    jsr ACIA_SEND_NEWLINE
-
-    ; The loaded image becomes the default address for d/r.
-    lda STORAGE_LOAD_PTRP
-    sta MAIN_MENU_ADDR_PAGE
-    lda STORAGE_LOAD_PTRH
-    sta MAIN_MENU_ADDR_MSB
-    lda STORAGE_LOAD_PTR
-    sta MAIN_MENU_ADDR_LSB
-    rts
-
-.too_big:
-    ldd storage_msg_too_big[15:8]
-    lde storage_msg_too_big[7:0]
-    jsr ACIA_SEND_STRING
-    rts
-
-.load_failed:
-    ldd storage_msg_load_fail[15:8]
-    lde storage_msg_load_fail[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_LAST_STATUS
-    jsr ACIA_SEND_HEX
-    jsr ACIA_SEND_NEWLINE
-    rts
-
-; **********************************************************
-; SUBROUTINE: STORAGE_MENU_SAVE
-;
-; INPUTS:
-;   CH376_SAVE_PAGE/MSB/LSB    memory range start
-; **********************************************************
-
-STORAGE_MENU_SAVE:
-    jsr storage_mount_verbose
-    bcc .done
-
-    ldd storage_msg_save_from[15:8]
-    lde storage_msg_save_from[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_SAVE_PAGE
-    jsr ACIA_SEND_HEX
-    lda CH376_SAVE_MSB
-    jsr ACIA_SEND_HEX
-    lda CH376_SAVE_LSB
-    jsr ACIA_SEND_HEX
-    jsr ACIA_SEND_NEWLINE
-
-    ldd storage_msg_save_len[15:8]
-    lde storage_msg_save_len[7:0]
-    jsr ACIA_SEND_STRING
-    jsr storage_read_hex16
-    bcc .bad
-    lda CH376_TOTAL_LO
-    ora CH376_TOTAL_HI
-    beq .bad
-
-    ldd storage_msg_save_name[15:8]
-    lde storage_msg_save_name[7:0]
-    jsr ACIA_SEND_STRING
-    jsr storage_read_fname
-    bcc .bad
-
-    lda 0x01
-    sta CH376_OT_FLAG
-    ldd storage_msg_saving[15:8]
-    lde storage_msg_saving[7:0]
-    jsr ACIA_SEND_STRING
-    ldd CH376_FNBUF[15:8]
-    lde CH376_FNBUF[7:0]
-    jsr ACIA_SEND_STRING
-    jsr ACIA_SEND_NEWLINE
-
-    jsr STORAGE_SAVE_FILE
-    bcc .save_failed
-
-    ldd storage_msg_saved[15:8]
-    lde storage_msg_saved[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_LOADED_HI
-    jsr ACIA_SEND_HEX
-    lda CH376_LOADED_LO
-    jsr ACIA_SEND_HEX
-    jsr ACIA_SEND_NEWLINE
-.done:
-    rts
-
-.bad:
-    ldd storage_msg_bad_input[15:8]
-    lde storage_msg_bad_input[7:0]
-    jsr ACIA_SEND_STRING
-    rts
-
-.save_failed:
-    ldd storage_msg_save_fail[15:8]
-    lde storage_msg_save_fail[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_LAST_STATUS
-    jsr ACIA_SEND_HEX
-    jsr ACIA_SEND_NEWLINE
-    rts
 
 ; ---- Mount with progress / error reporting ----
 storage_mount_verbose:
@@ -243,19 +39,8 @@ storage_list_dir:
     jsr storage_lfn_clear
 
     lda CH376_DEPTH
-    bne .hdr_sub
-    ldd storage_msg_root[15:8]
-    lde storage_msg_root[7:0]
-    jmp .hdr_done
-.hdr_sub:
-    ldd storage_msg_subdir[15:8]
-    lde storage_msg_subdir[7:0]
-.hdr_done:
-    jsr ACIA_SEND_STRING
-
-    lda CH376_DEPTH
     beq .open_root
-    ; Subdirectory was left open by storage_enter_dir.
+    ; Subdirectory left open by shell_sync_cwd / cd.
     jmp .opened
 
 .open_root:
@@ -316,8 +101,17 @@ storage_list_dir:
     lda 0x00
     jsr ch376_cmd_file_close
     jsr ch376_set_timeout
-    ldd storage_msg_entries[15:8]
-    lde storage_msg_entries[7:0]
+    jsr storage_list_sort
+    lda CH376_LIST_STYLE
+    cmp 0x01
+    beq .print_all
+    ; quiet (2) or other: sorted table only
+    sec
+    rts
+.print_all:
+    jsr storage_list_print_all
+    ldd storage_msg_total[15:8]
+    lde storage_msg_total[7:0]
     jsr ACIA_SEND_STRING
     lda CH376_FILE_COUNT
     jsr ACIA_SEND_DECIMAL
@@ -372,74 +166,12 @@ storage_list_emit:
     jsr storage_lfn_bind
     jsr storage_store_entry
     jsr storage_store_lfn
-    lda CH376_FILE_COUNT
-    clc
-    adc 0x01
-    sta CH376_LIST_NUM
-    jsr storage_print_entry_line
     jsr storage_lfn_clear
     inc CH376_FILE_COUNT
     rts
 
 .discard:
     jsr storage_lfn_clear
-    rts
-
-; After enum: for each stored entry fetch LFN (EXAM11-style) and print the line.
-; (Kept for reference / probe parity — listing now uses BYTE_READ + absorb.)
-storage_list_finish_display:
-    lda 0x00
-    sta CH376_LIST_IDX
-.fin_loop:
-    lda CH376_LIST_IDX
-    cmp CH376_FILE_COUNT
-    bcs .fin_done
-    clc
-    adc 0x01
-    sta CH376_SELECT
-    sta CH376_LIST_NUM
-    jsr storage_entry_ptr_select
-    jsr storage_copy_entry_to_buf
-    jsr storage_try_fetch_lfn
-    ; fetch clobbers CH376_BUF — reload 8.3/size for the printed line.
-    jsr storage_entry_ptr_select
-    jsr storage_copy_entry_to_buf
-    jsr storage_print_entry_line
-    inc CH376_LIST_IDX
-    jmp .fin_loop
-.fin_done:
-    rts
-
-; Y:DE -> NAMES entry (11 name + 4 size + 1 flags).
-; Copies name/size into CH376_BUF FAT layout and flags into CH376_ENTRY_FLAGS.
-storage_copy_entry_to_buf:
-    ldx 0x00
-.name:
-    cpx 0x0B
-    bcs .size
-    lda yde,x
-    sta CH376_BUF,x
-    inx
-    jmp .name
-.size:
-    ldx 0x00
-.sz:
-    cpx 0x04
-    bcs .flags
-    txa
-    clc
-    adc 0x0B
-    phx
-    tax
-    lda yde,x
-    plx
-    sta CH376_BUF+0x1C,x
-    inx
-    jmp .sz
-.flags:
-    ldx 0x0F
-    lda yde,x
-    sta CH376_ENTRY_FLAGS
     rts
 
 ; Skip "." and ".." only. C=1 keep, C=0 skip.
@@ -494,29 +226,336 @@ storage_inject_dotdot:
     jsr storage_lfn_clear
     jsr storage_store_entry
     jsr storage_store_lfn
-    lda CH376_FILE_COUNT
-    clc
-    adc 0x01
-    sta CH376_LIST_NUM
-    jsr storage_print_entry_line
     inc CH376_FILE_COUNT
 .done:
     rts
 
+; ---- Sort STORAGE_NAMES (+ LFN): ".." first, dirs, files; alpha 8.3 ----
+; Uses SHELL_WORK+8/+9 for j/limit — entry_ptr clobbers CH376_SCRATCH*.
+storage_list_sort:
+    lda CH376_FILE_COUNT
+    cmp 0x02
+    bcc .done
+    ; bubble: LIST_IDX = i (0..n-2), WORK+8 = j, WORK+9 = inner limit
+    lda 0x00
+    sta CH376_LIST_IDX
+.outer:
+    lda CH376_FILE_COUNT
+    sec
+    sbc 0x01
+    sec
+    sbc CH376_LIST_IDX
+    beq .done
+    sta SHELL_WORK+9              ; inner limit
+    lda 0x00
+    sta SHELL_WORK+8              ; j
+.inner:
+    lda SHELL_WORK+8
+    jsr storage_list_cmp_next     ; C=1 if names[j] > names[j+1]
+    bcc .noswap
+    jsr storage_list_swap_j
+.noswap:
+    inc SHELL_WORK+8
+    lda SHELL_WORK+8
+    cmp SHELL_WORK+9
+    bcc .inner
+    inc CH376_LIST_IDX
+    jmp .outer
+.done:
+    rts
+
+; A = j (0-based). C=1 if entry j should sort after j+1.
+storage_list_cmp_next:
+    sta CH376_SELECT
+    jsr storage_entry_rank_a
+    lda SHELL_WORK+0
+    sta SHELL_WORK+1              ; rank j
+    lda CH376_SELECT
+    clc
+    adc 0x01
+    jsr storage_entry_rank_a      ; rank j+1
+    lda SHELL_WORK+1
+    cmp SHELL_WORK+0
+    bcc .less
+    bne .greater
+    ; same rank: copy j name to BUF, compare to j+1
+    lda CH376_SELECT
+    jsr storage_entry_ptr_a
+    ldx 0x00
+.cpj:
+    lda yde,x
+    sta CH376_BUF,x
+    inx
+    cpx 0x0B
+    bcc .cpj
+    lda CH376_SELECT
+    clc
+    adc 0x01
+    jsr storage_entry_ptr_a
+    ldx 0x00
+.cmp:
+    lda yde,x
+    sta SHELL_WORK+2              ; j+1 char
+    lda CH376_BUF,x
+    cmp SHELL_WORK+2
+    bcc .less                     ; j < j+1
+    bne .greater                  ; j > j+1
+    inx
+    cpx 0x0B
+    bcc .cmp
+.less:
+    clc
+    rts
+.greater:
+    sec
+    rts
+
+; A = 0-based index → SHELL_WORK+0 = sort rank (0=.., 1=dir, 2=file), YDE=entry
+storage_entry_rank_a:
+    jsr storage_entry_ptr_a
+    ldx 0x00
+    lda yde,x
+    cmp 0x2E
+    bne .not_dot
+    inx
+    lda yde,x
+    cmp 0x2E
+    bne .not_dot
+    lda 0x00
+    sta SHELL_WORK+0
+    rts
+.not_dot:
+    ldx 0x0F
+    lda yde,x
+    and CH376_ENTRY_FLAG_DIR
+    beq .file
+    lda 0x01
+    sta SHELL_WORK+0
+    rts
+.file:
+    lda 0x02
+    sta SHELL_WORK+0
+    rts
+
+; Swap entries j and j+1 (j in CH376_SELECT). Also swap LFN slots.
+storage_list_swap_j:
+    ; NAMES: 16 bytes via BUF
+    lda CH376_SELECT
+    jsr storage_entry_ptr_a
+    ldx 0x00
+.s1:
+    lda yde,x
+    sta CH376_BUF,x
+    inx
+    cpx 0x10
+    bcc .s1
+    lda CH376_SELECT
+    clc
+    adc 0x01
+    jsr storage_entry_ptr_a
+    ldx 0x00
+.s2:
+    lda yde,x
+    sta CH376_BUF+0x10,x
+    inx
+    cpx 0x10
+    bcc .s2
+    ; write j ← old j+1
+    lda CH376_SELECT
+    jsr storage_entry_ptr_a
+    ldx 0x00
+.s3:
+    lda CH376_BUF+0x10,x
+    sta yde,x
+    inx
+    cpx 0x10
+    bcc .s3
+    ; write j+1 ← old j
+    lda CH376_SELECT
+    clc
+    adc 0x01
+    jsr storage_entry_ptr_a
+    ldx 0x00
+.s4:
+    lda CH376_BUF,x
+    sta yde,x
+    inx
+    cpx 0x10
+    bcc .s4
+    ; LFN slots (32 bytes) via LFN_TMP as half-temp — use BUF again in two passes
+    lda CH376_SELECT
+    jsr storage_lfn_ptr_a
+    ldx 0x00
+.l1:
+    lda yde,x
+    sta CH376_LFN_TMP,x
+    inx
+    cpx 0x20
+    bcc .l1
+    lda CH376_SELECT
+    clc
+    adc 0x01
+    jsr storage_lfn_ptr_a
+    ; copy j+1 → temp in BUF (32 bytes)
+    ldx 0x00
+.l2:
+    lda yde,x
+    sta CH376_BUF,x
+    inx
+    cpx 0x20
+    bcc .l2
+    ; j ← BUF (old j+1)
+    lda CH376_SELECT
+    jsr storage_lfn_ptr_a
+    ldx 0x00
+.l3:
+    lda CH376_BUF,x
+    sta yde,x
+    inx
+    cpx 0x20
+    bcc .l3
+    ; j+1 ← LFN_TMP (old j)
+    lda CH376_SELECT
+    clc
+    adc 0x01
+    jsr storage_lfn_ptr_a
+    ldx 0x00
+.l4:
+    lda CH376_LFN_TMP,x
+    sta yde,x
+    inx
+    cpx 0x20
+    bcc .l4
+    rts
+
+; Print sorted table (style 1). Reloads each entry into BUF/LFN_TMP.
+storage_list_print_all:
+    lda 0x00
+    sta CH376_LIST_IDX
+.lp:
+    lda CH376_LIST_IDX
+    cmp CH376_FILE_COUNT
+    bcs .done
+    clc
+    adc 0x01
+    sta CH376_LIST_NUM
+    sta CH376_SELECT
+    jsr storage_entry_ptr_select
+    ; name → BUF, size → BUF+0x1C, flags → ENTRY_FLAGS
+    ldx 0x00
+.nm:
+    cpx 0x0B
+    bcs .sz
+    lda yde,x
+    sta CH376_BUF,x
+    inx
+    jmp .nm
+.sz:
+    ldx 0x00
+.szl:
+    cpx 0x04
+    bcs .fl
+    txa
+    clc
+    adc 0x0B
+    phx
+    tax
+    lda yde,x
+    plx
+    sta CH376_BUF+0x1C,x
+    inx
+    jmp .szl
+.fl:
+    ldx 0x0F
+    lda yde,x
+    sta CH376_ENTRY_FLAGS
+    ; LFN
+    jsr storage_lfn_ptr_select
+    ldx 0x00
+    lda yde,x
+    beq .nolfn
+    ldx 0x00
+.lcpy:
+    lda yde,x
+    sta CH376_LFN_TMP,x
+    beq .lgot
+    inx
+    cpx CH376_LFN_DISP_MAX
+    bcc .lcpy
+    lda 0x00
+    sta CH376_LFN_TMP,x
+.lgot:
+    stx CH376_LFN_LEN
+    lda 0x01
+    sta CH376_LFN_READY
+    jmp .pr
+.nolfn:
+    lda 0x00
+    sta CH376_LFN_READY
+    sta CH376_LFN_LEN
+.pr:
+    jsr storage_print_entry_tab
+    inc CH376_LIST_IDX
+    jmp .lp
+.done:
+    rts
+
+; Print one listing line.
+; CH376_LIST_STYLE=1: tabular shell dir
+; CH376_LIST_STYLE=2: quiet (store only, used by load/exec)
 storage_print_entry_line:
+    lda CH376_LIST_STYLE
+    cmp 0x01
+    beq storage_print_entry_tab
+    rts                             ; quiet / unknown
+
+; Tabular: ## MODE SIZE 8.3 [LFN]
+; ## = 1-based index (hex) for shell refs: type #03 / cd #01
+storage_print_entry_tab:
     lda CH376_LIST_NUM
-    jsr ACIA_SEND_DECIMAL
-    lda 0x2E
-    jsr ACIA_SEND_CHAR
+    jsr ACIA_SEND_HEX
     lda 0x20
     jsr ACIA_SEND_CHAR
-    jsr storage_print_name
     lda CH376_ENTRY_FLAGS
     and CH376_ENTRY_FLAG_DIR
-    bne .dir
-    ; File: FAT size (32-bit LE at BUF+0x1C) as 8 hex digits, MSB first.
+    beq .file
+    lda 0x64                      ; 'd'
+    jsr ACIA_SEND_CHAR
     lda 0x20
     jsr ACIA_SEND_CHAR
+    ldd storage_tag_dir8[15:8]
+    lde storage_tag_dir8[7:0]
+    jsr ACIA_SEND_STRING
+    jmp .name
+.file:
+    lda 0x2D                      ; '-'
+    jsr ACIA_SEND_CHAR
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    jsr storage_print_size_hex
+.name:
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    jsr storage_print_name83_pad
+    lda CH376_LFN_READY
+    beq .nl
+    lda CH376_LFN_LEN
+    beq .nl
+    lda 0x20
+    jsr ACIA_SEND_CHAR
+    ldx 0x00
+.lfn:
+    cpx CH376_LFN_LEN
+    bcs .nl
+    lda CH376_LFN_TMP,x
+    jsr ACIA_SEND_CHAR
+    inx
+    jmp .lfn
+.nl:
+    jmp ACIA_SEND_NEWLINE
+
+; 8 hex digits from CH376_BUF+0x1C (LE → MSB first on wire).
+storage_print_size_hex:
     lda CH376_BUF+0x1F
     jsr ACIA_SEND_HEX
     lda CH376_BUF+0x1E
@@ -524,32 +563,10 @@ storage_print_entry_line:
     lda CH376_BUF+0x1D
     jsr ACIA_SEND_HEX
     lda CH376_BUF+0x1C
-    jsr ACIA_SEND_HEX
-    jmp ACIA_SEND_NEWLINE
-.dir:
-    ldd storage_tag_dir[15:8]
-    lde storage_tag_dir[7:0]
-    jsr ACIA_SEND_STRING
-    jmp ACIA_SEND_NEWLINE
-
-; Print LFN (if bound) else the 8.3 name from CH376_BUF.
-storage_print_name:
-    lda CH376_LFN_READY
-    beq storage_print_name83
-    lda CH376_LFN_LEN
-    beq storage_print_name83
-    ldx 0x00
-.lfn:
-    cpx CH376_LFN_LEN
-    bcs .done
-    lda CH376_LFN_TMP,x
-    jsr ACIA_SEND_CHAR
-    inx
-    jmp .lfn
-.done:
-    rts
+    jmp ACIA_SEND_HEX
 
 storage_print_name83:
+    ldy 0x00                      ; chars emitted (for pad helper)
     ldx 0x00
 .name:
     cpx 0x08
@@ -558,6 +575,7 @@ storage_print_name83:
     cmp 0x20
     beq .name_skip
     jsr ACIA_SEND_CHAR
+    iny
 .name_skip:
     inx
     jmp .name
@@ -567,6 +585,7 @@ storage_print_name83:
     beq .done
     lda 0x2E
     jsr ACIA_SEND_CHAR
+    iny
     ldx 0x08
 .ext_loop:
     cpx 0x0B
@@ -575,31 +594,25 @@ storage_print_name83:
     cmp 0x20
     beq .ext_skip
     jsr ACIA_SEND_CHAR
+    iny
 .ext_skip:
     inx
     jmp .ext_loop
 .done:
     rts
 
-; Print LFN for CH376_SELECT if stored, else CH376_FNBUF (open path).
-storage_print_selected_name:
-    jsr storage_lfn_ptr_select
-    ldx 0x00
-    lda yde,x
-    beq .short
-.lfn:
-    lda yde,x
-    beq .done
+; 8.3 left-aligned in a 12-char field (max "ABCDEFGH.XYZ").
+storage_print_name83_pad:
+    jsr storage_print_name83
+.pad:
+    cpy 0x0C
+    bcs .done
+    lda 0x20
     jsr ACIA_SEND_CHAR
-    inx
-    cpx CH376_LFN_ENTRY
-    bcc .lfn
+    iny
+    jmp .pad
 .done:
     rts
-.short:
-    ldd CH376_FNBUF[15:8]
-    lde CH376_FNBUF[7:0]
-    jmp ACIA_SEND_STRING
 
 ; Copy FAT 8.3 (11) + size LE (4) + flags (1) into NAMES[FILE_COUNT * 16]
 storage_store_entry:
@@ -631,9 +644,6 @@ storage_store_lfn:
     jsr storage_lfn_ptr_count
     jmp storage_store_lfn_at_yde
 
-; Copy bound LFN into STORAGE_LFN[SELECT-1].
-storage_store_lfn_selected:
-    jsr storage_lfn_ptr_select
 storage_store_lfn_at_yde:
     lda CH376_LFN_READY
     beq .empty
@@ -787,147 +797,6 @@ storage_lfn_bind:
     sta CH376_LFN_LEN
     rts
 
-; Open the short name in CH376_BUF / NAMES[SELECT-1], walk preceding DIR_INFO
-; slots (WCH EXAM11 / CH376GetLongName), fill TMP + STORAGE_LFN[SELECT-1].
-; Does not cross directory-sector boundaries (falls back to 8.3).
-storage_try_fetch_lfn:
-    lda CH376_BUF
-    cmp 0x2E
-    bne .open
-    lda CH376_BUF+1
-    cmp 0x2E
-    bne .open
-    ; ".." — no LFN
-    jmp .empty
-
-.open:
-    jsr storage_entry_ptr_select
-    jsr storage_build_open_name
-    bcc .empty
-    ldy 0x00
-    ldd CH376_FNBUF[15:8]
-    lde CH376_FNBUF[7:0]
-    jsr ch376_cmd_set_file_name
-    bcc .empty
-    jsr ch376_set_timeout_long
-    lda CH376_CMD_FILE_OPEN
-    jsr ch376_cmd_interrupt
-    bcc .empty
-    lda CH376_LAST_STATUS
-    cmp CH376_INT_SUCCESS
-    beq .opened
-    cmp CH376_ERR_OPEN_DIR
-    bne .empty
-
-.opened:
-    lda 0xFF
-    jsr ch376_cmd_dir_info_read
-    bcc .close_empty
-    lda CH376_LAST_STATUS
-    cmp CH376_INT_DISK_READ
-    bne .close_empty
-    jsr ch376_rd_dir_entry
-    jsr ch376_end_dir_info
-    jsr storage_lfn_checksum
-    sta CH376_LFN_CKSUM
-    jsr storage_lfn_clear_buf
-    lda CH376_VAR_FILE_DIR_IDX
-    jsr ch376_read_var8
-    bcc .close_empty
-    sta CH376_DIR_INDEX
-
-.walk:
-    lda CH376_DIR_INDEX
-    beq .close_empty
-    dec CH376_DIR_INDEX
-    lda CH376_DIR_INDEX
-    jsr ch376_cmd_dir_info_read
-    bcc .close_empty
-    lda CH376_LAST_STATUS
-    cmp CH376_INT_DISK_READ
-    bne .close_empty
-    jsr ch376_rd_dir_entry
-    jsr ch376_end_dir_info
-    lda CH376_BUF+11
-    and 0x3F
-    cmp CH376_LFN_ATTR
-    bne .close_empty
-    lda CH376_BUF+13
-    cmp CH376_LFN_CKSUM
-    bne .close_empty
-    jsr storage_lfn_append_slot
-    lda CH376_BUF
-    and CH376_LFN_LAST
-    beq .walk
-    ; Complete — measure ASCII length
-    ldx 0x00
-.len_scan:
-    cpx CH376_LFN_DISP_MAX
-    bcs .got
-    lda CH376_LFN_TMP,x
-    beq .got
-    inx
-    jmp .len_scan
-.got:
-    cpx 0x00
-    beq .close_empty
-    stx CH376_LFN_LEN
-    lda 0x01
-    sta CH376_LFN_READY
-    lda 0x00
-    jsr ch376_cmd_file_close
-    jsr ch376_set_timeout
-    jsr storage_store_lfn_selected
-    sec
-    rts
-
-.close_empty:
-    lda 0x00
-    jsr ch376_cmd_file_close
-.empty:
-    jsr ch376_set_timeout
-    jsr storage_lfn_clear
-    jsr storage_store_lfn_selected
-    clc
-    rts
-
-; Append up to 13 UCS-2 chars from the LFN slot in CH376_BUF onto TMP.
-storage_lfn_append_slot:
-    ldy 0x00
-.loop:
-    cpy 0x0D
-    bcs .done
-    lda storage_lfn_offs,y
-    tax
-    lda CH376_BUF,x
-    sta CH376_SCRATCH
-    inx
-    lda CH376_BUF,x
-    bne .non_ascii
-    lda CH376_SCRATCH
-    beq .done
-    jmp .store
-.non_ascii:
-    cmp 0xFF
-    bne .qmark
-    lda CH376_SCRATCH
-    cmp 0xFF
-    beq .done
-.qmark:
-    lda 0x3F
-.store:
-    ldx CH376_LFN_LEN
-    cpx CH376_LFN_DISP_MAX
-    bcs .next
-    sta CH376_LFN_TMP,x
-    inx
-    stx CH376_LFN_LEN
-.next:
-    iny
-    jmp .loop
-.done:
-    rts
-
 storage_lfn_offs:
     #d 0x01, 0x03, 0x05, 0x07, 0x09
     #d 0x0E, 0x10, 0x12, 0x14, 0x16, 0x18
@@ -1040,71 +909,6 @@ storage_entry_is_dir:
     clc
     rts
 
-; Open the selected directory (or ".."). Expects ERR_OPEN_DIR (0x41).
-storage_enter_dir:
-    jsr storage_entry_ptr_select
-    ldx 0x00
-    lda yde,x
-    cmp 0x2E
-    bne .build
-    inx
-    lda yde,x
-    cmp 0x2E
-    bne .build
-    lda 0x2E
-    sta CH376_FNBUF
-    sta CH376_FNBUF+1
-    lda 0x00
-    sta CH376_FNBUF+2
-    lda 0x01
-    sta CH376_DOTDOT
-    jmp .open
-.build:
-    lda 0x00
-    sta CH376_DOTDOT
-    jsr storage_build_open_name
-    bcc .fail
-.open:
-    ldd storage_msg_entering[15:8]
-    lde storage_msg_entering[7:0]
-    jsr ACIA_SEND_STRING
-    jsr storage_print_selected_name
-    jsr ACIA_SEND_NEWLINE
-
-    ldy 0x00
-    ldd CH376_FNBUF[15:8]
-    lde CH376_FNBUF[7:0]
-    jsr ch376_cmd_set_file_name
-    jsr ch376_set_timeout_long
-    lda CH376_CMD_FILE_OPEN
-    jsr ch376_cmd_interrupt
-    bcc .fail
-    lda CH376_LAST_STATUS
-    cmp CH376_ERR_OPEN_DIR
-    bne .fail
-    jsr ch376_set_timeout
-    lda CH376_DOTDOT
-    beq .down
-    lda CH376_DEPTH
-    beq .ok
-    dec CH376_DEPTH
-    jmp .ok
-.down:
-    inc CH376_DEPTH
-.ok:
-    sec
-    rts
-.fail:
-    jsr ch376_set_timeout
-    ldd storage_msg_open_fail[15:8]
-    lde storage_msg_open_fail[7:0]
-    jsr ACIA_SEND_STRING
-    lda CH376_LAST_STATUS
-    jsr ACIA_SEND_HEX
-    jsr ACIA_SEND_NEWLINE
-    clc
-    rts
-
 ; Y:DE = entry (11 name + 4 size + flags). Build the open path in CH376_FNBUF
 ; ('/' prefix only at root) and copy the size into CH376_SIZE_*.
 storage_build_open_name:
@@ -1191,238 +995,15 @@ storage_build_open_name:
     sec
     rts
 
-; Read a decimal selection (0..N) into CH376_SELECT.
-storage_read_selection:
-    lda 0x00
-    sta CH376_SELECT
-.loop:
-    jsr ACIA_READ_CHAR
-    cmp 0x0D
-    beq .done
-    cmp 0x0A
-    beq .done
-    cmp 0x30
-    bcc .loop
-    cmp 0x3A
-    bcs .loop
-    jsr ACIA_SEND_CHAR
-    sec
-    sbc 0x30
-    sta CH376_SCRATCH
-    lda CH376_SELECT
-    asl a
-    sta CH376_SELECT
-    asl a
-    asl a
-    clc
-    adc CH376_SELECT
-    clc
-    adc CH376_SCRATCH
-    sta CH376_SELECT
-    jmp .loop
-.done:
-    jsr ACIA_SEND_NEWLINE
-    sec
-    rts
-
-; Hex nibble in A -> C=1 with A=0..15, else C=0.
-storage_hex_nibble:
-    cmp 0x30
-    bcc .fail
-    cmp 0x3A
-    bcc .digit
-    cmp 0x41
-    bcc .fail
-    cmp 0x47
-    bcc .upper
-    cmp 0x61
-    bcc .fail
-    cmp 0x67
-    bcc .lower
-.fail:
-    clc
-    rts
-.digit:
-    sec
-    sbc 0x30
-    sec
-    rts
-.upper:
-    sec
-    sbc 0x37
-    sec
-    rts
-.lower:
-    sec
-    sbc 0x57
-    sec
-    rts
-
-; Read 1..4 hex digits into CH376_TOTAL_HI:CH376_TOTAL_LO. C=1 ok.
-storage_read_hex16:
-    lda 0x00
-    sta CH376_CMP_LSB
-    sta CH376_CMP_MSB
-    sta CH376_CMP_TMP
-.loop:
-    jsr ACIA_READ_CHAR
-    cmp 0x0D
-    beq .done
-    cmp 0x0A
-    beq .done
-    pha
-    jsr storage_hex_nibble
-    bcc .ignore
-    sta CH376_SCRATCH
-    pla
-    jsr ACIA_SEND_CHAR
-    lda CH376_CMP_TMP
-    cmp 0x04
-    bcs .loop
-    ldx 0x04
-.shift:
-    asl CH376_CMP_LSB
-    rol CH376_CMP_MSB
-    dex
-    bne .shift
-    lda CH376_CMP_LSB
-    ora CH376_SCRATCH
-    sta CH376_CMP_LSB
-    inc CH376_CMP_TMP
-    jmp .loop
-.ignore:
-    pla
-    jmp .loop
-.done:
-    jsr ACIA_SEND_NEWLINE
-    lda CH376_CMP_TMP
-    beq .fail
-    lda CH376_CMP_LSB
-    sta CH376_TOTAL_LO
-    lda CH376_CMP_MSB
-    sta CH376_TOTAL_HI
-    sec
-    rts
-.fail:
-    clc
-    rts
-
-; Read an 8.3 file name into CH376_FNBUF ('/' prefix at root). C=1 ok.
-storage_read_fname:
-    lda 0x00
-    sta CH376_SCRATCH2
-    lda CH376_DEPTH
-    bne .loop
-    lda 0x2F
-    sta CH376_FNBUF
-    lda 0x01
-    sta CH376_SCRATCH2
-.loop:
-    jsr ACIA_READ_CHAR
-    cmp 0x0D
-    beq .done
-    cmp 0x0A
-    beq .done
-    cmp 0x2E
-    beq .keep
-    cmp 0x5F
-    beq .keep
-    cmp 0x30
-    bcc .loop
-    cmp 0x3A
-    bcc .keep
-    cmp 0x41
-    bcc .loop
-    cmp 0x5B
-    bcc .keep
-    cmp 0x61
-    bcc .loop
-    cmp 0x7B
-    bcs .loop
-    sec
-    sbc 0x20
-.keep:
-    ldx CH376_SCRATCH2
-    cpx 0x0C
-    bcs .loop
-    sta CH376_FNBUF,x
-    jsr ACIA_SEND_CHAR
-    inc CH376_SCRATCH2
-    jmp .loop
-.done:
-    jsr ACIA_SEND_NEWLINE
-    lda CH376_DEPTH
-    bne .check_sub
-    lda CH376_SCRATCH2
-    cmp 0x02
-    bcc .fail
-    jmp .terminate
-.check_sub:
-    lda CH376_SCRATCH2
-    beq .fail
-.terminate:
-    ldx CH376_SCRATCH2
-    lda 0x00
-    sta CH376_FNBUF,x
-    sec
-    rts
-.fail:
-    clc
-    rts
-
 storage_msg_mounting:
     #d 0x0A, 0x0D, "Mounting USB... ", 0x00
 storage_msg_ok:
     #d "OK", 0x0A, 0x0D, 0x00
 storage_msg_mount_fail:
     #d "mount failed ST ", 0x00
-storage_msg_root:
-    #d "Root:", 0x0A, 0x0D, 0x00
-storage_msg_subdir:
-    #d "Directory:", 0x0A, 0x0D, 0x00
-storage_msg_entries:
-    #d "Entries: ", 0x00
-storage_msg_empty:
-    #d "No files.", 0x0A, 0x0D, 0x00
-storage_msg_prompt:
-    #d "Select (0=quit): ", 0x00
-storage_msg_bad_sel:
-    #d "Bad selection.", 0x0A, 0x0D, 0x00
-storage_msg_entering:
-    #d "Entering ", 0x00
-storage_msg_loading:
-    #d "Loading ", 0x00
-storage_msg_loaded:
-    #d "INFO: Loaded 0x", 0x00
-storage_msg_loaded_at:
-    #d " bytes at 0x", 0x00
-storage_msg_too_big:
-    #d "File too big (>64KB).", 0x0A, 0x0D, 0x00
-storage_msg_load_fail:
-    #d "Load failed ST ", 0x00
-storage_msg_list_fail:
-    #d "List failed ST ", 0x00
-storage_msg_open_fail:
-    #d "Open failed ST ", 0x00
-storage_msg_save_from:
-    #d "Save from 0x", 0x00
-storage_msg_save_len:
-    #d "Length hex: ", 0x00
-storage_msg_save_name:
-    #d "Name 8.3: ", 0x00
-storage_msg_saving:
-    #d "Saving ", 0x00
-storage_msg_saved:
-    #d "INFO: Saved 0x", 0x00
-storage_msg_save_fail:
-    #d "Save failed ST ", 0x00
-storage_msg_bad_input:
-    #d "Bad input.", 0x0A, 0x0D, 0x00
+storage_msg_total:
+    #d "total ", 0x00
 storage_fn_slash:
     #d "/", 0x00
-storage_fn_slash_star:
-    #d "/*", 0x00
-storage_fn_star:
-    #d "*", 0x00
-storage_tag_dir:
-    #d " <DIR>", 0x00
+storage_tag_dir8:
+    #d "<DIR>   ", 0x00            ; exactly 8 chars (align with size hex)

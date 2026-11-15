@@ -510,7 +510,7 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 | XMODEM_RCV | (symbols.asm) | Receive file via XMODEM/CRC |
 
 ### USB storage (CH376S, optional)
-Polling-only FAT access over ACIA #2. Lazy init — absent module returns `C=0`, never blocks boot. Menu: `l`/`lyyxxxx` load, `w`/`wyyxxxx` save (OT header on menu save). Full API and OT rules: `kernel/storage/README.md`.
+Polling-only FAT access over ACIA #2. Lazy init — absent module returns `C=0`, never blocks boot. Shell: `load` / `save file len [addr]` (OT on save). Full API and OT rules: `kernel/storage/README.md`.
 
 | Symbol | Description |
 |--------|-------------|
@@ -683,7 +683,7 @@ The simulator (`OttoCPU` class in `simulate.py`) faithfully emulates:
 
 **CH376 emulator** (`--ch376`):
 - Maps `roms/sim/ch376/` (or `--ch376-dir <path>`) as the FAT root: mount, `/*` listing, file open/create/read/write.
-- Enough for kernel menu `l`/`w`, `STORAGE_*` API, and `apps/storage_smoke.asm`.
+- Enough for shell USB cmds, `STORAGE_*` API, and `apps/storage_smoke.asm`.
 - Sample files ship under `roms/sim/ch376/` (`HELLO.TXT`, `DEMO.BIN`).
 
 ```bash

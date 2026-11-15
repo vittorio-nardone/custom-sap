@@ -467,3 +467,90 @@ STORAGE_SAVE_FILE:
     jsr ch376_set_timeout
     clc
     rts
+
+; **********************************************************
+; SUBROUTINE: STORAGE_DELETE
+;   Delete a file. Path in CH376_FNBUF. Must not be open.
+; **********************************************************
+STORAGE_DELETE:
+    jsr STORAGE_ENSURE_MOUNTED
+    bcc .fail
+    lda 0x00
+    jsr ch376_cmd_file_close
+    jsr storage_set_name_fnbuf
+    bcc .fail
+    jsr ch376_set_timeout_long
+    lda CH376_CMD_FILE_ERASE
+    jsr ch376_cmd_interrupt
+    bcc .fail
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    bne .fail
+    jsr ch376_set_timeout
+    sec
+    rts
+.fail:
+    jsr ch376_set_timeout
+    clc
+    rts
+
+; **********************************************************
+; SUBROUTINE: STORAGE_MKDIR
+;   Create a directory (or open if it exists). Path in FNBUF.
+; **********************************************************
+STORAGE_MKDIR:
+    jsr STORAGE_ENSURE_MOUNTED
+    bcc .fail
+    lda 0x00
+    jsr ch376_cmd_file_close
+    jsr storage_set_name_fnbuf
+    bcc .fail
+    jsr ch376_set_timeout_long
+    lda CH376_CMD_DIR_CREATE
+    jsr ch376_cmd_interrupt
+    bcc .fail
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    bne .fail
+    lda 0x00
+    jsr ch376_cmd_file_close
+    jsr ch376_set_timeout
+    sec
+    rts
+.fail:
+    jsr ch376_set_timeout
+    clc
+    rts
+
+; **********************************************************
+; SUBROUTINE: STORAGE_RMDIR
+;   Remove an empty directory. Path in FNBUF.
+;   CH376: open dir first, then FILE_ERASE.
+; **********************************************************
+STORAGE_RMDIR:
+    jsr STORAGE_ENSURE_MOUNTED
+    bcc .fail
+    lda 0x00
+    jsr ch376_cmd_file_close
+    jsr storage_set_name_fnbuf
+    bcc .fail
+    jsr ch376_set_timeout_long
+    lda CH376_CMD_FILE_OPEN
+    jsr ch376_cmd_interrupt
+    bcc .fail
+    lda CH376_LAST_STATUS
+    cmp CH376_ERR_OPEN_DIR
+    bne .fail
+    lda CH376_CMD_FILE_ERASE
+    jsr ch376_cmd_interrupt
+    bcc .fail
+    lda CH376_LAST_STATUS
+    cmp CH376_INT_SUCCESS
+    bne .fail
+    jsr ch376_set_timeout
+    sec
+    rts
+.fail:
+    jsr ch376_set_timeout
+    clc
+    rts

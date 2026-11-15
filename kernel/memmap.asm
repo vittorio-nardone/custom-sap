@@ -8,20 +8,25 @@
 ; Each entry indicates the owning module.
 ; ============================================================
 
-; --- 0x8000-0x801A: Main Menu (kernel.asm) -------------------
+; --- 0x8000-0x8008: Shell / menu state (kernel.asm, shell.asm) -
 #const MAIN_MENU_STATUS              = 0x8000  ; 1 byte
 #const MAIN_MENU_INPUT_BUFFER_COUNT  = 0x8001  ; 1 byte
-#const MAIN_MENU_INPUT_CURSOR        = 0x8008  ; 1 byte - cursor position in input buffer
-#const MAIN_MENU_ADDR_PAGE           = 0x8002  ; 1 byte
+#const MAIN_MENU_ADDR_PAGE           = 0x8002  ; 1 byte - working address page
 #const MAIN_MENU_ADDR_MSB            = 0x8003  ; 1 byte
 #const MAIN_MENU_ADDR_LSB            = 0x8004  ; 1 byte
 #const MAIN_MENU_DUMP_COUNT          = 0x8005  ; 1 byte
-
-; --- 0x8006-0x8007: Serial read decimal (serial.asm) --------
-#const ACIA_RDEC_SIGN                = 0x8006  ; 1 byte - sign flag (not shared with MUL16S)
+#const ACIA_RDEC_SIGN                = 0x8006  ; 1 byte - sign flag (serial.asm)
 #const ACIA_RDEC_COUNT               = 0x8007  ; 1 byte - digit count for backspace
+#const MAIN_MENU_INPUT_CURSOR        = 0x8008  ; 1 byte - cursor in input buffer
 
-#const MAIN_MENU_INPUT_BUFFER        = 0x800B  ; 16 bytes (0x800B-0x801A)
+; --- 0x8009-0x800A: Shell argc / scratch -----------------------
+#const SHELL_ARGC                    = 0x8009  ; 1 byte - token count (0..4)
+#const SHELL_FLAGS                   = 0x800A  ; 1 byte - SHELL_F_* 
+
+; --- 0x800B-0x801A: free (legacy 16-byte input; moved) --------
+
+; Input buffer relocated — see SHELL_INPUT_BUF at 0x834E
+#const MAIN_MENU_INPUT_BUFFER        = 0x834E  ; alias: 40-byte shell input
 
 ; --- 0x80C0-0x80CB: Float Read temp (float.asm) --------------
 #const FR_VALUE    = 0x80C0  ; 4 bytes (0x80C0-0x80C3)
@@ -183,14 +188,57 @@
 #const CH376_LIST_IDX    = 0x831C  ; 1 byte  - 0-based index while finishing a listing
 #const CH376_LIST_NUM    = 0x831D  ; 1 byte  - 1-based line number while printing
 #const CH376_DIR_INDEX   = 0x831E  ; 1 byte  - FAT_DIR_INFO index within sector (LFN walk)
+#const CH376_LIST_STYLE  = 0x831F  ; 1 byte  - 1=tabular (shell dir), 2=quiet (enum only)
 
-; --- 0x831F-0x8332: free ------------------------------------------
-; --- 0x834E-0x83F0: free ------------------------------------------
+; --- 0x8320-0x8332: free ------------------------------------------
 
-; --- 0xDC00-0xE37F: USB browser tables (storage/menu.asm) ---------
+; --- 0x834E-0x83BF: Shell (kernel/shell.asm) ----------------------
+#const SHELL_INPUT_BUF               = 0x834E  ; 40 bytes (0x834E-0x8375)
+#const SHELL_INPUT_MAX               = 0x28    ; 40
+#const SHELL_CWD                     = 0x8376  ; 32 bytes NUL path ("/", "/BIN", ...)
+#const SHELL_CWD_MAX                 = 0x20    ; 32
+#const SHELL_CWD_LEN                 = 0x8396  ; 1 byte
+#const SHELL_ARGV0                   = 0x8397  ; 1 byte - offset into SHELL_INPUT_BUF
+#const SHELL_ARGV1                   = 0x8398  ; 1 byte
+#const SHELL_ARGV2                   = 0x8399  ; 1 byte
+#const SHELL_ARGV3                   = 0x839A  ; 1 byte
+#const SHELL_WORK                    = 0x839B  ; 16 bytes scratch (fill/copy/path)
+#const SHELL_WORK_END                = 0x83AA
+; SHELL_F_* in SHELL_FLAGS:
+;   bit0 = last USB op failed → prompt shows ?> until remount
+#const SHELL_F_USB_ERR               = 0x01
+
+; --- 0x83AB-0x83B7: Shell command history state -------------------
+#const SHELL_HIST_LEN                = 0x83AB  ; 1 byte - entries stored (0..5)
+#const SHELL_HIST_HEAD               = 0x83AC  ; 1 byte - next write slot (0..4)
+#const SHELL_HIST_POS                = 0x83AD  ; 1 byte - 0xFF=live edit, else age 0..4
+#const SHELL_HIST_DRAFT_LEN          = 0x83AE  ; 1 byte
+#const SHELL_HIST_SLEN               = 0x83AF  ; 5 bytes (0x83AF-0x83B3) per-slot length
+#const SHELL_HIST_MAX                = 0x05    ; ring depth
+#const SHELL_HIST_PAINTED            = 0x83B4  ; 1 byte - chars echoed after prompt
+
+; --- 0x83B5-0x83B8: tab-complete scratch ----------------------------
+#const SHELL_TAB_TOK                 = 0x83B5  ; 1 byte - token start in input buf
+#const SHELL_TAB_PLEN                = 0x83B6  ; 1 byte - typed prefix length
+#const SHELL_TAB_N                   = 0x83B7  ; 1 byte - match count
+#const SHELL_TAB_DIR                 = 0x83B8  ; 1 byte - 1 if sole match is a dir
+
+; --- 0x83B9-0x83D9: arg passed into launched external apps ----------
+; Bare "edit notes.txt" / "exec EDIT.BIN notes.txt" → path here.
+#const SHELL_APP_ARGC                = 0x83B9  ; 1 byte - 0=none, 1=path present
+#const SHELL_APP_ARG                 = 0x83BA  ; 32 bytes NUL path (0x83BA-0x83D9)
+
+; --- 0x83DA-0x83F0: free ------------------------------------------
+
+; --- 0xDC00-0xE37F: USB dir tables (storage/menu.asm) -------------
 ; Lives in application RAM: only valid while the kernel USB menu is running.
 #const STORAGE_NAMES     = 0xDC00  ; 40 entries x 16 bytes (0xDC00-0xDE7F)
 #const STORAGE_LFN       = 0xDE80  ; 40 entries x 32 bytes (0xDE80-0xE37F), NUL-term ASCII
+
+; --- 0xE400-0xE4EF: Shell history text (shell.asm) ----------------
+; App RAM. Slots start with E<=0xA0 so DE,X copies never page-cross.
+#const SHELL_HIST                    = 0xE400  ; 5 x 40 bytes (0xE400-0xE4C7)
+#const SHELL_HIST_DRAFT              = 0xE4C8  ; 40 bytes live-line backup (0xE4C8-0xE4EF)
 
 ; --- 0x8340-0x834D: Utility variables (utils.asm) ------------
 #const BINDEC32_VALUE  = 0x8340  ; 4 bytes (0x8340-0x8343)

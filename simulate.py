@@ -95,8 +95,13 @@ class OttoCPU:
                 serial_port, baud, timeout=0,
                 dsrdtr=False, rtscts=False,
             )
-            self.serial_io.dtr = False
-            self.serial_io.rts = False
+            # Real USB-serial supports modem lines; macOS PTYs used by
+            # --simulate-serial do not (ioctl → ENOTTY).
+            try:
+                self.serial_io.dtr = False
+                self.serial_io.rts = False
+            except OSError:
+                pass
             self.serial_io.reset_input_buffer()
             self.serial_io.reset_output_buffer()
 

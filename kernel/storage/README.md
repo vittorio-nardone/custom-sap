@@ -20,8 +20,8 @@ call, so a machine without the module boots normally and simply gets `C=0`.
 | `proto.asm` | Command packets, file read/write engines |
 | `range.asm` | `STORAGE_CHECK_RANGE` |
 | `ot.asm` | OT header detect / emit |
-| `api.asm` | Public `STORAGE_*` API |
-| `menu.asm` | Kernel `l` (load) and `w` (write) commands |
+| `api.asm` | Public `STORAGE_*` API (apps + shell) |
+| `menu.asm` | Directory listing helpers for the shell (`dir`, named load/exec) |
 
 RAM variables are declared in `kernel/memmap.asm`:
 
@@ -29,10 +29,10 @@ RAM variables are declared in `kernel/memmap.asm`:
   one byte RX FIFO and at 115200 baud the burst has ~87us per byte, which
   24-bit addressing does not meet.
 * `0x82B0-0x82EF` — driver state, path buffer (`CH376_FNBUF`).
-* `0xDC00` — `STORAGE_NAMES`, the 40 x 16 byte browser table (8.3 + size +
+* `0xDC00` — `STORAGE_NAMES`, the 40 x 16 byte directory table (8.3 + size +
   flags). `STORAGE_LFN` at `0xDE80` holds optional display names (40 x 32).
   Both live in application RAM (`0xDC00–0xE37F`) and are only valid while the
-  kernel USB menu is running — menu `l`/`w` will overwrite that range.
+  shell USB commands are using them.
 
 ## API
 
@@ -55,6 +55,12 @@ CH376 interrupt status is left in `CH376_LAST_STATUS` (`0x42` = file not found,
 | `STORAGE_CHECK_RANGE` | `Y:D:E`, `CH376_REMAIN_LO/HI` | Reject I/O, video and wrapping ranges |
 | `STORAGE_LOAD_FILE` | see below | Open, strip the OT header, place the payload |
 | `STORAGE_SAVE_FILE` | see below | Create and write a memory range |
+| `STORAGE_DELETE` | path in `CH376_FNBUF` | Delete a file (`FILE_ERASE`) |
+| `STORAGE_MKDIR` | path in `CH376_FNBUF` | Create a directory (`DIR_CREATE`) |
+| `STORAGE_RMDIR` | path in `CH376_FNBUF` | Remove an empty directory (open + `FILE_ERASE`) |
+
+Apps that need USB I/O should call these `STORAGE_*` routines (include
+`kernel/symbols.asm`). Do not reimplement the CH376 protocol in app code.
 
 ### `STORAGE_LOAD_FILE`
 
@@ -74,25 +80,29 @@ Inputs: path in `CH376_FNBUF`, source in `CH376_SAVE_PAGE/MSB/LSB`, length in
 `CH376_TOTAL_LO/HI`, `CH376_OT_FLAG` (1 = prepend an OT header describing the
 source address). An existing file is truncated.
 
+## Shell commands
+
+| Command | Description |
+|---------|-------------|
+| `mount` / `umount` | Mount / unmount USB |
+| `dir` / `cd [path]` | List (dirs first, then alpha) / change directory (`#HH` refs from last `dir`) |
+| `mkdir` / `rmdir name` | Create / remove empty directory |
+| `del name` | Delete a file |
+| `type file` | Print a text file |
+| `load file [addr]` | Load via `STORAGE_LOAD_FILE` |
+| `save file len [addr]` | Save via `STORAGE_SAVE_FILE` (+ OT); `len` = 4 hex digits |
+| `exec file` / bare name | Load and run (`NAME.BIN`) |
+
+There is no interactive USB browser (`l`/`w`); use the shell forms above.
+
 ## Limits
 
 * Transfers are 16-bit: 65535 bytes maximum (~64 KB).
 * `0x6000-0x67FF` (device I/O) and `0x6800-0x7FFF` (video window) can never be
   a transfer endpoint, and a range may not wrap past `0xFFFF` into another page.
-* Paths opened on the wire are still 8.3 FAT names. The menu lists a directory
-  by opening it and `BYTE_READ`ing raw 32-byte FAT entries (including VFAT LFN
-  slots). Wildcard `/*` enum cannot see LFN slots — that is a CH376 limitation.
-  Display names are ASCII, truncated to 31 characters; open/select still uses
-  the short alias.
-
-## Menu commands
-
-* `l` / `lyyxxxx` — browse and load. Without an address the OT header decides
-  where the file lands (falling back to `0x8400`); with an address the header
-  is stripped but the typed address wins. The default `d`/`r` address follows
-  the load.
-* `wyyxxxx` — write a memory range to a new file. Prompts for the length (hex)
-  and an 8.3 name, and always prepends an OT header so `l` can restore it.
+* Paths opened on the wire are still 8.3 FAT names. Directory listing uses
+  `BYTE_READ` of raw 32-byte FAT entries (including VFAT LFN slots for display).
+  Open/select still uses the short alias.
 
 ## Smoke test
 

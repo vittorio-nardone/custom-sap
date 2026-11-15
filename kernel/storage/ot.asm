@@ -32,6 +32,10 @@ STORAGE_OT_CHECK:
     lda yde,x
     cmp STORAGE_OT_MAGIC1
     bne .no_header
+    ldx 0x02
+    lda yde,x
+    cmp STORAGE_OT_VER
+    bne .no_header
     ldx 0x03
     lda yde,x
     sta STORAGE_LOAD_PTRP

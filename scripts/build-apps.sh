@@ -156,6 +156,30 @@ if [ "$BUILD_PASCAL" = "1" ]; then
     done
 fi
 
+# Refresh CH376 simulator stick with OT-headered apps built for the *current*
+# kernel. ABI-targeted builds leave the stick alone (hardware flash path).
+CH376_STICK="${REPO_ROOT}/roms/sim/ch376"
+CH376_SYNC=0
+if [ -z "${KERNEL_ABI}" ] && [ -d "$CH376_STICK" ]; then
+    mkdir -p "${CH376_STICK}/BIN"
+    # dest relative to stick root = source under ASM_OUT
+    # DEMO.BIN / BIN/HELLO.BIN: shell exec/cd demos (see roms/sim/ch376/README.md)
+    declare -a CH376_COPIES=(
+        "DEMO.BIN:helloworld.bin"
+        "BIN/HELLO.BIN:helloworld.bin"
+        "EDIT.BIN:edit.bin"
+        "BIN/EDIT.BIN:edit.bin"
+    )
+    for mapping in "${CH376_COPIES[@]}"; do
+        dest="${mapping%%:*}"
+        src="${mapping##*:}"
+        if [ -f "${ASM_OUT}/${src}" ]; then
+            cp "${ASM_OUT}/${src}" "${CH376_STICK}/${dest}"
+            CH376_SYNC=$((CH376_SYNC + 1))
+        fi
+    done
+fi
+
 echo ""
 if [ -n "$KERNEL_ABI" ]; then
     echo "=== Apps built for kernel ABI v${KERNEL_ABI#v} ==="
@@ -166,6 +190,9 @@ echo "  Assembly: ${APP_COUNT} compiled (${OT_COUNT} with OT header) -> ${ASM_OU
 if [ "$BUILD_PASCAL" = "1" ]; then
     echo "  Pascal:   ${PASCAL_COUNT} compiled -> ${PASCAL_OUT}/"
 fi
+if [ "$CH376_SYNC" -gt 0 ]; then
+    echo "  CH376:    ${CH376_SYNC} stick file(s) refreshed -> ${CH376_STICK}/"
+fi
 
 SUMMARY_FILE="${REPO_ROOT}/.otto-build-apps.summary"
 cat > "$SUMMARY_FILE" <<EOF
@@ -175,6 +202,7 @@ PASCAL_COUNT=${PASCAL_COUNT}
 BUILD_PASCAL=${BUILD_PASCAL}
 ASM_OUT=${ASM_OUT}
 PASCAL_OUT=${PASCAL_OUT}
+CH376_SYNC=${CH376_SYNC}
 EOF
 
 python3.11 "${SCRIPTS_DIR}/python/update_app_catalog.py" 2>/dev/null || true

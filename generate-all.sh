@@ -127,4 +127,7 @@ echo "  Apps:      ${APP_COUNT} compiled (${OT_COUNT} with OT header) -> ${ASM_O
 if [ "${BUILD_PASCAL:-0}" = "1" ]; then
     echo "  Pascal:    ${PASCAL_COUNT} compiled -> ${PASCAL_OUT}/"
 fi
+if [ "${CH376_SYNC:-0}" -gt 0 ]; then
+    echo "  CH376:     ${CH376_SYNC} stick file(s) refreshed -> roms/sim/ch376/"
+fi
 echo ""

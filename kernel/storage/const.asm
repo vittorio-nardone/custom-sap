@@ -27,11 +27,13 @@
 #const CH376_CMD_FILE_ENUM_GO  = 0x33
 #const CH376_CMD_FILE_CLOSE    = 0x36
 #const CH376_CMD_FILE_CREATE   = 0x34
+#const CH376_CMD_FILE_ERASE    = 0x35
 #const CH376_CMD_BYTE_READ     = 0x3A
 #const CH376_CMD_BYTE_RD_GO    = 0x3B
 #const CH376_CMD_BYTE_WRITE    = 0x3C
 #const CH376_CMD_BYTE_WR_GO    = 0x3D
 #const CH376_CMD_WR_REQ_DATA   = 0x2D
+#const CH376_CMD_DIR_CREATE    = 0x40
 #const CH376_CMD_READ_VAR8     = 0x0A
 #const CH376_CMD_WRITE_VAR8    = 0x0B
 #const CH376_VAR_FILE_DIR_IDX  = 0x3B  ; index of current FAT_DIR_INFO in its sector
@@ -49,6 +51,7 @@
 #const CH376_CMD_RET_SUCCESS = 0x51
 #const CH376_ERR_MISS_FILE   = 0x42
 #const CH376_ERR_OPEN_DIR    = 0x41
+#const CH376_ERR_FOUND_NAME  = 0x43
 
 ; --- FAT directory entries ------------------------------------------
 #const CH376_DIR_ATTR_HIDDEN    = 0x02
