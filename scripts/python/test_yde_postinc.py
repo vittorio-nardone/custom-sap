@@ -150,7 +150,67 @@ def burst_dst_byte_cycles(kind: str) -> int:
     return c
 
 
+def check_postinc_flags() -> None:
+    """C stays as it was. O=1 only when E was 0xFF (hardware pulses LO, not LC)."""
+    from simulate import OttoCPU
+
+    verifyInstructionSet()
+    cpu = OttoCPU()
+    base = 0x8400
+
+    def step(opcode: int, *, y: int, d: int, e: int, c: bool, a: int = 0) -> None:
+        cpu.PC = base
+        cpu.memory[base] = opcode
+        cpu.Y, cpu.D, cpu.E, cpu.A = y, d, e, a
+        cpu.C, cpu.O = c, False
+        cpu.step()
+
+    cpu.memory[0x9000] = 0x11
+    step(0xF4, y=0, d=0x90, e=0x00, c=True)
+    assert (cpu.A, cpu.D, cpu.E, cpu.Y, cpu.C, cpu.O) == (0x11, 0x90, 0x01, 0, True, False)
+
+    cpu.memory[0x90FF] = 0xAA
+    step(0xF4, y=0, d=0x90, e=0xFF, c=False)
+    assert (cpu.A, cpu.D, cpu.E, cpu.C, cpu.O) == (0xAA, 0x91, 0x00, False, True)
+
+    cpu.A = 0xCC
+    step(0xF5, y=0, d=0x92, e=0xFF, c=True, a=0xCC)
+    assert cpu.memory[0x92FF] == 0xCC
+    assert (cpu.D, cpu.E, cpu.C, cpu.O) == (0x93, 0x00, True, True)
+
+    cpu.memory[0x0109FF] = 0xDD
+    step(0xF6, y=1, d=0x09, e=0xFF, c=True)
+    assert (cpu.A, cpu.D, cpu.E, cpu.Y, cpu.C, cpu.O) == (0xDD, 0x0A, 0x00, 1, True, True)
+
+    step(0xF8, y=1, d=0x0A, e=0x00, c=False, a=0xEE)
+    assert cpu.memory[0x010A00] == 0xEE
+    assert (cpu.D, cpu.E, cpu.Y, cpu.C, cpu.O) == (0x0A, 0x01, 1, False, False)
+    print("post-inc flags: C preserved, O tracks E wrap")
+
+
+def check_jmp_indexed_carry() -> None:
+    """JMP (zp,X) adds X to the 16-bit address. C stays unchanged."""
+    from simulate import OttoCPU
+
+    cpu = OttoCPU()
+    cpu.memory[0x8400] = 0xF3
+    cpu.memory[0x8401] = 0x90
+    cpu.memory[0x8402] = 0xFE
+    cpu.memory[0x9100] = 0x33
+    cpu.memory[0x9101] = 0x44
+    cpu.PC = 0x8400
+    cpu.X = 2
+    cpu.C = True
+    cpu.A = 0xA5
+    cpu.step()
+    assert cpu.PC == 0x3344
+    assert cpu.C is True and cpu.O is True and cpu.A == 0xA5
+    print("JMP (zp,X): carry into table high byte, C preserved")
+
+
 def main() -> None:
+    check_postinc_flags()
+    check_jmp_indexed_carry()
     verifyInstructionSet()
     lda = INSTRUCTIONS_SET["LDAydeinc"]
     sta = INSTRUCTIONS_SET["STAydeinc"]

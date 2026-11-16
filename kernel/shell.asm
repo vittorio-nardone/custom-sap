@@ -126,25 +126,18 @@ shell_upcase:
     rts
 
 ; Compare argv0 to NUL string at D:E. C=1 match (case-insensitive).
-; Pattern walked with LDA DE,X + INE/IND (ROM constants are uppercase).
+; Pattern is walked with LDA (DE)+ (ROM constants are uppercase).
 shell_cmp0:
     ldx SHELL_ARGV0
 .loop:
-    phx
-    ldx 0x00
-    lda de,x
-    sta SHELL_WORK+4            ; keep char; PLX clobbers Z
-    plx
-    lda SHELL_WORK+4
+    lda (de)+
     beq .end_n
+    sta SHELL_WORK+4
     lda MAIN_MENU_INPUT_BUFFER,x
     jsr shell_upcase
     cmp SHELL_WORK+4
     bne .no
     inx
-    ine
-    bne .loop
-    ind
     jmp .loop
 .end_n:
     lda MAIN_MENU_INPUT_BUFFER,x
@@ -376,14 +369,9 @@ shell_parse_hex8:
     jsr shell_strlen
     cpx 0x02
     bne .bad8
-    ldx 0x00
-    lda de,x
+    lda (de)+
     pha
-    ine
-    bne .h8b
-    ind
-.h8b:
-    lda de,x
+    lda (de)+
     tax
     pla
     jsr HEXBIN
@@ -397,30 +385,16 @@ shell_hex16:
     jsr shell_strlen
     cpx 0x04
     bne .e16
-    ldx 0x00
-    lda de,x
+    lda (de)+
     pha
-    ine
-    bne .h16a
-    ind
-.h16a:
-    lda de,x
+    lda (de)+
     tax
     pla
     jsr HEXBIN
     pha                           ; MSB
-    ine
-    bne .h16b
-    ind
-.h16b:
-    ldx 0x00
-    lda de,x
+    lda (de)+
     pha
-    ine
-    bne .h16c
-    ind
-.h16c:
-    lda de,x
+    lda (de)+
     tax
     pla
     jsr HEXBIN
@@ -445,24 +419,15 @@ shell_parse_addr:
     ldy 0x00
     jmp shell_hex16
 .p6:
-    ldx 0x00
-    lda de,x
+    lda (de)+
     pha
-    ine
-    bne .p6a
-    ind
-.p6a:
-    lda de,x
+    lda (de)+
     tax
     pla
     jsr HEXBIN
     tay
     phy
-    ine
-    bne .p6b
-    ind
-.p6b:
-    jsr shell_hex16               ; DE advanced past page byte
+    jsr shell_hex16               ; DE already advanced past page byte
     ply
     rts
 
@@ -579,12 +544,7 @@ shell_cmd_fill:
     ora SHELL_WORK+5
     beq .done
     lda SHELL_WORK+3
-    ldx 0x00
-    sta yde,x                     ; no Y carry on 64 KB wrap
-    ine
-    bne .fill_nc
-    ind
-.fill_nc:
+    sta (yde)+                    ; no Y carry on 64 KB wrap
     dew SHELL_WORK+4
     jmp .loop
 .done:
@@ -627,12 +587,7 @@ shell_cmd_copy:
     ldy SHELL_WORK+0
     ldd SHELL_WORK+1
     lde SHELL_WORK+2
-    ldx 0x00
-    lda yde,x
-    ine
-    bne .copy_s
-    ind
-.copy_s:
+    lda (yde)+
     std SHELL_WORK+1
     ste SHELL_WORK+2
     pha
@@ -640,12 +595,7 @@ shell_cmd_copy:
     ldd SHELL_WORK+7
     lde SHELL_WORK+8
     pla
-    ldx 0x00
-    sta yde,x
-    ine
-    bne .copy_d
-    ind
-.copy_d:
+    sta (yde)+
     std SHELL_WORK+7
     ste SHELL_WORK+8
     dew SHELL_WORK+4
@@ -1214,7 +1164,7 @@ shell_cd_enter:
     jmp shell_err_path
 
 ; Append "/" + string at D:E to SHELL_CWD. C=1 ok.
-; D:E = name string (advanced via INE/IND).
+; D:E = name string (clobbered via LDA (DE)+).
 shell_cwd_append:
     ldx SHELL_CWD_LEN
     cpx 0x01
@@ -1225,21 +1175,13 @@ shell_cwd_append:
     sta SHELL_CWD,x
     inx
 .copy:
-    phx
-    ldx 0x00
-    lda de,x
-    sta SHELL_WORK+4            ; PLX clobbers Z
-    plx
-    lda SHELL_WORK+4
+    lda (de)+
     beq .term
     jsr shell_upcase
     cpx 0x20
     bcs .ov
     sta SHELL_CWD,x
     inx
-    ine
-    bne .copy
-    ind
     jmp .copy
 .term:
     cpx 0x20
@@ -1416,7 +1358,7 @@ shell_find_listed:
     rts
 
 ; D:E = "NAME.EXT" or "NAME" → SHELL_WORK[0..10] as FAT 8.3 (spaces).
-; Source walked with LDA DE,X + INE/IND; X = dest index.
+; Source walked with LDA (DE)+; X = dest index.
 shell_to_fat83:
     ldx 0x00
 .sp:
@@ -1427,47 +1369,26 @@ shell_to_fat83:
     bcc .sp
     ldx 0x00
 .nloop:
-    phx
-    ldx 0x00
-    lda de,x
-    tay                         ; Y = src char (PLX clobbers Z)
-    plx
-    tya
+    lda (de)+
     beq .done
     jsr shell_upcase
     cmp 0x2E
     beq .ext
     cpx 0x08
-    bcs .nskip
+    bcs .nloop
     sta SHELL_WORK+0,x
     inx
-.nskip:
-    ine
-    bne .nloop
-    ind
     jmp .nloop
 .ext:
     ldx 0x08
-    ine
-    bne .eloop
-    ind
 .eloop:
-    phx
-    ldx 0x00
-    lda de,x
-    tay
-    plx
-    tya
+    lda (de)+
     beq .done
     jsr shell_upcase
     cpx 0x0B
-    bcs .eskip
+    bcs .eloop
     sta SHELL_WORK+0,x
     inx
-.eskip:
-    ine
-    bne .eloop
-    ind
     jmp .eloop
 .done:
     rts

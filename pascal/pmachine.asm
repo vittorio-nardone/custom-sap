@@ -2167,16 +2167,11 @@ PM_ENTRY:
 ; =========================================================
 
 ; Fetch one byte from P-code at IP, advance IP.
-; Out: A = fetched byte.  Clobbers D, E, X.
+; Out: A = fetched byte.  Clobbers D, E (X preserved).
 .fetch_byte:
     ldd PM_IP_MSB
     lde PM_IP_LSB
-    ldx 0x00
-    lda de,x
-    ine
-    bne .fetch_byte_nc
-    ind
-.fetch_byte_nc:
+    lda (de)+
     std PM_IP_MSB
     ste PM_IP_LSB
     rts

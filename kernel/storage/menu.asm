@@ -626,14 +626,7 @@ storage_store_entry:
     cpx 0x0B
     bcs .size
     lda CH376_BUF,x
-    phx
-    ldx 0x00
-    sta yde,x
-    plx
-    ine
-    bne .name_next
-    ind
-.name_next:
+    sta (yde)+
     inx
     jmp .name
 .size:
@@ -642,20 +635,12 @@ storage_store_entry:
     cpx 0x04
     bcs .flags
     lda CH376_BUF+0x1C,x
-    phx
-    ldx 0x00
-    sta yde,x
-    plx
-    ine
-    bne .size_next
-    ind
-.size_next:
+    sta (yde)+
     inx
     jmp .size_loop
 .flags:
     lda CH376_ENTRY_FLAGS
-    ldx 0x00
-    sta yde,x
+    sta (yde)+
     rts
 
 ; Copy bound LFN into STORAGE_LFN[FILE_COUNT], or store an empty string.
@@ -675,25 +660,16 @@ storage_store_lfn_at_yde:
     cpx CH376_LFN_DISP_MAX
     bcs .nul
     lda CH376_LFN_TMP,x
-    phx
-    ldx 0x00
-    sta yde,x
-    plx
-    ine
-    bne .copy_next
-    ind
-.copy_next:
+    sta (yde)+
     inx
     jmp .copy
 .nul:
     lda 0x00
-    ldx 0x00
-    sta yde,x
+    sta (yde)+
     rts
 .empty:
     lda 0x00
-    ldx 0x00
-    sta yde,x
+    sta (yde)+
     rts
 
 storage_lfn_clear:

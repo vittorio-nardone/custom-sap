@@ -130,7 +130,7 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | Accumulator | `ASL A` | 1 | `ASL A` |
 
 **Note**: "Zero page" in Otto means 16-bit addresses (0x0000-0xFFFF), "absolute" means 24-bit addresses.
-`(DE)+` / `(YDE)+` load or store then increment D:E (16-bit wrap). C=1 if E was 0xFF.
+`(DE)+` / `(YDE)+` load or store then increment D:E (16-bit wrap). O=1 if E was 0xFF. C is not modified.
 `(YDE)+` does **not** advance Y (no automatic 64 KB page cross).
 
 ## Complete Instruction Set
@@ -214,8 +214,8 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | 0xC1 | LDA | (ZP),Y | 14/16 | Z N C | Load A indirect indexed |
 | 0x94 | LDA | DE,X | 7/8 | Z O N | Load A via DE pointer+X |
 | 0xB2 | LDA | YDE,X | 8/9 | Z O N | Load A via Y:DE pointer+X |
-| 0xF4 | LDA | (DE)+ | 8/9 | Z N C | Load A via DE, then DE++ |
-| 0xF6 | LDA | (YDE)+ | 9/10 | Z N C | Load A via Y:DE, then DE++ (Y unchanged) |
+| 0xF4 | LDA | (DE)+ | 8/9 | Z N O | Load A via DE, then DE++ |
+| 0xF6 | LDA | (YDE)+ | 9/10 | Z N O | Load A via Y:DE, then DE++ (Y unchanged) |
 | 0xA5 | LDD | immediate | 4 | Z N | Load D |
 | 0x33 | LDD | zero page | 6 | Z N | Load D |
 | 0x34 | LDD | absolute | 8 | Z N | Load D |
@@ -251,8 +251,8 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | 0xC2 | STA | (ZP),Y | 15/17 | C | Store A indirect indexed |
 | 0xA1 | STA | DE,X | 7/8 | O | Store A via DE pointer+X |
 | 0xB3 | STA | YDE,X | 8/9 | O | Store A via Y:DE pointer+X |
-| 0xF5 | STA | (DE)+ | 8/9 | C | Store A via DE, then DE++ |
-| 0xF8 | STA | (YDE)+ | 9/10 | C | Store A via Y:DE, then DE++ (Y unchanged) |
+| 0xF5 | STA | (DE)+ | 8/9 | O | Store A via DE, then DE++ |
+| 0xF8 | STA | (YDE)+ | 9/10 | O | Store A via Y:DE, then DE++ (Y unchanged) |
 | 0x7A | STD | zero page | 6 | - | Store D |
 | 0x7B | STD | absolute | 8 | - | Store D |
 | 0x7C | STD | ZP,X | 9/10 | O | Store D indexed |
@@ -431,7 +431,7 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 11. **SBX** instruction (subtract E from X)
 12. **Inter-register compares**: CPX Y, CPX D, CPX E, CPD E, CPY D, CPY E
 13. **Post-increment loads/stores**: `LDA/STA (DE)+` and `LDA/STA (YDE)+` (Y unchanged on YDE form)
-14. **JMP (zp,X)**: pre-indexed indirect jump; table words are MSB-first (used by P-Machine and shell dispatch)
+14. **JMP (zp,X)**: pre-indexed indirect jump; X is added to the 16-bit table address, with carry into the high byte. Table words are MSB-first (used by P-Machine and shell dispatch). C is not modified; O=1 if the low byte wrapped.
 
 ## Interrupt System
 

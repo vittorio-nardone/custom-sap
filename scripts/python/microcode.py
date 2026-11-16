@@ -331,15 +331,15 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # LDA (DE)+ : A ← [0:D:E], then DE = DE+1 (16-bit; MARPAGE unchanged)
-    # Page-wrap uses LO+CHKO (same as LDAindpy MAR-L INC), not LC+CHKC.
+    # Page-wrap uses LO+CHKO (same as LDAindpy MAR-L INC). LC is not
+    # pulsed, so the carry flag is left unchanged; O=1 iff E was 0xFF.
     "LDAdeinc": {  "c": 0xF4,
                 "d": "Load Accumulator from [D:E], then increment D:E",
-                "f": ['Z', 'N', 'C'],
+                "f": ['Z', 'N', 'O'],
                 "op": "(de)+",
                 "sim": "\n".join((
                     "self.A = self.load_from_memory(registry_operands='de')",
-                    "self.C = (self.E == 0xFF)",
-                    "self.O = self.C",
+                    "self.O = (self.E == 0xFF)",
                     "self.E = (self.E + 1) & 0xFF",
                     "self.true_condition = self.O",
                     "if self.O:",
@@ -387,15 +387,14 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # LDA (YDE)+ : A ← [Y:D:E], then DE = DE+1 (16-bit; Y / MARPAGE unchanged — no 64 KB cross-page)
-    # Page-wrap uses LO+CHKO (same as LDAindpy / (DE)+), not LC+CHKC.
+    # Page-wrap uses LO+CHKO. LC is not pulsed, so C is unchanged; O=1 iff E was 0xFF.
     "LDAydeinc": {  "c": 0xF6,
                 "d": "Load Accumulator from [Y:D:E], then increment D:E",
-                "f": ['Z', 'N', 'C'],
+                "f": ['Z', 'N', 'O'],
                 "op": "(yde)+",
                 "sim": "\n".join((
                     "self.A = self.load_from_memory(registry_operands='yde')",
-                    "self.C = (self.E == 0xFF)",
-                    "self.O = self.C",
+                    "self.O = (self.E == 0xFF)",
                     "self.E = (self.E + 1) & 0xFF",
                     "self.true_condition = self.O",
                     "if self.O:",
@@ -933,15 +932,14 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # STA (DE)+ : [0:D:E] ← A, then DE = DE+1 (16-bit; MARPAGE unchanged)
-    # Page-wrap uses LO+CHKO (same as LDAindpy / (DE)+), not LC+CHKC.
+    # Page-wrap uses LO+CHKO. LC is not pulsed, so C is unchanged; O=1 iff E was 0xFF.
     "STAdeinc": {  "c": 0xF5,
                 "d": "Store Accumulator to [D:E], then increment D:E",
-                "f": ['C'],
+                "f": ['O'],
                 "op": "(de)+",
                 "sim": "\n".join((
                     "self.store_in_memory(self.A, registry_operands='de')",
-                    "self.C = (self.E == 0xFF)",
-                    "self.O = self.C",
+                    "self.O = (self.E == 0xFF)",
                     "self.E = (self.E + 1) & 0xFF",
                     "self.true_condition = self.O",
                     "if self.O:",
@@ -984,15 +982,14 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # STA (YDE)+ : [Y:D:E] ← A, then DE = DE+1 (16-bit; Y / MARPAGE unchanged — no 64 KB cross-page)
-    # Page-wrap uses LO+CHKO (same as LDAindpy / (DE)+), not LC+CHKC.
+    # Page-wrap uses LO+CHKO. LC is not pulsed, so C is unchanged; O=1 iff E was 0xFF.
     "STAydeinc": {  "c": 0xF8,
                 "d": "Store Accumulator to [Y:D:E], then increment D:E",
-                "f": ['C'],
+                "f": ['O'],
                 "op": "(yde)+",
                 "sim": "\n".join((
                     "self.store_in_memory(self.A, registry_operands='yde')",
-                    "self.C = (self.E == 0xFF)",
-                    "self.O = self.C",
+                    "self.O = (self.E == 0xFF)",
                     "self.E = (self.E + 1) & 0xFF",
                     "self.true_condition = self.O",
                     "if self.O:",
@@ -3258,18 +3255,22 @@ INSTRUCTIONS_SET = dict(sorted({
                     ] },
 
     # JMP (zp,X): eff = zp+X, then PC ← word at eff (MSB-first like other JMP indiretti).
-    # A preserved (TMP holds zp_hi). Assembler: JMP ({u16},X) via i_inside.
+    # Unlike LDA zp,X, the CHKO true path adds the carry into the high byte.
+    # A preserved (TMP holds zp_hi). C is not pulsed. Assembler: JMP ({u16},X).
     "JMPindxp": {  "c": 0xF3,
                 "d": "Jump to New Location (indirect - zero page - X pre-index)",
                 "v": "u16",
                 "i": "x",
                 "i_inside": True,
                 "sim": "\n".join((
-                    "base = self.get_address_from_operands(2, index=self.X)",
+                    "hi = self.memory[self.PC + 1]",
+                    "lo = self.memory[self.PC + 2]",
+                    "self.O = (lo + self.X) > 0xFF",
                     "self.true_condition = self.O",
-                    "hi = self.read_byte(base)",
-                    "lo = self.read_byte((base + 1) & 0xFFFF)",
-                    "self.PC = ((hi << 8) | lo) & 0xFFFF",
+                    "base = (((hi << 8) | lo) + self.X) & 0xFFFF",
+                    "w_hi = self.read_byte(base)",
+                    "w_lo = self.read_byte((base + 1) & 0xFFFF)",
+                    "self.PC = ((w_hi << 8) | w_lo) & 0xFFFF",
                 )),
                 "m": [
                         # PC ← zp + X
@@ -3856,6 +3857,22 @@ def getControlWord(pins):
     return controlWords
 
 ##################################################################
+## Condition check on a microstep (CHKC / CHKZ / CHKN / CHKO)
+##
+## alufE selects the flag. A wider code (EFRIN, EFROUT, SEC) is not a CHK.
+##
+_ALUFE_BITS = frozenset(('alufE0', 'alufE1', 'alufE2'))
+_CHK_ON_STEP = {
+    frozenset(CC_CHKC): 'CHKC',
+    frozenset(CC_CHKZ): 'CHKZ',
+    frozenset(CC_CHKN): 'CHKN',
+    frozenset(CC_CHKO): 'CHKO',
+}
+
+def chkOnMicrostep(step):
+    return _CHK_ON_STEP.get(frozenset(b for b in step if b in _ALUFE_BITS))
+
+##################################################################
 ## Verify INSTRUCTIONS_SET
 ##
 def verifyInstructionSet():
@@ -3888,7 +3905,20 @@ def verifyInstructionSet():
                 raise Exception("Total steps greater than 16 in instruction '" + inst + "' and 'true' section defined")
             if len(INSTRUCTIONS_SET[inst]['true']) > 16:
                 raise Exception("Total 'true' steps greater than 16 in instruction '" + inst + "'")
-            
+
+    # notNOP is attached to the last microstep of m and of true. A CHK on
+    # that same cycle ends the instruction, so the true path never runs.
+    for inst in INSTRUCTIONS_SET.keys():
+        sequences = [('m', INSTRUCTIONS_SET[inst]['m'])]
+        if 'true' in INSTRUCTIONS_SET[inst]:
+            sequences.append(('true', INSTRUCTIONS_SET[inst]['true']))
+        for section, steps in sequences:
+            if len(steps) == 0:
+                continue
+            chk = chkOnMicrostep(steps[-1])
+            if chk is not None:
+                raise Exception(chk + " on the last microstep of '" + section + "' in instruction '" + inst + "'")
+
     for inst in INSTRUCTIONS_SET.keys():
         cycles = countCycles(inst)
         INSTRUCTIONS_SET[inst]['cycles'] = cycles[0]

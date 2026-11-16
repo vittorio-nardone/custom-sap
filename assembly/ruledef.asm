@@ -529,7 +529,7 @@
 		assert(value <= 0xffffff)
 		0x32 @ value
  	} 
-	; Load Accumulator from [D:E], then increment D:E [Z N C]
+	; Load Accumulator from [D:E], then increment D:E [Z N O]
 	LDA (de)+ => { 
 		0xF4
  	} 
@@ -584,7 +584,7 @@
 	LDA yde,x  => { 
 		0xB2
  	} 
-	; Load Accumulator from [Y:D:E], then increment D:E [Z N C]
+	; Load Accumulator from [Y:D:E], then increment D:E [Z N O]
 	LDA (yde)+ => { 
 		0xF6
  	} 
@@ -933,7 +933,7 @@
 		assert(value <= 0xffffff)
 		0x70 @ value
  	} 
-	; Store Accumulator to [D:E], then increment D:E [C]
+	; Store Accumulator to [D:E], then increment D:E [O]
 	STA (de)+ => { 
 		0xF5
  	} 
@@ -981,7 +981,7 @@
 	STA yde,x  => { 
 		0xB3
  	} 
-	; Store Accumulator to [Y:D:E], then increment D:E [C]
+	; Store Accumulator to [Y:D:E], then increment D:E [O]
 	STA (yde)+ => { 
 		0xF8
  	} 
