@@ -1,22 +1,26 @@
 ; @load-address 0x8400
 ; =========================================================
-; de_dinc_test — page-wrap of LDA/STA (DE)+ and (YDE)+
+; de_dinc_test_v2 — page-wrap of LDA/STA (DE)+ and (YDE)+
 ;
-; Prints D:E (and Y) before and after each op. D must increment
-; only when E wraps FF→00. C=1 on that wrap, C=0 otherwise.
+; Prints D:E (and Y) before and after each op. Pass/fail is the
+; pointer and the byte: D increments only when E wraps FF→00.
 ; Y must stay put on the (YDE)+ forms.
 ;
-; 1 LDA (DE)+  9000 → D unchanged, C=0, A=11
-; 2 LDA (DE)+  90FE → D unchanged, E=FF, C=0, A=22
-; 3 LDA (DE)+  90FF → D+1, E=00, C=1, A=AA
-; 4 LDA (DE)+  next → reads 9100, D stays, C=0, A=BB
-; 5 STA (DE)+  92FF → D+1, E=00, C=1, [92FF]=CC
-; 6 LDA (YDE)+ 01:09FF → D+1, Y unchanged, C=1, A=DD
-; 7 STA (YDE)+ 01:0AFF → D+1, Y unchanged, C=1, [010AFF]=EE
+; C is printed and not checked. The microcode pulses LO (flag O,
+; which CHKO uses to increment D) and does not pulse LC, so the
+; carry flag is left unchanged.
+;
+; 1 LDA (DE)+  9000 → D unchanged, A=11
+; 2 LDA (DE)+  90FE → D unchanged, E=FF, A=22
+; 3 LDA (DE)+  90FF → D+1, E=00, A=AA
+; 4 LDA (DE)+  next → reads 9100, D stays, A=BB
+; 5 STA (DE)+  92FF → D+1, E=00, [92FF]=CC
+; 6 LDA (YDE)+ 01:09FF → D+1, Y unchanged, A=DD
+; 7 STA (YDE)+ 01:0AFF → D+1, Y unchanged, [010AFF]=EE
 ;
 ; Uses ACIA_SEND_CHAR / ACIA_SEND_HEX / ACIA_SEND_NEWLINE only,
 ; so it links against kernel v1.2.101 as well as current.
-; Prints: de_dinc_test / one line per step / OK  or  FAIL <step>
+; Prints: de_dinc_v2 / one line per step / OK  or  FAIL <step>
 ; =========================================================
 
 #include "../assembly/ruledef.asm"
@@ -63,7 +67,7 @@
     lde 0x00
     jsr .begin_line
     lda (de)+
-    jsr .save_ac
+    jsr .save_a
     jsr .end_line
     lda .loaded
     cmp 0x11
@@ -71,8 +75,6 @@
     cpd 0x90
     bne .fail
     cpe 0x01
-    bne .fail
-    lda .carry
     bne .fail
 
     ; --- 2) E=FE → FF, D must NOT increment ---
@@ -82,7 +84,7 @@
     lde 0xFE
     jsr .begin_line
     lda (de)+
-    jsr .save_ac
+    jsr .save_a
     jsr .end_line
     lda .loaded
     cmp 0x22
@@ -90,8 +92,6 @@
     cpd 0x90
     bne .fail
     cpe 0xFF
-    bne .fail
-    lda .carry
     bne .fail
 
     ; --- 3) E=FF → D increments ---
@@ -101,7 +101,7 @@
     lde 0xFF
     jsr .begin_line
     lda (de)+
-    jsr .save_ac
+    jsr .save_a
     jsr .end_line
     lda .loaded
     cmp 0xAA
@@ -110,15 +110,13 @@
     bne .fail
     cpe 0x00
     bne .fail
-    lda .carry
-    beq .fail
 
     ; --- 4) pointer left on the next page ---
     lda 0x04
     sta .step
     jsr .begin_line
     lda (de)+
-    jsr .save_ac
+    jsr .save_a
     jsr .end_line
     lda .loaded
     cmp 0xBB
@@ -126,8 +124,6 @@
     cpd 0x91
     bne .fail
     cpe 0x01
-    bne .fail
-    lda .carry
     bne .fail
 
     ; --- 5) STA (DE)+ wrap ---
@@ -138,7 +134,7 @@
     jsr .begin_line
     lda 0xCC
     sta (de)+
-    jsr .save_ac
+    jsr .save_a
     jsr .end_line
     lda .loaded
     cmp 0xCC
@@ -147,8 +143,6 @@
     bne .fail
     cpe 0x00
     bne .fail
-    lda .carry
-    beq .fail
     lda 0x92FF
     cmp 0xCC
     bne .fail
@@ -161,7 +155,7 @@
     lde 0xFF
     jsr .begin_yline
     lda (yde)+
-    jsr .save_ac
+    jsr .save_a
     jsr .end_yline
     lda .loaded
     cmp 0xDD
@@ -172,8 +166,6 @@
     bne .fail
     cpe 0x00
     bne .fail
-    lda .carry
-    beq .fail
 
     ; --- 7) STA (YDE)+ wrap, Y unchanged ---
     lda 0x07
@@ -184,7 +176,7 @@
     jsr .begin_yline
     lda 0xEE
     sta (yde)+
-    jsr .save_ac
+    jsr .save_a
     jsr .end_yline
     lda .loaded
     cmp 0xEE
@@ -195,8 +187,6 @@
     bne .fail
     cpe 0x00
     bne .fail
-    lda .carry
-    beq .fail
     lda 0x010AFF
     cmp 0xEE
     bne .fail
@@ -247,7 +237,7 @@
     jsr .print_arrow
     rts
 
-; Print D:E, then " A=xx C=n". Preserves D, E, Y.
+; Print D:E, then " A=xx". Preserves D, E, Y.
 .end_line:
     jsr .show_de
     lda " "
@@ -258,15 +248,6 @@
     jsr ACIA_SEND_CHAR
     lda .loaded
     jsr ACIA_SEND_HEX
-    lda " "
-    jsr ACIA_SEND_CHAR
-    lda "C"
-    jsr ACIA_SEND_CHAR
-    lda "="
-    jsr ACIA_SEND_CHAR
-    lda .carry
-    ora 0x30
-    jsr ACIA_SEND_CHAR
     jsr ACIA_SEND_NEWLINE
     rts
 
@@ -302,23 +283,14 @@
     jsr ACIA_SEND_CHAR
     rts
 
-; A = byte just loaded or stored, C = post-inc carry. Preserves D, E, Y.
-.save_ac:
+; A = byte just loaded or stored. Preserves D, E, Y.
+.save_a:
     sta .loaded
-    bcc .save_c0
-    lda 0x01
-    jmp .save_cstore
-.save_c0:
-    lda 0x00
-.save_cstore:
-    sta .carry
     rts
 
 .step:
     #d 0x00
 .loaded:
     #d 0x00
-.carry:
-    #d 0x00
 .banner:
-    #d "de_dinc_test", 0x00
+    #d "de_dinc_v2", 0x00
