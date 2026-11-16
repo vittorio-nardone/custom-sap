@@ -354,6 +354,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         # E ← E+1; LO+CHKO for page-cross (like LDAindpy)
                         ['LRALU-IN', 'LRALU-OUT', 'LO'] + CC_notEE,
                         ['ERALU-OUT'] + CC_LE + CC_CHKO,
+                        # notNOP is glued to the last step. A CHK on that same
+                        # cycle ends the instruction, so the true path (D+1)
+                        # never runs. Every other CHK has steps after it.
+                        [],
                     ],
                 "true": [
                         # D ← D+1 when E wrapped (O=1)
@@ -407,6 +411,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         # E ← E+1; LO+CHKO for page-cross (like LDAindpy)
                         ['LRALU-IN', 'LRALU-OUT', 'LO'] + CC_notEE,
                         ['ERALU-OUT'] + CC_LE + CC_CHKO,
+                        # notNOP is glued to the last step. A CHK on that same
+                        # cycle ends the instruction, so the true path (D+1)
+                        # never runs. Every other CHK has steps after it.
+                        [],
                     ],
                 "true": [
                         # D ← D+1 when E wrapped (O=1); Y unchanged
@@ -945,6 +953,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
                         ['LRALU-IN', 'LRALU-OUT', 'LO'] + CC_notEE,
                         ['ERALU-OUT'] + CC_LE + CC_CHKO,
+                        # notNOP is glued to the last step. A CHK on that same
+                        # cycle ends the instruction, so the true path (D+1)
+                        # never runs. Every other CHK has steps after it.
+                        [],
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,
@@ -993,6 +1005,10 @@ INSTRUCTIONS_SET = dict(sorted({
                         ['EMAR', 'WRAM', 'MEMADDRVALID'] + CC_notEACC,
                         ['LRALU-IN', 'LRALU-OUT', 'LO'] + CC_notEE,
                         ['ERALU-OUT'] + CC_LE + CC_CHKO,
+                        # notNOP is glued to the last step. A CHK on that same
+                        # cycle ends the instruction, so the true path (D+1)
+                        # never runs. Every other CHK has steps after it.
+                        [],
                     ],
                 "true": [
                         ['LRALU-IN', 'LRALU-OUT'] + CC_notED,

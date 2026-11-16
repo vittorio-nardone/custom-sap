@@ -214,8 +214,8 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | 0xC1 | LDA | (ZP),Y | 14/16 | Z N C | Load A indirect indexed |
 | 0x94 | LDA | DE,X | 7/8 | Z O N | Load A via DE pointer+X |
 | 0xB2 | LDA | YDE,X | 8/9 | Z O N | Load A via Y:DE pointer+X |
-| 0xF4 | LDA | (DE)+ | 7/9 | Z N C | Load A via DE, then DE++ |
-| 0xF6 | LDA | (YDE)+ | 8/10 | Z N C | Load A via Y:DE, then DE++ (Y unchanged) |
+| 0xF4 | LDA | (DE)+ | 8/9 | Z N C | Load A via DE, then DE++ |
+| 0xF6 | LDA | (YDE)+ | 9/10 | Z N C | Load A via Y:DE, then DE++ (Y unchanged) |
 | 0xA5 | LDD | immediate | 4 | Z N | Load D |
 | 0x33 | LDD | zero page | 6 | Z N | Load D |
 | 0x34 | LDD | absolute | 8 | Z N | Load D |
@@ -251,8 +251,8 @@ D (MSB) and E (LSB) form a 16-bit pointer for indirect addressing:
 | 0xC2 | STA | (ZP),Y | 15/17 | C | Store A indirect indexed |
 | 0xA1 | STA | DE,X | 7/8 | O | Store A via DE pointer+X |
 | 0xB3 | STA | YDE,X | 8/9 | O | Store A via Y:DE pointer+X |
-| 0xF5 | STA | (DE)+ | 7/9 | C | Store A via DE, then DE++ |
-| 0xF8 | STA | (YDE)+ | 8/10 | C | Store A via Y:DE, then DE++ (Y unchanged) |
+| 0xF5 | STA | (DE)+ | 8/9 | C | Store A via DE, then DE++ |
+| 0xF8 | STA | (YDE)+ | 9/10 | C | Store A via Y:DE, then DE++ (Y unchanged) |
 | 0x7A | STD | zero page | 6 | - | Store D |
 | 0x7B | STD | absolute | 8 | - | Store D |
 | 0x7C | STD | ZP,X | 9/10 | O | Store D indexed |
