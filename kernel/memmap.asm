@@ -228,7 +228,10 @@
 #const SHELL_APP_ARGC                = 0x83B9  ; 1 byte - 0=none, 1=path present
 #const SHELL_APP_ARG                 = 0x83BA  ; 32 bytes NUL path (0x83BA-0x83D9)
 
-; --- 0x83DA-0x83F0: free ------------------------------------------
+; --- 0x83DA-0x83F0: Shell PATH + CWD save (Otto OS) ---------------
+#const SHELL_PATH_LEN                = 0x83DA  ; 1 byte - length of SHELL_PATH text
+#const SHELL_CWD_SAVE_LEN            = 0x83DB  ; 1 byte - saved CWD length (PATH search)
+; 0x83DC-0x83F0 still free (21 bytes)
 
 ; --- 0xDC00-0xE37F: USB dir tables (storage/menu.asm) -------------
 ; Lives in application RAM: only valid while the kernel USB menu is running.
@@ -239,6 +242,12 @@
 ; App RAM. Slots start with E<=0xA0 so DE,X copies never page-cross.
 #const SHELL_HIST                    = 0xE400  ; 5 x 40 bytes (0xE400-0xE4C7)
 #const SHELL_HIST_DRAFT              = 0xE4C8  ; 40 bytes live-line backup (0xE4C8-0xE4EF)
+
+; --- 0xE4F0-0xE53F: Otto OS PATH + CWD backup (shell.asm) ---------
+#const SHELL_PATH                    = 0xE4F0  ; 40 bytes NUL path list ("/BIN;/TOOLS")
+#const SHELL_PATH_MAX                = 0x28    ; 40
+#const SHELL_CWD_SAVE                = 0xE518  ; 32 bytes — CWD backup during PATH search
+; 0xE538-0xE53F reserved (8 bytes)
 
 ; --- 0x8340-0x834D: Utility variables (utils.asm) ------------
 #const BINDEC32_VALUE  = 0x8340  ; 4 bytes (0x8340-0x8343)

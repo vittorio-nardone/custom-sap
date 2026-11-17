@@ -1,1 +1,3 @@
-Otto docs: try cd DOCS then type GUIDE.TXT
+Otto docs: cd DOCS then more GUIDE.TXT
+Shell: mount dir cd path load save exec
+Apps: more edit fcopy ren find del mkdir rmdir

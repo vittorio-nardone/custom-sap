@@ -1,5 +1,6 @@
-; Otto shell v1.b04 — word commands + legacy single-letter monitor.
+; Otto shell — word commands + legacy single-letter monitor + Otto OS PATH.
 ; Prompt: ">" (no USB), "?>" (USB error), "/path>" (mounted).
+; External apps: CWD then PATH (default /BIN). File utils live in /BIN.
 
 #once
 #bank kernel
@@ -23,6 +24,7 @@ SHELL_INIT:
     sta SHELL_CWD_LEN
     lda 0x00
     sta SHELL_APP_ARGC
+    jsr shell_path_default
     rts
 
 ; **********************************************************
@@ -261,7 +263,7 @@ shell_move_arg0_front:
 ; Builtin words. C=1 if handled (handler RTS, or miss with C=0).
 ; Table: 4 bytes/entry = name ptr (MSB,LSB) + handler (MSB,LSB).
 ; ============================================================
-#const SHELL_BUILTIN_TAB_BYTES = 92   ; 23 commands × 4
+#const SHELL_BUILTIN_TAB_BYTES = 80   ; 20 commands × 4 (Otto OS shell)
 
 shell_lookup_builtin:
     ldx 0x00
@@ -894,81 +896,43 @@ shell_cmd_umount:
     rts
 
 ; ============================================================
-; mkdir name / del name / rmdir name
+; path [list] — show or set Otto OS PATH ( ; -separated abs dirs)
 ; ============================================================
-shell_cmd_mkdir:
+shell_cmd_path:
     lda SHELL_ARGC
     cmp 0x02
-    bcc .bad
-    jsr shell_require_usb
-    bcc .done
-    jsr shell_sync_cwd
-    bcc .ufail
+    bcc .show
+    ; set from argv1 (single token, may contain ';')
     lda 0x01
-    jsr shell_build_fname
-    jsr STORAGE_MKDIR
-    bcc .ufail
-    jsr shell_sync_cwd
+    jsr shell_arg_ptr
+    ldx 0x00
+.cp:
+    lda de,x
+    beq .donecp
+    cmp 0x5C                      ; '\'
+    bne .ch
+    lda 0x2F                      ; → '/'
+.ch:
+    jsr shell_upcase
+    sta SHELL_PATH,x
+    inx
+    cpx SHELL_PATH_MAX
+    bcc .cp
+    dex
+.donecp:
+    lda 0x00
+    sta SHELL_PATH,x
+    stx SHELL_PATH_LEN
     sec
     rts
-.bad:
-    jmp shell_err_arg
-.ufail:
-    jsr shell_usb_fail
-.done:
-    sec
-    rts
-
-shell_cmd_del:
-    lda SHELL_ARGC
-    cmp 0x02
-    bcc .bad
-    jsr shell_require_usb
-    bcc .done
-    jsr shell_sync_cwd
-    bcc .ufail
-    lda 0x01
-    jsr shell_argv_hash_fnbuf
-    bcs .go
-    lda 0x01
-    jsr shell_build_fname
-.go:
-    jsr STORAGE_DELETE
-    bcc .ufail
-    sec
-    rts
-.bad:
-    jmp shell_err_arg
-.ufail:
-    jsr shell_usb_fail
-.done:
-    sec
-    rts
-
-shell_cmd_rmdir:
-    lda SHELL_ARGC
-    cmp 0x02
-    bcc .bad
-    jsr shell_require_usb
-    bcc .done
-    jsr shell_sync_cwd
-    bcc .ufail
-    lda 0x01
-    jsr shell_argv_hash_fnbuf
-    bcs .go
-    lda 0x01
-    jsr shell_build_fname
-.go:
-    jsr STORAGE_RMDIR
-    bcc .ufail
-    jsr shell_sync_cwd
-    sec
-    rts
-.bad:
-    jmp shell_err_arg
-.ufail:
-    jsr shell_usb_fail
-.done:
+.show:
+    ldd sh_msg_path[15:8]
+    lde sh_msg_path[7:0]
+    jsr ACIA_SEND_STRING
+    ldd SHELL_PATH[15:8]
+    lde SHELL_PATH[7:0]
+    jsr ACIA_SEND_STRING
+    jsr ACIA_SEND_NEWLINE
     sec
     rts
 
@@ -1476,7 +1440,10 @@ shell_cmd_exec:
     lda 0x01
     sta CH376_OT_AUTO
     jsr shell_load_by_name
+    bcs .run
+    jsr shell_path_search_load
     bcc .ufail
+.run:
     jsr MENU_RUN_START
     sec
     rts
@@ -1489,8 +1456,9 @@ shell_cmd_exec:
     rts
 
 shell_cmd_external:
-    ; Bare name → load NAME.BIN. Optional argv1 is stashed for the app
-    ; ("edit notes.txt" → load EDIT.BIN, path in SHELL_APP_ARG).
+    ; Bare name → load NAME.BIN from CWD, then PATH.
+    ; Args after the command are stashed space-separated in SHELL_APP_ARG
+    ; ("edit notes.txt" / "fcopy A.TXT B.TXT").
     lda 0x00
     sta SHELL_APP_ARGC
     lda SHELL_ARGC
@@ -1519,7 +1487,10 @@ shell_cmd_external:
     lda 0x01
     sta CH376_OT_AUTO
     jsr shell_load_by_name
+    bcs .run
+    jsr shell_path_search_load
     bcc .unknown
+.run:
     jsr MENU_RUN_START
     rts
 .unknown:
@@ -1528,28 +1499,166 @@ shell_cmd_external:
     jsr ACIA_SEND_STRING
     rts
 
-; A = argv index → copy string into SHELL_APP_ARG, set SHELL_APP_ARGC=1.
+; A = starting argv index → copy argv[A..] into SHELL_APP_ARG as
+; space-separated tokens (tokenize replaced spaces with NUL).
 shell_app_arg_stash:
     cmp SHELL_ARGC
     bcs .no
+    sta SHELL_WORK+14             ; start index
+    lda 0x00
+    sta SHELL_WORK+15             ; out index
+.argloop:
+    lda SHELL_WORK+14
+    cmp SHELL_ARGC
+    bcs .done
     jsr shell_arg_ptr
     ldx 0x00
 .cp:
+    lda SHELL_WORK+15
+    cmp 0x1F
+    bcs .done
     lda de,x
-    sta SHELL_APP_ARG,x
-    beq .ok
+    beq .tokend
+    ldy SHELL_WORK+15
+    sta SHELL_APP_ARG,y
+    inc SHELL_WORK+15
     inx
-    cpx 0x1F
-    bcc .cp
+    jmp .cp
+.tokend:
+    inc SHELL_WORK+14
+    lda SHELL_WORK+14
+    cmp SHELL_ARGC
+    bcs .done
+    ldy SHELL_WORK+15
+    cpy 0x1F
+    bcs .done
+    lda 0x20
+    sta SHELL_APP_ARG,y
+    inc SHELL_WORK+15
+    jmp .argloop
+.done:
+    ldy SHELL_WORK+15
     lda 0x00
-    sta SHELL_APP_ARG,x
-.ok:
+    sta SHELL_APP_ARG,y
     lda 0x01
     sta SHELL_APP_ARGC
     rts
 .no:
     lda 0x00
     sta SHELL_APP_ARGC
+    rts
+
+; ---- Otto OS PATH helpers ----
+shell_path_default:
+    ldx 0x00
+.d:
+    lda sh_path_init,x
+    sta SHELL_PATH,x
+    beq .dl
+    inx
+    cpx SHELL_PATH_MAX
+    bcc .d
+    lda 0x00
+    sta SHELL_PATH,x
+.dl:
+    stx SHELL_PATH_LEN
+    rts
+
+shell_cwd_save:
+    lda SHELL_CWD_LEN
+    sta SHELL_CWD_SAVE_LEN
+    ldx 0x00
+.cp:
+    lda SHELL_CWD,x
+    sta SHELL_CWD_SAVE,x
+    inx
+    cpx SHELL_CWD_MAX
+    bcc .cp
+    rts
+
+shell_cwd_restore:
+    lda SHELL_CWD_SAVE_LEN
+    sta SHELL_CWD_LEN
+    ldx 0x00
+.cp:
+    lda SHELL_CWD_SAVE,x
+    sta SHELL_CWD,x
+    inx
+    cpx SHELL_CWD_MAX
+    bcc .cp
+    rts
+
+; Try PATH dirs as temporary CWD; load argv1 via shell_load_by_name.
+; Restores original CWD (and syncs). C=1 if binary loaded.
+shell_path_search_load:
+    lda SHELL_PATH_LEN
+    beq .fail
+    jsr shell_cwd_save
+    lda 0x00
+    sta SHELL_WORK+12             ; index into SHELL_PATH
+.next:
+    jsr shell_path_next_comp
+    bcc .miss
+    jsr shell_sync_cwd
+    bcc .next
+    jsr shell_load_by_name
+    bcc .next
+    jsr shell_cwd_restore
+    jsr shell_sync_cwd
+    sec
+    rts
+.miss:
+    jsr shell_cwd_restore
+    jsr shell_sync_cwd
+.fail:
+    clc
+    rts
+
+; Parse next PATH component into SHELL_CWD. Uses SHELL_WORK+12 index.
+; C=1 if a component was produced.
+shell_path_next_comp:
+    ldx SHELL_WORK+12
+.skip:
+    cpx SHELL_PATH_LEN
+    bcs .none
+    lda SHELL_PATH,x
+    beq .none
+    cmp 0x3B                      ; ';'
+    bne .start
+    inx
+    jmp .skip
+.start:
+    ldy 0x00
+.cp:
+    cpx SHELL_PATH_LEN
+    bcs .end
+    lda SHELL_PATH,x
+    beq .end
+    cmp 0x3B
+    beq .endsemi
+    cmp 0x5C
+    bne .store
+    lda 0x2F
+.store:
+    sta SHELL_CWD,y
+    inx
+    iny
+    cpy SHELL_CWD_MAX
+    bcc .cp
+    dey
+.endsemi:
+    inx                            ; skip ';'
+.end:
+    lda 0x00
+    sta SHELL_CWD,y
+    sty SHELL_CWD_LEN
+    stx SHELL_WORK+12
+    cpy 0x00
+    beq .none
+    sec
+    rts
+.none:
+    clc
     rts
 
 ; If argv1 has no '.', append ".BIN" in-place (input buffer).
@@ -1602,100 +1711,7 @@ shell_argv1_ensure_bin:
 .done:
     rts
 
-; ============================================================
-; type file — print text to serial (read until EOF / 4KB cap)
-; ============================================================
-shell_cmd_type:
-    lda SHELL_ARGC
-    cmp 0x02
-    bcc .bad
-    jsr shell_require_usb
-    bcc .done
-    jsr shell_sync_cwd
-    bcc .ufail
-    lda 0x01
-    jsr shell_argv_hash_fnbuf
-    bcs .open
-    lda 0x01
-    jsr shell_build_fname
-.open:
-    jsr storage_set_name_fnbuf
-    jsr STORAGE_OPEN
-    bcc .ufail
-    ; Cap total bytes printed
-    lda 0x00
-    sta SHELL_WORK+0              ; lo count
-    lda 0x10
-    sta SHELL_WORK+1              ; hi = 0x1000 max
-.rd:
-    lda SHELL_WORK+0
-    ora SHELL_WORK+1
-    beq .close
-    lda 0x20
-    sta CH376_REMAIN_LO
-    lda 0x00
-    sta CH376_REMAIN_HI
-    ldy 0x00
-    ldd CH376_BUF[15:8]
-    lde CH376_BUF[7:0]
-    jsr STORAGE_READ
-    bcc .close
-    lda CH376_LOADED_LO
-    beq .close
-    ldx 0x00
-.pr:
-    cpx CH376_LOADED_LO
-    bcs .dec
-    lda CH376_BUF,x
-    cmp 0x0A
-    beq .nl
-    cmp 0x0D
-    beq .nx
-    cmp 0x20
-    bcc .dot
-    cmp 0x7F
-    bcs .dot
-    jsr ACIA_SEND_CHAR
-    jmp .nx
-.nl:
-    jsr ACIA_SEND_NEWLINE
-    jmp .nx
-.dot:
-    lda 0x2E
-    jsr ACIA_SEND_CHAR
-.nx:
-    inx
-    jmp .pr
-.dec:
-    lda SHELL_WORK+0
-    sec
-    sbc CH376_LOADED_LO
-    sta SHELL_WORK+0
-    lda SHELL_WORK+1
-    sbc 0x00
-    sta SHELL_WORK+1
-    ; if short read, EOF
-    lda CH376_LOADED_LO
-    cmp 0x20
-    bcc .close
-    jmp .rd
-.close:
-    lda 0x00
-    jsr STORAGE_CLOSE
-    jsr ACIA_SEND_NEWLINE
-    ; clear USB err on success path
-    lda SHELL_FLAGS
-    and 0xFE
-    sta SHELL_FLAGS
-    sec
-    rts
-.bad:
-    jmp shell_err_arg
-.ufail:
-    jsr shell_usb_fail
-.done:
-    sec
-    rts
+; type / mkdir / del / rmdir — Otto OS apps in /BIN (MORE, MKDIR, DEL, RMDIR)
 
 ; ============================================================
 ; Errors
@@ -2161,16 +2177,13 @@ sh_s_fill:   #d "FILL", 0x00
 sh_s_copy:   #d "COPY", 0x00
 sh_s_dir:    #d "DIR", 0x00
 sh_s_cd:     #d "CD", 0x00
-sh_s_type:   #d "TYPE", 0x00
+sh_s_path:   #d "PATH", 0x00
 sh_s_mount:  #d "MOUNT", 0x00
 sh_s_umount: #d "UMOUNT", 0x00
-sh_s_mkdir:  #d "MKDIR", 0x00
-sh_s_del:    #d "DEL", 0x00
-sh_s_rmdir:  #d "RMDIR", 0x00
 
 ; name(MSB,LSB) + handler(MSB,LSB) — JMP (zp,X) is MSB-first.
 ; MUST stay within one page: LDD/LDE tab,X and JMP (tab+2,X) do not carry
-; lo+X into the high byte (92-byte table → fits if page-aligned).
+; lo+X into the high byte (fits if page-aligned).
 ; customasm #align is in bits: 2048 bits = 256 bytes.
 #align 2048
 shell_builtin_tab:
@@ -2191,17 +2204,18 @@ shell_builtin_tab:
     #d sh_s_copy[15:8],   sh_s_copy[7:0],   shell_cmd_copy[15:8],   shell_cmd_copy[7:0]
     #d sh_s_dir[15:8],    sh_s_dir[7:0],    shell_cmd_dir[15:8],    shell_cmd_dir[7:0]
     #d sh_s_cd[15:8],     sh_s_cd[7:0],     shell_cmd_cd[15:8],     shell_cmd_cd[7:0]
-    #d sh_s_type[15:8],   sh_s_type[7:0],   shell_cmd_type[15:8],   shell_cmd_type[7:0]
+    #d sh_s_path[15:8],   sh_s_path[7:0],   shell_cmd_path[15:8],   shell_cmd_path[7:0]
     #d sh_s_mount[15:8],  sh_s_mount[7:0],  shell_cmd_mount[15:8],  shell_cmd_mount[7:0]
     #d sh_s_umount[15:8], sh_s_umount[7:0], shell_cmd_umount[15:8], shell_cmd_umount[7:0]
-    #d sh_s_mkdir[15:8],  sh_s_mkdir[7:0],  shell_cmd_mkdir[15:8],  shell_cmd_mkdir[7:0]
-    #d sh_s_del[15:8],    sh_s_del[7:0],    shell_cmd_del[15:8],    shell_cmd_del[7:0]
-    #d sh_s_rmdir[15:8],  sh_s_rmdir[7:0],  shell_cmd_rmdir[15:8],  shell_cmd_rmdir[7:0]
 
+sh_path_init:
+    #d "/BIN", 0x00
 sh_msg_ver:
     #d "Otto Kernel ", KERNEL_VERSION, " (", KERNEL_BUILDDATE, ")", 0x0A, 0x0D, 0x00
 sh_msg_addr:
     #d "addr 0x", 0x00
+sh_msg_path:
+    #d "PATH=", 0x00
 sh_msg_umount:
     #d "unmounted", 0x0A, 0x0D, 0x00
 sh_err_arg:

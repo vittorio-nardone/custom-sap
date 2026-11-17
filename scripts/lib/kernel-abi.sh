@@ -102,7 +102,7 @@ otto_abi_update_catalog() {
     repo="$(otto_repo_root)"
     catalog_py="${repo}/scripts/python/update_app_catalog.py"
     if [ -f "$catalog_py" ]; then
-        python3.11 "$catalog_py" || true
+        python3 "$catalog_py" || true
     fi
 }
 

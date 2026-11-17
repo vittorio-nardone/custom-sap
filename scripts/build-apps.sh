@@ -108,7 +108,9 @@ fi
 if [ ${#APP_FILES[@]} -eq 0 ]; then
     for app in "${REPO_ROOT}/apps"/*.asm; do
         [ -e "$app" ] || continue
-        [ "$(basename "$app")" = "istructions.asm" ] && continue
+        base="$(basename "$app")"
+        [ "$base" = "istructions.asm" ] && continue
+        [ "$base" = "os_lib.asm" ] && continue
         APP_FILES+=("$app")
     done
 fi
@@ -147,7 +149,7 @@ if [ "$BUILD_PASCAL" = "1" ]; then
         [ -e "$pas" ] || continue
         base="$(basename "$pas" .pas)"
         # shellcheck disable=SC2086
-        if ! python3.11 "${REPO_ROOT}/pascal_compiler.py" $SYMBOLS_ARG $PASCAL_OT_ARG \
+        if ! python3 "${REPO_ROOT}/pascal_compiler.py" $SYMBOLS_ARG $PASCAL_OT_ARG \
             "$pas" -o "${PASCAL_OUT}/${base}.bin"; then
             echo "WARN: skipped ${base} (pascal build failed for this kernel ABI)" >&2
             continue
@@ -161,23 +163,33 @@ fi
 CH376_STICK="${REPO_ROOT}/roms/sim/ch376"
 CH376_SYNC=0
 if [ -z "${KERNEL_ABI}" ] && [ -d "$CH376_STICK" ]; then
-    mkdir -p "${CH376_STICK}/BIN"
-    # dest relative to stick root = source under ASM_OUT
-    # DEMO.BIN / BIN/HELLO.BIN: shell exec/cd demos (see roms/sim/ch376/README.md)
+    mkdir -p "${CH376_STICK}/BIN" "${CH376_STICK}/GAMES" "${CH376_STICK}/DOCS" "${CH376_STICK}/TMP"
+    # Otto OS stick layout: official apps under BIN/ (PATH=/BIN)
     declare -a CH376_COPIES=(
-        "DEMO.BIN:helloworld.bin"
-        "BIN/HELLO.BIN:helloworld.bin"
-        "EDIT.BIN:edit.bin"
         "BIN/EDIT.BIN:edit.bin"
+        "BIN/MORE.BIN:more.bin"
+        "BIN/FCOPY.BIN:fcopy.bin"
+        "BIN/REN.BIN:ren.bin"
+        "BIN/FIND.BIN:find.bin"
+        "BIN/DEL.BIN:del.bin"
+        "BIN/MKDIR.BIN:mkdir.bin"
+        "BIN/RMDIR.BIN:rmdir.bin"
+        "BIN/DISASM.BIN:disasm.bin"
+        "GAMES/HELLO.BIN:helloworld.bin"
+        "GAMES/HANGMAN.BIN:hangman.bin"
     )
     for mapping in "${CH376_COPIES[@]}"; do
         dest="${mapping%%:*}"
         src="${mapping##*:}"
         if [ -f "${ASM_OUT}/${src}" ]; then
+            mkdir -p "${CH376_STICK}/$(dirname "${dest}")"
             cp "${ASM_OUT}/${src}" "${CH376_STICK}/${dest}"
             CH376_SYNC=$((CH376_SYNC + 1))
         fi
     done
+    # Drop legacy root copies superseded by /BIN and /GAMES
+    rm -f "${CH376_STICK}/EDIT.BIN" "${CH376_STICK}/DEMO.BIN" \
+          "${CH376_STICK}/BIN/HELLO.BIN" "${CH376_STICK}/BIN/README.TXT"
 fi
 
 echo ""
@@ -205,4 +217,4 @@ PASCAL_OUT=${PASCAL_OUT}
 CH376_SYNC=${CH376_SYNC}
 EOF
 
-python3.11 "${SCRIPTS_DIR}/python/update_app_catalog.py" 2>/dev/null || true
+python3 "${SCRIPTS_DIR}/python/update_app_catalog.py" 2>/dev/null || true

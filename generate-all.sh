@@ -48,21 +48,33 @@ while [ $# -gt 0 ]; do
 done
 
 # ── Step 1: Generate microcode and lookup tables ─────────────────────
-python3.11 scripts/python/microcode.py
-python3.11 scripts/python/lookup_tables.py
+python3 scripts/python/microcode.py
+python3 scripts/python/lookup_tables.py
 
 # ── Step 2: Set build configuration ──────────────────────────────────
+# Portable in-place sed (BSD sed needs '' after -i; GNU sed does not).
+otto_sed_inplace() {
+    if sed --version >/dev/null 2>&1; then
+        sed -i "$@"
+    else
+        sed -i '' "$@"
+    fi
+}
 if [ "$BUILD_MODE" = "debug" ]; then
-    sed -i '' 's/^#const BUILD_DEBUG = .*/#const BUILD_DEBUG = 1/' kernel/build_config.asm
+    otto_sed_inplace 's/^#const BUILD_DEBUG = .*/#const BUILD_DEBUG = 1/' kernel/build_config.asm
 else
-    sed -i '' 's/^#const BUILD_DEBUG = .*/#const BUILD_DEBUG = 0/' kernel/build_config.asm
+    otto_sed_inplace 's/^#const BUILD_DEBUG = .*/#const BUILD_DEBUG = 0/' kernel/build_config.asm
 fi
 
 # ── Step 3: Build unified ROM binary ────────────────────────────────
-python3.11 scripts/python/build_version.py --symbols symbols.txt kernel/kernel.asm roms/system/kernel-rom.bin
-python3.11 scripts/python/symbols.py
+python3 scripts/python/build_version.py --symbols symbols.txt kernel/kernel.asm roms/system/kernel-rom.bin
+python3 scripts/python/symbols.py
 
-UNIFIED_SIZE=$(stat -f%z roms/system/kernel-rom.bin)
+if UNIFIED_SIZE=$(stat -c%s roms/system/kernel-rom.bin 2>/dev/null); then
+    :
+else
+    UNIFIED_SIZE=$(stat -f%z roms/system/kernel-rom.bin)
+fi
 
 # Intel HEX output (for EEPROM programmer)
 customasm kernel/kernel.asm -f intelhex -o roms/system/kernel-rom.hex
