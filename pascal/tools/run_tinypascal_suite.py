@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SUITE = ROOT / "pascal" / "examples" / "tinypascal_suite.pas"
-IDE_BIN = ROOT / "roms" / "apps" / "asm" / "tinypascal_ide.bin"
+IDE_BIN = ROOT / "roms" / "apps" / "current" / "asm" / "tinypascal_ide.bin"
 
 
 def build_ide_lo_input(suite_path: Path) -> str:
@@ -65,7 +65,7 @@ def check_onboard_output(out: str) -> list[str]:
 
 
 def run_python_cross(suite_path: Path, max_cycles: int) -> int:
-    out_bin = ROOT / "roms" / "apps" / "pascal" / "_suite_cross.bin"
+    out_bin = ROOT / "roms" / "apps" / "current" / "pascal" / "_suite_cross.bin"
     out_bin.parent.mkdir(parents=True, exist_ok=True)
     r1 = subprocess.run(
         [

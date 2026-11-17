@@ -1,8 +1,8 @@
 #once
 #bank kernel
 
-#const PMACHINE_VERSION = "v0.4.41"
-#const PMACHINE_BUILDDATE = "11/14/2026"
+#const PMACHINE_VERSION = "v0.4.42"
+#const PMACHINE_BUILDDATE = "11/17/2026"
 
 #include "consts.asm"
 
@@ -78,7 +78,12 @@ PM_ENTRY:
 ; --- Fetch-decode-execute loop (jump table dispatch) ------
 
 .fetch:
-    jsr .fetch_byte
+    ; Inline .fetch_byte: avoid JSR/RTS on every opcode.
+    ldd PM_IP_MSB
+    lde PM_IP_LSB
+    lda (de)+
+    std PM_IP_MSB
+    ste PM_IP_LSB
     cmp 0x3F
     bcs .error_invalid
     asl a                       ; word index (hi,lo pairs)
@@ -1171,53 +1176,41 @@ PM_ENTRY:
 
 .op_csp:
     jsr .fetch_byte
+    cmp 0x16                      ; PM_CSP_LENGTH + 1
+    bcs .error_invalid
+    asl a                         ; word index (hi,lo pairs)
+    tax
+    jmp (.csp_dispatch,x)
 
-    cmp PM_CSP_WRITE
-    beq .csp_write
-    cmp PM_CSP_WRITELN
-    beq .csp_writeln
-    cmp PM_CSP_WRITELN_NOARG
-    beq .csp_writeln_noarg
-    cmp PM_CSP_WRITE_INT
-    beq .csp_write_int
-    cmp PM_CSP_WRITELN_INT
-    beq .csp_writeln_int
-    cmp PM_CSP_READLN_INT
-    beq .csp_readln_int
-    cmp PM_CSP_WRITE_CHAR
-    beq .csp_write_char
-    cmp PM_CSP_WRITE_REAL
-    beq .csp_write_real
-    cmp PM_CSP_WRITELN_REAL
-    beq .csp_writeln_real
-    cmp PM_CSP_READLN_REAL
-    beq .csp_readln_real
-    cmp PM_CSP_RANDOM
-    beq .csp_random
-    cmp PM_CSP_PEEK
-    beq .csp_peek
-    cmp PM_CSP_POKE
-    beq .csp_poke
-    cmp PM_CSP_VT100
-    beq .csp_vt100
-    cmp PM_CSP_WAIT_MS
-    beq .csp_wait_ms
-    cmp PM_CSP_READLN_STR
-    beq .csp_readln_str
-    cmp PM_CSP_WRITE_STR
-    beq .csp_write_str
-    cmp PM_CSP_WRITELN_STR
-    beq .csp_writeln_str
-    cmp PM_CSP_STR_EQ
-    beq .csp_str_eq
-    cmp PM_CSP_STR_ASSIGN_LIT
-    beq .csp_str_assign_lit
-    cmp PM_CSP_STR_COPY
-    beq .csp_str_copy
-    cmp PM_CSP_LENGTH
-    beq .csp_length
-
-    jmp .error_invalid
+.csp_dispatch:
+    ; 0x00 WRITE          0x01 WRITELN        0x02 WRITELN_NOARG  0x03 WRITE_INT
+    #d .csp_write[15:8], .csp_write[7:0]
+    #d .csp_writeln[15:8], .csp_writeln[7:0]
+    #d .csp_writeln_noarg[15:8], .csp_writeln_noarg[7:0]
+    #d .csp_write_int[15:8], .csp_write_int[7:0]
+    ; 0x04 WRITELN_INT    0x05 READLN_INT     0x06 WRITE_CHAR     0x07 WRITE_REAL
+    #d .csp_writeln_int[15:8], .csp_writeln_int[7:0]
+    #d .csp_readln_int[15:8], .csp_readln_int[7:0]
+    #d .csp_write_char[15:8], .csp_write_char[7:0]
+    #d .csp_write_real[15:8], .csp_write_real[7:0]
+    ; 0x08 WRITELN_REAL   0x09 READLN_REAL    0x0A RANDOM         0x0B PEEK
+    #d .csp_writeln_real[15:8], .csp_writeln_real[7:0]
+    #d .csp_readln_real[15:8], .csp_readln_real[7:0]
+    #d .csp_random[15:8], .csp_random[7:0]
+    #d .csp_peek[15:8], .csp_peek[7:0]
+    ; 0x0C POKE           0x0D VT100          0x0E WAIT_MS        0x0F READLN_STR
+    #d .csp_poke[15:8], .csp_poke[7:0]
+    #d .csp_vt100[15:8], .csp_vt100[7:0]
+    #d .csp_wait_ms[15:8], .csp_wait_ms[7:0]
+    #d .csp_readln_str[15:8], .csp_readln_str[7:0]
+    ; 0x10 WRITE_STR      0x11 WRITELN_STR    0x12 STR_EQ         0x13 STR_ASSIGN_LIT
+    #d .csp_write_str[15:8], .csp_write_str[7:0]
+    #d .csp_writeln_str[15:8], .csp_writeln_str[7:0]
+    #d .csp_str_eq[15:8], .csp_str_eq[7:0]
+    #d .csp_str_assign_lit[15:8], .csp_str_assign_lit[7:0]
+    ; 0x14 STR_COPY       0x15 LENGTH
+    #d .csp_str_copy[15:8], .csp_str_copy[7:0]
+    #d .csp_length[15:8], .csp_length[7:0]
 
 ; CSP 0 — write(string)
 .csp_write:
@@ -2176,24 +2169,21 @@ PM_ENTRY:
     ste PM_IP_LSB
     rts
 
-; Push A onto the eval stack.  Clobbers D, E, X.
+; Push A onto the eval stack.  Clobbers X (D/E preserved).
+; Fixed base PM_EVAL_STACK + 8-bit PM_ESP: zp,X, no DE reload.
+; Does not touch C (ADD/SUB rely on this across the LSB push).
 .push_byte:
-    pha
-    ldd PM_EVAL_STACK[15:8]
-    lde PM_EVAL_STACK[7:0]
     ldx PM_ESP
-    pla
-    sta de,x
+    sta PM_EVAL_STACK,x
     inc PM_ESP
     rts
 
-; Pop one byte from the eval stack into A.  Clobbers D, E, X.
+; Pop one byte from the eval stack into A.  Clobbers X (D/E preserved).
+; Does not touch C.
 .pop_byte:
     dec PM_ESP
-    ldd PM_EVAL_STACK[15:8]
-    lde PM_EVAL_STACK[7:0]
     ldx PM_ESP
-    lda de,x
+    lda PM_EVAL_STACK,x
     rts
 
 ; Follow X static links starting from PM_FP.

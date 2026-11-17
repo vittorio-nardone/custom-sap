@@ -324,12 +324,12 @@ ch376_wrd_use_len:
     ldd CH376_DST_MSB
     lde CH376_DST_LSB
 ch376_wrd_tx:
-    ldx 0x00
-    lda yde,x
+    lda (yde)+
     jsr ch376_uart_putc
-    ine
+    ; (YDE)+ does not bump Y. E==0 means D:E just wrapped.
+    cpe 0x00
     bne ch376_wrd_next
-    ind
+    cpd 0x00
     bne ch376_wrd_next
     iny
 ch376_wrd_next:

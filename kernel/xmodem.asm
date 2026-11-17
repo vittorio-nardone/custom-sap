@@ -218,8 +218,7 @@ XMODEM_RCV:
 	jsr	ACIA_SEND_CHAR				; send NAK to resend block
 	jmp	.StartBlk					; start over, get the block again			
 .CopyBlk:
-	ldx	0x00						; set offset to zero
-	ldy 0x02
+	ldx 0x02						; first data byte in RECEIVE_BUFFER
 	; --- OT header detection (first block only) ---
 	lda XMODEM_BLOCK_FLAG
 	beq .CopyBlk3					; not first block, copy normally
@@ -247,25 +246,29 @@ XMODEM_RCV:
 	sta XMODEM_PTR
 	sta XMODEM_LOAD_PTR
 .header_strip_only:
-	ldy 0x08						; skip 6-byte OT header in buffer
+	ldx 0x08						; skip 6-byte OT header in buffer
 	; --- End OT header detection ---
+	; Fall through with X = first payload index in RECEIVE_BUFFER
 .CopyBlk3:
-	lda	XMODEM_RECEIVE_BUFFER,y		; get data byte from buffer
-	phy
+	; X indexes the RX buffer. Y:D:E is the live destination.
 	ldy XMODEM_PTRP
 	ldd XMODEM_PTRH
 	lde XMODEM_PTR
-	sta	yde,x						; save to target
-	ply
-	inc	XMODEM_PTR					; point to next address
-	bne	.CopyBlk4					; did it step over page boundary?
-	inc	XMODEM_PTRH					; adjust high address for page crossing
-	bne	.CopyBlk4					; did it step over page boundary?
-	inc	XMODEM_PTRP					; adjust high address for page crossing	
+.CopyBlk3_loop:
+	lda XMODEM_RECEIVE_BUFFER,x		; get data byte from buffer
+	sta (yde)+						; store and advance D:E (16-bit)
+	cpe 0x00						; E==0 => just wrapped FF->00
+	bne .CopyBlk4
+	cpd 0x00						; D==0 after E wrap => crossed 64 KB
+	bne .CopyBlk4
+	iny								; (YDE)+ does not bump Y
 .CopyBlk4:
-	iny								; point to next data byte
-	cpy	0x82						; is it the last byte
-	bne	.CopyBlk3					; no, get the next one
+	inx								; point to next data byte
+	cpx 0x82						; is it the last byte
+	bne .CopyBlk3_loop
+	sty XMODEM_PTRP
+	std XMODEM_PTRH
+	ste XMODEM_PTR
 .IncBlk:
 	inc	XMODEM_BLK_NO				; done.  Inc the block #
 	lda	XMODEM_ACK					; send XMODEM_ACK
