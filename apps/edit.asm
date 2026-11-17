@@ -1,11 +1,11 @@
 ; @load-address 0x8400
-; EDIT — minimal line editor for USB text files.
+; EDIT - minimal line editor for USB text files.
 ;
 ;   edit              new buffer
 ;   edit NOTES.TXT    open (path via SHELL_APP_ARG)
 ;   exec EDIT.BIN f   same
 ;
-; Buffer: page 1 @ 0x010000 — 96 lines × 64 bytes.
+; Buffer: page 1 @ 0x010000 - 96 lines x 64 bytes.
 ; Scratch: 0xB180+ (below TinyPascal ED_* scratch where possible).
 ;
 #include "../assembly/ruledef.asm"
@@ -184,7 +184,8 @@ te_pn_done:
     rts
 
 ; ================================================================
-te_new_buf:
+; Drop the text. Keeps TE_FNAME so "o file" then "w" writes the same file.
+te_clear_text:
     ldy TE_PAGE
     ldd TE_BASE[15:8]
     lde TE_BASE[7:0]
@@ -192,6 +193,11 @@ te_new_buf:
     ldx 0x00
     sta yde,x
     sta TE_DIRTY
+    rts
+
+te_new_buf:
+    jsr te_clear_text
+    lda 0x00
     sta TE_HAS_NAME
     sta TE_FNAME
     rts
@@ -212,7 +218,7 @@ te_set_nlines:
     sta yde,x
     rts
 
-; A = 1-based line → Y:DE = slot
+; A = 1-based line -> Y:DE = slot
 te_line_addr:
     tax
     dex
@@ -515,12 +521,11 @@ te_ed_bad:
 te_do_open:
     lda TE_HAS_NAME
     beq te_open_need
-    jsr te_path_fnbuf
-    jsr STORAGE_ENSURE_MOUNTED
+    jsr te_bind_file
     bcc te_open_fail
     jsr STORAGE_OPEN
     bcc te_open_fail
-    jsr te_new_buf
+    jsr te_clear_text
     lda 0x01
     sta TE_HAS_NAME
 te_open_rd:
@@ -609,8 +614,7 @@ te_open_fail:
 te_do_save:
     lda TE_HAS_NAME
     beq te_save_need
-    jsr te_path_fnbuf
-    jsr STORAGE_ENSURE_MOUNTED
+    jsr te_bind_file
     bcc te_save_fail
     jsr STORAGE_CREATE
     bcc te_save_fail
@@ -674,66 +678,205 @@ te_save_need:
     lde te_need[7:0]
     jmp ACIA_SEND_STRING
 
-te_path_fnbuf:
+; Put the CH376 on TE_FNAME. One 8.3 component per SET_NAME: FNBUF is 16
+; bytes, and FILE_CREATE while a directory is still open does not leave a
+; directory entry. Relative names follow SHELL_CWD. C=1 ready for OPEN/CREATE.
+te_bind_file:
+    lda TE_FNAME
+    beq te_bind_fail
+    jsr STORAGE_ENSURE_MOUNTED
+    bcc te_bind_fail
+    lda 0x00
+    jsr STORAGE_CLOSE
     lda TE_FNAME
     cmp 0x2F
-    beq te_path_abs
+    beq te_bind_abs
+    lda 0x00
+    sta TE_TMP
+    jsr te_walk_cwd
+    bcc te_bind_fail
+    jmp te_set_leaf
+te_bind_abs:
+    jsr te_find_leaf
+    bcc te_bind_fail
+    jsr te_walk_abs
+    bcc te_bind_fail
+    jmp te_set_leaf
+te_bind_fail:
+    clc
+    rts
+
+; TE_TMP = index of the leaf in an absolute TE_FNAME. C=0 if the leaf is empty.
+te_find_leaf:
     ldx 0x00
-te_path_cwd:
-    lda SHELL_CWD,x
-    beq te_path_cwdd
-    sta CH376_FNBUF,x
-    inx
-    cpx 0x1E
-    bcc te_path_cwd
-te_path_cwdd:
-    cpx 0x01
-    beq te_path_root
-    dex
-    lda CH376_FNBUF,x
+    stx TE_TMP
+te_fl_lp:
+    lda TE_FNAME,x
+    beq te_fl_end
     cmp 0x2F
-    beq te_path_add
+    bne te_fl_next
     inx
-    lda 0x2F
-    sta CH376_FNBUF,x
+    stx TE_TMP
+    cpx 0x0F
+    bcs te_fl_end
+    jmp te_fl_lp
+te_fl_next:
     inx
-    jmp te_path_add
-te_path_root:
+    cpx 0x10
+    bcc te_fl_lp
+te_fl_end:
+    ldx TE_TMP
+    lda TE_FNAME,x
+    beq te_fl_bad
+    sec
+    rts
+te_fl_bad:
+    clc
+    rts
+
+; Open each SHELL_CWD segment. TE_N2 = depth (0 = root). Then close the dir.
+te_walk_cwd:
+    lda 0x00
+    sta TE_N2
+    lda SHELL_CWD_LEN
+    cmp 0x01
+    beq te_walk_close
     ldx 0x01
-te_path_add:
+te_wc_seg:
+    cpx SHELL_CWD_LEN
+    bcs te_walk_close
+    lda TE_N2
+    bne te_wc_rel
+    lda 0x2F
+    sta CH376_FNBUF
+    ldy 0x01
+    jmp te_wc_cp
+te_wc_rel:
     ldy 0x00
-te_path_nm:
-    lda TE_FNAME,y
+te_wc_cp:
+    lda SHELL_CWD,x
+    beq te_wc_open
+    cmp 0x2F
+    beq te_wc_open
+    sta CH376_FNBUF,y
+    iny
+    inx
+    cpy 0x0E
+    bcc te_wc_cp
+te_wc_open:
+    lda 0x00
+    sta CH376_FNBUF,y
+    phx
+    jsr te_open_dir
+    plx
+    bcc te_bind_fail
+    inc TE_N2
+    lda SHELL_CWD,x
+    cmp 0x2F
+    bne te_wc_seg
+    inx
+    jmp te_wc_seg
+
+; Open parent segments of an absolute path. Leaf starts at TE_TMP.
+te_walk_abs:
+    lda 0x00
+    sta TE_N2
+    lda TE_TMP
+    cmp 0x01
+    beq te_walk_close
+    ldx 0x01
+te_wa_seg:
+    cpx TE_TMP
+    bcs te_walk_close
+    lda TE_N2
+    bne te_wa_rel
+    lda 0x2F
+    sta CH376_FNBUF
+    ldy 0x01
+    jmp te_wa_cp
+te_wa_rel:
+    ldy 0x00
+te_wa_cp:
+    cpx TE_TMP
+    bcs te_wa_open
+    lda TE_FNAME,x
+    cmp 0x2F
+    beq te_wa_open
+    sta CH376_FNBUF,y
+    iny
+    inx
+    cpy 0x0E
+    bcc te_wa_cp
+te_wa_open:
+    lda 0x00
+    sta CH376_FNBUF,y
+    phx
+    jsr te_open_dir
+    plx
+    bcc te_bind_fail
+    inc TE_N2
+    cpx TE_TMP
+    bcs te_walk_close
+    lda TE_FNAME,x
+    cmp 0x2F
+    bne te_wa_seg
+    inx
+    jmp te_wa_seg
+
+te_walk_close:
+    lda 0x00
+    jsr STORAGE_CLOSE
+    sec
+    rts
+
+; FNBUF is one directory name. C=1 if the chip reports ERR_OPEN_DIR.
+te_open_dir:
+    ldy 0x00
+    ldd CH376_FNBUF[15:8]
+    lde CH376_FNBUF[7:0]
+    jsr STORAGE_SET_NAME
+    bcc te_od_no
+    jsr STORAGE_OPEN
+    bcs te_od_no
+    lda CH376_LAST_STATUS
+    cmp CH376_ERR_OPEN_DIR
+    bne te_od_no
+    sec
+    rts
+te_od_no:
+    clc
+    rts
+
+; SET_NAME the leaf. Leading '/' only when the parent is the root (TE_N2 = 0).
+te_set_leaf:
+    ldx TE_TMP
+    lda TE_N2
+    bne te_leaf_nosl
+    lda 0x2F
+    sta CH376_FNBUF
+    ldy 0x01
+    jmp te_leaf_cp
+te_leaf_nosl:
+    ldy 0x00
+te_leaf_cp:
+    lda TE_FNAME,x
+    beq te_leaf_nul
     jsr te_upcase
-    sta CH376_FNBUF,x
-    beq te_path_set
+    sta CH376_FNBUF,y
     inx
     iny
-    cpy 0x0E
-    bcc te_path_nm
+    cpy 0x0F
+    bcc te_leaf_cp
+te_leaf_nul:
     lda 0x00
-    sta CH376_FNBUF,x
-te_path_set:
+    sta CH376_FNBUF,y
     ldy 0x00
     ldd CH376_FNBUF[15:8]
     lde CH376_FNBUF[7:0]
     jmp STORAGE_SET_NAME
-te_path_abs:
-    ldx 0x00
-te_path_acp:
-    lda TE_FNAME,x
-    jsr te_upcase
-    sta CH376_FNBUF,x
-    beq te_path_set
-    inx
-    cpx 0x0F
-    bcc te_path_acp
-    lda 0x00
-    sta CH376_FNBUF,x
-    jmp te_path_set
 
 ; ================================================================
-; D:E buffer, A = max chars. Len → TE_RL_LEN.
+; D:E buffer, A = max chars. Len -> TE_RL_LEN.
 te_read_line:
     sta TE_TMP
     std SHELL_WORK+10
@@ -860,7 +1003,7 @@ te_uc_r:
 
 ; ================================================================
 te_banner:
-    #d "EDIT — line editor", 0x0A, 0x0D
+    #d "EDIT - line editor", 0x0A, 0x0D
     #d "h help  q quit", 0x0A, 0x0D, 0x00
 te_prompt:
     #d "edit> ", 0x00
