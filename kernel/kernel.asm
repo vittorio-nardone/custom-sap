@@ -52,7 +52,7 @@
 ;
 ;
 
-#const KERNEL_VERSION = "v1.4.57"
+#const KERNEL_VERSION = "v1.4.59"
 #const KERNEL_BUILDDATE = "11/17/2026"
 
 #include "../assembly/ruledef.asm"
@@ -553,12 +553,11 @@ menu_help_msg:
 menu_adv_help_msg:
     #d "  mount / umount      USB storage", 0x0A, 0x0D
     #d "  dir / cd [path]     list / change directory", 0x0A, 0x0D
-    #d "  mkdir / rmdir name  create / remove directory", 0x0A, 0x0D
-    #d "  del name            delete file", 0x0A, 0x0D
-    #d "  type file           print text file", 0x0A, 0x0D
+    #d "  path [list]         show/set PATH (/BIN)", 0x0A, 0x0D
     #d "  load file [addr]    load from USB", 0x0A, 0x0D
     #d "  save file len [addr]  save memory to USB (+OT)", 0x0A, 0x0D
-    #d "  exec file / <name>  load+run (NAME.BIN)", 0x0A, 0x0D
+    #d "  exec / <name>       load+run (CWD then PATH)", 0x0A, 0x0D
+    #d "  /BIN apps: more edit fcopy ren find del mkdir rmdir", 0x0A, 0x0D
     #d 0x0A, 0x0D
     #d "Legacy: d/u/r/h[+hex]  (e.g. d8400, r)", 0x0A, 0x0D
     #d "Addr hex: 8400 or 020000. Default addr below.", 0x0A, 0x0D

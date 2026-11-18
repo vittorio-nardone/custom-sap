@@ -1,28 +1,19 @@
-# Virtual USB stick (CH376 simulator)
+# Virtual USB stick (CH376 simulator) — Otto OS layout
 
-When `simulate.py` is run with `--ch376`, this directory is the FAT root exposed
-to the kernel over ACIA #2.
-
-Layout (for shell `cd` / `dir` / `type` / `exec` tests):
+When `simulate.py` is run with `--ch376`, this directory is the FAT root.
 
 ```
 roms/sim/ch376/          ← root (/)
-  DEMO.BIN               ← helloworld (OT header → 0x8400), try: exec DEMO.BIN
-  HELLO.TXT, OTSMOKE.BIN, …
-  BIN/HELLO.BIN          ← same app under /BIN
-  BIN/README.TXT
-  DOCS/GUIDE.TXT
-  GAMES/SCORE.TXT
+  BIN/                   ← PATH default (/BIN)
+    EDIT.BIN MORE.BIN FCOPY.BIN REN.BIN FIND.BIN
+    DEL.BIN MKDIR.BIN RMDIR.BIN DISASM.BIN
+  DOCS/                  ← README.TXT GUIDE.TXT
+  GAMES/                 ← HELLO.BIN HANGMAN.BIN …
+  TMP/                   ← scratch
+  HELLO.TXT NOTES.TXT …
 ```
 
-`DEMO.BIN` / `BIN/HELLO.BIN` / `EDIT.BIN` / `BIN/EDIT.BIN` are refreshed
-from the current app build (`helloworld.bin`, `edit.bin`) after each
-`./generate-all.sh` / `./scripts/build-apps.sh` (current kernel only).
-Mapping: `CH376_COPIES` in `scripts/build-apps.sh`.
+`scripts/build-apps.sh` (current kernel) refreshes `/BIN` and `/GAMES`
+from compiled apps (`CH376_COPIES`).
 
-
-Add other files or subdirectories here to test menu `l` / `w`, shell commands,
-or apps that call `STORAGE_*`. The smoke test (`apps/storage_smoke.asm`) creates
-`OTSMOKE.BIN` here during a successful run (not refreshed by the build).
-
-Override the path with `--ch376-dir /path/to/stick`.
+Override with `--ch376-dir /path/to/stick`.

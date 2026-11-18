@@ -523,9 +523,10 @@ Include `kernel/symbols.asm` to access these. Call with `JSR`.
 
 ### USB storage (CH376S, optional)
 Polling-only FAT access over ACIA #2. Lazy init — absent module returns `C=0`, never blocks boot.
-Word shell (`kernel/shell.asm`): `mount` / `umount`, `dir` / `cd`, `mkdir` / `rmdir` / `del`,
-`type`, `load file [addr]`, `save file len [addr]` (OT on save), `exec` / bare `NAME`, Tab-complete.
-`dir` lists directories first, then files (alpha). No interactive `l`/`w` browser.
+Word shell (`kernel/shell.asm`): `mount` / `umount`, `dir` / `cd`, `path`,
+`load file [addr]`, `save file len [addr]` (OT on save), `exec` / bare `NAME` (CWD then `PATH`),
+Tab-complete. Otto OS file utils live in stick `/BIN` (`more`, `edit`, `fcopy`, `ren`, `find`,
+`del`, `mkdir`, `rmdir`). `dir` lists directories first, then files (alpha). See `docs/otto-os.md`.
 Full API and OT rules: `kernel/storage/README.md`.
 
 | Symbol | Description |

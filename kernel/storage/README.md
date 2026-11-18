@@ -86,12 +86,13 @@ source address). An existing file is truncated.
 |---------|-------------|
 | `mount` / `umount` | Mount / unmount USB |
 | `dir` / `cd [path]` | List (dirs first, then alpha) / change directory (`#HH` refs from last `dir`) |
-| `mkdir` / `rmdir name` | Create / remove empty directory |
-| `del name` | Delete a file |
-| `type file` | Print a text file |
+| `path [list]` | Show or set Otto OS `PATH` (default `/BIN`) |
 | `load file [addr]` | Load via `STORAGE_LOAD_FILE` |
 | `save file len [addr]` | Save via `STORAGE_SAVE_FILE` (+ OT); `len` = 4 hex digits |
-| `exec file` / bare name | Load and run (`NAME.BIN`) |
+| `exec file` / bare name | Load and run (`NAME.BIN`) — CWD then `PATH` |
+
+File utilities (`more`, `edit`, `fcopy`, `ren`, `find`, `del`, `mkdir`, `rmdir`) are
+Otto OS apps under `/BIN`. Memory monitor commands stay in the kernel.
 
 There is no interactive USB browser (`l`/`w`); use the shell forms above.
 
