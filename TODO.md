@@ -116,24 +116,37 @@ Add a Commodore IEC interface to Otto and use it for storage on FDD/SD
 Add a permanent storage to Otto
 
 ## [hardware] Extended MARs
-Add a 2x 24bit registers for complex memory address operation: 
-- load value to the register (1 byte at time)
-- save value of the register (1 byte at time)
-- set zero page (MSB of the register = 0)
-- inc/dec register
-- enable register (address bus)
-Example: implement LDA (ZP)+
-- first register will load ZP (MSB -> PCP -> LSB)
-- enable first register to load LSB in the second register
-- inc first register 
-- enable first register to load MSB in the second register
-- enable second register to load data to A
-- inc second register
-- enable first register to save MSB of the second register in memory
-- dec first register
-- enable first register to save LSB of the second register in memory
+Superseded by **[hardware] Nuova scheda di espansione** below (dual Smart MAR).
 
-Optimization? 
+## [hardware] Nuova scheda di espansione
+
+Scheda con ROM microcode dedicata: stesse/nuove istruzioni assembly più veloci,
+hardware di supporto (MAR, ecc.). Direzione ISA: **nuove istruzioni native sul MAR**,
+ritiro progressivo delle mode che usano DE come indirizzo (`LDA (DE)+`, `LDA DE,X`, …).
+D e E restano registri generali, non il puntatore primario.
+
+### Dual Smart MAR (MAR_A + MAR_B)
+
+Due registri indirizzo a 24 bit (`PAGE:H:L`). Stessa interfaccia su entrambi;
+in uso tipico **MAR_A** cammina sul puntatore / instruction stream, **MAR_B** tiene
+l’indirizzo effettivo (+ indice). Al più **un** MAR in ENABLE sull’address bus per T-state.
+
+| Funzione | Bus / note | MAR_A | MAR_B |
+|---|---|---|---|
+| Load byte da **data** bus | `LMAR L/H/PAGE` (un byte per T) | sì | sì |
+| Load full da **address** bus | cattura PAGE:H:L dall’ABUS (es. `PC→MAR`, `MAR_A→MAR_B`) | sì | sì |
+| Enable → **address** bus | guida l’accesso memoria | sì | sì |
+| INC | `MAR ← MAR+1` (carry L→H→PAGE) | sì | sì |
+| ADD da **data** bus | `MAR ← MAR + byte` (X/Y/A/imm); carry interno | utile (raro) | **essenziale** (`+X/+Y/+A`) |
+| INC ∥ Enable | stesso T: ENABLE su ABUS, poi INC a fine ciclo | sì | sì |
+| Enable → **data** bus | lettura MAR un byte alla volta (`EMARL` / `EMARH` / `EMARPAGE`) | sì | sì |
+
+Se il board stringe in v1: si può omettere ADD su MAR_A; non tagliare load/enable/INC/INC∥EN.
+
+Esempio target: `LDA (zp),X` via dual MAR (~8 cicli vs 14–16 attuali).
+
+Istruzioni assembly nuove (da definire opcode): `LMA`/`SMA`, `LDA (MAR)` / `(MAR)+` / `(MAR),X`,
+`INM`/`DEM`/`ADM A`, transfer MAR↔A byte per byte; alias/deprecazione delle mode DE-as-address.
 
 ## [DONE] [pascal] Onboard editor / pascal compiler
 Enable programming directly on Otto hardware without a host PC.
